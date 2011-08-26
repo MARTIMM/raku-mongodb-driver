@@ -16,7 +16,7 @@ plan( 1 );
 
 my $b = BSON.new( );
 
-my $document = $b.encode( { "Hello" => "world!" } );
+my $document = $b.encode( { "Hello" => "world!", "tab" => [ 1,2,3 ], "obj" => { "4" => 5 }, "zażółć" => "jaźń" } );
 
 my $requestID = $b._int32( 666 );
 
