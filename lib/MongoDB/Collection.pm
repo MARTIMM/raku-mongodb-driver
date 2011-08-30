@@ -1,5 +1,7 @@
 class MongoDB::Collection;
 
+use MongoDB::Cursor;
+
 has MongoDB::DataBase $.database is rw;
 has Str $.name is rw;
 

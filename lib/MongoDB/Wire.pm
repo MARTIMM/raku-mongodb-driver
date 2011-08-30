@@ -5,7 +5,7 @@ class MongoDB::Wire is BSON;
 # Implements Mongo Wire Protocol
 # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol
 
-method _header ( Int $length, Str $op_code ) {
+multi method _header ( Int $length, Str $op_code ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
     
     # struct MsgHeader {
@@ -37,6 +37,18 @@ method _header ( Int $length, Str $op_code ) {
     return $struct;
 }
 
+multi method _header ( Buf $b ) {
+	
+	my %h = (
+		'length' => self._int32( $b ),
+		'request_id' => self._int32( $b ),
+		'response_to' => self._int32( $b ),
+		'op_code' => self._int32( $b ),
+	);
+	
+	return %h;
+}
+
 method OP_INSERT ( MongoDB::Collection $collection, %document, Int $flags = 0 ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
 
@@ -51,7 +63,7 @@ method OP_INSERT ( MongoDB::Collection $collection, %document, Int $flags = 0 ) 
         ~ self._cstring( join '.', $collection.database.name, $collection.name )
         ~ self._document( %document );
 
-    my $header = self._header( length => +$struct.contents, op_code => 'OP_INSERT' );
+    my $header = self._header( +$struct.contents, 'OP_INSERT' );
 
     $collection.database.connection.send( $header ~ $struct, False );
 }
@@ -74,14 +86,39 @@ method OP_QUERY ( MongoDB::Collection $collection, %query, Int $flags = 0 ) {
 
     my $struct = self._int32( 0 )
         ~ self._cstring( join '.', $collection.database.name, $collection.name )
-        ~ self._int32( 1 )
-        ~ self._int32( 4 )
+        ~ self._int32( 0 )
+        ~ self._int32( 0 )
         ~ self._document( %query );
 
-    my $header = self._header( length => +$struct.contents, op_code => 'OP_QUERY' );
+    my $header = self._header( +$struct.contents, 'OP_QUERY' );
 
     my $reply = $collection.database.connection.send( $header ~ $struct, True );
     $reply.contents.perl.say;
+	self.OP_REPLY( $reply );
+}
+
+method OP_REPLY ( Buf $b ) {
+	# struct {
+	#     MsgHeader header;         // standard message header
+	#     int32     responseFlags;  // bit vector - see details below
+	#     int64     cursorID;       // cursor id if client needs to do get more's
+	#     int32     startingFrom;   // where in the cursor this reply is starting
+	#     int32     numberReturned; // number of documents in the reply
+	#     document* documents;      // documents
+	# }
+	
+	my %r = (
+	 	'header' => self._header( $b ),
+	my $f = self._int32( $b );
+	my $c = MongoDB::Cursor.new( b => $b );
+	my $s = self._int32( $b );
+	my $r = self._int32( $b );
+	my @d;
+	for ^$r {
+		my %d = self._document( $b );
+		@d.push( { %d } )
+	}
+	@d.perl.say;
 }
 
 # HACK to concatenate 2 Buf()s
