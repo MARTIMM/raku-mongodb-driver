@@ -1,0 +1,21 @@
+MongoDB driver for Perl6
+
+This project is currently a hacked proof-of-concept.
+
+Roadmap:
+
+- Wire protocol response parsing
+- MongoDB::Cursor class
+- Wire OP_INSERT (almost ready), OP_QUERY, OP_UPDATE, OP_GETMORE, OP_DELETE support
+- flags support
+- error handling
+- tests
+
+- release of 0.1 version
+- put module on http://modules.perl6.org/
+(expected by the end of september)
+
+- Wire OP_KILL_CURSORS, OP_MSG support
+- authentication
+- more stuff from http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements
+
