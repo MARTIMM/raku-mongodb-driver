@@ -1,0 +1,64 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXGroup section */
+		81C246FB1416C6B8000A420F = {
+			isa = PBXGroup;
+			children = (
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		81C246FD1416C6B8000A420F /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 81C247001416C6B8000A420F /* Build configuration list for PBXProject "MongoDB Perl6 driver" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 81C246FB1416C6B8000A420F;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		81C247021416C6B8000A420F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		81C247031416C6B8000A420F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		81C247001416C6B8000A420F /* Build configuration list for PBXProject "MongoDB Perl6 driver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				81C247021416C6B8000A420F /* Debug */,
+				81C247031416C6B8000A420F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 81C246FD1416C6B8000A420F /* Project object */;
+}
