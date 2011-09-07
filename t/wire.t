@@ -30,7 +30,7 @@ lives_ok
     'single update';
 
 lives_ok
-    { $cursor = $collection.query( ) },
+    { $cursor = $collection.find( ) },
     'initialize cursor for all documents';
 
 lives_ok

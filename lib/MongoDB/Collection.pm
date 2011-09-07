@@ -17,7 +17,7 @@ method insert ( %document ) {
     MongoDB.wire.OP_INSERT( self, %document );
 }
 
-method query ( %query = { } ) {
+method find ( %query = { } ) {
 
     return MongoDB::Cursor.new(
         collection  => self,
