@@ -7,9 +7,6 @@ has %.query is rw;
 # int64 (8 byte buffer)
 has Buf $.id is rw;
 
-# tells if database was queried
-has Bool $!live is rw;
-
 # batch of documents in last response
 has @!documents is rw;
 
@@ -18,14 +15,11 @@ submethod BUILD ( MongoDB::Collection $collection, %query ) {
     $.collection = $collection;
 
     %.query = %query;
+
+    MongoDB.wire.OP_QUERY( self );
 }
 
 method fetch ( ) {
-
-    # database was not queried yet
-    unless $!live++ {
-        MongoDB.wire.OP_QUERY( self );
-    }
 
     # there are no more documents in last response batch
     # but there is next batch to fetch from database
