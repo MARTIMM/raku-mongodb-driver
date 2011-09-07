@@ -6,11 +6,58 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXFileReference section */
+		81C247041416C8BA000A420F /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		81C247071416C8F9000A420F /* Collection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Collection.pm; sourceTree = "<group>"; };
+		81C247081416C8F9000A420F /* Connection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Connection.pm; sourceTree = "<group>"; };
+		81C247091416C8F9000A420F /* Cursor.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Cursor.pm; sourceTree = "<group>"; };
+		81C2470A1416C8F9000A420F /* DataBase.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = DataBase.pm; sourceTree = "<group>"; };
+		81C2470B1416C8F9000A420F /* Wire.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Wire.pm; sourceTree = "<group>"; };
+		81C2470C1416C8F9000A420F /* MongoDB.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = MongoDB.pm; sourceTree = "<group>"; };
+		81C2470E1416C90A000A420F /* load.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = load.t; sourceTree = "<group>"; };
+		81C2470F1416C90A000A420F /* mongodb.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = mongodb.t; sourceTree = "<group>"; };
+		81C247101416C90A000A420F /* wire.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = wire.t; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
 /* Begin PBXGroup section */
 		81C246FB1416C6B8000A420F = {
 			isa = PBXGroup;
 			children = (
+				81C2470D1416C90A000A420F /* t */,
+				81C247041416C8BA000A420F /* README */,
+				81C247051416C8F9000A420F /* lib */,
 			);
+			sourceTree = "<group>";
+		};
+		81C247051416C8F9000A420F /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				81C247061416C8F9000A420F /* MongoDB */,
+				81C2470C1416C8F9000A420F /* MongoDB.pm */,
+			);
+			path = lib;
+			sourceTree = "<group>";
+		};
+		81C247061416C8F9000A420F /* MongoDB */ = {
+			isa = PBXGroup;
+			children = (
+				81C247071416C8F9000A420F /* Collection.pm */,
+				81C247081416C8F9000A420F /* Connection.pm */,
+				81C247091416C8F9000A420F /* Cursor.pm */,
+				81C2470A1416C8F9000A420F /* DataBase.pm */,
+				81C2470B1416C8F9000A420F /* Wire.pm */,
+			);
+			path = MongoDB;
+			sourceTree = "<group>";
+		};
+		81C2470D1416C90A000A420F /* t */ = {
+			isa = PBXGroup;
+			children = (
+				81C2470E1416C90A000A420F /* load.t */,
+				81C2470F1416C90A000A420F /* mongodb.t */,
+				81C247101416C90A000A420F /* wire.t */,
+			);
+			path = t;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

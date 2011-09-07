@@ -13,5 +13,11 @@ $collection.insert( {"ala" => "kot" } );
 say "inserted";
 $collection.insert( {"zażółć" => ["gęślą", "jaźń"] } );
 say "inserted";
-$collection.query( {} );
+my $cursor = $collection.find( { } );
+#$collection.insert( {"ktory" => $_ } ) for ^100;
+
 say "queried";
+while $cursor.fetch( ) -> $document {
+    say "DOCUMENT!";
+    say $document.perl;
+}
