@@ -81,12 +81,15 @@ List of things you may expect in nearest future.
 * error handler
 * database authentication
 * kill( ) - for cursor to abandon remaining data
+* drop database or collection
 * more stuff from http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements
 
 KNOWN LIMITATIONS
 
 * lack of Num or Rat support
   this is directly related to not yet specified pack/unpack in Perl6
+* big integers (int64)
+  those are not yet implemented in Rakudo
 * speed
   protocol correctness and clear code are priorities for now
 
@@ -96,4 +99,4 @@ For everyone on #perl6
 
 CONTACT
 
-You can find me on #perl6 IRC channel as 'bbkr'.
+You can find me on irc.freenode.net #perl6 channel as 'bbkr'.
