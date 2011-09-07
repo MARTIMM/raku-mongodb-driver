@@ -1,0 +1,9 @@
+{
+    "name" : "MongoDB",
+    "version" : "0.1",
+    "description" : "MongoDB driver",
+    "author" : "Pawel Pabian",
+    "authority" : "bbkr",
+    "depends" : [ "BSON" ],
+    "source-url" : "git://github.com/bbkr/mongo-perl6-driver.git"
+}
