@@ -15,7 +15,6 @@
 		81C2470B1416C8F9000A420F /* Wire.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Wire.pm; sourceTree = "<group>"; };
 		81C2470C1416C8F9000A420F /* MongoDB.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = MongoDB.pm; sourceTree = "<group>"; };
 		81C2470E1416C90A000A420F /* load.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = load.t; sourceTree = "<group>"; };
-		81C2470F1416C90A000A420F /* mongodb.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = mongodb.t; sourceTree = "<group>"; };
 		81C247101416C90A000A420F /* wire.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = wire.t; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -54,7 +53,6 @@
 			isa = PBXGroup;
 			children = (
 				81C2470E1416C90A000A420F /* load.t */,
-				81C2470F1416C90A000A420F /* mongodb.t */,
 				81C247101416C90A000A420F /* wire.t */,
 			);
 			path = t;
