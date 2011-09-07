@@ -17,11 +17,19 @@ method insert ( %document ) {
     MongoDB.wire.OP_INSERT( self, %document );
 }
 
-method find ( %query = { } ) {
-    
+method query ( %query = { } ) {
+
     return MongoDB::Cursor.new(
         collection  => self,
         query       => %query,
     );
+}
+
+method update ( %selector, %update ) {
+    MongoDB.wire.OP_UPDATE( self, %selector, %update );
+}
+
+method delete ( %selector = { } ) {
+    MongoDB.wire.OP_DELETE( self, %selector );
 }
 

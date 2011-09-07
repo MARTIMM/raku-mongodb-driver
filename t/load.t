@@ -1,4 +1,4 @@
-BEGIN { @*INC.unshift( 'lib' ); @*INC.unshift( '../bson/lib' ); }
+BEGIN { @*INC.unshift( 'lib' ) }
 
 use Test;
 
