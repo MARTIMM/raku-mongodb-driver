@@ -13,8 +13,8 @@ submethod BUILD ( MongoDB::DataBase $database, Str $name ) {
     $.name = $name;
 }
 
-method insert ( %document ) {
-    MongoDB.wire.OP_INSERT( self, %document );
+method insert ( *@documents ) {
+    MongoDB.wire.OP_INSERT( self, 0, ||@documents );
 }
 
 method find ( %query = { } ) {

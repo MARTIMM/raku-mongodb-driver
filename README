@@ -76,7 +76,6 @@ List of things you may expect in nearest future.
 
 * find_one( ) - syntactic sugar for selecting without cursor
 * update_one( ) - update only first matching record
-* insert( @documents ) - inserting multiple documents in one request
 * update( ) - with upsert
 * error handler
 * database authentication

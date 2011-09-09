@@ -3,13 +3,14 @@ BEGIN { @*INC.unshift( 'lib' ) }
 use Test;
 use MongoDB;
 
-plan( 9 );
+plan( 12 );
 
 my $connection = MongoDB::Connection.new( );
 my $database = $connection.database( 'test' );
 my $collection = $database.collection( 'perl6_driver' );
 my $cursor;
 my %document;
+my @documents;
 
 # TODO replace this test with drop collection
 lives_ok
@@ -56,3 +57,22 @@ lives_ok
     { $collection.delete( ) },
     'delete all documents';
 
+lives_ok
+    {
+        @documents.push( { "mosquito" => $_} ) for ^128;
+        $collection.insert( @documents );
+        @documents = ( );
+    },
+    'batch insert';
+
+lives_ok
+    { $cursor = $collection.find( ) },
+    'initialize cursor for all documents';
+
+lives_ok
+    {
+        while $cursor.fetch( ) -> %document {
+            @documents.push( { %document } );
+        }
+    },
+    'fetch all documents';

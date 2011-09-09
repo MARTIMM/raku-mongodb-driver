@@ -77,7 +77,7 @@ multi method _msg_header ( Buf $b ) {
     return %msg_header;
 }
 
-method OP_INSERT ( MongoDB::Collection $collection, %document, Int $flags = 0 ) {
+method OP_INSERT ( MongoDB::Collection $collection, Int $flags, *@documents ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
 
     my $OP_INSERT =
@@ -88,12 +88,13 @@ method OP_INSERT ( MongoDB::Collection $collection, %document, Int $flags = 0 ) 
 
         # cstring fullCollectionName
         # "dbname.collectionname"
-        ~ self._cstring( join '.', $collection.database.name, $collection.name )
-
-        # document* documents
-        # one or more documents to insert into the collection
-        # TODO support multiple documents
-        ~ self._document( %document );
+        ~ self._cstring( join '.', $collection.database.name, $collection.name );
+    
+    # document* documents
+    # one or more documents to insert into the collection
+    for @documents -> $document {
+        $OP_INSERT ~= self._document( $document );
+    }
 
     # MsgHeader header
     # standard message header
@@ -320,4 +321,11 @@ multi method _nyi ( Buf $b, Int $length ) {
 multi sub infix:<~>(Buf $a, Buf $b) {
 
     return Buf.new( $a.contents.list, $b.contents.list );
+}
+
+# HACK to merge 2 Buf()s
+# workaround for https://rt.perl.org/rt3/Public/Bug/Display.html?id=96430
+multi sub infix:<~=>(Buf $a, Buf $b) {
+    
+    $a.contents.push( $b.contents );
 }
