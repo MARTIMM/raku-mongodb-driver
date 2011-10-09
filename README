@@ -95,6 +95,7 @@ List of things you may expect in nearest future.
 * drop database or collection
 * more stuff from http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements
 
+
 KNOWN LIMITATIONS
 
 * lack of Num or Rat support
@@ -104,9 +105,11 @@ KNOWN LIMITATIONS
 * speed
   protocol correctness and clear code are priorities for now
 
+
 BIG THANKS
 
 For everyone on #perl6
+
 
 CONTACT
 
