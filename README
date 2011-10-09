@@ -2,10 +2,22 @@ Hello Perl6 and noSQL users!
 
 This is working MongoDB driver at early stage of development.
 
-Let's see what it can do...
+
+VERSION
+
+This version should be used with BSON 0.1.
+
+It is compatible with Rakudo 2011.07.
+For Rakudo 2011.09+ releases (based on NOM branch)
+redesigned driver is expected soon.
+There are some small regressions that need to be taken care of
+but as reward expect really nice speed boost.
 
 
 SYNOPSIS
+
+Let's see what it can do...
+
 
     use MongoDB;
 

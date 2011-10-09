@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		81322EC71441DCD900D0AF15 /* logo_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo_32x32.png; sourceTree = "<group>"; };
+		81322EC81441DCD900D0AF15 /* META.info */ = {isa = PBXFileReference; lastKnownFileType = text; path = META.info; sourceTree = "<group>"; };
 		81C247041416C8BA000A420F /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		81C247071416C8F9000A420F /* Collection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Collection.pm; sourceTree = "<group>"; };
 		81C247081416C8F9000A420F /* Connection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Connection.pm; sourceTree = "<group>"; };
@@ -19,9 +21,19 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		81322EC61441DCD900D0AF15 /* logotype */ = {
+			isa = PBXGroup;
+			children = (
+				81322EC71441DCD900D0AF15 /* logo_32x32.png */,
+			);
+			path = logotype;
+			sourceTree = "<group>";
+		};
 		81C246FB1416C6B8000A420F = {
 			isa = PBXGroup;
 			children = (
+				81322EC61441DCD900D0AF15 /* logotype */,
+				81322EC81441DCD900D0AF15 /* META.info */,
 				81C2470D1416C90A000A420F /* t */,
 				81C247041416C8BA000A420F /* README */,
 				81C247051416C8F9000A420F /* lib */,
