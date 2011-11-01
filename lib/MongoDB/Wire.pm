@@ -2,10 +2,11 @@ use BSON;
 
 class MongoDB::Wire is BSON;
 
-has Bool $.debug is rw = False;
-
 # Implements Mongo Wire Protocol
 # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol
+
+has Bool $.debug is rw = False;
+has Int $.request_id is rw = 0;
 
 # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
 has %.op_codes = (
@@ -24,7 +25,7 @@ multi method _msg_header ( Int $length, Str $op_code ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
     # struct MsgHeader
-    my $msg_header =
+    my Buf $msg_header =
 
         # int32 messageLength
         # total message size, including this
@@ -32,7 +33,7 @@ multi method _msg_header ( Int $length, Str $op_code ) {
 
         # int32 requestID
         # identifier for this message
-        ~ self._int32( ( 1 .. 2147483647 ).pick )
+        ~ self._int32( $.request_id++ )
 
         # int32 responseTo
         # requestID from the original request
@@ -46,7 +47,7 @@ multi method _msg_header ( Int $length, Str $op_code ) {
     return $msg_header;
 }
 
-multi method _msg_header ( Buf $b ) {
+multi method _msg_header ( Array $a ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
     # struct MsgHeader
@@ -54,20 +55,20 @@ multi method _msg_header ( Buf $b ) {
 
         # int32 messageLength
         # total message size, including this
-        'message_length'    => self._int32( $b ),
+        'message_length'    => self._int32( $a ),
 
         # int32 requestID
         # identifier for this message
-        'request_id'        => self._int32( $b ),
+        'request_id'        => self._int32( $a ),
 
         # int32 responseTo
         # requestID from the original request
         # (used in reponses from db)
-        'response_to'       => self._int32( $b ),
+        'response_to'       => self._int32( $a ),
 
         # int32 opCode
         # request type
-        'op_code'           => self._int32( $b ),
+        'op_code'           => self._int32( $a ),
 
     );
 
@@ -77,10 +78,10 @@ multi method _msg_header ( Buf $b ) {
     return %msg_header;
 }
 
-method OP_INSERT ( MongoDB::Collection $collection, Int $flags, *@documents ) {
+method OP_INSERT ( $collection, Int $flags, *@documents ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
 
-    my $OP_INSERT =
+    my Buf $OP_INSERT =
 
         # int32 flags
         # bit vector
@@ -89,7 +90,7 @@ method OP_INSERT ( MongoDB::Collection $collection, Int $flags, *@documents ) {
         # cstring fullCollectionName
         # "dbname.collectionname"
         ~ self._cstring( join '.', $collection.database.name, $collection.name );
-    
+
     # document* documents
     # one or more documents to insert into the collection
     for @documents -> $document {
@@ -98,16 +99,16 @@ method OP_INSERT ( MongoDB::Collection $collection, Int $flags, *@documents ) {
 
     # MsgHeader header
     # standard message header
-    my $msg_header = self._msg_header( +$OP_INSERT.contents, 'OP_INSERT' );
+    my Buf $msg_header = self._msg_header( $OP_INSERT.elems, 'OP_INSERT' );
 
     # send message without waiting for response
     $collection.database.connection.send( $msg_header ~ $OP_INSERT, False );
 }
 
-method OP_QUERY ( MongoDB::Cursor $cursor ) {
+method OP_QUERY ( $cursor ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
-    my $OP_QUERY =
+    my Buf $OP_QUERY =
 
         # int32 flags
         # bit vector of query options
@@ -136,10 +137,10 @@ method OP_QUERY ( MongoDB::Cursor $cursor ) {
 
     # MsgHeader header
     # standard message header
-    my $msg_header = self._msg_header( +$OP_QUERY.contents, 'OP_QUERY' );
+    my Buf $msg_header = self._msg_header( $OP_QUERY.elems, 'OP_QUERY' );
 
     # send message and wait for response
-    my $OP_REPLY = $cursor.collection.database.connection.send( $msg_header ~ $OP_QUERY, True );
+    my Buf $OP_REPLY = $cursor.collection.database.connection.send( $msg_header ~ $OP_QUERY, True );
 
     # parse response
     my %OP_REPLY = self.OP_REPLY( $OP_REPLY );
@@ -154,10 +155,10 @@ method OP_QUERY ( MongoDB::Cursor $cursor ) {
     $cursor._feed( %OP_REPLY );
 }
 
-method OP_GETMORE ( MongoDB::Cursor $cursor ) {
+method OP_GETMORE ( $cursor ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPGETMORE
 
-    my $OP_GETMORE =
+    my Buf $OP_GETMORE =
 
         # int32 ZERO
         # 0 - reserved for future use
@@ -178,10 +179,10 @@ method OP_GETMORE ( MongoDB::Cursor $cursor ) {
     # MsgHeader header
     # standard message header
     # (watch out for inconsistent OP_code and messsage name)
-    my $msg_header = self._msg_header( +$OP_GETMORE.contents, 'OP_GET_MORE' );
+    my Buf $msg_header = self._msg_header( $OP_GETMORE.elems, 'OP_GET_MORE' );
 
     # send message and wait for response
-    my $OP_REPLY = $cursor.collection.database.connection.send( $msg_header ~ $OP_GETMORE, True );
+    my Buf $OP_REPLY = $cursor.collection.database.connection.send( $msg_header ~ $OP_GETMORE, True );
 
     # parse response
     my %OP_REPLY = self.OP_REPLY( $OP_REPLY );
@@ -198,10 +199,10 @@ method OP_GETMORE ( MongoDB::Cursor $cursor ) {
     $cursor._feed( %OP_REPLY );
 }
 
-method OP_UPDATE ( MongoDB::Collection $collection, %selector, %update, Int $flags = 2 ) {
+method OP_UPDATE ( $collection, %selector, %update, Int $flags = 2 ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPUPDATE
 
-    my $OP_UPDATE =
+    my Buf $OP_UPDATE =
 
         # int32 ZERO
         # 0 - reserved for future use
@@ -225,16 +226,16 @@ method OP_UPDATE ( MongoDB::Collection $collection, %selector, %update, Int $fla
 
     # MsgHeader header
     # standard message header
-    my $msg_header = self._msg_header( +$OP_UPDATE.contents, 'OP_UPDATE' );
+    my Buf $msg_header = self._msg_header( $OP_UPDATE.elems, 'OP_UPDATE' );
 
     # send message without waiting for response
     $collection.database.connection.send( $msg_header ~ $OP_UPDATE, False );
 }
 
-method OP_DELETE ( MongoDB::Collection $collection, %selector, Int $flags = 0 ) {
+method OP_DELETE ( $collection, %selector, Int $flags = 0 ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
 
-    my $OP_DELETE =
+    my Buf $OP_DELETE =
 
         # int32 ZERO
         # 0 - reserved for future use
@@ -254,7 +255,7 @@ method OP_DELETE ( MongoDB::Collection $collection, %selector, Int $flags = 0 ) 
 
     # MsgHeader header
     # standard message header
-    my $msg_header = self._msg_header( +$OP_DELETE.contents, 'OP_DELETE' );
+    my Buf $msg_header = self._msg_header( $OP_DELETE.elems, 'OP_DELETE' );
 
     # send message without waiting for response
     $collection.database.connection.send( $msg_header ~ $OP_DELETE, False );
@@ -263,69 +264,57 @@ method OP_DELETE ( MongoDB::Collection $collection, %selector, Int $flags = 0 ) 
 method OP_REPLY ( Buf $b ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
 
+    my $a = $b.list;
+
     my %OP_REPLY = (
 
         # MsgHeader header
         # standard message header
-        'msg_header' => self._msg_header( $b ),
+        'msg_header' => self._msg_header( $a ),
 
         # int32 responseFlags
         # bit vector
-        'response_flags' => self._int32( $b ),
+        'response_flags' => self._int32( $a ),
 
         # int64 cursorID
         # cursor id if client needs to do get more's
         # TODO big integers are not yet implemented in Rakudo
         # so cursor is build using raw Buf
-        'cursor_id' => self._nyi( $b, 8 ),
+        'cursor_id' => self._nyi( $a, 8 ),
 
         # int32 startingFrom
         # where in the cursor this reply is starting
-        'starting_from' => self._int32( $b ),
+        'starting_from' => self._int32( $a ),
 
         # int32 numberReturned
         # number of documents in the reply
-        'number_returned' => self._int32( $b ),
+        'number_returned' => self._int32( $a ),
 
         # document* documents
         # documents
-        'documents' => ( ),
+        'documents' => [ ],
 
     );
 
     # extract documents in message
     for ^%OP_REPLY{ 'number_returned' } {
-        my %document = self._document( $b );
+        my %document = self._document( $a );
         %OP_REPLY{ 'documents' }.push( { %document } );
     }
 
     # every response byte must be consumed
-    die 'Response ended incorrectly' if +$b.contents;
+    die 'Unexpected bytes at the end of response' if $a.elems;
 
     return %OP_REPLY;
 }
 
-multi method _nyi ( Buf $b, Int $length ) {
-    # fetch given amount of bytes from buffer and return as buffer
+multi method _nyi ( Array $a, Int $length ) {
+    # fetch given amount of bytes from Array and return as Buffer
     # mostly used to jump over not yet implemented decoding
 
-    my $nyi = Buf.new( );
+    my @a;
 
-    $nyi.contents.push( $b.contents.shift ) for ^$length;
+    @a.push( $a.shift ) for ^$length;
 
-    return $nyi;
-}
-
-# HACK to concatenate 2 Buf()s
-# workaround for https://rt.perl.org/rt3/Public/Bug/Display.html?id=96430
-multi sub infix:<~>(Buf $a, Buf $b) {
-
-    return Buf.new( $a.contents.list, $b.contents.list );
-}
-
-# HACK to merge 2 Buf()s
-# workaround for https://rt.perl.org/rt3/Public/Bug/Display.html?id=96430
-multi sub infix:<~=>(Buf $a, Buf $b) {
-    
-    $a.contents.push( $b.contents );
+    return Buf.new( @a );
 }

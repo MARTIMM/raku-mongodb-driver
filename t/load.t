@@ -5,5 +5,5 @@ use Test;
 plan( 1 );
 
 lives_ok
-    { use MongoDB },
+    { use MongoDB; },
     'Load classes';

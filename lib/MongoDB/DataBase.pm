@@ -1,11 +1,11 @@
-class MongoDB::DataBase;
-
 use MongoDB::Collection;
 
-has MongoDB::Connection $.connection is rw;
+class MongoDB::DataBase;
+
+has $.connection is rw;
 has Str $.name is rw;
 
-submethod BUILD ( MongoDB::Connection $connection, Str $name ) {
+submethod BUILD ( :$connection, Str :$name ) {
 
     $.connection = $connection;
 

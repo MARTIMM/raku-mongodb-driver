@@ -1,17 +1,14 @@
 Hello Perl6 and noSQL users!
 
-This is working MongoDB driver at early stage of development.
+This is almost working MongoDB driver at early stage of development.
 
 
 VERSION
 
-This version should be used with BSON 0.1.
+This version should be used with BSON 0.2.
 
-It is compatible with Rakudo 2011.07.
-For Rakudo 2011.09+ releases (based on NOM branch)
-redesigned driver is expected soon.
-There are some small regressions that need to be taken care of
-but as reward expect really nice speed boost.
+Version 0.2 is compatible with Rakudo 2011.09+,
+and will be merged into main branch after Star release.
 
 
 SYNOPSIS
@@ -25,12 +22,10 @@ Let's see what it can do...
     my $database = $connection.database( 'test' );
     my $collection = $database.collection( 'perl_users' );
     my $cursor;
-    my %document;
-
 
     #### insert documents into collection ####
 
-    %document = {
+    my %document1 = {
         'name' => 'Paweł Pabian',
         'nick' => 'bbkr',
         'versions' => [ 5, 6 ],
@@ -40,21 +35,20 @@ Let's see what it can do...
         },
         'IRC' => True,
     };
-    $collection.insert( %document );
 
-    %document = {
+    my %document2 = {
         'name' => 'Andrzej Cholewiusz',
         'nick' => 'andee',
         'versions' => [ 5 ],
         'IRC' => False,
     };
-    $collection.insert( %document );
 
+    $collection.insert( %document1, %document2 );
 
     #### find documents in collection ####
 
     # find everything
-    $cursor = $collection.find( );
+    my $cursor = $collection.find( );
     while $cursor.fetch( ) -> %document {
         %document.perl.say;
     }

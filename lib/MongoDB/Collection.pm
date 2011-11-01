@@ -1,11 +1,12 @@
-class MongoDB::Collection;
-
+use MongoDB::Protocol;
 use MongoDB::Cursor;
 
-has MongoDB::DataBase $.database is rw;
+class MongoDB::Collection does MongoDB::Protocol;
+
+has $.database is rw;
 has Str $.name is rw;
 
-submethod BUILD ( MongoDB::DataBase $database, Str $name ) {
+submethod BUILD ( :$database, Str :$name ) {
 
     $.database = $database;
 
@@ -14,7 +15,7 @@ submethod BUILD ( MongoDB::DataBase $database, Str $name ) {
 }
 
 method insert ( *@documents ) {
-    MongoDB.wire.OP_INSERT( self, 0, ||@documents );
+    self.wire.OP_INSERT( self, 0, @documents );
 }
 
 method find ( %query = { } ) {
@@ -26,10 +27,10 @@ method find ( %query = { } ) {
 }
 
 method update ( %selector, %update ) {
-    MongoDB.wire.OP_UPDATE( self, %selector, %update );
+    self.wire.OP_UPDATE( self, %selector, %update );
 }
 
 method delete ( %selector = { } ) {
-    MongoDB.wire.OP_DELETE( self, %selector );
+    self.wire.OP_DELETE( self, %selector );
 }
 

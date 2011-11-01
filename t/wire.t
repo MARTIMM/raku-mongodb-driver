@@ -5,7 +5,7 @@ use MongoDB;
 
 plan( 12 );
 
-my $connection = MongoDB::Connection.new( );
+my $connection = MongoDB::Connection.new;
 my $database = $connection.database( 'test' );
 my $collection = $database.collection( 'perl6_driver' );
 my $cursor;
