@@ -152,7 +152,7 @@ method OP_QUERY ( $cursor ) {
     # TODO check if requestID matches responseTo
 
     # return response back to cursor
-    $cursor._feed( %OP_REPLY );
+    return %OP_REPLY;
 }
 
 method OP_GETMORE ( $cursor ) {
@@ -196,7 +196,7 @@ method OP_GETMORE ( $cursor ) {
     # TODO check if cursorID matches (if present)
 
     # return response back to cursor
-    $cursor._feed( %OP_REPLY );
+    return %OP_REPLY;
 }
 
 method OP_UPDATE ( $collection, %selector, %update, Int $flags = 2 ) {

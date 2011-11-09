@@ -18,27 +18,32 @@ submethod BUILD ( :$collection, :%query ) {
 
     %.query = %query;
 
-    self.wire.OP_QUERY( self );
+    # request first batch of documents
+    my %OP_REPLY = self.wire.OP_QUERY( self );
+    
+    # assign cursorID
+    $.id = %OP_REPLY{ 'cursor_id' };
+    
+    # assign documents
+    @.documents = %OP_REPLY{ 'documents' }.list;
 }
 
 method fetch ( ) {
 
-    #say $!id;
     # there are no more documents in last response batch
     # but there is next batch to fetch from database
     if not @.documents and [+]$.id.list {
-        self.wire.OP_GETMORE( self );
+
+        # request next batch of documents
+        my %OP_REPLY = self.wire.OP_GETMORE( self );
+        
+        # assign cursorID
+        $.id = %OP_REPLY{ 'cursor_id' };
+        
+        # assign documents
+        @.documents = %OP_REPLY{ 'documents' }.list;
     }
 
     return @.documents.shift;
 }
 
-method _feed ( %OP_REPLY ) {
-
-    # assign cursorID
-    # buffer of 0x00 x 8 means there are no more documents to fetch
-    $.id = %OP_REPLY{ 'cursor_id' };
-
-    # assign documents
-    @.documents = %OP_REPLY{ 'documents' }.list;
-}
