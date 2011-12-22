@@ -1,41 +1,51 @@
-class MongoDB::Cursor;
+use MongoDB::Protocol;
 
-has MongoDB::Collection $.collection is rw;
+class MongoDB::Cursor does MongoDB::Protocol;
 
-has %.query is rw;
+has $.collection is rw;
 
 # int64 (8 byte buffer)
 has Buf $.id is rw;
 
 # batch of documents in last response
-has @!documents is rw;
+has @.documents is rw;
 
-submethod BUILD ( MongoDB::Collection $collection, %query ) {
+submethod BUILD ( :$collection, :%OP_REPLY ) {
 
     $.collection = $collection;
 
-    %.query = %query;
-
-    MongoDB.wire.OP_QUERY( self );
+    # assign cursorID
+    $.id = %OP_REPLY{ 'cursor_id' };
+    
+    # assign documents
+    @.documents = %OP_REPLY{ 'documents' }.list;
 }
 
 method fetch ( ) {
 
     # there are no more documents in last response batch
     # but there is next batch to fetch from database
-    if not @!documents and [+]$!id.contents {
-        MongoDB.wire.OP_GETMORE( self );
+    if not @.documents and [+]$.id.list {
+
+        # request next batch of documents
+        my %OP_REPLY = self.wire.OP_GETMORE( self );
+        
+        # assign cursorID,
+        # it may change to "0" if there are no more documents to fetch
+        $.id = %OP_REPLY{ 'cursor_id' };
+        
+        # assign documents
+        @.documents = %OP_REPLY{ 'documents' }.list;
     }
 
-    return @!documents.shift;
+    return @.documents.shift;
 }
 
-method _feed ( %OP_REPLY ) {
+method kill ( ) {
 
-    # assign cursorID
-    # buffer of 0x00 x 8 means there are no more documents to fetch
-    $.id = %OP_REPLY{ 'cursor_id' };
-
-    # assign documents
-    @!documents = %OP_REPLY{ 'documents' }.list;
+    # invalidate cursor on database
+    self.wire.OP_KILL_CURSORS( self );
+    
+    # invalidate cursor id
+    $.id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 );
 }

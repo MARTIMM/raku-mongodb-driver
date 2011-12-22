@@ -1,8 +1,8 @@
-class MongoDB;
+module MongoDB:ver<0.3>;
 
-use MongoDB::Connection;
 use MongoDB::Wire;
 
-our $wire = MongoDB::Wire.new;
-
-method ^wire ( ::T ) { return $wire };
+use MongoDB::Connection;
+use MongoDB::DataBase;
+use MongoDB::Collection;
+use MongoDB::Cursor;

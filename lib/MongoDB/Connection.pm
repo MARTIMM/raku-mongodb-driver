@@ -1,10 +1,11 @@
-class MongoDB::Connection;
-
+use MongoDB::Protocol;
 use MongoDB::DataBase;
+
+class MongoDB::Connection does MongoDB::Protocol;
 
 has IO::Socket::INET $!sock;
 
-submethod BUILD ( Str $host = 'localhost', Int $port = 27017 ) {
+submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
 
     $!sock = IO::Socket::INET.new( host => $host, port => $port );
 }
@@ -19,15 +20,15 @@ method database ( Str $name ) {
 
 method send ( Buf $b, Bool $has_response ) {
 
-    $!sock.send( $b.unpack( 'A*' ) );
+    $!sock.send( [~]$b.list>>.chr );
 
-    if $has_response {
+    # some calls do not expect response
+    return unless $has_response;
 
-        # obtain int32 response length
-        my $l = $!sock.recv( 4 ).encode;
-        my $r = $!sock.recv( $l.unpack( 'V' ) - 4 ).encode;
+    # check response size
+    my $l = $!sock.read( 4 );
+    my $w = self.wire._int32( $l.list ) - 4;
 
-        # receive remaining response bytes from socket
-        return Buf.new( $l.contents.list, $r.contents.list );
-    }
+    # receive remaining response bytes from socket
+    return $l ~ $!sock.read( $w );
 }

@@ -7,8 +7,14 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		8128962714A27D3900BDC0AC /* update.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = update.t; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.perl; };
+		8128962A14A29B0E00BDC0AC /* remove.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = remove.t; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.perl; };
+		8128962B14A336DA00BDC0AC /* find.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = find.t; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.perl; };
+		8128962C14A34B6F00BDC0AC /* changelog.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = changelog.txt; sourceTree = "<group>"; };
 		81322EC71441DCD900D0AF15 /* logo_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo_32x32.png; sourceTree = "<group>"; };
 		81322EC81441DCD900D0AF15 /* META.info */ = {isa = PBXFileReference; lastKnownFileType = text; path = META.info; sourceTree = "<group>"; };
+		81619C7014601C4700315881 /* Protocol.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Protocol.pm; sourceTree = "<group>"; };
+		816DD7FD1486CD8100491105 /* insert.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = insert.t; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.perl; };
 		81C247041416C8BA000A420F /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		81C247071416C8F9000A420F /* Collection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Collection.pm; sourceTree = "<group>"; };
 		81C247081416C8F9000A420F /* Connection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Connection.pm; sourceTree = "<group>"; };
@@ -16,8 +22,6 @@
 		81C2470A1416C8F9000A420F /* DataBase.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = DataBase.pm; sourceTree = "<group>"; };
 		81C2470B1416C8F9000A420F /* Wire.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Wire.pm; sourceTree = "<group>"; };
 		81C2470C1416C8F9000A420F /* MongoDB.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = MongoDB.pm; sourceTree = "<group>"; };
-		81C2470E1416C90A000A420F /* load.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = load.t; sourceTree = "<group>"; };
-		81C247101416C90A000A420F /* wire.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = wire.t; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -32,6 +36,7 @@
 		81C246FB1416C6B8000A420F = {
 			isa = PBXGroup;
 			children = (
+				8128962C14A34B6F00BDC0AC /* changelog.txt */,
 				81322EC61441DCD900D0AF15 /* logotype */,
 				81322EC81441DCD900D0AF15 /* META.info */,
 				81C2470D1416C90A000A420F /* t */,
@@ -52,6 +57,7 @@
 		81C247061416C8F9000A420F /* MongoDB */ = {
 			isa = PBXGroup;
 			children = (
+				81619C7014601C4700315881 /* Protocol.pm */,
 				81C247071416C8F9000A420F /* Collection.pm */,
 				81C247081416C8F9000A420F /* Connection.pm */,
 				81C247091416C8F9000A420F /* Cursor.pm */,
@@ -64,8 +70,10 @@
 		81C2470D1416C90A000A420F /* t */ = {
 			isa = PBXGroup;
 			children = (
-				81C2470E1416C90A000A420F /* load.t */,
-				81C247101416C90A000A420F /* wire.t */,
+				816DD7FD1486CD8100491105 /* insert.t */,
+				8128962714A27D3900BDC0AC /* update.t */,
+				8128962A14A29B0E00BDC0AC /* remove.t */,
+				8128962B14A336DA00BDC0AC /* find.t */,
 			);
 			path = t;
 			sourceTree = "<group>";

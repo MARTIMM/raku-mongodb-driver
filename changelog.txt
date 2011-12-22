@@ -1,0 +1,12 @@
+0.3
+
+* Basic added to methods (upsert, multi_update, single_remove,...)
+* Kill support for cursor.
+
+0.2
+
+* Adapted to Rakudo NOM 2011.09+.
+
+0.1
+
+* Basic Proof-of-concept working on Rakudo 2011.07.
