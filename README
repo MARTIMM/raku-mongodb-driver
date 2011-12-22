@@ -5,11 +5,8 @@ This is working MongoDB driver at early stage of development.
 
 VERSION
 
-This version should be used with BSON 0.2.
-
-Version 0.2 is compatible with Rakudo 2011.09+,
-and will be merged into main branch after Star release.
-
+This module is compatible with Rakudo 2011.09+
+and requires BSON 0.2+.
 
 SYNOPSIS
 
@@ -19,7 +16,7 @@ Let's see what it can do...
     use MongoDB;
 
     my $connection = MongoDB::Connection.new( );
-    my $database = $connection.database( 'test' );
+    my $database   = $connection.database( 'test' );
     my $collection = $database.collection( 'perl_users' );
     my $cursor;
 
@@ -67,13 +64,28 @@ Let's see what it can do...
     $collection.update( { 'nick' => 'andee' }, { '$push' => { 'versions' => 6 } } );
 
 
-    #### delete documents from collection ####
+    #### remove documents from collection ####
 
-    # delete specific documents
-    $collection.delete( { 'nick' => 'bbkr' } );
+    # remove specific documents
+    $collection.remove( { 'nick' => 'bbkr' } );
 
-    # or delete all documents
-    $collection.delete( );
+    # or remove all documents
+    $collection.remove( );
+
+
+FLAGS
+
+Flags are boolean values, false by default.
+They can be used anywhere and in any order in methods.
+
+    remove( { 'nick' => 'bbkr' }, :single_remove ); 
+    remove( :single_remove, { 'nick' => 'bbkr' } ); # same
+
+Currently supported
+    insert  - :continue_on_errror
+    find    - :no_cursor_timeout
+    update  - :upsert, :multi_update
+    remove  - :single_remove
 
 
 FEATURE ROADMAP
@@ -81,22 +93,18 @@ FEATURE ROADMAP
 List of things you may expect in nearest future.
 
 * find_one( ) - syntactic sugar for selecting without cursor
-* update_one( ) - update only first matching record
-* update( ) - with upsert
 * error handler
 * database authentication
-* kill( ) - for cursor to abandon remaining data
 * drop database or collection
 * more stuff from http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements
 
 
 KNOWN LIMITATIONS
 
-* lack of Num or Rat support
-  this is directly related to not yet specified pack/unpack in Perl6
 * big integers (int64)
-  those are not yet implemented in Rakudo
-* speed
+* lack of Num or Rat support,
+  this is directly related to not yet specified pack/unpack in Perl6
+* speed,
   protocol correctness and clear code are priorities for now
 
 

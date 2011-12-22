@@ -105,31 +105,31 @@ method OP_INSERT ( $collection, Int $flags, *@documents ) {
     $collection.database.connection.send( $msg_header ~ $OP_INSERT, False );
 }
 
-method OP_QUERY ( $cursor ) {
+method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return, %query ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
     my Buf $OP_QUERY =
 
         # int32 flags
         # bit vector of query options
-        self._int32( 0 )
+        self._int32( $flags )
 
         # cstring fullCollectionName
         # "dbname.collectionname"
-        ~ self._cstring( join '.', $cursor.collection.database.name, $cursor.collection.name )
+        ~ self._cstring( join '.', $collection.database.name, $collection.name )
 
         # int32 numberToSkip
         # number of documents to skip
-        ~ self._int32( 0 )
+        ~ self._int32( $number_to_skip )
 
         # int32 numberToReturn
         # number of documents to return
         # in the first OP_REPLY batch
-        ~ self._int32( 0 )
+        ~ self._int32( $number_to_return )
 
         # document query
         # query object
-        ~ self._document( $cursor.query );
+        ~ self._document( %query );
 
     # TODO
     # [ document  returnFieldSelector; ]
@@ -140,7 +140,7 @@ method OP_QUERY ( $cursor ) {
     my Buf $msg_header = self._msg_header( $OP_QUERY.elems, 'OP_QUERY' );
 
     # send message and wait for response
-    my Buf $OP_REPLY = $cursor.collection.database.connection.send( $msg_header ~ $OP_QUERY, True );
+    my Buf $OP_REPLY = $collection.database.connection.send( $msg_header ~ $OP_QUERY, True );
 
     # parse response
     my %OP_REPLY = self.OP_REPLY( $OP_REPLY );
@@ -199,7 +199,34 @@ method OP_GETMORE ( $cursor ) {
     return %OP_REPLY;
 }
 
-method OP_UPDATE ( $collection, %selector, %update, Int $flags = 2 ) {
+method OP_KILL_CURSORS ( *@cursors ) {
+    # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPKILLCURSORS
+    
+    my Buf $OP_KILL_CURSORS =
+    
+        # int32 ZERO
+        # 0 - reserved for future use
+        self._int32( 0 )
+    
+        # int32 numberOfCursorIDs
+        # number of cursorIDs in message
+        ~ self._int32( +@cursors );
+    
+    # int64* cursorIDs
+    # sequence of cursorIDs to close
+    for @cursors -> $cursor {
+        $OP_KILL_CURSORS ~= $cursor.id;
+    }
+    
+    # MsgHeader header
+    # standard message header
+    my Buf $msg_header = self._msg_header( $OP_KILL_CURSORS.elems, 'OP_KILL_CURSORS' );
+    
+    # send message without waiting for response
+    @cursors[0].collection.database.connection.send( $msg_header ~ $OP_KILL_CURSORS, False );
+}
+
+method OP_UPDATE ( $collection, Int $flags, %selector, %update ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPUPDATE
 
     my Buf $OP_UPDATE =
@@ -232,7 +259,7 @@ method OP_UPDATE ( $collection, %selector, %update, Int $flags = 2 ) {
     $collection.database.connection.send( $msg_header ~ $OP_UPDATE, False );
 }
 
-method OP_DELETE ( $collection, %selector, Int $flags = 0 ) {
+method OP_DELETE ( $collection, Int $flags, %selector ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
 
     my Buf $OP_DELETE =
@@ -296,7 +323,7 @@ method OP_REPLY ( Buf $b ) {
 
     );
 
-    # extract documents in message
+    # extract documents from message
     for ^%OP_REPLY{ 'number_returned' } {
         my %document = self._document( $a );
         %OP_REPLY{ 'documents' }.push( { %document } );
