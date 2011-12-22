@@ -5,12 +5,8 @@ This is working MongoDB driver at early stage of development.
 
 VERSION
 
-This version should be used with BSON 0.1.
-
-It is compatible with Rakudo 2011.07.
-For Rakudo 2011.09+ releases (based on NOM branch)
-please use version from nom branch.
-
+This module is compatible with Rakudo 2011.09+
+and requires BSON 0.2+.
 
 SYNOPSIS
 
