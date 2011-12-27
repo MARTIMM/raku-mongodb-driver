@@ -2,10 +2,12 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
+
 ## VERSION
 
 This module is compatible with Rakudo 2011.09+
 and requires [BSON](https://github.com/bbkr/BSON "BSON 0.2+").
+
 
 ## SYNOPSIS
 
