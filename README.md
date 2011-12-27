@@ -43,6 +43,7 @@ Let's see what it can do...
     $collection.insert( %document1, %document2 );
 
 Flags
+
 * _:continue_on_errror_ - If set, the database will not stop processing a bulk insert if one document fails.
 
 ### Find documents inside collection
@@ -60,9 +61,11 @@ Or narrow down using condition.
     $cursor.fetch( ).perl.say;
 
 Options
+
 * _number_to_return_ - Int - TODO doc
 
 Flags
+
 * _:no_cursor_timeout_ - If set, the database won't time out idle cursor after an inactivity period.
 
 ### Update documents in collection
@@ -76,6 +79,7 @@ Update specific document.
     $collection.update( { 'nick' => 'andee' }, { '$push' => { 'versions' => 6 } } );
 
 Flags
+
 * _:upsert_ - If set, the database will insert the supplied object into the collection if no matching document is found.
 * _:multi_update_ - If set, the database will update all matching documents in the collection (only first matching document is updated by default).
 
@@ -90,6 +94,7 @@ Remove all documents.
     $collection.remove( );
 
 Flags
+
 * _:single_remove_ - If set, the database will remove only the first matching document in the collection (all matching documents are removed by default).
 
 ## FLAGS
@@ -108,7 +113,7 @@ List of things you may expect in nearest future.
 * Error handler.
 * Database authentication.
 * Database or collection management (drop, create).
-* More stuff from [spec](http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements "Mongo Driver requirements")
+* More stuff from [spec](http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements "Mongo Driver requirements").
 
 
 ## KNOWN LIMITATIONS
@@ -120,4 +125,6 @@ List of things you may expect in nearest future.
 
 ## CONTACT
 
-You can find me on irc.freenode.net #perl6 channel as __bbkr__.
+You can find me (and many awesome people who helped me to develop this module)
+on irc.freenode.net #perl6 channel as __bbkr__.
+
