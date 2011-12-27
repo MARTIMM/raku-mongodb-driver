@@ -16,7 +16,6 @@
 		81619C7014601C4700315881 /* Protocol.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Protocol.pm; sourceTree = "<group>"; };
 		816DD7FD1486CD8100491105 /* insert.t */ = {isa = PBXFileReference; lastKnownFileType = text; path = insert.t; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.perl; };
 		81A2BBDF14AA6BC000CE3532 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.man; };
-		81C247041416C8BA000A420F /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		81C247071416C8F9000A420F /* Collection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Collection.pm; sourceTree = "<group>"; };
 		81C247081416C8F9000A420F /* Connection.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Connection.pm; sourceTree = "<group>"; };
 		81C247091416C8F9000A420F /* Cursor.pm */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = Cursor.pm; sourceTree = "<group>"; };
@@ -42,7 +41,6 @@
 				81322EC61441DCD900D0AF15 /* logotype */,
 				81322EC81441DCD900D0AF15 /* META.info */,
 				81C2470D1416C90A000A420F /* t */,
-				81C247041416C8BA000A420F /* README */,
 				81C247051416C8F9000A420F /* lib */,
 			);
 			sourceTree = "<group>";
