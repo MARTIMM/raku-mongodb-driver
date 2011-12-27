@@ -44,7 +44,7 @@ Let's see what it can do...
 
 Flags
 
-* _:continue_on_errror_ - If set, the database will not stop processing a bulk insert if one document fails.
+* _:continue_on_errror_ - Do not stop processing a bulk insert if one document fails.
 
 ### Find documents inside collection
 
@@ -66,7 +66,7 @@ Options
 
 Flags
 
-* _:no_cursor_timeout_ - If set, the database won't time out idle cursor after an inactivity period.
+* _:no_cursor_timeout_ - Do not time out idle cursor after an inactivity period.
 
 ### Update documents in collection
 
@@ -80,8 +80,8 @@ Update specific document.
 
 Flags
 
-* _:upsert_ - If set, the database will insert the supplied object into the collection if no matching document is found.
-* _:multi_update_ - If set, the database will update all matching documents in the collection (only first matching document is updated by default).
+* _:upsert_ - Insert the supplied object into the collection if no matching document is found.
+* _:multi_update_ - Update all matching documents in the collection (only first matching document is updated by default).
 
 ### Remove documents from collection
 
@@ -95,15 +95,17 @@ Remove all documents.
 
 Flags
 
-* _:single_remove_ - If set, the database will remove only the first matching document in the collection (all matching documents are removed by default).
+* _:single_remove_ - Remove only the first matching document in the collection (all matching documents are removed by default).
 
 ## FLAGS
 
 Flags are boolean values, false by default.
 They can be used anywhere and in any order in methods.
 
-remove( { 'nick' => 'bbkr' }, :single_remove ); 
-remove( :single_remove, { 'nick' => 'bbkr' } ); # same
+    remove( { 'nick' => 'bbkr' }, :single_remove ); 
+    remove( :single_remove, { 'nick' => 'bbkr' } ); # same
+    remove( single_remove => True, { 'nick' => 'bbkr' } ); # same
+
 
 ## FEATURE ROADMAP
 
