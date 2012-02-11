@@ -2,12 +2,9 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
+Requires [BSON 0.2+](https://github.com/bbkr/BSON).
 
-## VERSION
-
-This module is compatible with Rakudo 2011.09+
-and requires [BSON](https://github.com/bbkr/BSON "BSON 0.2+").
-
+Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) 2012.01+.
 
 ## SYNOPSIS
 
@@ -117,7 +114,7 @@ List of things you may expect in nearest future.
 * Error handler.
 * Database authentication.
 * Database or collection management (drop, create).
-* More stuff from [spec](http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements "Mongo Driver requirements").
+* More stuff from [Mongo Driver requirements](http://www.mongodb.org/display/DOCS/Mongo+Driver+Requirements).
 
 
 ## KNOWN LIMITATIONS
