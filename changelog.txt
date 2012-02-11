@@ -1,6 +1,6 @@
 0.3
 
-* Basic added to methods (upsert, multi_update, single_remove,...)
+* Basic flags added to methods (upsert, multi_update, single_remove,...)
 * Kill support for cursor.
 
 0.2
