@@ -8,14 +8,14 @@ has Str $.name is rw;
 
 submethod BUILD ( :$database, Str :$name ) {
 
-    $.database = $database;
+    $!database = $database;
 
     # TODO validate name
-    $.name = $name;
+    $!name = $name;
 }
 
 method insert (
-    *@documents where { +@documents and [&&]@documents>>.isa( Hash ) },
+    *@documents where { +@documents and [&&]( @documents>>.isa( Hash ) ) },
     Bool :$continue_on_error = False
 ) {
 

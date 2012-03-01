@@ -40,7 +40,7 @@ lives_ok {
     $cursor.kill();
 }, 'kill cursor';
 
-is ([+]$cursor.id.list), 0, 'cursor is killed';
+is ( [+]( $cursor.id.list ) ), 0, 'cursor is killed';
 
 lives_ok
 {
@@ -56,7 +56,7 @@ lives_ok {
     $cursor = $collection.find( number_to_return => 1 )
 }, 'initialize cursor for one document';
 
-is ([+]$cursor.id.list), 0, 'cursor for one document is closed automatically';
+is ( [+]( $cursor.id.list ) ), 0, 'cursor for one document is closed automatically';
 
 lives_ok
 {

@@ -12,20 +12,20 @@ has @.documents is rw;
 
 submethod BUILD ( :$collection, :%OP_REPLY ) {
 
-    $.collection = $collection;
+    $!collection = $collection;
 
     # assign cursorID
-    $.id = %OP_REPLY{ 'cursor_id' };
+    $!id = %OP_REPLY{ 'cursor_id' };
     
     # assign documents
-    @.documents = %OP_REPLY{ 'documents' }.list;
+    @!documents = %OP_REPLY{ 'documents' }.list;
 }
 
 method fetch ( ) {
 
     # there are no more documents in last response batch
     # but there is next batch to fetch from database
-    if not @.documents and [+]$.id.list {
+    if not @.documents and [+]( $.id.list ) {
 
         # request next batch of documents
         my %OP_REPLY = self.wire.OP_GETMORE( self );

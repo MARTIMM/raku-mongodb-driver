@@ -7,10 +7,10 @@ has Str $.name is rw;
 
 submethod BUILD ( :$connection, Str :$name ) {
 
-    $.connection = $connection;
+    $!connection = $connection;
 
     # TODO validate name
-    $.name = $name;
+    $!name = $name;
 }
 
 method collection ( Str $name ) {
