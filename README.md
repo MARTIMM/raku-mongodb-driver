@@ -147,6 +147,10 @@ List of things you may expect in nearest future.
 * 0.2- adapted to Rakudo NOM 2011.09+.
 * 0.1 - basic Proof-of-concept working on Rakudo 2011.07.
 
+##LICENSE
+
+Released under [Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0).
+
 ## CONTACT
 
 You can find me (and many awesome people who helped me to develop this module)
