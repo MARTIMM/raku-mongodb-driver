@@ -15,7 +15,7 @@ $collection.remove( );
 my (@documents, $cursor);
 
 # feed test data
-@documents.push( { 'foo' => $_} ) for ^128;
+@documents.push( $(%( 'foo' => $_ )) ) for ^128;
 $collection.insert( @documents );
 
 lives_ok {
