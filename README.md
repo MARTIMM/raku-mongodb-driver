@@ -23,8 +23,11 @@ Let's see what it can do...
 
 ### Insert documents into collection
 
+The declaration 'my %document1 = {...};' is deprecated since v2014.7 and will be
+removed with release v2015.7! Remove the curly brackets or replace with %(...).
+
 ```perl
-    my %document1 = {
+    my %document1 = %(
         'name'      => 'Paweł Pabian',
         'nick'      => 'bbkr',
         'versions'  => [ 5, 6 ],
@@ -33,14 +36,14 @@ Let's see what it can do...
             'Integer::Tiny' => 'http://search.cpan.org/perldoc?Integer%3A%3ATiny',
         },
         'IRC' => True,
-    };
+    );
     
-    my %document2 = {
+    my %document2 = %(
         'name' => 'Andrzej Cholewiusz',
         'nick' => 'andee',
         'versions' => [ 5 ],
         'IRC' => False,
-    };
+    );
 
     $collection.insert( %document1, %document2 );
 ```
