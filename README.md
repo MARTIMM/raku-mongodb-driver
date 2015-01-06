@@ -45,7 +45,10 @@ removed with release v2015.7! Remove the curly brackets or replace with %(...).
         'IRC' => False,
     );
 
-    $collection.insert( %document1, %document2 );
+    # Arguments get flattened out so the test will go wrong in .insert()
+    # Use {} round the documents to keep them apart
+    #
+    $collection.insert( {%document1}, {%document2} );
 ```
 
 Flags:
