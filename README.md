@@ -2,9 +2,15 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
-Requires [BSON 0.2+](https://github.com/bbkr/BSON).
+## ADOPT ME
 
-Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) 2012.01+.
+I am friendly module that looks for a new home along with my best friend [BSON](https://github.com/bbkr/BSON).
+
+My owner played with me for the last time in early 2012 and a lot has changed since then - both in Rakudo and Mongo spec itself.
+
+If you want to take care of me please leave comment under last commit.
+
+![Paw prints](http://emoji.fileformat.info/gemoji/feet.png)
 
 ## SYNOPSIS
 
