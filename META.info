@@ -1,6 +1,6 @@
 {
     "name" : "MongoDB",
-    "version" : "0.3",
+    "version" : "0.4",
     "description" : "MongoDB driver",
     "author" : "Pawel Pabian",
     "authority" : "bbkr",
