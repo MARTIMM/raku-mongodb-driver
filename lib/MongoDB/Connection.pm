@@ -20,7 +20,7 @@ method database ( Str $name ) {
 
 method send ( Buf $b, Bool $has_response ) {
 
-    $!sock.send( [~]( $b.list>>.chr ) );
+    $!sock.write( $b );
 
     # some calls do not expect response
     return unless $has_response;

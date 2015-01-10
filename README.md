@@ -2,6 +2,8 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
+Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) ~~2012.01+~~ 2014.12.1.
+
 ## ADOPT ME
 
 I am friendly module that looks for a new home along with my best friend [BSON](https://github.com/bbkr/BSON).
@@ -29,8 +31,11 @@ Let's see what it can do...
 
 ### Insert documents into collection
 
+The declaration 'my %document1 = {...};' is deprecated since v2014.7 and will be
+removed with release v2015.7! Remove the curly brackets or replace with %(...).
+
 ```perl
-    my %document1 = {
+    my %document1 = %(
         'name'      => 'Paweł Pabian',
         'nick'      => 'bbkr',
         'versions'  => [ 5, 6 ],
@@ -39,16 +44,35 @@ Let's see what it can do...
             'Integer::Tiny' => 'http://search.cpan.org/perldoc?Integer%3A%3ATiny',
         },
         'IRC' => True,
-    };
+    );
     
-    my %document2 = {
+    my %document2 = %(
         'name' => 'Andrzej Cholewiusz',
         'nick' => 'andee',
         'versions' => [ 5 ],
         'IRC' => False,
-    };
+    );
 
-    $collection.insert( %document1, %document2 );
+    # Arguments get flattened out so the test will go wrong in .insert()
+    # Use {} round the documents to keep them apart
+    #
+    $collection.insert( {%document1}, {%document2} );
+    
+    # Also possible
+    my %document3 =
+      'name' => 'Pietje Bell',
+      'nick' => 'pb',
+      'versions' => [ 4 ],
+      'IRC' => False,
+      ;
+
+    $collection.insert( $%document3,
+                        $%( 'name' => 'Jan Klaassen',
+                            'nick' => 'jk',
+                            'versions' => [ 3, 4 ],
+                            'IRC' => False,
+                          )
+                      );
 ```
 
 Flags:

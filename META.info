@@ -1,8 +1,8 @@
 {
     "name" : "MongoDB",
-    "version" : "0.3",
+    "version" : "0.5",
     "description" : "MongoDB driver",
-    "author" : "Pawel Pabian",
+    "author" : "Pawel Pabian, changes by Marcel Timmerman",
     "authority" : "bbkr",
     "depends" : [ "BSON" ],
     "source-url" : "git://github.com/bbkr/mongo-perl6-driver.git"
