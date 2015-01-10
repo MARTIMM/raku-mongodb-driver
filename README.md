@@ -49,6 +49,22 @@ removed with release v2015.7! Remove the curly brackets or replace with %(...).
     # Use {} round the documents to keep them apart
     #
     $collection.insert( {%document1}, {%document2} );
+    
+    # Also possible
+    my %document3 =
+      'name' => 'Pietje Bell',
+      'nick' => 'pb',
+      'versions' => [ 4 ],
+      'IRC' => False,
+      ;
+
+    $collection.insert( $%document3,
+                        $%( 'name' => 'Jan Klaassen',
+                            'nick' => 'jk',
+                            'versions' => [ 3, 4 ],
+                            'IRC' => False,
+                          )
+                      );
 ```
 
 Flags:
