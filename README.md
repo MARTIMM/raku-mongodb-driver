@@ -2,10 +2,6 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
-Requires [BSON 0.2+](https://github.com/bbkr/BSON).
-
-Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) ~~2012.01+~~ 2014.12.1.
-
 ## SYNOPSIS
 
 Let's see what it can do...
