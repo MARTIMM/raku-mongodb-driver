@@ -4,6 +4,16 @@
 
 Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) ~~2012.01+~~ 2014.12.1.
 
+## ADOPT ME
+
+I am friendly module that looks for a new home along with my best friend [BSON](https://github.com/bbkr/BSON).
+
+My owner played with me for the last time in early 2012 and a lot has changed since then - both in Rakudo and Mongo spec itself.
+
+If you want to take care of me please leave comment under last commit.
+
+![Paw prints](http://emoji.fileformat.info/gemoji/feet.png)
+
 ## SYNOPSIS
 
 Let's see what it can do...
@@ -162,7 +172,6 @@ List of things you may expect in nearest future.
 
 ## CHANGELOG
 
-* 0.5 - 2015.01.10 compatibility fixes for Rakudo Star 2014.12.1
 * 0.4 - compatibility fixes for Rakudo Star 2012.02
 * 0.3 - basic flags added to methods (upsert, multi_update, single_remove,...), kill support for cursor
 * 0.2- adapted to Rakudo NOM 2011.09+.
