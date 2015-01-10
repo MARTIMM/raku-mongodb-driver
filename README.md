@@ -4,7 +4,7 @@
 
 Requires [BSON 0.2+](https://github.com/bbkr/BSON).
 
-Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) 2012.01+.
+Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) ~~2012.01+~~ 2014.12.1.
 
 ## SYNOPSIS
 
