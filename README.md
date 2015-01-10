@@ -2,6 +2,8 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
+Compatible with Perl 6 [Rakudo Star](http://rakudo.org/) ~~2012.01+~~ 2014.12.1.
+
 ## SYNOPSIS
 
 Let's see what it can do...
@@ -160,6 +162,7 @@ List of things you may expect in nearest future.
 
 ## CHANGELOG
 
+* 0.5 - 2015.01.10 compatibility fixes for Rakudo Star 2014.12.1
 * 0.4 - compatibility fixes for Rakudo Star 2012.02
 * 0.3 - basic flags added to methods (upsert, multi_update, single_remove,...), kill support for cursor
 * 0.2- adapted to Rakudo NOM 2011.09+.
