@@ -1,4 +1,4 @@
-use BSON;
+use BSON:ver<0.3.0+>;
 
 class MongoDB::Wire is BSON;
 

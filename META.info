@@ -1,9 +1,19 @@
 {
-    "name" : "MongoDB",
-    "version" : "0.5",
-    "description" : "MongoDB driver",
-    "author" : "Pawel Pabian, changes by Marcel Timmerman",
-    "authority" : "bbkr",
-    "depends" : [ "BSON" ],
-    "source-url" : "git://github.com/bbkr/mongo-perl6-driver.git"
+    "author": "Pawel Pabian (2011-2015), Marcel Timmerman (2015-present)",
+    "depends": [
+        "BSON"
+    ],
+    "description": "MongoDB driver",
+    "name": "MongoDB",
+    "provides": {
+        "MongoDB": "lib/MongoDB.pm",
+        "MongoDB::Collection": "lib/MongoDB/Collection.pm",
+        "MongoDB::Connection": "lib/MongoDB/Connection.pm",
+        "MongoDB::Cursor": "lib/MongoDB/Cursor.pm",
+        "MongoDB::DataBase": "lib/MongoDB/DataBase.pm",
+        "MongoDB::Protocol": "lib/MongoDB/Protocol.pm",
+        "MongoDB::Wire": "lib/MongoDB/Wire.pm"
+    },
+    "source-url": "git://github.com/bbkr/mongo-perl6-driver.git",
+    "version": "0.6.0"
 }
