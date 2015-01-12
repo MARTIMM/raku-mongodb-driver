@@ -163,17 +163,23 @@ List of things you may expect in nearest future.
 ## CHANGELOG
 
 * 0.6.0 - switched to semantic versioning
+* 0.5 - compatibility fixes for Rakudo Star 2014.12
 * 0.4 - compatibility fixes for Rakudo Star 2012.02
 * 0.3 - basic flags added to methods (upsert, multi_update, single_remove,...), kill support for cursor
 * 0.2- adapted to Rakudo NOM 2011.09+.
 * 0.1 - basic Proof-of-concept working on Rakudo 2011.07.
 
-##LICENSE
+## LICENSE
 
 Released under [Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0).
 
+## AUTHOR
+
+Original creator of the modules is Pawel Pabian (2011-2015)(bbkr on github)
+Current maintainer Marcel Timmerman (2015-present)
+
 ## CONTACT
 
-You can find me (and many awesome people who helped me to develop this module)
-on irc.freenode.net #perl6 channel as **bbkr**.
+MARTIMM on github
+
 

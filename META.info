@@ -14,6 +14,6 @@
         "MongoDB::Protocol": "lib/MongoDB/Protocol.pm",
         "MongoDB::Wire": "lib/MongoDB/Wire.pm"
     },
-    "source-url": "git://github.com/bbkr/mongo-perl6-driver.git",
+    "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
     "version": "0.6.0"
 }
