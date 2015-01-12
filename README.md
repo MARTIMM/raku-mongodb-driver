@@ -21,10 +21,10 @@ Let's see what it can do...
 
 ### Insert documents into collection
 
-The declaration 'my %document1 = {...};' is deprecated since v2014.7 and will be
-removed with release v2015.7! Remove the curly brackets or replace with %(...).
-
 ```perl
+    # The declaration 'my %document1 = {...};' is deprecated since v2014.7
+    # and will be removed with release v2015.7! Remove the curly brackets
+    #  or replace with %(...).
     my %document1 = %(
         'name'      => 'Paweł Pabian',
         'nick'      => 'bbkr',
@@ -43,25 +43,23 @@ removed with release v2015.7! Remove the curly brackets or replace with %(...).
         'IRC' => False,
     );
 
-    # Arguments get flattened out so the test will go wrong in .insert()
-    # Use {} round the documents to keep them apart
-    #
-    $collection.insert( {%document1}, {%document2} );
-    
-    # Also possible
     my %document3 =
       'name' => 'Pietje Bell',
       'nick' => 'pb',
-      'versions' => [ 4 ],
-      'IRC' => False,
       ;
 
-    $collection.insert( $%document3,
+    # Five ways to insert a document. The first and last was for version before
+    # 0.5 and later than 0.6.0. The rest works for all versions above 4.0.
+    #
+    $collection.insert( %document2,
+                        {%document1},
+                        $%document3,
                         $%( 'name' => 'Jan Klaassen',
                             'nick' => 'jk',
-                            'versions' => [ 3, 4 ],
-                            'IRC' => False,
-                          )
+                          ),
+                        %( 'name' => 'Piet Hein',
+                           'nick' => 'ph',
+                         )
                       );
 ```
 

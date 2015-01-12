@@ -15,8 +15,12 @@ $collection.remove( );
 my (@documents, $cursor);
 
 # feed test data
-@documents.push( $(%( 'foo' => $_ )) ) for ^128;
-$collection.insert( @documents );
+$@documents.push( %( 'foo' => $_ ) ) for ^128;
+say "D type: ", @documents.WHAT;
+say "D 0 type: ", @documents[0].WHAT;
+#say "D perl: ", @documents.perl;
+
+$collection.insert( $@documents );
 
 lives_ok {
     $cursor = $collection.find( )

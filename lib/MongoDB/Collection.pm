@@ -13,9 +13,9 @@ submethod BUILD ( :$database, Str :$name ) {
     # TODO validate name
     $!name = $name;
 }
-
+ 
 method insert (
-    *@documents where { +@documents and [&&]( @documents>>.isa( Hash ) ) },
+    **@documents where { +@documents and [&&]( @documents>>.isa( Hash ) ) },
     Bool :$continue_on_error = False
 ) {
 
