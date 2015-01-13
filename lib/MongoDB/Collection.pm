@@ -13,15 +13,31 @@ submethod BUILD ( :$database, Str :$name ) {
     # TODO validate name
     $!name = $name;
 }
- 
-method insert (
-    **@documents where { +@documents and [&&]( @documents>>.isa( Hash ) ) },
-    Bool :$continue_on_error = False
-) {
+
+method insert ( **@documents, Bool :$continue_on_error = False ) {
 
     my $flags = +$continue_on_error;
-        
-    self.wire.OP_INSERT( self, $flags, @documents );
+
+    my @docs;
+    if @documents.isa(LoL) {
+      if @documents[0].isa(Array) and [&&] @documents[0].list>>.isa(Hash) {
+        @docs = @documents[0].list;
+      }
+
+      elsif @documents.list>>.isa(Hash) {
+        @docs = @documents.list;
+      }
+
+      else {
+        die "Error: Document type not handled by insert";
+      }
+    }
+    
+    else {
+      die "Error: Document type not handled by insert";
+    }
+    
+    self.wire.OP_INSERT( self, $flags, @docs );
 }
 
 method find (
