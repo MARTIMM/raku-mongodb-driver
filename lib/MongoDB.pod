@@ -1,0 +1,55 @@
+=begin pod
+
+=head1 NAME MongoDB - Access MongoDB server
+
+=head1 SYNOPSIS
+
+=begin code
+
+use MongoDB;
+
+# Initialize
+#
+my $connection = MongoDB::Connection.new( );
+my $database   = $connection.database( 'test' );
+my $collection = $database.collection( 'perl_users' );
+
+# Insert documents
+#
+$collection.insert( %(name => 'Piet Hein', nick => 'ph')
+                  , %(name => 'Pietje Bell', nick => 'pb')
+                  );
+
+# Update any document
+#
+$collection.update( {}, {$set => {company => 'Dutch Corners'}});
+
+# Update a specific document, watchout for the MongoDB commands which uses $'s
+#
+$collection.update( {nick => 'ph'}, {'$set' => { company => 'Dutch Corners'}});
+
+=end code
+
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=head1 CONFIGURATION
+
+=head1 DEPENDENCIES
+
+=head1 BUGS
+
+=head1 AUTHORS
+
+=begin output
+
+Pawel Pabian - Creator of the modules until january 2015
+Marcel Timmerman - Maintainer since january 2015 (MARTIMM on github)
+
+=end output
+
+=head1 LICENSE AND COPYRIGHT
+
+=end pod
