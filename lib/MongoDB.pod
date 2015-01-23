@@ -187,6 +187,8 @@ Marcel Timmerman - Maintainer since january 2015 (MARTIMM on github)
 
 =head1 LICENSE AND COPYRIGHT
 
+Released under [Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0).
+
 =end pod
 
 #http://unicode-table.com/en/026B/
