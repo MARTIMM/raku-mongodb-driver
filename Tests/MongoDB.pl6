@@ -6,7 +6,6 @@
 use MongoDB:ver<0.6.1>;
 
 my $connection = MongoDB::Connection.new( :host('localhost'), :port(27017));
-#my $connection = MongoDB::Connection.new( :host('localhost'), :port(27017));
 my $database   = $connection.database( 'test');
 my $collection = $database.collection( 'perl_users');
 
@@ -30,8 +29,6 @@ my $document2 = %(
 
 $collection.insert( :continue_on_error(False), {%document1}, $document2);
 
-if 1
-{
 my %document3 =
   'name' => 'Pietje Bell',
   'nick' => 'pb',
@@ -47,7 +44,6 @@ $collection.insert( $%document3,
                        'nick' => 'ph',
                      )
                   );
-}
 
 my @docs = $%( name => 'n1', p => 10), $%( name => 'n2', q => 11);
 $collection.insert(@docs);
