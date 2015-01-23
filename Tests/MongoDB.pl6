@@ -21,14 +21,14 @@ my %document1 = %(
   'IRC' => True,
 );
 
-my %document2 = %(
+my $document2 = %(
   'name' => 'Andrzej Cholewiusz',
   'nick' => 'andee',
   'versions' => [ 5 ],
   'IRC' => False,
 );
 
-$collection.insert( :continue_on_error(False), %document1, {%document2});
+$collection.insert( :continue_on_error(False), {%document1}, $document2);
 
 if 1
 {
@@ -49,20 +49,38 @@ $collection.insert( $%document3,
                   );
 }
 
-my @docs = $%( 'name' => 'n1', p => 10), $%( 'name' => 'n2', q => 11);
+my @docs = $%( name => 'n1', p => 10), $%( name => 'n2', q => 11);
 $collection.insert(@docs);
 
 
+# Update Piet Hein
+#
+$collection.update( {nick => 'ph'}, {'$set' => { company => 'Dutch Corners'}});
+$collection.update( {name => 'n1'}, {'$inc' => { p => 12}});
+$collection.update( :upsert, {name => 'n3'}, {'$set' => { p => 12}});
 
-my $cursor = $collection.find( );
-say "Find cursor type: ", $cursor.WHAT;
+# Find once
+#
+show-documents($collection.find({nick => 'ph'}));
 
-while $cursor.fetch( ) -> %document
+# Find all
+#
+show-documents($collection.find());
+
+# Remove all documents.
+#
+say '-' x 80;
+$collection.remove();
+
+#-------------------------------------------------------------------------------
+#
+sub show-documents ( $cursor )
 {
-  say "\nDocument:";
-  for %document.keys -> $k
+  say '-' x 80;
+  while $cursor.fetch() -> %document
   {
-    say "    ", $k, ', ', %document{$k};
+    say "Document:";
+    say sprintf( "    %10.10s: %s", $_, %document{$_}) for %document.keys;
+    say "";
   }
 }
-
