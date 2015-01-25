@@ -11,7 +11,7 @@ has Int $.request_id is rw = 0;
 # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
 has %.op_codes = (
     'OP_REPLY'          => 1,       # Reply to a client request. responseTo is set
-    'OP_MSG'            => 1000,    # generic msg command followed by a string
+    'OP_MSG'            => 1000,    # generic msg command followed by a string. depricated
     'OP_UPDATE'         => 2001,    # update document
     'OP_INSERT'         => 2002,    # insert new document
     'RESERVED'          => 2003,    # formerly used for OP_GET_BY_OID
@@ -105,35 +105,47 @@ method OP_INSERT ( $collection, Int $flags, *@documents ) {
     $collection.database.connection.send( $msg_header ~ $OP_INSERT, False );
 }
 
-method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return, %query ) {
+method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
+                  %query, %return_field_selector
+                ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
     my Buf $OP_QUERY =
 
         # int32 flags
         # bit vector of query options
+        #
         self._int32( $flags )
 
         # cstring fullCollectionName
         # "dbname.collectionname"
+        #
         ~ self._cstring( join '.', $collection.database.name, $collection.name )
 
         # int32 numberToSkip
         # number of documents to skip
+        #
         ~ self._int32( $number_to_skip )
 
         # int32 numberToReturn
         # number of documents to return
         # in the first OP_REPLY batch
+        #
         ~ self._int32( $number_to_return )
 
         # document query
         # query object
-        ~ self._document( %query );
-
-    # TODO
+        #
+        ~ self._document( %query )
+        ;
+        
     # [ document  returnFieldSelector; ]
-    # Selector indicating the fields to return
+    # Optional. Selector indicating the fields to return
+    #
+    if %return_field_selector.keys {
+        $OP_QUERY ~= self._document(%return_field_selector);
+    }
+
 
     # MsgHeader header
     # standard message header
