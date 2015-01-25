@@ -76,9 +76,15 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
   * [x] Convert all strings to UTF-8. This is inherent to perl6. Everything is
         UTF8 and conversion to buffers is by using encode and decode.
   * [x] Automatic _id generation
-  * [x] find/query
+  * [x] find()
+    * [x] %criteria (Search criteria)
+    * [x] %projection (Field selection)
+    * [x] Int :$number_to_skip = 0
+    * [x] Int :$number_to_return = 0
+    * [x] Bool :$no_cursor_timeout = False
+  * [ ] Cursors
     * [x] full cursor support (e.g. support OP_GET_MORE operation)
-    * [x] Sending the KillCursors operation when use of a cursor has completed.
+    * [ ] Sending the KillCursors operation when use of a cursor has completed.
           For efficiency, send these in batches.
     * [ ] Cursor methods
     * [ ] $where
@@ -87,11 +93,13 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
   * [x] update
     * [x] upsert
     * [x] update commands like $inc and $push
-  * [x] remove/delete
+  * [x] remove
   * [ ] ensureIndex commands should be cached to prevent excessive communication
         with the database. Or, the driver user should be informed that
         ensureIndex is not a lightweight operation for the particular driver.
-  * [ ] findOne
+  * [*] find_one()
+    * [x] %criteria (Search criteria)
+    * [x] %projection (Field selection)
   * [ ] limit
   * [ ] sort
   * [ ] count()
@@ -369,6 +377,7 @@ command documentation also includes the relevant mongo shell helpers.
 
 ## CHANGELOG
 
+* 0.7.1 - find extended with return_field_selector
 * 0.6.1 - add tests for insert(@docs)
 * 0.6.0 - switched to semantic versioning
 * 0.5 - compatibility fixes for Rakudo Star 2014.12

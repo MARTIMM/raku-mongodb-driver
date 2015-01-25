@@ -5,9 +5,9 @@
 use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib';
 use MongoDB:ver<0.6.1>;
 
-my $connection = MongoDB::Connection.new( :host('localhost'), :port(27017));
-my $database   = $connection.database( 'test');
-my $collection = $database.collection( 'perl_users');
+my MongoDB::Connection $connection .= new( :host('localhost'), :port(27017));
+my MongoDB::Database $database = $connection.database( 'test');
+my MongoDB::Collection $collection = $database.collection( 'perl_users');
 
 my %document1 = %(
   'name'      => 'Paweł Pabian',

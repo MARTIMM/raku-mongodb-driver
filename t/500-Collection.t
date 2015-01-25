@@ -60,9 +60,9 @@ exit(0);
 # Check one document for its fields. Something like {code => 1, nofield => 0}
 # use find()
 #
-sub check-document1 ( $query, %field-list, %return_field_selector = { })
+sub check-document1 ( $criteria, %field-list, %projection = { })
 {
-  my $cursor = $collection.find( $query, %return_field_selector);
+  my $cursor = $collection.find( $criteria, %projection);
   while $cursor.fetch() -> %document {
     for %field-list.keys -> $k {
       if %field-list{$k} {
@@ -82,9 +82,9 @@ sub check-document1 ( $query, %field-list, %return_field_selector = { })
 # Check one document for its fields. Something like {code => 1, nofield => 0}
 # use find_one()
 #
-sub check-document2 ( $query, %field-list, %return_field_selector = { })
+sub check-document2 ( $criteria, %field-list, %projection = { })
 {
-  my %document = %($collection.find_one( $query, %return_field_selector));
+  my %document = %($collection.find_one( $criteria, %projection));
   if %document.keys {
     for %field-list.keys -> $k {
       if %field-list{$k} {
