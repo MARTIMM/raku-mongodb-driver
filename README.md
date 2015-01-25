@@ -105,13 +105,15 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
 
 
 
-## List of database commands
+## List of commands
 
-Another list is shown on the [MongoDB site](http://docs.mongodb.org/manual/reference/command)
-This list is shown below. Again, I might not be able to implement all commands
-or that some of those commands are given on other levels. I need to investigate
-that. In time the items from the list will be moved to the first list or
-removed completely. So below is the page as is shown on the site;
+Other list are shown on the MongoDB site
+[here](http://docs.mongodb.org/manual/reference/command) and
+[here](http://docs.mongodb.org/manual/reference/method/js-collection/). This
+list is shown below. Again, I might not be able to implement all commands or
+that some of those commands are given on other levels. I need to investigate
+that. In time the items from the list will be moved to the first list or removed
+completely. So below is the page as is shown on the site;
 
 All command documentation outlined below describes a command and its available
 parameters and provides a document template or prototype for each command. Some
@@ -320,7 +322,40 @@ command documentation also includes the relevant mongo shell helpers.
 
 * [ ] logApplicationMessage. Posts a custom message to the audit log.
 
+### Collection Methods
 
+* [ ] db.collection.aggregate(). Provides access to the aggregation pipeline.
+* [ ] db.collection.copyTo(). Wraps eval to copy data between collections in a single MongoDB instance.
+* [ ] db.collection.count(). Wraps count to return a count of the number of documents in a collection or matching a query.
+* [ ] db.collection.createIndex(). Builds an index on a collection. Use db.collection.ensureIndex().
+* [ ] db.collection.dataSize(). Returns the size of the collection. Wraps the size field in the output of the collStats.
+* [ ] db.collection.distinct(). Returns an array of documents that have distinct values for the specified field.
+* [ ] db.collection.drop(). Removes the specified collection from the database.
+* [ ] db.collection.dropIndex(). Removes a specified index on a collection.
+* [ ] db.collection.dropIndexes(). Removes all indexes on a collection.
+* [ ] db.collection.ensureIndex(). Creates an index if it does not currently exist. If the index exists ensureIndex() does nothing.
+* [ ] db.collection.find(). Performs a query on a collection and returns a cursor object.
+* [ ] db.collection.findAndModify(). Atomically modifies and returns a single document.
+* [ ] db.collection.findOne(). Performs a query and returns a single document.
+* [ ] db.collection.getIndexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
+* [ ] db.collection.getIndexes(). Returns an array of documents that describe the existing indexes on a collection.
+* [ ] db.collection.getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
+* [ ] db.collection.getShardVersion(). Internal diagnostic method for shard cluster.
+* [ ] db.collection.group(). Provides simple data aggregation function. Groups documents in a collection by a key, and processes the results. Use aggregate() for more complex data aggregation.
+* [ ] db.collection.indexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
+* [ ] db.collection.insert(). Creates a new document in a collection.
+* [ ] db.collection.isCapped(). Reports if a collection is a capped collection.
+* [ ] db.collection.mapReduce(). Performs map-reduce style data aggregation.
+* [ ] db.collection.reIndex(). Rebuilds all existing indexes on a collection.
+* [ ] db.collection.remove(). Deletes documents from a collection.
+* [ ] db.collection.renameCollection(). Changes the name of a collection.
+* [ ] db.collection.save(). Provides a wrapper around an insert() and update() to insert new documents.
+* [ ] db.collection.stats(). Reports on the state of a collection. Provides a wrapper around the collStats.
+* [ ] db.collection.storageSize(). Reports the total size used by the collection in bytes. Provides a wrapper around the storageSize field of the collStats output.
+* [ ] db.collection.totalIndexSize(). Reports the total size used by the indexes on a collection. Provides a wrapper around the totalIndexSize field of the collStats output.
+* [ ] db.collection.totalSize(). Reports the total size of a collection, including the size of all documents and all indexes on a collection.
+* [ ] db.collection.update(). Modifies a document in a collection.
+* [ ] db.collection.validate(). Performs diagnostic operations on a collection.
 
 
 ## KNOWN LIMITATIONS

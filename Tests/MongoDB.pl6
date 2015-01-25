@@ -2,7 +2,7 @@
 #
 # Test version
 #
-#use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib';
+use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib';
 use MongoDB:ver<0.6.1>;
 
 my $connection = MongoDB::Connection.new( :host('localhost'), :port(27017));
@@ -54,6 +54,10 @@ $collection.insert(@docs);
 $collection.update( {nick => 'ph'}, {'$set' => { company => 'Dutch Corners'}});
 $collection.update( {name => 'n1'}, {'$inc' => { p => 12}});
 $collection.update( :upsert, {name => 'n3'}, {'$set' => { p => 12}});
+$collection.update( :upsert ,
+                   {name => 'n4'} ,
+                   { '$currentDate' => {'date' => {'$type' => 'timestamp'}}}
+                  );
 
 # Find once
 #
