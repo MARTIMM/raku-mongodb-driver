@@ -1,8 +1,8 @@
-module MongoDB:ver<0.6.1>;
+module MongoDB:ver<0.7.1>;
 
 use MongoDB::Wire;
 
 use MongoDB::Connection;
-use MongoDB::DataBase;
+use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Cursor;

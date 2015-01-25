@@ -56,6 +56,13 @@ method find (
     );
 }
 
+method find_one (
+    %query = { },
+    %projection = { },
+) {
+
+}
+
 method update (
     %selector, %update,
     Bool :$upsert = False, Bool :$multi_update = False

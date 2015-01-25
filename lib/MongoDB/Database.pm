@@ -1,6 +1,6 @@
 use MongoDB::Collection;
 
-class MongoDB::DataBase;
+class MongoDB::Database;
 
 has $.connection is rw;
 has Str $.name is rw;

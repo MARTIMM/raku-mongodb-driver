@@ -1,5 +1,5 @@
 use MongoDB::Protocol;
-use MongoDB::DataBase;
+use MongoDB::Database;
 
 class MongoDB::Connection does MongoDB::Protocol;
 
@@ -12,7 +12,7 @@ submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
 
 method database ( Str $name ) {
 
-    return MongoDB::DataBase.new(
+    return MongoDB::Database.new(
         connection  => self,
         name        => $name,
     );
