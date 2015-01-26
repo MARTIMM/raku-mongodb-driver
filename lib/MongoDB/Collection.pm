@@ -14,7 +14,7 @@ submethod BUILD ( :$database, Str :$name ) {
     $!name = $name;
 }
 
-method insert ( **@documents, Bool :$continue_on_error = False ) {
+method insert ( **@documents, Bool :$continue_on_error = False --> Nil ) {
 
     my $flags = +$continue_on_error;
 
@@ -38,6 +38,8 @@ method insert ( **@documents, Bool :$continue_on_error = False ) {
     }
 
     self.wire.OP_INSERT( self, $flags, @docs );
+    
+    return;
 }
 
 method find (
@@ -60,7 +62,7 @@ method find (
     );
 }
 
-method find_one ( %criteria = { }, %projection = { } --> Hash) {
+method find_one ( %criteria = { }, %projection = { } --> Hash ) {
 
     my MongoDB::Cursor $cursor = self.find( %criteria, %projection
                                           , :number_to_return(1)
@@ -71,20 +73,26 @@ method find_one ( %criteria = { }, %projection = { } --> Hash) {
 method update (
     %selector, %update,
     Bool :$upsert = False, Bool :$multi_update = False
+    --> Nil
 ) {
 
     my $flags = +$upsert
         + +$multi_update +< 1;
 
     self.wire.OP_UPDATE( self, $flags, %selector, %update );
+    
+    return;
 }
 
 method remove (
     %selector = { },
     Bool :$single_remove = False
+    --> Nil
 ) {
 
     my $flags = +$single_remove;
 
     self.wire.OP_DELETE( self, $flags, %selector );
+    
+    return;
 }
