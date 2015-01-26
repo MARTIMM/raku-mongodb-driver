@@ -1,4 +1,4 @@
-module MongoDB:ver<0.7.2>;
+module MongoDB:ver<0.7.3>;
 
 use MongoDB::Wire;
 
