@@ -75,20 +75,34 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
 * [ ] Basic operations on collections
   * [x] Convert all strings to UTF-8. This is inherent to perl6. Everything is
         UTF8 and conversion to buffers is by using encode and decode.
-  * [x] Automatic _id generation
+  * [x] Automatic _id generation.
   * [x] find()
     * [x] %criteria (Search criteria)
     * [x] %projection (Field selection)
     * [x] Int :$number_to_skip = 0
     * [x] Int :$number_to_return = 0
     * [x] Bool :$no_cursor_timeout = False
+    * [ ] Tests
+      * [x] exact matching, implicit AND.
+      * [ ] $lt, $lte, $gt, $gte, $ne
+      * [ ] $in, $nin, $or, $not
+      * [ ] null
+      * [ ] regular expressions
+      * [ ] arrays, $all, $size, $slice
+      * [ ] embedded docs, $elemMatch
+      * [ ] $where
   * [ ] Cursors
     * [x] full cursor support (e.g. support OP_GET_MORE operation)
     * [ ] Sending the KillCursors operation when use of a cursor has completed.
           For efficiency, send these in batches.
     * [ ] Cursor methods
-    * [ ] $where
     * [ ] Tailable cursor support
+    * [ ] has_next()
+    * [x] next() == fetch()
+    * [ ] for_each()
+    * [ ] sort()
+    * [ ] limit()
+    * [ ] skip()
   * [x] insert
   * [x] update
     * [x] upsert
@@ -97,7 +111,7 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
   * [ ] ensureIndex commands should be cached to prevent excessive communication
         with the database. Or, the driver user should be informed that
         ensureIndex is not a lightweight operation for the particular driver.
-  * [*] find_one()
+  * [x] find_one()
     * [x] %criteria (Search criteria)
     * [x] %projection (Field selection)
   * [ ] limit
