@@ -131,8 +131,8 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
 
 Other list are shown on the MongoDB site
 [here](http://docs.mongodb.org/manual/reference/command) and
-[here](http://docs.mongodb.org/manual/reference/method/js-collection/). This
-list is shown below. Again, I might not be able to implement all commands or
+[here](http://docs.mongodb.org/manual/reference/method/js-collection/). These
+lists are shown below. Again, I might not be able to implement all commands or
 that some of those commands are given on other levels. I need to investigate
 that. In time the items from the list will be moved to the first list or removed
 completely. So below is the page as is shown on the site;
