@@ -19,7 +19,7 @@ method database ( Str $name --> MongoDB::Database ) {
     );
 }
 
-method send ( Buf $b, Bool $has_response ) {
+method send ( Buf $b, Bool $has_response --> Any ) {
 
     $!sock.write( $b );
 
@@ -27,8 +27,8 @@ method send ( Buf $b, Bool $has_response ) {
     return unless $has_response;
 
     # check response size
-    my $l = $!sock.read( 4 );
-    my $w = self.wire._int32( $l.list ) - 4;
+    my Buf $l = $!sock.read( 4 );
+    my Int $w = self.wire._int32( $l.list ) - 4;
 
     # receive remaining response bytes from socket
     return $l ~ $!sock.read( $w );
