@@ -21,7 +21,7 @@ has %.op_codes = (
     'OP_KILL_CURSORS'   => 2007,    # Tell database client is done with a cursor
 );
 
-multi method _msg_header ( Int $length, Str $op_code ) {
+multi method _msg_header ( Int $length, Str $op_code --> Buf ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
     # struct MsgHeader
@@ -47,7 +47,7 @@ multi method _msg_header ( Int $length, Str $op_code ) {
     return $msg_header;
 }
 
-multi method _msg_header ( Array $a ) {
+multi method _msg_header ( Array $a --> Hash ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
     # struct MsgHeader
@@ -78,7 +78,7 @@ multi method _msg_header ( Array $a ) {
     return %msg_header;
 }
 
-method OP_INSERT ( $collection, Int $flags, *@documents ) {
+method OP_INSERT ( $collection, Int $flags, *@documents --> Nil ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
 
     my Buf $OP_INSERT =
@@ -107,6 +107,7 @@ method OP_INSERT ( $collection, Int $flags, *@documents ) {
 
 method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
                   %query, %return_field_selector
+                  --> Hash
                 ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
@@ -167,7 +168,7 @@ method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
     return %OP_REPLY;
 }
 
-method OP_GETMORE ( $cursor ) {
+method OP_GETMORE ( $cursor --> Hash ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPGETMORE
 
     my Buf $OP_GETMORE =
@@ -211,7 +212,7 @@ method OP_GETMORE ( $cursor ) {
     return %OP_REPLY;
 }
 
-method OP_KILL_CURSORS ( *@cursors ) {
+method OP_KILL_CURSORS ( *@cursors --> Nil ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPKILLCURSORS
     
     my Buf $OP_KILL_CURSORS =
@@ -238,7 +239,7 @@ method OP_KILL_CURSORS ( *@cursors ) {
     @cursors[0].collection.database.connection.send( $msg_header ~ $OP_KILL_CURSORS, False );
 }
 
-method OP_UPDATE ( $collection, Int $flags, %selector, %update ) {
+method OP_UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPUPDATE
 
     my Buf $OP_UPDATE =
@@ -271,7 +272,7 @@ method OP_UPDATE ( $collection, Int $flags, %selector, %update ) {
     $collection.database.connection.send( $msg_header ~ $OP_UPDATE, False );
 }
 
-method OP_DELETE ( $collection, Int $flags, %selector ) {
+method OP_DELETE ( $collection, Int $flags, %selector --> Nil ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
 
     my Buf $OP_DELETE =
@@ -300,7 +301,7 @@ method OP_DELETE ( $collection, Int $flags, %selector ) {
     $collection.database.connection.send( $msg_header ~ $OP_DELETE, False );
 }
 
-method OP_REPLY ( Buf $b ) {
+method OP_REPLY ( Buf $b --> Hash ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
 
     my $a = $b.list;
@@ -347,7 +348,7 @@ method OP_REPLY ( Buf $b ) {
     return %OP_REPLY;
 }
 
-multi method _nyi ( Array $a, Int $length ) {
+multi method _nyi ( Array $a, Int $length --> Buf ) {
     # fetch given amount of bytes from Array and return as Buffer
     # mostly used to jump over not yet implemented decoding
 

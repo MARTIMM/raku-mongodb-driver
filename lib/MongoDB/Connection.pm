@@ -8,9 +8,10 @@ has IO::Socket::INET $!sock;
 submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
 
     $!sock = IO::Socket::INET.new( host => $host, port => $port );
+#    $!sock = IO::Socket::INET.new( host => "$host/?connectTimeoutMS=3000", port => $port );
 }
 
-method database ( Str $name ) {
+method database ( Str $name --> MongoDB::Database ) {
 
     return MongoDB::Database.new(
         connection  => self,

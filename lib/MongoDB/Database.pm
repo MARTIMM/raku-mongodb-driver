@@ -13,7 +13,7 @@ submethod BUILD ( :$connection, Str :$name ) {
     $!name = $name;
 }
 
-method collection ( Str $name ) {
+method collection ( Str $name --> MongoDB::Collection ) {
 
     return MongoDB::Collection.new(
         database    => self,

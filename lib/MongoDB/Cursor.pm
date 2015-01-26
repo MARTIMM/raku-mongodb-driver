@@ -21,7 +21,7 @@ submethod BUILD ( :$collection, :%OP_REPLY ) {
     @!documents = %OP_REPLY{ 'documents' }.list;
 }
 
-method fetch ( ) {
+method fetch ( --> Any ) {
 
     # there are no more documents in last response batch
     # but there is next batch to fetch from database
@@ -41,11 +41,13 @@ method fetch ( ) {
     return @.documents.shift;
 }
 
-method kill ( ) {
+method kill ( --> Nil ) {
 
     # invalidate cursor on database
     self.wire.OP_KILL_CURSORS( self );
     
     # invalidate cursor id
     $.id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 );
+
+    return;
 }

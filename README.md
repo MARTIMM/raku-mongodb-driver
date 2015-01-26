@@ -391,6 +391,7 @@ command documentation also includes the relevant mongo shell helpers.
 
 ## CHANGELOG
 
+* 0.7.2 - extended signatures for return values
 * 0.7.1 - find extended with return_field_selector
 * 0.6.1 - add tests for insert(@docs)
 * 0.6.0 - switched to semantic versioning

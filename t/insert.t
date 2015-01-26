@@ -1,5 +1,3 @@
-BEGIN { @*INC.unshift( 'lib' ) }
-
 use Test;
 use MongoDB;
 

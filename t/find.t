@@ -1,9 +1,5 @@
-BEGIN { @*INC.unshift( 'lib' ) }
-
 use Test;
 use MongoDB;
-
-plan( 9 );
 
 my $connection = MongoDB::Connection.new;
 my $database = $connection.database( 'test' );
@@ -40,6 +36,9 @@ lives_ok {
     $cursor.kill();
 }, 'kill cursor';
 
+#done();
+#exit(1);
+
 is ( [+]( $cursor.id.list ) ), 0, 'cursor is killed';
 
 lives_ok
@@ -67,3 +66,8 @@ lives_ok
 }, 'fetch one document';
 
 # TODO compare documents
+
+#-------------------------------------------------------------------------------
+# Cleanup
+#
+done();

@@ -44,6 +44,7 @@ method find (
     %criteria = { }, %projection = { },
     Int :$number_to_skip = 0, Int :$number_to_return = 0,
     Bool :$no_cursor_timeout = False
+    --> MongoDB::Cursor
 ) {
 
     my $flags = +$no_cursor_timeout +< 4;
@@ -59,7 +60,7 @@ method find (
     );
 }
 
-method find_one ( %criteria = { }, %projection = { }) {
+method find_one ( %criteria = { }, %projection = { } --> Hash) {
 
     my MongoDB::Cursor $cursor = self.find( %criteria, %projection
                                           , :number_to_return(1)
