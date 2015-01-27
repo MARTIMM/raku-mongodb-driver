@@ -2,8 +2,24 @@
 #
 # Test version
 #
-use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib';
-use MongoDB:ver<0.6.1>;
+# Using the lib path all modules are from the development directory which will
+# bypass the panda install directory with moarvm code.
+#
+#use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib';
+#say @*INC.join("\n");
+#
+# Some timing info with or without compiled code from moarvm
+#
+# 0.636u 0.058s 0:00.69 98.5%     0+0k 0+0io 0pf+0w
+# 0.702u 0.059s 0:00.76 98.6%     0+0k 0+0io 0pf+0w
+# 0.672u 0.063s 0:00.73 100.0%    0+0k 0+0io 0pf+0w
+#
+# 1.258u 0.064s 0:01.32 99.2%     0+0k 0+0io 0pf+0w
+# 1.243u 0.071s 0:01.31 100.0%    0+0k 0+0io 0pf+0w
+# 1.224u 0.067s 0:01.29 99.2%     0+0k 0+0io 0pf+0w
+#
+
+use MongoDB:ver<0.7.3>;
 
 my MongoDB::Connection $connection .= new( :host('localhost'), :port(27017));
 my MongoDB::Database $database = $connection.database( 'test');

@@ -5,9 +5,9 @@ use v6;
 use Test;
 use MongoDB;
 
-my MongoDB::Connection $connection .= new();
-my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Collection $collection = $database.collection('Collection-find-one');
+my MongoDB::Collection $collection = get-test-collection( 'test',
+                                                          'Collection-find-one'
+                                                        );
 
 my %d1 = code           => 'd1'
        , name           => 'name and lastname'
@@ -49,7 +49,7 @@ exit(0);
 sub check-document ( $criteria, %field-list, %projection = { })
 {
   my %document = %($collection.find_one( $criteria, %projection));
-  if %document.keys {
+  if +%document {
     for %field-list.keys -> $k {
       if %field-list{$k} {
         is( %document{$k}:exists, True, "Key '$k' exists. Check using find_one()");

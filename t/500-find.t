@@ -5,9 +5,10 @@ use v6;
 use Test;
 use MongoDB;
 
-my MongoDB::Connection $connection .= new();
-my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Collection $collection = $database.collection('Collection-find');
+my MongoDB::Collection $collection = get-test-collection( 'test',
+                                                          'Collection-find-one'
+                                                        );
+
 
 my %d1 = code           => 'd1'
        , name           => 'name and lastname'
@@ -19,18 +20,18 @@ $collection.insert(%d1);
 
 #show-documents( $collection, {code => 'd1'});
 
-check-document( {code => 'd1'},
-                { _id => 1, code => 1, name => 1, 'some-name' => 0}
+check-document( %(code => 'd1')
+              , %( _id => 1, code => 1, name => 1, 'some-name' => 0)
               );
 
-check-document( {code => 'd1'},
-                { _id => 1, code => 1, name => 0, address => 0, city => 0},
-                { code => 1}
+check-document( %(code => 'd1')
+              , %( _id => 1, code => 1, name => 0, address => 0, city => 0)
+              , %( code => 1)
               );
 
-check-document( {code => 'd1'},
-                { _id => 0, code => 0, name => 1, address => 1, city => 1},
-                { _id => 0, code => 0}
+check-document( %(code => 'd1')
+              , %( _id => 0, code => 0, name => 1, address => 1, city => 1)
+              , %( _id => 0, code => 0)
               );
 
 
