@@ -38,7 +38,9 @@ method fetch ( --> Any ) {
         @.documents = %OP_REPLY{ 'documents' }.list;
     }
 
-    return @.documents.shift;
+    # Return a document when there is one. If none left, return Nil
+    #
+    return +@.documents ?? @.documents.shift !! Nil;
 }
 
 method kill ( --> Nil ) {

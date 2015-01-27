@@ -51,7 +51,7 @@ multi method _msg_header ( Array $a --> Hash ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
     # struct MsgHeader
-    my %msg_header = (
+    my %msg_header = %(
 
         # int32 messageLength
         # total message size, including this
@@ -143,7 +143,7 @@ method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
     # [ document  returnFieldSelector; ]
     # Optional. Selector indicating the fields to return
     #
-    if %return_field_selector.keys {
+    if +%return_field_selector {
         $OP_QUERY ~= self._document(%return_field_selector);
     }
 
@@ -306,7 +306,7 @@ method OP_REPLY ( Buf $b --> Hash ) {
 
     my $a = $b.list;
 
-    my %OP_REPLY = (
+    my %OP_REPLY = %(
 
         # MsgHeader header
         # standard message header
