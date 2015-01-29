@@ -20,3 +20,18 @@ method collection ( Str $name --> MongoDB::Collection ) {
         name        => $name,
     );
 }
+
+# Run command should ony be working on the admin database using the virtual
+# $cmd collection. Method is placed here because it works on a database be it a
+# special one.
+#
+method run_command ( %command --> Hash ) {
+
+    my MongoDB::Collection $c .= new(
+        database    => self,
+        name        => '$cmd',
+    );
+
+    return $c.find_one(%command);
+}
+

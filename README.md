@@ -55,7 +55,7 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
   * [ ] logout()
 
 * [ ] Database $cmd support and helpers. See [Issue Commands](http://docs.mongodb.org/manual/tutorial/use-database-commands/#issue-commands).
-  * [ ] runCommand
+  * [x] run_command()
   * [ ] _adminCommand
 
 * [ ] Replication
@@ -391,6 +391,7 @@ command documentation also includes the relevant mongo shell helpers.
 
 ## CHANGELOG
 
+* 0.8.4 - run_command() added to Database.pm
 * 0.7.4 - bugfix return values in MongoDB::Cursor
 * 0.7.3 - bugfix return values in MongoDB::Protocol
 * 0.7.2 - extended signatures for return values

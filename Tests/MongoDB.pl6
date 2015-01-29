@@ -19,7 +19,7 @@
 # 1.224u 0.067s 0:01.29 99.2%     0+0k 0+0io 0pf+0w
 #
 
-use MongoDB:ver<0.7.3>;
+use MongoDB:ver<0.7.4>;
 
 my MongoDB::Connection $connection .= new( :host('localhost'), :port(27017));
 my MongoDB::Database $database = $connection.database( 'test');
