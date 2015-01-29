@@ -3,7 +3,7 @@
 
 #BEGIN { @*INC.unshift( './t' ) }
 #use Test-support;
-BEGIN { @*INC.unshift( '/home/marcel/Languages/Perl6/Projects/BSON/lib' ) }
+#BEGIN { @*INC.unshift( '/home/marcel/Languages/Perl6/Projects/BSON/lib' ) }
 
 use v6;
 use Test;
