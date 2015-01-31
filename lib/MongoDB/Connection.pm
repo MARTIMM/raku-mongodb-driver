@@ -19,6 +19,25 @@ method database ( Str $name --> MongoDB::Database ) {
     );
 }
 
+# List databases using MongoDB db.runCommand({listDatabases: 1});
+#
+method list_databases ( --> Array ) {
+
+    my $database = self.database('admin');
+    my %docs = %($database.run_command(%(listDatabases => 1)));
+    return @(%docs<databases>);
+}
+
+# Get database names.
+#
+method database_names ( --> Array ) {
+
+    my @db_docs = self.list_databases();
+    my @names = map {$_<name>}, @db_docs; # Need to do it like this otherwise
+                                          # returns List instead of Array.
+    return @names;
+}
+
 method send ( Buf $b, Bool $has_response --> Any ) {
 
     $!sock.write( $b );

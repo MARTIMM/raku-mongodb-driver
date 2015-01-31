@@ -31,7 +31,9 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
 
 ### Data serialization
 
-* [x] BSON serialization/deserialization. See BSON module and [Site](http://bsonspec.org/).
+* [ ] BSON serialization/deserialization. See BSON module and [Site](http://bsonspec.org/).
+      Parts are finished but not all variable types are supported. See BSON
+      documentation of what is supported.
 * [ ] Support detecting max BSON size on connection (e.g., using buildInfo or
       isMaster commands) and allowing users to insert docs up to that size.
 * [ ] File chunking (/applications/gridfs)
@@ -48,7 +50,8 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
 * [ ] Management
   * [ ] create
   * [ ] drop
-  * [ ] database list
+  * [x] list_databases(). See in other list below.
+  * [x] database_names()
 
 * [ ] Authentication
   * [ ] addUser()
@@ -298,7 +301,7 @@ command documentation also includes the relevant mongo shell helpers.
 * [ ] indexStats. Experimental command that collects and aggregates statistics on all indexes.
 * [ ] isSelf. Internal command to support testing.
 * [ ] listCommands. Lists all database commands provided by the current mongod instance.
-* [ ] listDatabases. Returns a document that lists all databases and returns basic database statistics.
+* [x] list_databases. Returns a document that lists all databases and returns basic database statistics.
 * [ ] netstat. Internal command that reports on intra-deployment connectivity. Only available for mongos instances.
 * [ ] ping. Internal command that tests intra-deployment connectivity.
 * [ ] profile. Interface for the database profiler.
@@ -391,7 +394,8 @@ command documentation also includes the relevant mongo shell helpers.
 
 ## CHANGELOG
 
-* 0.8.4 - run_command() added to Database.pm
+* 0.9.4 - Added list_databases() and database_names() to MongoDB::Connection
+* 0.8.4 - run_command() added to MongoDB::Database
 * 0.7.4 - bugfix return values in MongoDB::Cursor
 * 0.7.3 - bugfix return values in MongoDB::Protocol
 * 0.7.2 - extended signatures for return values
