@@ -50,16 +50,11 @@ ok !@db-docs[%db-names<db1>]<empty>, 'Database db2 is not empty';
 #-------------------------------------------------------------------------------
 # Get all database names
 #
-%db-names = %();
 my @dbns = $connection.database_names();
-for @dbns -> $dbn {
-  %db-names{$dbn} = 1;
-}
 
-
-ok %db-names<admin>, 'admin is found in list';
-ok %db-names<db1>, 'db1 is found in list';
-ok %db-names<db2>, 'db2 is found in list';
+ok any(@dbns) ~~ 'admin', 'admin is found in list';
+ok any(@dbns) ~~ 'db1', 'db1 is found in list';
+ok any(@dbns) ~~ 'db2', 'db2 is found in list';
 
 
 done();
