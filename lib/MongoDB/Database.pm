@@ -25,6 +25,10 @@ method collection ( Str $name --> MongoDB::Collection ) {
 # $cmd collection. Method is placed here because it works on a database be it a
 # special one.
 #
+# Possible returns are:
+# %("ok" => 0e0, "errmsg" => <Some error string>)
+# %("ok" => 1e0, ...);
+#
 method run_command ( %command --> Hash ) {
 
     my MongoDB::Collection $c .= new(
@@ -32,6 +36,12 @@ method run_command ( %command --> Hash ) {
         name        => '$cmd',
     );
 
-    return $c.find_one(%command);
+    return %($c.find_one(%command));
 }
 
+# Drop the database
+#
+method drop ( --> Hash ) {
+
+    return self.run_command(%(dropDatabase => 1));
+}

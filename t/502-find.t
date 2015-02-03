@@ -15,7 +15,7 @@ for 1..100 -> $i, $j
   $collection.insert(%d);
 }
 
-show-documents( $collection, %(code1 => 'd1'));
+#show-documents( $collection, %(code1 => 'd1'));
 
 my MongoDB::Cursor $cursor = $collection.find(%(code1 => 'd1'));
 my @docs;

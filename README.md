@@ -48,8 +48,8 @@ and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/
 ### Database
 
 * [ ] Management
-  * [ ] create
-  * [ ] drop
+  * [x] create, implicitly after inserting data into a collection.
+  * [x] drop(), drop database.
   * [x] list_databases(). See in other list below.
   * [x] database_names()
 
@@ -268,7 +268,7 @@ command documentation also includes the relevant mongo shell helpers.
 * [ ] copydb. Copies a database from a remote host to the current host.
 * [ ] createIndexes. Builds one or more indexes for a collection.
 * [ ] create. Creates a collection and sets collection parameters.
-* [ ] dropDatabase. Removes the current database.
+* [x] dropDatabase. Removes the current database.
 * [ ] dropIndexes. Removes indexes from a collection.
 * [ ] drop. Removes the specified collection from the database.
 * [ ] filemd5. Returns the md5 hash for files stored using GridFS.
@@ -394,6 +394,7 @@ command documentation also includes the relevant mongo shell helpers.
 
 ## CHANGELOG
 
+* 0.10.4 - Added drop() in MongoDB::Database to drop a database.
 * 0.9.4 - Added list_databases() and database_names() to MongoDB::Connection
 * 0.8.4 - run_command() added to MongoDB::Database
 * 0.7.4 - bugfix return values in MongoDB::Cursor
