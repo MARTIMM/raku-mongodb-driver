@@ -45,3 +45,35 @@ method drop ( --> Hash ) {
 
     return self.run_command(%(dropDatabase => 1));
 }
+
+# Get the last error. Returns one or more of the following keys: ok, err, code,
+# connectionId, lastOp, n, shards, singleShard, updatedExisting, upserted,
+# wnote, wtimeout, waited, wtime, 
+#
+method get_last_error ( Bool :$j = True, Int :$w = 0, Int :$wtimeout = 1000,
+                        Bool :$fsync = False
+                        --> Hash
+                      ) {
+
+    my %options = :$j, :$fsync;
+    if $w and $wtimeout {
+        %options<w> = $w;
+        %options<wtimeout> = $wtimeout;
+    }
+    
+    return self.run_command(%( getLastError => 1, %options));
+}
+
+# Get errors since last reset error command
+#
+method get_prev_error ( --> Hash ) {
+
+    return self.run_command(%( getPrevError => 1));
+}
+
+# Reset error command
+#
+method reset_error ( --> Hash ) {
+
+    return self.run_command(%( resetError => 1));
+}

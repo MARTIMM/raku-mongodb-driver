@@ -23,186 +23,27 @@ $ panda install MongoDB
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
 
-This list is made from the information found on the MongoDB site. In this list
-is shown what is implemented and what is not. It is a long list and might never
-be finished completely. Items will be worked on according to the 
-[MongoDB Driver Requirements](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/)
-and [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/latest/legacy/feature-checklist-for-mongodb-drivers/).
+There are lists of [MongoDB Driver
+Requirements](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/)
+, [Feature Checklist for MongoDB
+Drivers](http://docs.mongodb.org/meta-driver/latest/legacy/feature-checklist-for-mongodb-drivers/)
+, [database commands](http://docs.mongodb.org/manual/reference/command) and
+[collection methods](http://docs.mongodb.org/manual/reference/method/js-collection/). These
+on the MongoDB site. Items from the list below will be worked on
 
-### Data serialization
+### Database Management
 
-* [ ] BSON serialization/deserialization. See BSON module and [Site](http://bsonspec.org/).
-      Parts are finished but not all variable types are supported. See BSON
-      documentation of what is supported.
-* [ ] Support detecting max BSON size on connection (e.g., using buildInfo or
-      isMaster commands) and allowing users to insert docs up to that size.
-* [ ] File chunking (/applications/gridfs)
+* [x] create. Happens implicitly after inserting data into a collection.
+* [x] drop() Drop a database.
+* [x] list_databases(). Returns database statistics.
+* [x] database_names(). Returns a list of database names.
+* [x] get_last_error(). Get error status from last operation
 
-### Connection
-
-* [ ] In/out buffer pooling, if implementing in garbage collected language
-* [ ] Connection pooling
-* [ ] Automatic reconnect on connection failure
-* [ ] DBRef Support: - Ability to generate easily - Automatic traversal
-
-### Database
-
-* [ ] Management
-  * [x] create, implicitly after inserting data into a collection.
-  * [x] drop(), drop database.
-  * [x] list_databases(). See in other list below.
-  * [x] database_names()
-
-* [ ] Authentication
-  * [ ] addUser()
-  * [ ] logout()
-
-* [ ] Database $cmd support and helpers. See [Issue Commands](http://docs.mongodb.org/manual/tutorial/use-database-commands/#issue-commands).
+* Database $cmd support and helpers. See [Issue Commands](http://docs.mongodb.org/manual/tutorial/use-database-commands/#issue-commands).
   * [x] run_command()
   * [ ] _adminCommand
 
-* [ ] Replication
-  * [ ] Automatically connect to proper server, and failover, when connecting to
-        a replica set
-  * [ ] Allow client user to specify setSlaveOk() for a query
-* [ ] Sharding.
-
-### Collection
-
-* [ ] collection management
-  * [ ] drop
-  * [ ] create
-  * [ ] collection list
-  * [ ] collection validation
-
-* [ ] Basic operations on collections
-  * [x] Convert all strings to UTF-8. This is inherent to perl6. Everything is
-        UTF8 and conversion to buffers is by using encode and decode.
-  * [x] Automatic _id generation.
-  * [x] find()
-    * [x] %criteria (Search criteria)
-    * [x] %projection (Field selection)
-    * [x] Int :$number_to_skip = 0
-    * [x] Int :$number_to_return = 0
-    * [x] Bool :$no_cursor_timeout = False
-    * [ ] Tests
-      * [x] exact matching, implicit AND.
-      * [ ] $lt, $lte, $gt, $gte, $ne
-      * [ ] $in, $nin, $or, $not
-      * [ ] null
-      * [ ] regular expressions
-      * [ ] arrays, $all, $size, $slice
-      * [ ] embedded docs, $elemMatch
-      * [ ] $where
-  * [ ] Cursors
-    * [x] full cursor support (e.g. support OP_GET_MORE operation)
-    * [ ] Sending the KillCursors operation when use of a cursor has completed.
-          For efficiency, send these in batches.
-    * [ ] Cursor methods
-    * [ ] Tailable cursor support
-    * [ ] has_next()
-    * [x] next() == fetch()
-    * [ ] for_each()
-    * [ ] sort()
-    * [ ] limit()
-    * [ ] skip()
-  * [x] insert
-  * [x] update
-    * [x] upsert
-    * [x] update commands like $inc and $push
-  * [x] remove
-  * [ ] ensureIndex commands should be cached to prevent excessive communication
-        with the database. Or, the driver user should be informed that
-        ensureIndex is not a lightweight operation for the particular driver.
-  * [x] find_one()
-    * [x] %criteria (Search criteria)
-    * [x] %projection (Field selection)
-  * [ ] limit
-  * [ ] sort
-  * [ ] count()
-  * [ ] eval()
-  * [ ] explain()
-  * [ ] hint() and $hint
-
-* [ ] Detect { $err: ... } response from a database query and handle
-      appropriately. See Error Handling in MongoDB Drivers
-  * [ ] getLastError()
-
-
-
-## List of commands
-
-Other list are shown on the MongoDB site
-[here](http://docs.mongodb.org/manual/reference/command) and
-[here](http://docs.mongodb.org/manual/reference/method/js-collection/). These
-lists are shown below. Again, I might not be able to implement all commands or
-that some of those commands are given on other levels. I need to investigate
-that. In time the items from the list will be moved to the first list or removed
-completely. So below is the page as is shown on the site;
-
-All command documentation outlined below describes a command and its available
-parameters and provides a document template or prototype for each command. Some
-command documentation also includes the relevant mongo shell helpers.
-
-### User Commands
-
-#### Aggregation Commands
-
-* [ ] aggregate. Performs aggregation tasks such as group using the aggregation framework.
-* [ ] count. Counts the number of documents in a collection.
-* [ ] distinct. Displays the distinct values found for a specified key in a collection.
-* [ ] group. Groups documents in a collection by the specified key and performs simple aggregation.
-* [ ] mapReduce. Performs map-reduce aggregation for large data sets.
-
-#### Geospatial Commands
-
-* [ ] geoNear. Performs a geospatial query that returns the documents closest to a given point.
-* [ ] geoSearch. Performs a geospatial query that uses MongoDB\u2019s haystack index functionality.
-* [ ] geoWalk. An internal command to support geospatial queries.
-
-#### Query and Write Operation Commands
-
-* [ ] delete. Deletes one or more documents.
-* [ ] eval. Runs a JavaScript function on the database server.
-* [ ] findAndModify. Returns and modifies a single document.
-* [ ] getLastError. Returns the success status of the last operation.
-* [ ] getPrevError. Returns status document containing all errors since the last resetError command.
-* [ ] insert. Inserts one or more documents.
-* [ ] parallelCollectionScan. Lets applications use multiple parallel cursors when reading documents from a collection.
-* [ ] resetError. Resets the last error status.
-* [ ] text. Performs a text search.
-* [ ] update. Updates one or more documents.
-
-#### Query Plan Cache Commands
-
-* [ ] planCacheClearFilters. Clears index filter(s) for a collection.
-* [ ] planCacheClear. Removes cached query plan(s) for a collection.
-* [ ] planCacheListFilters. Lists the index filters for a collection.
-* [ ] planCacheListPlans. Displays the cached query plans for the specified query shape.
-* [ ] planCacheListQueryShapes. Displays the query shapes for which cached query plans exist.
-* [ ] planCacheSetFilter. Sets an index filter for a collection.
-
-### Database Operations
-
-#### Authentication Commands
-
-* [ ] authSchemaUpgrade. Supports the upgrade process for user data between version 2.4 and 2.6.
-* [ ] authenticate. Starts an authenticated session using a username and password.
-* [ ] copydbgetnonce. This is an internal command to generate a one-time password for use with the copydb command.
-* [ ] getnonce. This is an internal command to generate a one-time password for authentication.
-* [ ] logout. Terminates the current authenticated session.
-
-#### User Management Commands
-
-* [ ] createUser. Creates a new user.
-* [ ] dropAllUsersFromDatabase. Deletes all users associated with a database.
-* [ ] dropUser. Removes a single user.
-* [ ] grantRolesToUser. Grants a role and its privileges to a user.
-* [ ] revokeRolesFromUser. Removes a role from a user.
-* [ ] updateUser. Updates a user\u2019s data.
-* [ ] usersInfo. Returns information about the specified users.
-
-#### Role Management Commands
+### Role Management Commands
 
 * [ ] createRole. Creates a role and specifies its privileges.
 * [ ] dropAllRolesFromDatabase. Deletes all user-defined roles from a database.
@@ -215,7 +56,7 @@ command documentation also includes the relevant mongo shell helpers.
 * [ ] rolesInfo. Returns information for the specified role or roles.
 * [ ] updateRole. Updates a user-defined role.
 
-#### Replication Commands
+### Replication Commands
 
 * [ ] applyOps. Internal command that applies oplog entries to the current data set.
 * [ ] getoptime. Internal command to support replication, returns the optime.
@@ -229,7 +70,7 @@ command documentation also includes the relevant mongo shell helpers.
 * [ ] replSetSyncFrom. Explicitly override the default logic for selecting a member to replicate from.
 * [ ] resync. Forces a mongod to re-synchronize from the master. For master-slave replication only.
 
-#### Sharding Commands
+### Sharding Commands
 
 * [ ] addShard. Adds a shard to a sharded cluster.
 * [ ] checkShardingIndex. Internal command that validates index on shard key.
@@ -252,6 +93,146 @@ command documentation also includes the relevant mongo shell helpers.
 * [ ] splitVector. Internal command that determines split points.
 * [ ] split. Creates a new chunk.
 * [ ] unsetSharding. Internal command that affects connections between instances in a MongoDB deployment.
+
+### Collection Management
+
+* [ ] create
+* [ ] drop
+* [ ] collection list
+* [ ] collection validation
+
+### Query and Write Operation Commands
+  * find(). Find documents in a collection
+    * [x] %criteria (Search criteria)
+    * [x] %projection (Field selection)
+    * [x] Int :$number_to_skip = 0
+    * [x] Int :$number_to_return = 0
+    * [x] Bool :$no_cursor_timeout = False
+
+  * Testing find ()
+    * [x] exact matching, implicit AND.
+    * [ ] $lt, $lte, $gt, $gte, $ne
+    * [ ] $in, $nin, $or, $not
+    * [ ] null
+    * [ ] regular expressions
+    * [ ] arrays, $all, $size, $slice
+    * [ ] embedded docs, $elemMatch
+    * [ ] $where
+
+  * Cursors
+    * [x] full cursor support (e.g. support OP_GET_MORE operation)
+    * [ ] Sending the KillCursors operation when use of a cursor has completed.
+          For efficiency, send these in batches.
+    * [ ] Cursor methods
+    * [ ] Tailable cursor support
+    * [ ] has_next()
+    * [x] next() == fetch()
+    * [ ] for_each()
+    * [ ] sort()
+    * [ ] limit()
+    * [ ] skip()
+
+  * [x] insert(). Insert documents in a collection.
+  
+  * [x] update(). Update documents in a collection.
+    * [x] upsert
+    * [x] update commands like $inc and $push
+
+  * [x] remove(). Remove documents from a collection
+
+  * [ ] ensureIndex commands should be cached to prevent excessive communication
+        with the database. Or, the driver user should be informed that
+        ensureIndex is not a lightweight operation for the particular driver.
+
+  * [x] find_one(). Search and return only one document.
+    * [x] %criteria (Search criteria)
+    * [x] %projection (Field selection)
+
+  * [ ] limit
+  * [ ] sort
+  * [ ] count()
+  * [ ] eval()
+  * [ ] explain()
+  * [ ] hint() and $hint
+
+
+### Data serialization
+
+* [x] Convert all strings to UTF-8. This is inherent to perl6. Everything is
+      UTF8 and conversion to buffers is done using encode and decode.
+* [x] Automatic _id generation. See BSON module.
+* [ ] BSON serialization/deserialization. See BSON module and [Site](http://bsonspec.org/).
+      Parts are finished but not all variable types are supported. See BSON
+      documentation of what is supported.
+* [ ] Support detecting max BSON size on connection (e.g., using buildInfo or
+      isMaster commands) and allowing users to insert docs up to that size.
+* [ ] File chunking (/applications/gridfs)
+
+### Connection
+
+* [ ] In/out buffer pooling, if implementing in garbage collected language
+* [ ] Connection pooling
+* [ ] Automatic reconnect on connection failure
+* [ ] DBRef Support: - Ability to generate easily - Automatic traversal
+
+### Authentication Commands
+
+* [ ] authSchemaUpgrade. Supports the upgrade process for user data between version 2.4 and 2.6.
+* [ ] authenticate. Starts an authenticated session using a username and password.
+* [ ] copydbgetnonce. This is an internal command to generate a one-time password for use with the copydb command.
+* [ ] getnonce. This is an internal command to generate a one-time password for authentication.
+* [ ] logout. Terminates the current authenticated session.
+
+### User Management Commands
+
+* [ ] createUser. Creates a new user.
+* [ ] dropAllUsersFromDatabase. Deletes all users associated with a database.
+* [ ] dropUser. Removes a single user.
+* [ ] grantRolesToUser. Grants a role and its privileges to a user.
+* [ ] revokeRolesFromUser. Removes a role from a user.
+* [ ] updateUser. Updates a user\u2019s data.
+* [ ] usersInfo. Returns information about the specified users.
+
+
+
+
+### User Commands
+
+#### Aggregation Commands
+
+* [ ] aggregate. Performs aggregation tasks such as group using the aggregation framework.
+* [ ] count. Counts the number of documents in a collection.
+* [ ] distinct. Displays the distinct values found for a specified key in a collection.
+* [ ] group. Groups documents in a collection by the specified key and performs simple aggregation.
+* [ ] mapReduce. Performs map-reduce aggregation for large data sets.
+
+#### Geospatial Commands
+
+* [ ] geoNear. Performs a geospatial query that returns the documents closest to a given point.
+* [ ] geoSearch. Performs a geospatial query that uses MongoDB\u2019s haystack index functionality.
+* [ ] geoWalk. An internal command to support geospatial queries.
+
+#### Query and Write Operation Commands
+
+* [ ] delete. Deletes one or more documents.
+* [ ] eval. Runs a JavaScript function on the database server.
+* [ ] findAndModify. Returns and modifies a single document.
+* [x] getLastError. Returns the success status of the last operation.
+* [x] getPrevError. Returns status document containing all errors since the last resetError command.
+* [x] insert. Inserts one or more documents.
+* [ ] parallelCollectionScan. Lets applications use multiple parallel cursors when reading documents from a collection.
+* [x] resetError. Resets the last error status.
+* [ ] text. Performs a text search.
+* [x] update. Updates one or more documents.
+
+#### Query Plan Cache Commands
+
+* [ ] planCacheClearFilters. Clears index filter(s) for a collection.
+* [ ] planCacheClear. Removes cached query plan(s) for a collection.
+* [ ] planCacheListFilters. Lists the index filters for a collection.
+* [ ] planCacheListPlans. Displays the cached query plans for the specified query shape.
+* [ ] planCacheListQueryShapes. Displays the query shapes for which cached query plans exist.
+* [ ] planCacheSetFilter. Sets an index filter for a collection.
 
 #### Instance Administration Commands
 
@@ -398,6 +379,7 @@ Version is like x.y.z. When x becomes 1, then the module gets grown up. When y
 is increased, a feature is added. When z is increased minor changes and bugfixes
 are done.
 
+* 0.11.4 - Added methods to get error status in MongoDB::Database.
 * 0.10.4 - Added drop() in MongoDB::Database to drop a database.
 * 0.9.4 - Added list_databases() and database_names() to MongoDB::Connection
 * 0.8.4 - run_command() added to MongoDB::Database

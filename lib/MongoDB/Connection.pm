@@ -11,6 +11,21 @@ submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
 #    $!sock = IO::Socket::INET.new( host => "$host/?connectTimeoutMS=3000", port => $port );
 }
 
+method send ( Buf $b, Bool $has_response --> Any ) {
+
+    $!sock.write( $b );
+
+    # some calls do not expect response
+    return unless $has_response;
+
+    # check response size
+    my Buf $l = $!sock.read( 4 );
+    my Int $w = self.wire._int32( $l.list ) - 4;
+
+    # receive remaining response bytes from socket
+    return $l ~ $!sock.read( $w );
+}
+
 method database ( Str $name --> MongoDB::Database ) {
 
     return MongoDB::Database.new(
@@ -36,19 +51,4 @@ method database_names ( --> Array ) {
     my @names = map {$_<name>}, @db_docs; # Need to do it like this otherwise
                                           # returns List instead of Array.
     return @names;
-}
-
-method send ( Buf $b, Bool $has_response --> Any ) {
-
-    $!sock.write( $b );
-
-    # some calls do not expect response
-    return unless $has_response;
-
-    # check response size
-    my Buf $l = $!sock.read( 4 );
-    my Int $w = self.wire._int32( $l.list ) - 4;
-
-    # receive remaining response bytes from socket
-    return $l ~ $!sock.read( $w );
 }

@@ -21,6 +21,17 @@ isa_ok( $collection, 'MongoDB::Collection');
 $collection.insert( $%( 'name' => 'Jan Klaassen'));
 
 #-------------------------------------------------------------------------------
+# Error checking
+#
+my %error-doc = $database.get_last_error;
+ok %error-doc<ok>.Bool, 'No errors';
+%error-doc = $database.get_prev_error;
+ok %error-doc<ok>.Bool, 'No previous errors';
+
+$database.reset_error;
+
+
+#-------------------------------------------------------------------------------
 # Use run_command foolishly
 #
 $database = $connection.database('db1');
