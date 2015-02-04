@@ -2,7 +2,7 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
-## VERSION 0.7.1
+## VERSION PERL AND MOARVM
 
 ```
 $ perl6 -v
@@ -394,6 +394,10 @@ command documentation also includes the relevant mongo shell helpers.
 
 ## CHANGELOG
 
+Version is like x.y.z. When x becomes 1, then the module gets grown up. When y
+is increased, a feature is added. When z is increased minor changes and bugfixes
+are done.
+
 * 0.10.4 - Added drop() in MongoDB::Database to drop a database.
 * 0.9.4 - Added list_databases() and database_names() to MongoDB::Connection
 * 0.8.4 - run_command() added to MongoDB::Database
@@ -407,7 +411,7 @@ command documentation also includes the relevant mongo shell helpers.
 * 0.4 - compatibility fixes for Rakudo Star 2012.02
 * 0.3 - basic flags added to methods (upsert, multi_update, single_remove,...),
         kill support for cursor
-* 0.2- adapted to Rakudo NOM 2011.09+.
+* 0.2 - adapted to Rakudo NOM 2011.09+.
 * 0.1 - basic Proof-of-concept working on Rakudo 2011.07.
 
 ## LICENSE
@@ -415,6 +419,7 @@ command documentation also includes the relevant mongo shell helpers.
 Released under [Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0).
 
 ## AUTHORS
+
 ```
 Original creator of the modules is Paweł Pabian (2011-2015)(bbkr on github)
 Current maintainer Marcel Timmerman (2015-present) (MARTIMM on github)
