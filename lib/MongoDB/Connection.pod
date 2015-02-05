@@ -13,7 +13,7 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=head1 NAME MongoDB::Collection - Operations on a MongoDB Connection
+=head1 NAME MongoDB::Connection - Operations on a MongoDB Connection
 
 =head1 SYNOPSIS
 
@@ -23,10 +23,17 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 use v6;
 use MongoDB;
 
-# Initialize
-#
-my MongoDB::Connection $connection .= new( );
+# Connect to MongoDB server at localhost port 27017
+my MongoDB::Connection $connection .= new();
 
+# Get an array of documents
+my @db-status-info = $connection.list_databases();
+
+# Get an array of database names
+my @db-names = $connection.list_databases();
+
+if( any(@db-names
+my MongoDB::Database $database = $connection.database('test');
 
 =end code
 =end nested
@@ -34,10 +41,28 @@ my MongoDB::Connection $connection .= new( );
 
 =head1 DESCRIPTION
 
-This module helps the client to connect to the server. The module is loaded
-automatically with the MongoDB module.
+This module helps the client to connect to the server and provides some
+maintenance commands. The module is loaded automatically with the MongoDB
+module.
 
 =head1 METHODS
+
+=for head2
+method database ( Str $name --> MongoDB::Database ) {...}
+
+Get a database object named $name. When nonexistend, it will be created after
+inserting documents in the databases collection.
+
+=for head2
+method list_databases ( --> Array ) {...}
+
+Get an array of documents each having keys C<name>, C<sizeOnDisk> and C<empty>. See
+L<http://docs.mongodb.org/manual/reference/command/listDatabases/#dbcmd.listDatabases>
+
+=for head2
+method database_names ( --> Array ) {...}
+
+Using above call the method returns an array of databases.
 
 =end pod
 

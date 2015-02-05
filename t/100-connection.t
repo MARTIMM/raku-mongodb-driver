@@ -9,6 +9,8 @@ use MongoDB;
 my $connection = MongoDB::Connection.new();
 isa_ok( $connection, 'MongoDB::Connection');
 
+#$connection = MongoDB::Connection.new( host => '192.168.0.10', port => 27017);
+
 $connection = MongoDB::Connection.new( host => 'localhost', port => 27017);
 isa_ok( $connection, 'MongoDB::Connection');
 
