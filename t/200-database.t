@@ -56,11 +56,11 @@ for @db-docs -> %doc {
 
 #say %db-names.perl;
 
-ok %db-names<admin>, 'virtual database admin found';
+#ok %db-names<admin>, 'virtual database admin found';
 ok %db-names<db1>, 'db1 found';
 ok %db-names<db2>, 'db2 found';
 
-ok @(%docs<databases>)[%db-names<admin>]<empty>, 'Virtual database admin is empty';
+#ok @(%docs<databases>)[%db-names<admin>]<empty>, 'Virtual database admin is empty';
 ok !@(%docs<databases>)[%db-names<db1>]<empty>, 'Database db1 is not empty';
 ok !@(%docs<databases>)[%db-names<db1>]<empty>, 'Database db2 is not empty';
 
