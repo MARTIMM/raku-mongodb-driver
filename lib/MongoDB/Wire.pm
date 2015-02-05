@@ -155,9 +155,6 @@ method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
 
     # send message and wait for response
     my Buf $OP_REPLY = $collection.database.connection.send( $msg_header ~ $OP_QUERY, True );
-    return self._process_OP_REPLY($OP_REPLY);
-if False
-{
 
     # parse response
     my %OP_REPLY = self.OP_REPLY( $OP_REPLY );
@@ -171,23 +168,6 @@ if False
     # return response back to cursor
     return %OP_REPLY;
 }
-}
-
-method _process_OP_REPLY ( $OP_REPLY --> Hash ) {
-
-    # parse response
-    my %OP_REPLY = self.OP_REPLY( $OP_REPLY );
-
-    if $.debug {
-        say 'OP_QUERY:', %OP_REPLY.perl;
-    }
-
-    # TODO check if requestID matches responseTo
-
-    # return response back to cursor
-    return %OP_REPLY;
-}
-
 
 method OP_GETMORE ( $cursor --> Hash ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPGETMORE
