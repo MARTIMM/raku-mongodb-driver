@@ -6,7 +6,7 @@
 
 ```
 $ perl6 -v
-This is perl6 version 2015.01-5-g912a7fa built on MoarVM version 2015.01-5-ga29eaa9
+This is perl6 version 2015.01-77-gd320f00 built on MoarVM version 2015.01-21-g4ee4925
 ```
 
 Documentation can be found in doc/Original-README.md and lib/MongoDB.pod.
@@ -379,6 +379,7 @@ Version is like x.y.z. When x becomes 1, then the module gets grown up. When y
 is increased, a feature is added. When z is increased minor changes and bugfixes
 are done.
 
+* 0.11.5 - Added Connection.pod and Collection.pod.
 * 0.11.4 - Added methods to get error status in MongoDB::Database.
 * 0.10.4 - Added drop() in MongoDB::Database to drop a database.
 * 0.9.4 - Added list_databases() and database_names() to MongoDB::Connection
