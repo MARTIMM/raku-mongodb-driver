@@ -12,7 +12,7 @@ submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
 #    $!sock = IO::Socket::INET.new( host => "$host/?connectTimeoutMS=3000", port => $port );
 }
 
-method send ( Buf $b, Bool $has_response --> Any ) {
+method _send ( Buf $b, Bool $has_response --> Any ) {
 
     $!sock.write( $b );
 

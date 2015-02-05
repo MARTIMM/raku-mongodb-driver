@@ -103,7 +103,7 @@ method OP_INSERT ( $collection, Int $flags, *@documents --> Nil ) {
     my Buf $msg_header = self._msg_header( $OP_INSERT.elems, 'OP_INSERT' );
 
     # send message without waiting for response
-    $collection.database.connection.send( $msg_header ~ $OP_INSERT, False );
+    $collection.database.connection._send( $msg_header ~ $OP_INSERT, False );
 }
 
 method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
@@ -154,7 +154,7 @@ method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
     my Buf $msg_header = self._msg_header( $OP_QUERY.elems, 'OP_QUERY' );
 
     # send message and wait for response
-    my Buf $OP_REPLY = $collection.database.connection.send( $msg_header ~ $OP_QUERY, True );
+    my Buf $OP_REPLY = $collection.database.connection._send( $msg_header ~ $OP_QUERY, True );
 
     # parse response
     my %OP_REPLY = self.OP_REPLY( $OP_REPLY );
@@ -196,7 +196,7 @@ method OP_GETMORE ( $cursor --> Hash ) {
     my Buf $msg_header = self._msg_header( $OP_GETMORE.elems, 'OP_GET_MORE' );
 
     # send message and wait for response
-    my Buf $OP_REPLY = $cursor.collection.database.connection.send( $msg_header ~ $OP_GETMORE, True );
+    my Buf $OP_REPLY = $cursor.collection.database.connection._send( $msg_header ~ $OP_GETMORE, True );
 
     # parse response
     my %OP_REPLY = self.OP_REPLY( $OP_REPLY );
@@ -237,7 +237,7 @@ method OP_KILL_CURSORS ( *@cursors --> Nil ) {
     my Buf $msg_header = self._msg_header( $OP_KILL_CURSORS.elems, 'OP_KILL_CURSORS' );
     
     # send message without waiting for response
-    @cursors[0].collection.database.connection.send( $msg_header ~ $OP_KILL_CURSORS, False );
+    @cursors[0].collection.database.connection._send( $msg_header ~ $OP_KILL_CURSORS, False );
 }
 
 method OP_UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
@@ -270,7 +270,7 @@ method OP_UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
     my Buf $msg_header = self._msg_header( $OP_UPDATE.elems, 'OP_UPDATE' );
 
     # send message without waiting for response
-    $collection.database.connection.send( $msg_header ~ $OP_UPDATE, False );
+    $collection.database.connection._send( $msg_header ~ $OP_UPDATE, False );
 }
 
 method OP_DELETE ( $collection, Int $flags, %selector --> Nil ) {
@@ -299,7 +299,7 @@ method OP_DELETE ( $collection, Int $flags, %selector --> Nil ) {
     my Buf $msg_header = self._msg_header( $OP_DELETE.elems, 'OP_DELETE' );
 
     # send message without waiting for response
-    $collection.database.connection.send( $msg_header ~ $OP_DELETE, False );
+    $collection.database.connection._send( $msg_header ~ $OP_DELETE, False );
 }
 
 method OP_REPLY ( Buf $b --> Hash ) {
