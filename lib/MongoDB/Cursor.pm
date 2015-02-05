@@ -1,3 +1,4 @@
+use v6;
 use MongoDB::Protocol;
 
 class MongoDB::Cursor does MongoDB::Protocol;

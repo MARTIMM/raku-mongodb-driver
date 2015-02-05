@@ -1,3 +1,4 @@
+use v6;
 use MongoDB::Collection;
 
 class MongoDB::Database;
