@@ -60,6 +60,7 @@ method find (
     return MongoDB::Cursor.new(
         collection  => self,
         OP_REPLY    => $OP_REPLY,
+        :%criteria
     );
 }
 

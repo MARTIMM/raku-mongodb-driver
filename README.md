@@ -2,23 +2,45 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
+## DOCUMENTATION
+
+Documentation can be found in doc/Original-README.md and the following pod files
+
+* lib/MongoDB.pod
+* lib/MongDB/Connection.pod
+* lib/MongDB/Colection.pod
+
+When you have *Pod::To::HTML* installed and the pdf generator *wkhtmltopdf* then
+you can execute the pod file with perl6 to generate a pdf from the pod document.
+
+```
+$ which wkhtmltopdf
+... displays some path ...
+$ panda --installed list | grep Pod::To::HTML
+Pod::To::HTML   [installed]
+$ cd lib/MongoDB
+$ chmod u+x Connection.pod
+$ Connection.pod
+...
+or
+$ perl6 Connection.pod
+...
+```
+
+## INSTALLING THE MODULES
+
+Use panda to install the package like so. BSON will be installed as a
+dependency.
+
+```
+$ panda install MongoDB
+```
+
 ## VERSION PERL AND MOARVM
 
 ```
 $ perl6 -v
 This is perl6 version 2015.01-77-gd320f00 built on MoarVM version 2015.01-21-g4ee4925
-```
-
-Documentation can be found in doc/Original-README.md and lib/MongoDB.pod.
-
-## INSTALL
-
-Use panda to install the package like so. BSON will be installed as a
-dependency.
-
-
-```
-$ panda install MongoDB
 ```
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
@@ -123,7 +145,6 @@ on the MongoDB site. Items from the list below will be worked on
     * [x] full cursor support (e.g. support OP_GET_MORE operation)
     * [ ] Sending the KillCursors operation when use of a cursor has completed.
           For efficiency, send these in batches.
-    * [ ] Cursor methods
     * [ ] Tailable cursor support
     * [ ] has_next()
     * [x] next() == fetch()
@@ -131,6 +152,7 @@ on the MongoDB site. Items from the list below will be worked on
     * [ ] sort()
     * [ ] limit()
     * [ ] skip()
+    * [x] count(), Count docs after find using limit and skip. hint not yet implemented.
 
   * [x] insert(). Insert documents in a collection.
   
@@ -150,7 +172,6 @@ on the MongoDB site. Items from the list below will be worked on
 
   * [ ] limit
   * [ ] sort
-  * [ ] count()
   * [ ] eval()
   * [ ] explain()
   * [ ] hint() and $hint
@@ -363,12 +384,15 @@ on the MongoDB site. Items from the list below will be worked on
 * [ ] db.collection.update(). Modifies a document in a collection.
 * [ ] db.collection.validate(). Performs diagnostic operations on a collection.
 
+## KNOWN LIMITATIONS AND TODO
 
-## KNOWN LIMITATIONS
+Although the lists above represent one hell of a todo, below are a few notes
+which I have to make to remember to add items to programmed functions. There
+are also notes which are realy BSON items. You need to look there for added
 
 * Big integers (int64).
 * Lack of Num or Rat support, this is directly related to not yet specified
-  pack/unpack in Perl6.
+  pack/unpack in Perl6. See BSON
 * Speed, protocol correctness and clear code are priorities for now.
 
 ## BUGS
@@ -379,6 +403,7 @@ Version is like x.y.z. When x becomes 1, then the module gets grown up. When y
 is increased, a feature is added. When z is increased minor changes and bugfixes
 are done.
 
+* 0.12.5 - Added count() to MongoDB::Cursor.
 * 0.11.5 - Added Connection.pod and Collection.pod.
 * 0.11.4 - Added methods to get error status in MongoDB::Database.
 * 0.10.4 - Added drop() in MongoDB::Database to drop a database.

@@ -4,6 +4,7 @@ use MongoDB::Protocol;
 class MongoDB::Cursor does MongoDB::Protocol;
 
 has $.collection is rw;
+has %.criteria is rw;
 
 # int64 (8 byte buffer)
 has Buf $.id is rw;
@@ -11,9 +12,10 @@ has Buf $.id is rw;
 # batch of documents in last response
 has @.documents is rw;
 
-submethod BUILD ( :$collection, :%OP_REPLY ) {
+submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
 
     $!collection = $collection;
+    %!criteria = %criteria;
 
     # assign cursorID
     $!id = %OP_REPLY{ 'cursor_id' };
@@ -54,3 +56,18 @@ method kill ( --> Nil ) {
 
     return;
 }
+
+# Get count of found documents
+#
+method count ( Int :$skip = 0, Int :$limit = 0 --> Num ) {
+
+    my $database = $!collection.database;
+    my $request = %( count => $!collection.name, query => %!criteria);
+    $request<skip> = $skip if $skip;
+    $request<limit> = $limit if $limit;
+
+    my %docs = $database.run_command($request);
+
+    return %docs<n>;
+}
+
