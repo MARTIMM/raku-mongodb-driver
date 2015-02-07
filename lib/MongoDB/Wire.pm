@@ -231,7 +231,7 @@ method OP_KILL_CURSORS ( *@cursors --> Nil ) {
     for @cursors -> $cursor {
         $OP_KILL_CURSORS ~= $cursor.id;
     }
-    
+
     # MsgHeader header
     # standard message header
     my Buf $msg_header = self._msg_header( $OP_KILL_CURSORS.elems, 'OP_KILL_CURSORS' );
