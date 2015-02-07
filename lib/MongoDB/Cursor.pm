@@ -46,6 +46,9 @@ method fetch ( --> Any ) {
     return +@.documents ?? @.documents.shift !! Nil;
 }
 
+# Add support for next() as in the mongo shell
+method next ( --> Any ) { return self.fetch }
+
 method kill ( --> Nil ) {
 
     # invalidate cursor on database
