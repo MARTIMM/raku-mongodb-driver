@@ -38,7 +38,6 @@ my MongoDB::Database $database = $connection.database('test');
 =end code
 =end nested
 
-
 =head1 DESCRIPTION
 
 This module helps the client to connect to the server and provides some

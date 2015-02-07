@@ -70,8 +70,6 @@ This set of modules will help you accessing a MongoDB server. All primitive
 functions are installed to insert, update, find and remove documents.
 http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-wire-protocol/
 
-
-
 =head1 METHODS
 
 =head2 method insert ( **@documents, Bool :$continue_on_error = False ) {...}
