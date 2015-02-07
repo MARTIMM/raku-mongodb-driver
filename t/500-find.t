@@ -5,10 +5,7 @@ use v6;
 use Test;
 use MongoDB;
 
-my MongoDB::Collection $collection = get-test-collection( 'test',
-                                                          'Collection-find-one'
-                                                        );
-
+my MongoDB::Collection $collection = get-test-collection( 'test', 'find');
 
 my %d1 = code           => 'd1'
        , name           => 'name and lastname'
@@ -22,6 +19,7 @@ for ^10 -> $i {
 }
 
 #show-documents( $collection, {code => 'd1'});
+
 
 check-document( %( code => 'd1', test_record => 'tr3')
               , %( _id => 1, code => 1, name => 1, 'some-name' => 0)
@@ -39,19 +37,26 @@ check-document( %( code => 'd1', test_record => 'tr5')
 
 
 #------------------------------------------------------------------------------
+
 my $cursor = $collection.find();
 ok $cursor.count == 10.0, 'Counting ten documents';
-#show-documents( $collection, {});
 
-$cursor = $collection.find({ code => 'd1', test_record => 'tr3'});
-ok $cursor.count == 1.0, 'Counting one document';;
-#show-documents( $collection, {code => 'd2'});
+$cursor = $collection.find( %( code => 'd1', test_record => 'tr3'));
+ok $cursor.count == 1.0, 'Counting one document';
 
 $cursor = $collection.find();
 ok $cursor.count(:limit(3)) == 3.0, 'Limiting count to 3 documents';
 
+
 $cursor = $collection.find();
 ok $cursor.count( :skip(8), :limit(3)) == 2.0, 'Skip eight then limit three yields 2';
+
+$cursor.kill;
+my %error-doc = $collection.database.get_last_error;
+ok %error-doc<ok>.Bool, 'No error after kill cursor';
+
+$cursor.count;
+ok $cursor.count == 10.0, 'Still counting ten documents';
 
 #------------------------------------------------------------------------------
 # Cleanup and close
@@ -69,7 +74,7 @@ exit(0);
 sub check-document ( $criteria, %field-list, %projection = { })
 {
   my $cursor = $collection.find( $criteria, %projection);
-  while $cursor.fetch() -> %document {
+  while $cursor.next() -> %document {
     for %field-list.keys -> $k {
       if %field-list{$k} {
         is( %document{$k}:exists, True, "Key '$k' exists. Check using find()/fetch()");
