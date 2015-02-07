@@ -4,7 +4,15 @@
 
 ## DOCUMENTATION
 
-Documentation can be found in doc/Original-README.md and the following pod files
+Plenty of documents can be found on the MongoDB site
+
+* [MongoDB Driver Requirements](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/)
+* [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/latest/legacy/feature-checklist-for-mongodb-drivers/)
+* [database commands](http://docs.mongodb.org/manual/reference/command)
+* [collection methods](http://docs.mongodb.org/manual/reference/method/js-collection/)
+
+Documentation about this driver can be found in doc/Original-README.md and the
+following pod files
 
 * lib/MongoDB.pod
 * lib/MongDB/Connection.pod
@@ -45,13 +53,10 @@ This is perl6 version 2015.01-77-gd320f00 built on MoarVM version 2015.01-21-g4e
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
 
-There are lists of [MongoDB Driver
-Requirements](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/)
-, [Feature Checklist for MongoDB
-Drivers](http://docs.mongodb.org/meta-driver/latest/legacy/feature-checklist-for-mongodb-drivers/)
-, [database commands](http://docs.mongodb.org/manual/reference/command) and
-[collection methods](http://docs.mongodb.org/manual/reference/method/js-collection/). These
-on the MongoDB site. Items from the list below will be worked on
+There are lists on the MongoDB site see references above. Items from the list
+below will be worked on. There are many items shown here, it might be impossible
+to implement it all. Using run_command(), much can be accomplished. A lot of the
+items are using that call to get the information for you.
 
 ### Database Management
 
@@ -147,7 +152,7 @@ on the MongoDB site. Items from the list below will be worked on
           For efficiency, send these in batches.
     * [ ] Tailable cursor support
     * [ ] has_next()
-    * [x] next() == fetch()
+    * [x] next() and fetch()
     * [ ] for_each()
     * [ ] sort()
     * [ ] limit()
@@ -384,25 +389,48 @@ on the MongoDB site. Items from the list below will be worked on
 * [ ] db.collection.update(). Modifies a document in a collection.
 * [ ] db.collection.validate(). Performs diagnostic operations on a collection.
 
+### Cursor Methods
+
+* [ ] cursor.addOption(). Adds special wire protocol flags that modify the behavior of the query.\u2019
+* [ ] cursor.batchSize(). Controls the number of documents MongoDB will return to the client in a single network message.
+* [x] cursor.count(). Returns a count of the documents in a cursor.
+* [ ] cursor.explain(). Reports on the query execution plan, including index use, for a cursor.
+* [ ] cursor.forEach(). Applies a JavaScript function for every document in a cursor.
+* [ ] cursor.hasNext(). Returns true if the cursor has documents and can be iterated.
+* [ ] cursor.hint(). Forces MongoDB to use a specific index for a query.
+* [ ] cursor.limit(). Constrains the size of a cursor\u2019s result set.
+* [ ] cursor.map(). Applies a function to each document in a cursor and collects the return values in an array.
+* [ ] cursor.max(). Specifies an exclusive upper index bound for a cursor. For use with cursor.hint()
+* [ ] cursor.maxTimeMS(). Specifies a cumulative time limit in milliseconds for processing operations on a cursor.
+* [ ] cursor.min(). Specifies an inclusive lower index bound for a cursor. For use with cursor.hint()
+* [x] cursor.next(). Returns the next document in a cursor.
+* [ ] cursor.objsLeftInBatch(). Returns the number of documents left in the current cursor batch.
+* [ ] cursor.readPref(). Specifies a read preference to a cursor to control how the client directs queries to a replica set.
+* [ ] cursor.showDiskLoc(). Returns a cursor with modified documents that include the on-disk location of the document.
+* [ ] cursor.size(). Returns a count of the documents in the cursor after applying skip() and limit() methods.
+* [ ] cursor.skip(). Returns a cursor that begins returning results only after passing or skipping a number of documents.
+* [ ] cursor.snapshot(). Forces the cursor to use the index on the _id field. Ensures that the cursor returns each document, with regards to the value of the _id field, only once.
+* [ ] cursor.sort(). Returns results ordered according to a sort specification.
+* [ ] cursor.toArray(). Returns an array that contains all documents returned by the cursor.
+
 ## KNOWN LIMITATIONS AND TODO
 
 Although the lists above represent one hell of a todo, below are a few notes
 which I have to make to remember to add items to programmed functions. There
-are also notes which are realy BSON items. You need to look there for added
+are also items to be implemented in BSON. You need to look there for info
 
-* Big integers (int64).
-* Lack of Num or Rat support, this is directly related to not yet specified
-  pack/unpack in Perl6. See BSON
 * Speed, protocol correctness and clear code are priorities for now.
+* Cursor count() needs some more options such as hint.
 
 ## BUGS
 
 ## CHANGELOG
 
 Version is like x.y.z. When x becomes 1, then the module gets grown up. When y
-is increased, a feature is added. When z is increased minor changes and bugfixes
+is increased, a feature is added. When z is increased, changes and bugfixes
 are done.
 
+* 0.13.5 - Added next() to MongoDB::Cursor.
 * 0.12.5 - Added count() to MongoDB::Cursor.
 * 0.11.5 - Added Connection.pod and Collection.pod.
 * 0.11.4 - Added methods to get error status in MongoDB::Database.
@@ -429,7 +457,7 @@ Released under [Artistic License 2.0](http://www.perlfoundation.org/artistic_lic
 ## AUTHORS
 
 ```
-Original creator of the modules is Paweł Pabian (2011-2015)(bbkr on github)
+Original creator of the modules is Paweł Pabian (2011-2015, v0.6.0)(bbkr on github)
 Current maintainer Marcel Timmerman (2015-present) (MARTIMM on github)
 ```
 ## CONTACT
