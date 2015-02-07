@@ -8,8 +8,9 @@ Plenty of documents can be found on the MongoDB site
 
 * [MongoDB Driver Requirements](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/)
 * [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/latest/legacy/feature-checklist-for-mongodb-drivers/)
-* [database commands](http://docs.mongodb.org/manual/reference/command)
-* [collection methods](http://docs.mongodb.org/manual/reference/method/js-collection/)
+* [Database commands](http://docs.mongodb.org/manual/reference/command)
+* [Collection methods](http://docs.mongodb.org/manual/reference/method/js-collection/)
+* [Cursor methods](http://docs.mongodb.org/manual/reference/method/js-cursor/)
 
 Documentation about this driver can be found in doc/Original-README.md and the
 following pod files
@@ -157,7 +158,7 @@ items are using that call to get the information for you.
     * [ ] sort()
     * [ ] limit()
     * [ ] skip()
-    * [x] count(), Count docs after find using limit and skip. hint not yet implemented.
+    * [x] count(), Count docs after find using limit and skip.
 
   * [x] insert(). Insert documents in a collection.
   
@@ -421,6 +422,8 @@ are also items to be implemented in BSON. You need to look there for info
 
 * Speed, protocol correctness and clear code are priorities for now.
 * Cursor count() needs some more options such as hint.
+* Change die() statements in return with exception to notify caller and place
+  further responsability there.
 
 ## BUGS
 
@@ -430,6 +433,7 @@ Version is like x.y.z. When x becomes 1, then the module gets grown up. When y
 is increased, a feature is added. When z is increased, changes and bugfixes
 are done.
 
+* 0.13.6 - MongoDB::Cursor pod document
 * 0.13.5 - Added next() to MongoDB::Cursor.
 * 0.12.5 - Added count() to MongoDB::Cursor.
 * 0.11.5 - Added Connection.pod and Collection.pod.
