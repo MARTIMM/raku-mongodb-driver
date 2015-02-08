@@ -11,6 +11,7 @@ Plenty of documents can be found on the MongoDB site
 * [Database commands](http://docs.mongodb.org/manual/reference/command)
 * [Collection methods](http://docs.mongodb.org/manual/reference/method/js-collection/)
 * [Cursor methods](http://docs.mongodb.org/manual/reference/method/js-cursor/)
+* [Administration Commands](http://docs.mongodb.org/manual/reference/command/nav-administration/)
 
 Documentation about this driver can be found in doc/Original-README.md and the
 following pod files
@@ -168,7 +169,7 @@ items are using that call to get the information for you.
 
   * [x] remove(). Remove documents from a collection
 
-  * [ ] ensureIndex commands should be cached to prevent excessive communication
+  * [x] ensureIndex commands should be cached to prevent excessive communication
         with the database. Or, the driver user should be informed that
         ensureIndex is not a lightweight operation for the particular driver.
 
@@ -261,7 +262,7 @@ items are using that call to get the information for you.
 * [ ] planCacheListQueryShapes. Displays the query shapes for which cached query plans exist.
 * [ ] planCacheSetFilter. Sets an index filter for a collection.
 
-#### Instance Administration Commands
+#### Administration Commands
 
 * [ ] clean. Internal namespace administration command.
 * [ ] cloneCollectionAsCapped. Copies a non-capped collection as a new capped collection.
@@ -366,7 +367,7 @@ items are using that call to get the information for you.
 * [ ] db.collection.drop(). Removes the specified collection from the database.
 * [ ] db.collection.dropIndex(). Removes a specified index on a collection.
 * [ ] db.collection.dropIndexes(). Removes all indexes on a collection.
-* [ ] db.collection.ensureIndex(). Creates an index if it does not currently exist. If the index exists ensureIndex() does nothing.
+* [x] db.collection.ensureIndex(). Creates an index if it does not currently exist. If the index exists ensureIndex() does nothing.
 * [ ] db.collection.find(). Performs a query on a collection and returns a cursor object.
 * [ ] db.collection.findAndModify(). Atomically modifies and returns a single document.
 * [ ] db.collection.findOne(). Performs a query and returns a single document.
@@ -414,7 +415,7 @@ items are using that call to get the information for you.
 * [ ] cursor.sort(). Returns results ordered according to a sort specification.
 * [ ] cursor.toArray(). Returns an array that contains all documents returned by the cursor.
 
-## KNOWN LIMITATIONS AND TODO
+## BUGS, KNOWN LIMITATIONS AND TODO
 
 Although the lists above represent one hell of a todo, below are a few notes
 which I have to make to remember to add items to programmed functions. There
@@ -424,23 +425,24 @@ are also items to be implemented in BSON. You need to look there for info
 * Cursor count() needs some more options such as hint.
 * Change die() statements in return with exception to notify caller and place
   further responsability there.
-
-## BUGS
+* Keys must be checked for illegal characters when inserting documents.
 
 ## CHANGELOG
 
-Version is like x.y.z. When x becomes 1, then the module gets grown up. When y
-is increased, a feature is added. When z is increased, changes and bugfixes
-are done.
+See [semantic versioning](http://semver.org/). Please note point 4. on
+that page: *Major version zero (0.y.z) is for initial development. Anything may
+change at any time. The public API should not be considered stable.*
 
+* 0.14.0 - ensure_index in MongoDB::Collection
+* 0.13.7 - Changes depending on BSON
 * 0.13.6 - MongoDB::Cursor pod document
-* 0.13.5 - Added next() to MongoDB::Cursor.
-* 0.12.5 - Added count() to MongoDB::Cursor.
-* 0.11.5 - Added Connection.pod and Collection.pod.
-* 0.11.4 - Added methods to get error status in MongoDB::Database.
-* 0.10.4 - Added drop() in MongoDB::Database to drop a database.
-* 0.9.4 - Added list_databases() and database_names() to MongoDB::Connection
-* 0.8.4 - run_command() added to MongoDB::Database
+* 0.13.0 - Added next() to MongoDB::Cursor.
+* 0.12.0 - Added count() to MongoDB::Cursor.
+* 0.11.1 - Added Connection.pod and Collection.pod.
+* 0.11.0 - Added methods to get error status in MongoDB::Database.
+* 0.10.0 - Added drop() in MongoDB::Database to drop a database.
+* 0.9.0 - Added list_databases() and database_names() to MongoDB::Connection
+* 0.8.0 - run_command() added to MongoDB::Database
 * 0.7.4 - bugfix return values in MongoDB::Cursor
 * 0.7.3 - bugfix return values in MongoDB::Protocol
 * 0.7.2 - extended signatures for return values

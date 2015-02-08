@@ -5,7 +5,7 @@ use v6;
 use Test;
 use MongoDB;
 
-my MongoDB::Collection $collection = get-test-collection( 'test', 'find');
+my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
 my %d1 = code           => 'd1'
        , name           => 'name and lastname'
@@ -57,6 +57,8 @@ ok %error-doc<ok>.Bool, 'No error after kill cursor';
 
 $cursor.count;
 ok $cursor.count == 10.0, 'Still counting ten documents';
+
+#$collection.ensure_index( %(test_record => Num.new(1.0)), %(name => 'testindex', background => True));
 
 #------------------------------------------------------------------------------
 # Cleanup and close
