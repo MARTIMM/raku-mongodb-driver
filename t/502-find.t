@@ -35,6 +35,10 @@ is $cursor.count, 1, 'There is one document';
 #  }
 #}
 
+$collection.drop_index( %( code1 => 1));
+try $collection.drop_index( %( code1 => 1));
+say $! if $!;
+
 #------------------------------------------------------------------------------
 # Cleanup and close
 #

@@ -365,7 +365,7 @@ items are using that call to get the information for you.
 * [ ] db.collection.dataSize(). Returns the size of the collection. Wraps the size field in the output of the collStats.
 * [ ] db.collection.distinct(). Returns an array of documents that have distinct values for the specified field.
 * [ ] db.collection.drop(). Removes the specified collection from the database.
-* [ ] db.collection.dropIndex(). Removes a specified index on a collection.
+* [x] db.collection.dropIndex(). Removes a specified index on a collection.
 * [ ] db.collection.dropIndexes(). Removes all indexes on a collection.
 * [x] db.collection.ensureIndex(). Creates an index if it does not currently exist. If the index exists ensureIndex() does nothing.
 * [ ] db.collection.find(). Performs a query on a collection and returns a cursor object.
@@ -433,9 +433,10 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.15.0 - Added drop_index() to MongoDB::Collection
 * 0.14.1 - Bugfixes find_one(), ensure_index(). Added Class X::MongoDB::LastError
            and used when ensure_index() fails.
-* 0.14.0 - ensure_index in MongoDB::Collection
+* 0.14.0 - ensure_index() in MongoDB::Collection
 * 0.13.7 - Changes depending on BSON
 * 0.13.6 - MongoDB::Cursor pod document
 * 0.13.0 - Added next() to MongoDB::Cursor.

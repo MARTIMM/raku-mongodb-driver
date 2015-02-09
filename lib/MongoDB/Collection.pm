@@ -129,8 +129,6 @@ class MongoDB::Collection does MongoDB::Protocol {
     #
     method ensure_index ( %key-spec, %options = {} --> Nil ) {
 
-        my Bool $idx-exists = False;
-
         # Generate name of index if not given in options
         #
         if %options<name>:!exists {
@@ -180,6 +178,29 @@ class MongoDB::Collection does MongoDB::Protocol {
                     full-collection-name => [~] $!database.name, '.', $!name
                 );
             }
+        }
+
+        return;
+    }
+
+    method drop_index ( %key-spec --> Nil ) {
+
+        my %req = %( deleteIndexes => $!name,
+                     index => %key-spec,
+                   );
+
+        my $docs = $!database.run_command(%req);
+
+        # Check error and throw X::MongoDB::LastError if there is one
+        #
+        if $docs<ok>.Bool == False {
+            die X::MongoDB::LastError.new(
+                error-text => $docs<errmsg>,
+                error-code => '-',
+                oper-name => 'drop_index',
+                oper-data => %req.perl,
+                full-collection-name => [~] $!database.name, '.', $!name
+            );
         }
 
         return;
