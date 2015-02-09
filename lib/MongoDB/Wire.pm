@@ -22,7 +22,7 @@ has %.op_codes = (
     'OP_KILL_CURSORS'   => 2007,    # Tell database client is done with a cursor
 );
 
-multi method _msg_header ( Int $length, Str $op_code --> Buf ) {
+method _enc_msg_header ( Int $length, Str $op_code --> Buf ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
     # struct MsgHeader
@@ -48,7 +48,7 @@ multi method _msg_header ( Int $length, Str $op_code --> Buf ) {
     return $msg_header;
 }
 
-multi method _msg_header ( Array $a --> Hash ) {
+method _dec_msg_header ( Array $a --> Hash ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
     # struct MsgHeader
@@ -104,7 +104,7 @@ method OP_INSERT ( $collection, Int $flags, *@documents --> Nil ) {
 
     # MsgHeader header
     # standard message header
-    my Buf $msg_header = self._msg_header( $OP_INSERT.elems, 'OP_INSERT');
+    my Buf $msg_header = self._enc_msg_header( $OP_INSERT.elems, 'OP_INSERT');
 
     # send message without waiting for response
     $collection.database.connection._send( $msg_header ~ $OP_INSERT, False);
@@ -149,13 +149,13 @@ method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
     # Optional. Selector indicating the fields to return
     #
     if +%return_field_selector {
-        $OP_QUERY ~= self._document(%return_field_selector);
+        $OP_QUERY ~= self._enc_document(%return_field_selector);
     }
 
 
     # MsgHeader header
     # standard message header
-    my Buf $msg_header = self._msg_header( $OP_QUERY.elems, 'OP_QUERY');
+    my Buf $msg_header = self._enc_msg_header( $OP_QUERY.elems, 'OP_QUERY');
 
     # send message and wait for response
     my Buf $OP_REPLY = $collection.database.connection._send( $msg_header ~ $OP_QUERY, True);
@@ -197,7 +197,7 @@ method OP_GETMORE ( $cursor --> Hash ) {
     # MsgHeader header
     # standard message header
     # (watch out for inconsistent OP_code and messsage name)
-    my Buf $msg_header = self._msg_header( $OP_GETMORE.elems, 'OP_GET_MORE');
+    my Buf $msg_header = self._enc_msg_header( $OP_GETMORE.elems, 'OP_GET_MORE');
 
     # send message and wait for response
     my Buf $OP_REPLY = $cursor.collection.database.connection._send( $msg_header ~ $OP_GETMORE, True);
@@ -238,9 +238,9 @@ method OP_KILL_CURSORS ( *@cursors --> Nil ) {
 
     # MsgHeader header
     # standard message header
-    my Buf $msg_header = self._msg_header( $OP_KILL_CURSORS.elems,
-                                           'OP_KILL_CURSORS'
-                                         );
+    my Buf $msg_header = self._enc_msg_header( $OP_KILL_CURSORS.elems,
+                                               'OP_KILL_CURSORS'
+                                             );
     
     # send message without waiting for response
     @cursors[0].collection.database.connection._send( $msg_header ~ $OP_KILL_CURSORS, False );
@@ -273,7 +273,7 @@ method OP_UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
 
     # MsgHeader header
     # standard message header
-    my Buf $msg_header = self._msg_header( $OP_UPDATE.elems, 'OP_UPDATE' );
+    my Buf $msg_header = self._enc_msg_header( $OP_UPDATE.elems, 'OP_UPDATE');
 
     # send message without waiting for response
     $collection.database.connection._send( $msg_header ~ $OP_UPDATE, False );
@@ -305,7 +305,7 @@ method OP_DELETE ( $collection, Int $flags, %selector --> Nil ) {
 
     # MsgHeader header
     # standard message header
-    my Buf $msg_header = self._msg_header( $OP_DELETE.elems, 'OP_DELETE' );
+    my Buf $msg_header = self._enc_msg_header( $OP_DELETE.elems, 'OP_DELETE');
 
     # send message without waiting for response
     $collection.database.connection._send( $msg_header ~ $OP_DELETE, False );
@@ -320,7 +320,7 @@ method OP_REPLY ( Buf $b --> Hash ) {
 
         # MsgHeader header
         # standard message header
-        'msg_header' => self._msg_header($a),
+        'msg_header' => self._dec_msg_header($a),
 
         # int32 responseFlags
         # bit vector
@@ -346,9 +346,9 @@ method OP_REPLY ( Buf $b --> Hash ) {
     );
 
     # extract documents from message
-    for ^%OP_REPLY{ 'number_returned' } {
-        my %document = self._dec_document( $a );
-        %OP_REPLY{ 'documents' }.push( { %document } );
+    for ^%OP_REPLY{'number_returned'} {
+        my %document = self._dec_document($a);
+        %OP_REPLY{'documents'}.push({%document});
     }
 
     # every response byte must be consumed

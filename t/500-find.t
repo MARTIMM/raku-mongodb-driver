@@ -52,8 +52,8 @@ $cursor = $collection.find();
 ok $cursor.count( :skip(8), :limit(3)) == 2.0, 'Skip eight then limit three yields 2';
 
 $cursor.kill;
-my %error-doc = $collection.database.get_last_error;
-ok %error-doc<ok>.Bool, 'No error after kill cursor';
+my $error-doc = $collection.database.get_last_error;
+ok $error-doc<ok>.Bool, 'No error after kill cursor';
 
 $cursor.count;
 ok $cursor.count == 10.0, 'Still counting ten documents';
