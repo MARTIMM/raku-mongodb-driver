@@ -5,23 +5,35 @@ use v6;
 use Test;
 use MongoDB;
 
-my MongoDB::Collection $collection = get-test-collection( 'test'
-                                                        , 'Collection-find-one'
-                                                        );
+my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
 for 1..100 -> $i, $j
 {
-  my %d = %(code1 => 'd' ~ $i, code2 => 'n' ~ (100 -$j));
+  my %d = %( code1 => 'd' ~ $i, code2 => 'n' ~ (100 -$j));
   $collection.insert(%d);
 }
+
+#show-documents( $collection, {});
 
 #show-documents( $collection, %(code1 => 'd1'));
 
 my MongoDB::Cursor $cursor = $collection.find(%(code1 => 'd1'));
-my @docs;
-@docs.push($_) while $cursor.fetch();
-is +@docs, 1, 'There is one document';
+is $cursor.count, 1, 'There is one document';
 
+#{
+  try
+  $collection.ensure_index( %( code1 => 1),
+#                            %( name => 'testindex',
+#                               background => True
+#                             )
+                          );
+  say $! if $!;
+#  CATCH {
+#    when X::MongoDB::LastError {
+#      say "Error is '$_'";
+#    }
+#  }
+#}
 
 #------------------------------------------------------------------------------
 # Cleanup and close

@@ -1,10 +1,15 @@
 use v6;
 
-module MongoDB:ver<0.14.0>;
+module MongoDB:ver<0.14.1> {
+  use MongoDB::Wire;
 
-use MongoDB::Wire;
+  use MongoDB::Connection;
+  use MongoDB::Database;
+  use MongoDB::Collection;
+  use MongoDB::Cursor;
 
-use MongoDB::Connection;
-use MongoDB::Database;
-use MongoDB::Collection;
-use MongoDB::Cursor;
+
+#  our $x = 10;
+#say "M x: ", $MongoDB::x;
+}
+

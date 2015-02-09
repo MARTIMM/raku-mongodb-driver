@@ -433,6 +433,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.14.1 - Bugfixes find_one(), ensure_index(). Added Class X::MongoDB::LastError
+           and used when ensure_index() fails.
 * 0.14.0 - ensure_index in MongoDB::Collection
 * 0.13.7 - Changes depending on BSON
 * 0.13.6 - MongoDB::Cursor pod document
