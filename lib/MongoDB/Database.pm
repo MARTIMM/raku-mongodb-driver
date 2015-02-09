@@ -37,7 +37,7 @@ method run_command ( %command --> Hash ) {
         name        => '$cmd',
     );
 
-    return %($c.find_one(%command));
+    return $c.find_one(%command);
 }
 
 # Drop the database

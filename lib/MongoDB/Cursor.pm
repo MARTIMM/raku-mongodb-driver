@@ -69,8 +69,7 @@ method count ( Int :$skip = 0, Int :$limit = 0 --> Num ) {
     $request<skip> = $skip if $skip;
     $request<limit> = $limit if $limit;
 
-    my %docs = $database.run_command($request);
-
-    return %docs<n>;
+    my $docs = $database.run_command($request);
+    return $docs<n>;
 }
 
