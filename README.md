@@ -433,6 +433,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.16.0 - Name change X::MongoDB::LastError into X::MongoDB::Collection.
+           Added drop_indexes().
 * 0.15.0 - Added drop_index() to MongoDB::Collection
 * 0.14.1 - Bugfixes find_one(), ensure_index(). Added Class X::MongoDB::LastError
            and used when ensure_index() fails.
