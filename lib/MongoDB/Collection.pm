@@ -2,7 +2,7 @@ use v6;
 use MongoDB::Protocol;
 use MongoDB::Cursor;
 
-class X::MongoDB::LastError is Exception {
+class X::MongoDB::Collection is Exception {
   has $.error-text;
   has $.error-code;
   has $.oper-name;
@@ -178,11 +178,11 @@ class MongoDB::Collection does MongoDB::Protocol {
 
           $system-indexes.insert(%doc);
 
-          # Check error and throw X::MongoDB::LastError if there is one
+          # Check error and throw X::MongoDB::Collection if there is one
           #
           my $error-doc = $!database.get_last_error;
           if $error-doc<err> {
-              die X::MongoDB::LastError.new(
+              die X::MongoDB::Collection.new(
                   error-text => $error-doc<err>,
                   error-code => $error-doc<code>,
                   oper-name => 'ensure_index',
@@ -205,10 +205,10 @@ class MongoDB::Collection does MongoDB::Protocol {
 
       my $docs = $!database.run_command(%req);
 
-      # Check error and throw X::MongoDB::LastError if there is one
+      # Check error and throw X::MongoDB::Collection if there is one
       #
       if $docs<ok>.Bool == False {
-          die X::MongoDB::LastError.new(
+          die X::MongoDB::Collection.new(
               error-text => $docs<errmsg>,
               error-code => '-',
               oper-name => 'drop_index',
