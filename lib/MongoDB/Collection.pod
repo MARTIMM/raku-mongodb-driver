@@ -258,6 +258,12 @@ method drop_indexes ( --> Hash ) {...}
 
 Drop all indexes for the collection except _id.
 
+=for head2
+method drop ( --> Hash ) {...}
+
+Drop the current collection from the database.
+
+This method will throw a X::MongoDB::Collection exception on failures.
 
 =end pod
 

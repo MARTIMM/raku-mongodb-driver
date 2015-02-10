@@ -201,6 +201,7 @@ class MongoDB::Collection does MongoDB::Protocol {
   }
 
   #-----------------------------------------------------------------------------
+  # Drop an index
   #
   method drop_index ( $key-spec --> Hash ) {
 
@@ -215,7 +216,6 @@ class MongoDB::Collection does MongoDB::Protocol {
       if $docs<ok>.Bool == False {
           die X::MongoDB::Collection.new(
               error-text => $docs<errmsg>,
-              error-code => '-',
               oper-name => 'drop_index',
               oper-data => %req.perl,
               full-collection-name => [~] $!database.name, '.', $!name
@@ -226,8 +226,28 @@ class MongoDB::Collection does MongoDB::Protocol {
   }
 
   #-----------------------------------------------------------------------------
+  # Drop all indexes
   #
   method drop_indexes ( --> Hash ) {
       return self.drop_index('*');
+  }
+
+  #-----------------------------------------------------------------------------
+  # Drop collection
+  #
+  method drop ( --> Hash ) {
+
+      my %req = %(drop => $!name);
+      my $docs = $!database.run_command(%req);
+      if $docs<ok>.Bool == False {
+          die X::MongoDB::Collection.new(
+              error-text => $docs<errmsg>,
+              oper-name => 'drop',
+              oper-data => %req.perl,
+              full-collection-name => [~] $!database.name, '.', $!name
+          );
+      }
+
+      return $docs;
   }
 }
