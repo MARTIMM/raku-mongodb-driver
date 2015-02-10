@@ -265,5 +265,12 @@ Drop the current collection from the database.
 
 This method will throw a X::MongoDB::Collection exception on failures.
 
+=for head2
+method get_indexes ( --> MongoDB::Cursor ) {...}
+
+Get a cursor with which to retrieve documents with index information in
+the current collection. There is always one document of the _id_ index.
+
+
 =end pod
 
