@@ -3,14 +3,19 @@ use MongoDB::Protocol;
 use MongoDB::Cursor;
 
 class X::MongoDB::Collection is Exception {
-  has $.error-text;
-  has $.error-code;
-  has $.oper-name;
-  has $.oper-data;
-  has $.full-collection-name;
+  has $.error-text;                     # Error text
+  has $.error-code;                     # Error code if from server
+  has $.oper-name;                      # Operation name
+  has $.oper-data;                      # Operation data
+  has $.full-collection-name;           # Collection name
 
   method message() {
-      "\n$!oper-name\() error: $!error-text\($!error-code). Data $!oper-data on $!full-collection-name\n";
+      return [~] "\n$!oper-name\() error:\n",
+                 "  $!error-text",
+                 $.error-code.defined ?? "\($!error-code)" !! '',
+                 "\n  Data $!oper-data",
+                 "\n  Collection $!full-collection-name\n"
+                 ;
   }
 }
 
