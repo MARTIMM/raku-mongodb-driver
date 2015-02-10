@@ -79,14 +79,34 @@ is $doc<ok>.Bool, True, 'Drop index ok';
 # Drop all indexes
 #
 $doc = $collection.drop_indexes;
-ok $doc<msg> ~~ m/non\-_id \s+ indexes \s+ dropped \s+ for \s+ collection/, 'All non-_id indexes dropped';
+ok $doc<msg> ~~ m/non\-_id \s+ indexes \s+ dropped \s+ for \s+ collection/,
+   'All non-_id indexes dropped'
+   ;
 
+# Drop current collection twice
+#
+$doc = $collection.drop;
+ok $doc<ok>.Bool == True, 'Drop ok';
+is $doc<msg>, 'indexes dropped for collection', 'Drop message';
+if 1 {
+  $doc = $collection.drop;
+  CATCH {
+    when X::MongoDB::Collection {
+      ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection not found';
+    }
+  }
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
 #
 # TODO replace with drop when available
-$collection.remove( );
+$collection.remove;
+
+
+# drop old collections
+#$collection = get-test-collection( 'test', 'Collection-find-one');
+#$collection.drop;
 
 done();
 exit(0);
@@ -98,18 +118,20 @@ exit(0);
 sub check-document ( $criteria, %field-list, %projection = { })
 {
   my %document = %($collection.find_one( $criteria, %projection));
-  if +%document
-  {
-    for %field-list.keys -> $k
-    {
-      if %field-list{$k}
-      {
-        is( %document{$k}:exists, True, "Key '$k' exists. Check using find_one()");
+  if +%document {
+    for %field-list.keys -> $k {
+      if %field-list{$k} {
+        is %document{$k}:exists,
+           True,
+           "Key '$k' exists. Check using find_one()"
+           ;
       }
       
-      else
-      {
-        is( %document{$k}:exists, False, "Key '$k' does not exist. Check using find_one()");
+      else {
+        is %document{$k}:exists,
+           False,
+           "Key '$k' does not exist. Check using find_one()"
+           ;
       }
     }
   }
