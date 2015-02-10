@@ -20,30 +20,63 @@ for 1..100 -> $i, $j
 my MongoDB::Cursor $cursor = $collection.find(%(code1 => 'd1'));
 is $cursor.count, 1, 'There is one document';
 
-#{
-  try
-  $collection.ensure_index( %( code1 => 1),
-                            %( name => 'testindex',
-                               background => True
-                             )
-                          );
-  say $! if $!;
+# This should go well
+#
+$collection.ensure_index( %( code1 => 1),
+                          %( name => 'testindex',
+                             background => True
+                           )
+                        );
 
-#  CATCH {
-#    when X::MongoDB::LastError {
-#      say "Error is '$_'";
-#    }
-#  }
-#}
+# Now we kick it
+#
+if 1 {
+  # Its an empty key specification, but will complain about 'no index
+  # name'. This is because of ensure_index() not being able to generate
+  # one from the key specification.
+  #
+  $collection.ensure_index(%());
+  CATCH {
+    when X::MongoDB::Collection {
+       ok $_.message ~~ m/no \s+ index \s+ name \s+ specified/, 'No index name';
+    }
+  }
+}
 
+if 1 {
+  # Now the name is specified, We can get a 'bad add index' error.
+  #
+  $collection.ensure_index( %(), %(name => 'testindex'));
+  CATCH {
+    when X::MongoDB::Collection {
+       ok $_.message ~~ m/bad \s+ add \s+ index \s+ attempt/, 'Bad add index attempt';
+    }
+  }
+}
+
+# Drop the same index twice. We get a 'can't find index' error.
+#
 my $doc = $collection.drop_index( %( code1 => 1));
-say $doc.perl;
+if 1 {
+  $doc = $collection.drop_index( %( code1 => 1));
+  CATCH {
+    when X::MongoDB::Collection {
+      ok $_.message ~~ m/can\'t \s+ find \s+ index \s+ with \s+ key/, q/Can't find index/;
+    }
+  }
+}
 
-try $doc = $collection.drop_index( %( code1 => 1));
-say $! ?? $! !! $doc.perl;
+$collection.ensure_index( %( code1 => 1),
+                          %( name => 'testindex',
+                             background => True
+                           )
+                        );
+$doc = $collection.drop_index('testindex');
+is $doc<ok>.Bool, True, 'Drop index ok';
 
 $doc = $collection.drop_indexes;
-say $doc.perl;
+ok $doc<msg> ~~ m/non\-_id \s+ indexes \s+ dropped \s+ for \s+ collection/, 'All non-_id indexes dropped';
+#say $doc.perl;
 
 #------------------------------------------------------------------------------
 # Cleanup and close
