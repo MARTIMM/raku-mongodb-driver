@@ -66,6 +66,8 @@ if 1 {
   }
 }
 
+# Create index again and delete using the index name
+#
 $collection.ensure_index( %( code1 => 1),
                           %( name => 'testindex',
                              background => True
@@ -74,11 +76,13 @@ $collection.ensure_index( %( code1 => 1),
 $doc = $collection.drop_index('testindex');
 is $doc<ok>.Bool, True, 'Drop index ok';
 
+# Drop all indexes
+#
 $doc = $collection.drop_indexes;
 ok $doc<msg> ~~ m/non\-_id \s+ indexes \s+ dropped \s+ for \s+ collection/, 'All non-_id indexes dropped';
-#say $doc.perl;
 
-#------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
 # Cleanup and close
 #
 # TODO replace with drop when available
