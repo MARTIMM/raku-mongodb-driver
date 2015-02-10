@@ -57,8 +57,9 @@ This is perl6 version 2015.01-77-gd320f00 built on MoarVM version 2015.01-21-g4e
 
 There are lists on the MongoDB site see references above. Items from the list
 below will be worked on. There are many items shown here, it might be impossible
-to implement it all. Using run_command(), much can be accomplished. A lot of the
-items are using that call to get the information for you.
+to implement it all. By using run_command(), much can be accomplished. A lot of the
+items are using that call to get the information for you. Also quite a few items
+are shown in in more than one place place.
 
 ### Database Management
 
@@ -126,7 +127,7 @@ items are using that call to get the information for you.
 ### Collection Management
 
 * [ ] create
-* [ ] drop
+* [x] drop
 * [ ] collection list
 * [ ] collection validation
 
@@ -278,8 +279,8 @@ items are using that call to get the information for you.
 * [ ] createIndexes. Builds one or more indexes for a collection.
 * [ ] create. Creates a collection and sets collection parameters.
 * [x] dropDatabase. Removes the current database.
-* [ ] dropIndexes. Removes indexes from a collection.
-* [ ] drop. Removes the specified collection from the database.
+* [x] dropIndexes. Removes indexes from a collection.
+* [x] drop. Removes the specified collection from the database.
 * [ ] filemd5. Returns the md5 hash for files stored using GridFS.
 * [ ] fsync. Flushes pending writes to the storage layer and locks the database to allow backups.
 * [ ] getParameter. Retrieves configuration options.
@@ -364,9 +365,9 @@ items are using that call to get the information for you.
 * [ ] db.collection.createIndex(). Builds an index on a collection. Use db.collection.ensureIndex(). Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
 * [ ] db.collection.dataSize(). Returns the size of the collection. Wraps the size field in the output of the collStats.
 * [ ] db.collection.distinct(). Returns an array of documents that have distinct values for the specified field.
-* [ ] db.collection.drop(). Removes the specified collection from the database.
+* [x] db.collection.drop(). Removes the specified collection from the database.
 * [x] db.collection.dropIndex(). Removes a specified index on a collection.
-* [ ] db.collection.dropIndexes(). Removes all indexes on a collection.
+* [x] db.collection.dropIndexes(). Removes all indexes on a collection.
 * [x] db.collection.ensureIndex(). Creates an index if it does not currently exist. If the index exists ensureIndex() does nothing.
 * [ ] db.collection.find(). Performs a query on a collection and returns a cursor object.
 * [ ] db.collection.findAndModify(). Atomically modifies and returns a single document.
@@ -423,9 +424,13 @@ are also items to be implemented in BSON. You need to look there for info
 
 * Speed, protocol correctness and clear code are priorities for now.
 * Cursor count() needs some more options such as hint.
-* Change die() statements in return with exception to notify caller and place
-  further responsability there.
+* Change die() statements to throw exception objects to notify caller.
 * Keys must be checked for illegal characters when inserting documents.
+* collectionnames must be checked. In perl dashes are possible and are accepted
+  by the server. In the mongo shell however it is not possible to manipulate
+  these names because it works in a javascript environment which wil see it as
+  a substraction operator. Perhaps other things will go wrong too such as
+  running javascript on the server.
 
 ## CHANGELOG
 
@@ -434,8 +439,8 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.16.0 - Name change X::MongoDB::LastError into X::MongoDB::Collection.
-           Added drop_indexes().
-* 0.15.0 - Added drop_index() to MongoDB::Collection
+           Added drop_indexes() drop() to MongoDB::Collection.
+* 0.15.0 - Added drop_index() to MongoDB::Collection.
 * 0.14.1 - Bugfixes find_one(), ensure_index(). Added Class X::MongoDB::LastError
            and used when ensure_index() fails.
 * 0.14.0 - ensure_index() in MongoDB::Collection
