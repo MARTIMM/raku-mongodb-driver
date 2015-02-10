@@ -136,9 +136,6 @@ class MongoDB::Collection does MongoDB::Protocol {
   #
   # * Insert a document into a system table <dbname>.system.indexes
   # * Run get_last_error to see result
-  # * Run get_last_error again, now with flag w => 1, replicas
-  # * Run run_command on the admin database and $cmd collection with
-  #   replSetGetStatus => 1 and forShell => 1
   #
   # * According to documentation indexes cannot be changed. They must be
   #   deleted first. Therefore check first. drop index if exists then set new
@@ -249,5 +246,14 @@ class MongoDB::Collection does MongoDB::Protocol {
       }
 
       return $docs;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Get indexes for the current collection
+  #
+  method get_indexes ( --> MongoDB::Cursor ) {
+      
+      my $system-indexes = $!database.collection('system.indexes');
+      return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
   }
 }

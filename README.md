@@ -369,11 +369,11 @@ are shown in in more than one place place.
 * [x] db.collection.dropIndex(). Removes a specified index on a collection.
 * [x] db.collection.dropIndexes(). Removes all indexes on a collection.
 * [x] db.collection.ensureIndex(). Creates an index if it does not currently exist. If the index exists ensureIndex() does nothing.
-* [ ] db.collection.find(). Performs a query on a collection and returns a cursor object.
+* [x] db.collection.find(). Performs a query on a collection and returns a cursor object.
 * [ ] db.collection.findAndModify(). Atomically modifies and returns a single document.
-* [ ] db.collection.findOne(). Performs a query and returns a single document.
+* [x] db.collection.findOne(). Performs a query and returns a single document.
 * [ ] db.collection.getIndexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
-* [ ] db.collection.getIndexes(). Returns an array of documents that describe the existing indexes on a collection.
+* [x] db.collection.getIndexes(). Returns an array of documents that describe the existing indexes on a collection.
 * [ ] db.collection.getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
 * [ ] db.collection.getShardVersion(). Internal diagnostic method for shard cluster.
 * [ ] db.collection.group(). Provides simple data aggregation function. Groups documents in a collection by a key, and processes the results. Use aggregate() for more complex data aggregation.
@@ -439,7 +439,7 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.16.0 - Name change X::MongoDB::LastError into X::MongoDB::Collection.
-           Added drop_indexes() drop() to MongoDB::Collection.
+           Added drop_indexes() drop() get_indexes() to MongoDB::Collection.
 * 0.15.0 - Added drop_index() to MongoDB::Collection.
 * 0.14.1 - Bugfixes find_one(), ensure_index(). Added Class X::MongoDB::LastError
            and used when ensure_index() fails.

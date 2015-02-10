@@ -28,6 +28,17 @@ $collection.ensure_index( %( code1 => 1),
                            )
                         );
 
+$cursor = $collection.get_indexes;
+is $cursor.count, 2, "Two indexes found";
+my $doc;
+my @index-names;
+while $doc = $cursor.fetch {
+    @index-names.push($doc<name>);
+}
+
+ok any(@index-names) ~~ '_id_', 'Index name _id_ found';
+ok any(@index-names) ~~ 'testindex', 'Index name testindex found';
+
 # Now we kick it
 #
 if 1 {
@@ -56,7 +67,7 @@ if 1 {
 
 # Drop the same index twice. We get a 'can't find index' error.
 #
-my $doc = $collection.drop_index( %( code1 => 1));
+$doc = $collection.drop_index( %( code1 => 1));
 if 1 {
   $doc = $collection.drop_index( %( code1 => 1));
   CATCH {
