@@ -23,11 +23,12 @@ is $cursor.count, 1, 'There is one document';
 #{
   try
   $collection.ensure_index( %( code1 => 1),
-#                            %( name => 'testindex',
-#                               background => True
-#                             )
+                            %( name => 'testindex',
+                               background => True
+                             )
                           );
   say $! if $!;
+
 #  CATCH {
 #    when X::MongoDB::LastError {
 #      say "Error is '$_'";
@@ -35,9 +36,14 @@ is $cursor.count, 1, 'There is one document';
 #  }
 #}
 
-$collection.drop_index( %( code1 => 1));
-try $collection.drop_index( %( code1 => 1));
-say $! if $!;
+my $doc = $collection.drop_index( %( code1 => 1));
+say $doc.perl;
+
+try $doc = $collection.drop_index( %( code1 => 1));
+say $! ?? $! !! $doc.perl;
+
+$doc = $collection.drop_indexes;
+say $doc.perl;
 
 #------------------------------------------------------------------------------
 # Cleanup and close
