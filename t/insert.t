@@ -1,7 +1,6 @@
+use v6;
 use Test;
 use MongoDB;
-
-plan( 5 );
 
 my $connection = MongoDB::Connection.new;
 my $database = $connection.database( 'test' );
@@ -36,3 +35,11 @@ dies_ok {
 # { "_id" : ObjectId("..."), "bar" : 0 }
 # { "_id" : ObjectId("..."), "bar" : 1 }
 # { "_id" : ObjectId("..."), "baz" : 0 }
+
+#-----------------------------------------------------------------------------
+# Cleanup
+#
+$database.drop;
+
+done();
+exit(0);

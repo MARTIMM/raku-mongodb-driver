@@ -1,7 +1,6 @@
+use v6;
 use Test;
 use MongoDB;
-
-plan( 4 );
 
 my $connection = MongoDB::Connection.new;
 my $database = $connection.database( 'test' );
@@ -34,3 +33,11 @@ lives_ok {
 
 # TODO check output, expected result
 # empty collection
+
+#-----------------------------------------------------------------------------
+# Cleanup
+#
+$database.drop;
+
+done();
+exit(0);
