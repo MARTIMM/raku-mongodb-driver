@@ -12,7 +12,7 @@ class X::MongoDB::Database is Exception {
       return [~] "\n$!oper-name\() error:\n",
                  "  $!error-text",
                  $.error-code.defined ?? "\($!error-code)" !! '',
-                 "\n  Data $!oper-data",
+                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
                  "\n  Database '$!database-name'\n"
                  ;
   }
@@ -113,6 +113,14 @@ class MongoDB::Database {
                              Int :$max, Int :$flags
                              --> Hash
                            ) {
+
+      if !($collection_name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
+          die X::MongoDB::Database.new(
+              error-text => "Illegal collection name: '$collection_name'",
+              oper-name => 'create_collection()',
+              database-name => $!name
+          );
+      }
 
       my Hash $req = %( create => $collection_name);
       $req<capped> = $capped if $capped;

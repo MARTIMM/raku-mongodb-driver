@@ -26,18 +26,26 @@ $collection.insert( $%( 'name' => 'Jan Klaassen'));
 # Drop current collection twice
 #
 my $doc = $collection.drop;
-ok $doc<ok>.Bool == True, 'Drop ok';
+ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
 is $doc<msg>, 'indexes dropped for collection', 'Drop message ok';
 
 if 1 {
   $doc = $collection.drop;
   CATCH {
     when X::MongoDB::Collection {
-      ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection not found';
+      ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
     }
-    
-    default {
-      say "E: ", $_.perl;
+  }
+}
+
+#-------------------------------------------------------------------------------
+# Create using illegal collection name
+#
+if 1 {
+  $database.create_collection('abc-def and a space');
+  CATCH {
+    when X::MongoDB::Database {
+      ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
     }
   }
 }

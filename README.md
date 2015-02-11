@@ -423,11 +423,6 @@ are also items to be implemented in BSON. You need to look there for info
 * Cursor count() needs some more options such as hint.
 * Change die() statements to throw exception objects to notify caller.
 * Keys must be checked for illegal characters when inserting documents.
-* collectionnames must be checked. In perl dashes are possible and are accepted
-  by the server. In the mongo shell however it is not possible to manipulate
-  these names because it works in a javascript environment which wil see it as
-  a substraction operator. Perhaps other things will go wrong too such as
-  running javascript on the server.
 * Tests for connection to non existing server. timeout setting.
 
 ## CHANGELOG
@@ -436,6 +431,15 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.17.1 - Collectionnames are checked. In perl dashes are possible and are also
+           accepted by the server. In the mongo shell however it is not possible
+           to manipulate these names because it works in a javascript
+           environment which wil see it as a substraction operator. Perhaps
+           other things will go wrong too such as running javascript on the
+           server. It is now tested against m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/.
+           Note the '$', It is accepted because the collection $cmd is sometimes
+           used to get information from. create_collection() will also check the
+           collection name but will not accept the '$'.
 * 0.17.0 - create_collection() to MongoDB::Database
            X::MongoDB::Database Exception
 * 0.16.1 - Cleanup databases at the end of tests. Documented tests what is tested

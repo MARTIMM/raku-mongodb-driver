@@ -13,7 +13,7 @@ class X::MongoDB::Collection is Exception {
       return [~] "\n$!oper-name\() error:\n",
                  "  $!error-text",
                  $.error-code.defined ?? "\($!error-code)" !! '',
-                 "\n  Data $!oper-data",
+                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
                  "\n  Collection '$!full-collection-name'\n"
                  ;
   }
@@ -30,8 +30,17 @@ class MongoDB::Collection does MongoDB::Protocol {
 
       $!database = $database;
 
-      # TODO validate name
-      $!name = $name;
+      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/ {
+          $!name = $name;
+      }
+
+      else {
+          die X::MongoDB::Collection.new(
+              error-text => "Illegal collection name: '$name'",
+              oper-name => 'MongoDB::Collection.new()',
+              full-collection-name => [~] $!database.name, '.-Ill-'
+          );
+      }
   }
 
   #-----------------------------------------------------------------------------
