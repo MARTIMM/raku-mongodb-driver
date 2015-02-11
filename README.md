@@ -68,10 +68,7 @@ are shown in in more than one place place.
 * [x] list_databases(). Returns database statistics.
 * [x] database_names(). Returns a list of database names.
 * [x] get_last_error(). Get error status from last operation
-
-* Database $cmd support and helpers. See [Issue Commands](http://docs.mongodb.org/manual/tutorial/use-database-commands/#issue-commands).
-  * [x] run_command()
-  * [ ] _adminCommand
+* [x] run_command(), Many helper methods are using this command.
 
 ### Role Management Commands
 
@@ -141,8 +138,8 @@ are shown in in more than one place place.
 
   * Testing find ()
     * [x] exact matching, implicit AND.
-    * [ ] $lt, $lte, $gt, $gte, $ne
-    * [ ] $in, $nin, $or, $not
+    * [x] $lt, $lte, $gt, $gte, $ne
+    * [x] $in, $nin, $or, $not
     * [ ] null
     * [ ] regular expressions
     * [ ] arrays, $all, $size, $slice
@@ -431,6 +428,7 @@ are also items to be implemented in BSON. You need to look there for info
   these names because it works in a javascript environment which wil see it as
   a substraction operator. Perhaps other things will go wrong too such as
   running javascript on the server.
+* Tests for connection to non existing server. timeout setting.
 
 ## CHANGELOG
 
@@ -438,6 +436,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+
+* 0.16.1 - Cleanup databases at the end of tests. Documented tests what is tested
 * 0.16.0 - Name change X::MongoDB::LastError into X::MongoDB::Collection.
            Added drop_indexes() drop() get_indexes() to MongoDB::Collection.
 * 0.15.0 - Added drop_index() to MongoDB::Collection.

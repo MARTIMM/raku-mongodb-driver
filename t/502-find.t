@@ -1,3 +1,15 @@
+#`{{
+  Testing;
+    collection.find()                   Query database
+    collection.ensure_index()           Create indexes
+    collection.get_indexes()            Get index info
+    collection.drop_index()             Drop an index
+    collection.drop_indexes()           Drop all indexes
+    cursor.fetch()                      Fetch a document
+    
+    X::MongoDB::Collection              Catch exceptions
+}}
+
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
@@ -7,14 +19,13 @@ use MongoDB;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
-for 1..100 -> $i, $j
+for 1..10 -> $i, $j
 {
   my %d = %( code1 => 'd' ~ $i, code2 => 'n' ~ (100 -$j));
   $collection.insert(%d);
 }
 
 #show-documents( $collection, {});
-
 #show-documents( $collection, %(code1 => 'd1'));
 
 my MongoDB::Cursor $cursor = $collection.find(%(code1 => 'd1'));
@@ -28,7 +39,7 @@ $collection.ensure_index( %( code1 => 1),
                            )
                         );
 
-$cursor = $collection.get_indexes;
+$cursor = $collection.get_indexes();
 is $cursor.count, 2, "Two indexes found";
 my $doc;
 my @index-names;
@@ -94,30 +105,10 @@ ok $doc<msg> ~~ m/non\-_id \s+ indexes \s+ dropped \s+ for \s+ collection/,
    'All non-_id indexes dropped'
    ;
 
-# Drop current collection twice
-#
-$doc = $collection.drop;
-ok $doc<ok>.Bool == True, 'Drop ok';
-is $doc<msg>, 'indexes dropped for collection', 'Drop message';
-if 1 {
-  $doc = $collection.drop;
-  CATCH {
-    when X::MongoDB::Collection {
-      ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection not found';
-    }
-  }
-}
-
 #-------------------------------------------------------------------------------
 # Cleanup and close
 #
-# TODO replace with drop when available
-$collection.remove;
-
-
-# drop old collections
-#$collection = get-test-collection( 'test', 'Collection-find-one');
-#$collection.drop;
+$collection.database.drop;
 
 done();
 exit(0);

@@ -1,3 +1,13 @@
+#`{{
+  Testing;
+    collection.find()                   Query database
+      implicit AND selection            Find with more fields
+      projection                        Select fields to return
+    cursor.count()                      Count number of docs
+    cursor.kill()                       Kill a cursor
+    cursor.next()                       Fetch a document
+}}
+
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
@@ -18,9 +28,6 @@ for ^10 -> $i {
   $collection.insert(%d1);
 }
 
-#show-documents( $collection, {code => 'd1'});
-
-
 check-document( %( code => 'd1', test_record => 'tr3')
               , %( _id => 1, code => 1, name => 1, 'some-name' => 0)
               );
@@ -35,7 +42,6 @@ check-document( %( code => 'd1', test_record => 'tr5')
               , %( _id => 0, code => 0)
               );
 
-
 #------------------------------------------------------------------------------
 
 my $cursor = $collection.find();
@@ -47,7 +53,6 @@ ok $cursor.count == 1.0, 'Counting one document';
 $cursor = $collection.find();
 ok $cursor.count(:limit(3)) == 3.0, 'Limiting count to 3 documents';
 
-
 $cursor = $collection.find();
 ok $cursor.count( :skip(8), :limit(3)) == 2.0, 'Skip eight then limit three yields 2';
 
@@ -58,13 +63,10 @@ ok $error-doc<ok>.Bool, 'No error after kill cursor';
 $cursor.count;
 ok $cursor.count == 10.0, 'Still counting ten documents';
 
-#$collection.ensure_index( %(test_record => Num.new(1.0)), %(name => 'testindex', background => True));
-
 #------------------------------------------------------------------------------
 # Cleanup and close
 #
-# TODO replace with drop when available
-$collection.remove( );
+$collection.database.drop;
 
 done();
 exit(0);

@@ -1,5 +1,11 @@
-#BEGIN { @*INC.unshift( './t' ) }
-#use Test-support;
+#`{{
+  Testing;
+    database.get_last_error()           Get last error
+    database.get_prev_error()           Get previous errors
+    database.reset_error()              Reset errors
+    database.run_command()              Run command
+    database.drop()                     Drop database
+}}
 
 use v6;
 use Test;
@@ -9,15 +15,10 @@ my MongoDB::Connection $connection .= new();
 
 # Create databases with a collection and data
 #
-my MongoDB::Database $database = $database = $connection.database('db1');
-my MongoDB::Collection $collection = $database.collection( 'perl6_driver1' );
-$collection.insert( $%( 'name' => 'Jan Klaassen'));
+my MongoDB::Database $database = $connection.database('test');
 isa_ok( $database, 'MongoDB::Database');
 
-$database = $database = $connection.database('db2');
-$collection = $database.collection( 'perl6_driver2' );
-isa_ok( $database, 'MongoDB::Database');
-isa_ok( $collection, 'MongoDB::Collection');
+my MongoDB::Collection $collection = $database.collection( 'cl1' );
 $collection.insert( $%( 'name' => 'Jan Klaassen'));
 
 #-------------------------------------------------------------------------------
@@ -33,58 +34,52 @@ $database.reset_error;
 #-------------------------------------------------------------------------------
 # Use run_command foolishly
 #
-$database = $connection.database('db1');
-my %docs = %($database.run_command(%(listDatabases => 1)));
-ok !%docs<ok>.Bool, 'Run command ran not ok';
-is %docs<errmsg>, 'access denied; use admin db', 'access denied; use admin db';
+$database = $connection.database('test');
+my $docs = $database.run_command(%(listDatabases => 1));
+ok !$docs<ok>.Bool, 'Run command ran not ok';
+is $docs<errmsg>, 'access denied; use admin db', 'access denied; use admin db';
 
 #-------------------------------------------------------------------------------
 # Use run_command to get database statistics
 #
 $database = $connection.database('admin');
-%docs = %($database.run_command(%(listDatabases => 1)));
-ok %docs<ok>.Bool, 'Run command ran ok';
-ok %docs<totalSize> > 1e0, 'Total size at least bigger than one byte ;-)';
+$docs = $database.run_command(%(listDatabases => 1));
+ok $docs<ok>.Bool, 'Run command ran ok';
+ok $docs<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
 
 my %db-names;
-my @db-docs = @(%docs<databases>);
-my $idx = 0;
-for @db-docs -> %doc {
-    %db-names{%doc<name>} = $idx++;
+my @db-docs = @($docs<databases>);
+for (@db-docs) Z ^+@db-docs -> %doc, $idx {
+    %db-names{%doc<name>} = $idx;
 }
 
-#say %db-names.perl;
+ok %db-names<test>:exists, 'test found';
 
-#ok %db-names<admin>, 'virtual database admin found';
-ok %db-names<db1>, 'db1 found';
-ok %db-names<db2>, 'db2 found';
-
-#ok @(%docs<databases>)[%db-names<admin>]<empty>, 'Virtual database admin is empty';
-ok !@(%docs<databases>)[%db-names<db1>]<empty>, 'Database db1 is not empty';
-ok !@(%docs<databases>)[%db-names<db1>]<empty>, 'Database db2 is not empty';
+ok !@($docs<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
 
 #-------------------------------------------------------------------------------
 # Drop a database
 #
-$database = $connection.database('db1');
+$database = $connection.database('test');
 my %r = %($database.drop());
 ok %r<ok>.Bool, 'Drop command went well';
-is %r<dropped>, 'db1', 'Dropped database name checks ok';
+is %r<dropped>, 'test', 'Dropped database name checks ok';
 
 $database = $connection.database('admin');
-%docs = %($database.run_command(%(listDatabases => 1)));
+$docs = $database.run_command(%(listDatabases => 1));
 
 %db-names = %();
-@db-docs = @(%docs<databases>);
-$idx = 0;
-for @db-docs -> %doc {
-    %db-names{%doc<name>} = $idx++;
+@db-docs = @($docs<databases>);
+for (@db-docs) Z ^+@db-docs -> %doc, $idx {
+    %db-names{%doc<name>} = $idx;
 }
 
-ok !%db-names<db1>, 'db1 not found';
+ok %db-names<test>:!exists, 'test not found';
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+$connection.database('test').drop;
+
 done();
 exit(0);

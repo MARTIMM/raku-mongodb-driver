@@ -1,3 +1,10 @@
+#`{{
+  Testing;
+    collection.find_one()               Query database returning one doc
+      implicit AND selection            Find with more fields
+      projection                        Select fields to return
+}}
+
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
@@ -5,9 +12,7 @@ use v6;
 use Test;
 use MongoDB;
 
-my MongoDB::Collection $collection = get-test-collection( 'test',
-                                                          'Collection-find-one'
-                                                        );
+my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
 my %d1 = code           => 'd1'
        , name           => 'name and lastname'
@@ -36,8 +41,7 @@ check-document( {code => 'd1'},
 #------------------------------------------------------------------------------
 # Cleanup and close
 #
-# TODO replace with drop when available
-$collection.remove( );
+$collection.database.drop;
 
 done();
 exit(0);

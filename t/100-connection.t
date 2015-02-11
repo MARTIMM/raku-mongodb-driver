@@ -1,3 +1,11 @@
+#`{{
+  Testing;
+    MongoDB::Connection.new()           Create connection to server
+    connection.database                 Return database
+    connection.list_databases()         Get the statistics of the databases
+    connection.database_names()         Get the database names
+}}
+
 #BEGIN { @*INC.unshift( './t' ) }
 #use Test-support;
 
@@ -20,44 +28,47 @@ isa_ok( $connection, 'MongoDB::Connection');
 
 # Create databases with a collection and data to make sure the databases are there
 #
-my MongoDB::Database $database = $database = $connection.database('db1');
-my MongoDB::Collection $collection = $database.collection( 'perl6_driver1' );
-$collection.insert( $%( 'name' => 'Jan Klaassen'));
+my MongoDB::Database $database = $connection.database('test');
 isa_ok( $database, 'MongoDB::Database');
 
-$database = $database = $connection.database('db2');
-$collection = $database.collection( 'perl6_driver2' );
-isa_ok( $database, 'MongoDB::Database');
-isa_ok( $collection, 'MongoDB::Collection');
+my MongoDB::Collection $collection = $database.collection( 'perl6_driver1' );
 $collection.insert( $%( 'name' => 'Jan Klaassen'));
 
 #-------------------------------------------------------------------------------
 # Get the statistics of the databases
 #
-my @db-docs = $connection.list_databases();
+my @db-docs = $connection.list_databases;
+
+# Get the database name from the statistics and save the index into the array
+# with that name. Use the zip operator to pair the array entries %doc with
+# their index number $idx.
+#
 my %db-names;
-my $idx = 0;
-for @db-docs -> %doc {
-  %db-names{%doc<name>} = $idx++;
+for (@db-docs) Z ^+@db-docs -> %doc, $idx {
+  %db-names{%doc<name>} = $idx;
 }
 
-#ok %db-names<admin>, 'virtual database admin found';
-ok %db-names<db1>, 'db1 found';
-ok %db-names<db2>, 'db2 found';
+ok %db-names<test>:exists, 'database test found';
 
-#ok @db-docs[%db-names<admin>]<empty>, 'Virtual database admin is empty';
-ok !@db-docs[%db-names<db1>]<empty>, 'Database db1 is not empty';
-ok !@db-docs[%db-names<db1>]<empty>, 'Database db2 is not empty';
+ok !@db-docs[%db-names<test>]<empty>, 'Database test is not empty';
 
 #-------------------------------------------------------------------------------
 # Get all database names
 #
 my @dbns = $connection.database_names();
 
-#ok any(@dbns) ~~ 'admin', 'admin is found in list';
-ok any(@dbns) ~~ 'db1', 'db1 is found in list';
-ok any(@dbns) ~~ 'db2', 'db2 is found in list';
+ok any(@dbns) ~~ 'test', 'test is found in list';
 
+#-------------------------------------------------------------------------------
+# Drop database db2
+#
+$database.drop;
 
+@dbns = $connection.database_names();
+ok !(any(@dbns) ~~ 'test'), 'test not found in list';
+
+#-------------------------------------------------------------------------------
+# Cleanup
+#
 done();
 exit(0);
