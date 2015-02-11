@@ -14,7 +14,7 @@ class X::MongoDB::Collection is Exception {
                  "  $!error-text",
                  $.error-code.defined ?? "\($!error-code)" !! '',
                  "\n  Data $!oper-data",
-                 "\n  Collection $!full-collection-name\n"
+                 "\n  Collection '$!full-collection-name'\n"
                  ;
   }
 }

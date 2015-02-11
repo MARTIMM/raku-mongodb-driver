@@ -1,6 +1,23 @@
 use v6;
 use MongoDB::Collection;
 
+class X::MongoDB::Database is Exception {
+  has $.error-text;                     # Error text
+  has $.error-code;                     # Error code if from server
+  has $.oper-name;                      # Operation name
+  has $.oper-data;                      # Operation data
+  has $.database-name;                  # Database name
+
+  method message() {
+      return [~] "\n$!oper-name\() error:\n",
+                 "  $!error-text",
+                 $.error-code.defined ?? "\($!error-code)" !! '',
+                 "\n  Data $!oper-data",
+                 "\n  Database '$!database-name'\n"
+                 ;
+  }
+}
+
 class MongoDB::Database {
 
   has $.connection is rw;
@@ -86,5 +103,34 @@ class MongoDB::Database {
   method reset_error ( --> Hash ) {
 
       return self.run_command(%( resetError => 1));
+  }
+
+  #-----------------------------------------------------------------------------
+  # Create collection explicitly with control parameters
+  #
+  method create_collection ( Str $collection_name, Bool :$capped,
+                             Bool :$autoIndexId, Int :$size,
+                             Int :$max, Int :$flags
+                             --> Hash
+                           ) {
+
+      my Hash $req = %( create => $collection_name);
+      $req<capped> = $capped if $capped;
+      $req<autoIndexId> = $autoIndexId if $autoIndexId;
+      $req<size> = $size if $size;
+      $req<max> = $max if $max;
+      $req<flags> = $flags if $flags;
+
+      my Hash $doc = self.run_command($req);
+      if $doc<ok>.Bool == False {
+          die X::MongoDB::Database.new(
+              error-text => $doc<errmsg>,
+              oper-name => 'create_collection',
+              oper-data => $req.perl,
+              database-name => $!name
+          );
+      }
+      
+      return $doc;
   }
 }

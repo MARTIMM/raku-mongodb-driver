@@ -123,7 +123,7 @@ are shown in in more than one place place.
 
 ### Collection Management
 
-* [ ] create
+* [x] create_collection(). Create collection explicitly
 * [x] drop
 * [ ] collection list
 * [ ] collection validation
@@ -273,8 +273,8 @@ are shown in in more than one place place.
 * [ ] connectionStatus. Reports the authentication state for the current connection.
 * [ ] convertToCapped. Converts a non-capped collection to a capped collection.
 * [ ] copydb. Copies a database from a remote host to the current host.
-* [ ] createIndexes. Builds one or more indexes for a collection.
-* [ ] create. Creates a collection and sets collection parameters.
+* [x] createIndexes, see ensure_index(). Builds one or more indexes for a collection.
+* [x] create_collection(). Creates a collection and sets collection parameters.
 * [x] dropDatabase. Removes the current database.
 * [x] dropIndexes. Removes indexes from a collection.
 * [x] drop. Removes the specified collection from the database.
@@ -436,7 +436,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
-
+* 0.17.0 - create_collection() to MongoDB::Database
+           X::MongoDB::Database Exception
 * 0.16.1 - Cleanup databases at the end of tests. Documented tests what is tested
 * 0.16.0 - Name change X::MongoDB::LastError into X::MongoDB::Collection.
            Added drop_indexes() drop() get_indexes() to MongoDB::Collection.

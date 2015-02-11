@@ -5,6 +5,7 @@
     database.reset_error()              Reset errors
     database.run_command()              Run command
     database.drop()                     Drop database
+    database.create_collection()        Create collection explicitly
 }}
 
 use v6;
@@ -13,13 +14,29 @@ use MongoDB;
 
 my MongoDB::Connection $connection .= new();
 
-# Create databases with a collection and data
+# Drop database first then create new databases
 #
+$connection.database('test').drop;
 my MongoDB::Database $database = $connection.database('test');
 isa_ok( $database, 'MongoDB::Database');
 
-my MongoDB::Collection $collection = $database.collection( 'cl1' );
-$collection.insert( $%( 'name' => 'Jan Klaassen'));
+# Create a collection explicitly. Try for a second time
+#
+$database.create_collection('cl1');
+if 1 {
+  $database.create_collection('cl1');
+  CATCH {
+    when X::MongoDB::Database {
+        ok $_.message ~~ m/collection \s* already \s* exists/,
+           'Collection cl1 already exists'
+           ;
+    }
+
+    default {
+        say $_.perl;
+    }
+  }
+}
 
 #-------------------------------------------------------------------------------
 # Error checking
