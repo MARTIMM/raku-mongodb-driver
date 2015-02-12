@@ -108,6 +108,31 @@ class MongoDB::Collection does MongoDB::Protocol {
   }
 
   #-----------------------------------------------------------------------------
+  # Get count of documents depending on criteria
+  #
+  method count( %criteria = {} --> Int ) {
+
+      my %req = %( count => $!name,
+                   query => %criteria,
+                   fields => %()                # Seen with wireshark
+                 );
+      my $doc = $!database.run_command(%req);
+
+      # Check error and throw X::MongoDB::Collection if there is one
+      #
+      if $doc<ok>.Bool == False {
+          die X::MongoDB::Collection.new(
+              error-text => $doc<errmsg>,
+              oper-name => 'drop_index',
+              oper-data => %req.perl,
+              full-collection-name => [~] $!database.name, '.', $!name
+          );
+      }
+
+      return Int($doc<n>);
+  }
+
+  #-----------------------------------------------------------------------------
   #
   method update (
       %selector, %update,
@@ -215,20 +240,20 @@ class MongoDB::Collection does MongoDB::Protocol {
                    index => $key-spec,
                  );
 
-      my $docs = $!database.run_command(%req);
+      my $doc = $!database.run_command(%req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
-      if $docs<ok>.Bool == False {
+      if $doc<ok>.Bool == False {
           die X::MongoDB::Collection.new(
-              error-text => $docs<errmsg>,
+              error-text => $doc<errmsg>,
               oper-name => 'drop_index',
               oper-data => %req.perl,
               full-collection-name => [~] $!database.name, '.', $!name
           );
       }
 
-      return $docs;
+      return $doc;
   }
 
   #-----------------------------------------------------------------------------
@@ -244,17 +269,17 @@ class MongoDB::Collection does MongoDB::Protocol {
   method drop ( --> Hash ) {
 
       my %req = %(drop => $!name);
-      my $docs = $!database.run_command(%req);
-      if $docs<ok>.Bool == False {
+      my $doc = $!database.run_command(%req);
+      if $doc<ok>.Bool == False {
           die X::MongoDB::Collection.new(
-              error-text => $docs<errmsg>,
+              error-text => $doc<errmsg>,
               oper-name => 'drop',
               oper-data => %req.perl,
               full-collection-name => [~] $!database.name, '.', $!name
           );
       }
 
-      return $docs;
+      return $doc;
   }
 
   #-----------------------------------------------------------------------------

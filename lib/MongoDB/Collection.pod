@@ -171,6 +171,11 @@ method find_one ( %criteria = { }, %projection = { } --> Hash ) {
 
 Same as for find() except it will only return one document.
 
+=for head2
+method count ( %criteria = { }, --> Int ) {
+
+Count documents using search criteria without using find and a cursor..
+
 =begin head2 
 method update ( %selector, %update,
                 Bool :$upsert = False, Bool :$multi_update = False
