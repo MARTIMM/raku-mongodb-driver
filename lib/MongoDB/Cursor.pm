@@ -3,14 +3,14 @@ use MongoDB::Protocol;
 
 class MongoDB::Cursor does MongoDB::Protocol;
 
-has $.collection is rw;
-has %.criteria is rw;
+has $.collection;
+has %.criteria;
 
 # int64 (8 byte buffer)
-has Buf $.id is rw;
+has Buf $.id;
 
 # batch of documents in last response
-has @.documents is rw;
+has @.documents;
 
 submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
 
@@ -28,22 +28,22 @@ method fetch ( --> Any ) {
 
     # there are no more documents in last response batch
     # but there is next batch to fetch from database
-    if not @.documents and [+]( $.id.list ) {
+    if not @!documents and [+]( $!id.list ) {
 
         # request next batch of documents
         my %OP_REPLY = self.wire.OP_GETMORE( self );
         
         # assign cursorID,
         # it may change to "0" if there are no more documents to fetch
-        $.id = %OP_REPLY{ 'cursor_id' };
+        $!id = %OP_REPLY{ 'cursor_id' };
         
         # assign documents
-        @.documents = %OP_REPLY{ 'documents' }.list;
+        @!documents = %OP_REPLY{ 'documents' }.list;
     }
 
     # Return a document when there is one. If none left, return Nil
     #
-    return +@.documents ?? @.documents.shift !! Nil;
+    return +@!documents ?? @!documents.shift !! Nil;
 }
 
 # Add support for next() as in the mongo shell
@@ -55,7 +55,7 @@ method kill ( --> Nil ) {
     self.wire.OP_KILL_CURSORS( self );
     
     # invalidate cursor id
-    $.id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 );
+    $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 );
 
     return;
 }
