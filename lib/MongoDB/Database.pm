@@ -20,8 +20,8 @@ class X::MongoDB::Database is Exception {
 
 class MongoDB::Database {
 
-  has $.connection is rw;
-  has Str $.name is rw;
+  has $.connection;
+  has Str $.name;
 
   #-----------------------------------------------------------------------------
   #
