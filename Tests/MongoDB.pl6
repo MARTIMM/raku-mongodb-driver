@@ -19,7 +19,7 @@
 # 1.224u 0.067s 0:01.29 99.2%     0+0k 0+0io 0pf+0w
 #
 
-use MongoDB:ver<0.9.4+>;
+use MongoDB:ver<0.18.0+>;
 
 my MongoDB::Connection $connection .= new( :host('localhost'), :port(27017));
 my MongoDB::Database $database = $connection.database( 'test');
@@ -75,13 +75,22 @@ $collection.update( :upsert ,
                    { '$currentDate' => {'date' => {'$type' => 'timestamp'}}}
                   );
 
+my $count = $collection.count;
+say "There are $count documents";
+
 # Find once
 #
-show-documents($collection.find({nick => 'ph'}));
+my $cursor = $collection.find({nick => 'ph'});
+show-documents($cursor);
+$count = $collection.count(%(nick => 'ph'));
+say "There are $count documents with nick => 'ph', same as cursor.count: "
+  , $cursor.count;
 
 # Find all
 #
 show-documents($collection.find());
+
+
 
 # Remove all documents.
 #
