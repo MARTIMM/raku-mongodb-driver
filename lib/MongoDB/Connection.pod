@@ -40,8 +40,8 @@ my MongoDB::Database $database = $connection.database('test');
 
 =head1 DESCRIPTION
 
-This module helps the client to connect to the server and provides some
-maintenance commands. The module is loaded automatically with the MongoDB
+This class helps the client to connect to the server and provides some
+maintenance commands. The class is loaded automatically with the MongoDB
 module.
 
 =head1 METHODS

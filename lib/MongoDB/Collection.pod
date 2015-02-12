@@ -65,9 +65,9 @@ $collection.remove( );
 
 =head1 DESCRIPTION
 
-This set of modules will help you accessing a MongoDB server. All primitive
-functions are installed to insert, update, find and remove documents.
-http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-wire-protocol/
+Classes to help accessing and manipulating MongoDB collections. The class is
+loaded automatically with the MongoDB
+module.
 
 =head1 CLASSES
 
@@ -112,7 +112,18 @@ if $cmd ~~ 'delete' {
 =for head2
 class MongoDB::Collection does MongoDB::Protocol {...}
 
-The class of which the methods are explaned below.
+The class of which the methods are explaned below. The class has the following
+attributes;
+
+=for head3
+has $.database;
+
+If attribute is defined it holds the current MongoDB::Database object.
+
+=for head3
+has Str $.name;
+
+If attribute is defined it holds the name of the collection.
 
 =head1 METHODS
 

@@ -55,9 +55,9 @@ while $cursor.next( ) -> %document { %document.perl.say; }
 
 =head1 DESCRIPTION
 
-After calling find to query the collection for data a cursor is returned. With
-this cursor it is possible to modify the query or ask information from the
-server about the query.
+After calling find to query the collection for data a cursor object is
+returned. With this cursor it is possible to modify the query or ask
+information from the server about the query.
 
 =head1 METHODS
 

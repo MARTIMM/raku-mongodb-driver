@@ -1,0 +1,187 @@
+#!/usr/bin/env perl6
+#
+use v6;
+
+# Running the pod file will create a pdf using wkhtmltopdf
+#
+my Str $pod = "$*PROGRAM";
+my Str $pdf = $pod;
+$pdf ~~ s/\. <-[.]>+ $/.pdf/;
+shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
+
+#-------------------------------------------------------------------------------
+
+=begin pod
+
+=head1 NAME MongoDB::Collection - Operations on a MongoDB Collection
+
+=head1 SYNOPSIS
+
+=begin nested
+=begin code
+
+use MongoDB;
+
+# Initialize
+#
+my $connection = MongoDB::Connection.new;
+my $database = $connection.database('test');
+my $collection = $database.collection('coll');
+
+# Or explicit create. Collection holding at most 30 documents.
+#
+create_collection( 'new_coll', :capped, :max(30), :size(1000));
+
+# Drop whole database
+#
+$database.drop;
+
+=end code
+=end nested
+
+=head1 DESCRIPTION
+
+Class to manipulate MongoDB databases.
+
+=head1 CLASSES
+
+=for head2
+class X::MongoDB::Database is Exception {...}
+
+Some methods from the C<MongoDB::Database> class will throw exceptions when
+things go wrong. E.g. creating a database with faulty arguments..
+
+=for head2
+class MongoDB::Database {...}
+
+Methods below are from this class.
+
+=for head3
+has $.connection;
+
+if attribute is defined it holds the object of the current connection.
+
+=for head3
+has Str $.name;
+
+if attribute is defined it holds the name of the database.
+
+=head1 METHODS
+
+=for head2
+method drop ( --> Hash ) {...}
+
+Drop the database. All indexes and other stuff involved are removed.
+
+=for head2
+method collection ( Str $name --> MongoDB::Collection ) {...}
+
+Select collection and return a collection object. When the collection is new it
+will only be created when data is inserted.
+
+=for head2
+method create_collection ( Str $collection_name, Bool :$capped,
+                           Bool :$autoIndexId, Int :$size,
+                           Int :$max, Int :$flags
+                           --> MongoDB::Collection
+                         ) {...}
+
+Create a collection explicitly and return a collection object. The arguments
+are (See also L<here|http://docs.mongodb.org/manual/reference/command/create/>);.
+
+=head3 $collection_name
+
+Name of the new collection.
+
+=head3 $capped
+
+Optional. To create a capped collection. specify true. If you specify true, you
+must also set a maximum size in the size field.
+
+=head3 $autoIndexId
+
+Optional. Specify false to disable the automatic creation of an index on the
+_id field. Before 2.2, the default value for autoIndexId was false.
+
+=head3 $size
+
+Optional. The maximum size for the capped collection. Once a capped collection
+reaches its maximum size, MongoDB overwrites older old documents with new
+documents. The size field is required for capped collections.
+
+=head3 $max
+
+Optional. The maximum number of documents to keep in the capped collection. The
+size limit takes precedence over this limit. If a capped collection reaches its
+maximum size before it reaches the maximum number of documents, MongoDB removes
+old documents. If you use this limit, ensure that the size limit is sufficient
+to contain the documents limit.
+
+=for head2
+method run_command ( %command --> Hash ) {...}
+
+Run a command against the preselected collection and database. For proper
+handling of this command it is nesseary to study the MongoDB site and perhaps
+this perl6 driver code (there are many examples) will it be of any use.
+
+=for head2
+method get_last_error ( Bool :$j = True, Int :$w = 0, Int :$wtimeout = 1000,
+                        Bool :$fsync = False
+                        --> Hash
+                      ) {...}
+
+Returns the error status of the preceding write operation on the current
+connection. There are methods in classes which use this call implicitly to
+see if all went well.
+
+The arguments are (See also L<here|http://docs.mongodb.org/manual/reference/command/getLastError>);
+
+=head3 j
+
+If true, wait for the next journal commit before returning, rather than waiting
+for a full disk flush. If mongod does not have journaling enabled, this option
+has no effect. If this option is enabled for a write operation, mongod will
+wait no more than 1/3 of the current commitIntervalMs before writing data to
+the journal.
+
+=head3 w
+
+When running with replication, this is the number of servers to replicate to
+before returning. A w value of 1 indicates the primary only. A w value of 2
+includes the primary and at least one secondary, etc. In place of a number, you
+may also set w to majority to indicate that the command should wait until the
+latest write propagates to a majority of replica set members. If using w, you
+should also use wtimeout. Specifying a value for w without also providing a
+wtimeout may cause getLastError to block indefinitely.
+
+=head3 fsync
+
+If true, wait for mongod to write this data to disk before returning. Defaults
+to false. In most cases, use the j option to ensure durability and consistency
+of the data set.
+
+=head3 wtimeout
+
+Optional. Milliseconds. Specify a value in milliseconds to control how long to
+wait for write propagation to complete. If replication does not complete in the
+given timeframe, the getLastError command will return with an error status.
+
+=head3 Return document
+
+There are many fields in the returned document of which C<ok>, C<lastOp> and 
+C<err> are the most obvious. Read the information on the MongoDB site to find
+out more.
+
+=for head2
+method get_prev_error ( --> Hash ) {...}
+
+Returns all error documents since last reset.
+
+=for head2
+method reset_error ( --> Hash ) {...}
+
+Reset all errors.
+
+
+=end pod
+

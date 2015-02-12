@@ -47,6 +47,14 @@ class MongoDB::Database {
   #
   method collection ( Str $name --> MongoDB::Collection ) {
 
+      if !($name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
+          die X::MongoDB::Database.new(
+              error-text => "Illegal collection name: '$name'",
+              oper-name => 'create_collection()',
+              database-name => $!name
+          );
+      }
+
       return MongoDB::Collection.new(
           database    => self,
           name        => $name,
@@ -59,7 +67,7 @@ class MongoDB::Database {
   method create_collection ( Str $collection_name, Bool :$capped,
                              Bool :$autoIndexId, Int :$size,
                              Int :$max, Int :$flags
-                             --> Hash
+                             --> MongoDB::Collection
                            ) {
 
       if !($collection_name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
@@ -87,7 +95,10 @@ class MongoDB::Database {
           );
       }
       
-      return $doc;
+      return MongoDB::Collection.new(
+          database    => self,
+          name        => $collection_name,
+      );
   }
 
   #-----------------------------------------------------------------------------
