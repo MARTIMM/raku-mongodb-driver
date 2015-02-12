@@ -122,6 +122,9 @@ $cursor = $collection.find($query);
 is $cursor.count, 49, '49 documents';
 
 #-----------------------------------------------------------------------------
+#@code-list = $collection.distinct( 'code', %(name => %(regex =>'Hein')));
+
+#-----------------------------------------------------------------------------
 # Cleanup and close
 #
 $collection.database.drop;

@@ -18,7 +18,8 @@ my MongoDB::Connection $connection .= new();
 #
 $connection.database('test').drop;
 my MongoDB::Database $database = $connection.database('test');
-isa_ok( $database, 'MongoDB::Database');
+isa_ok $database, 'MongoDB::Database';
+is $database.name, 'test', 'Check database name';
 
 # Create a collection explicitly. Try for a second time
 #
