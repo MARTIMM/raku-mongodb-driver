@@ -1,6 +1,6 @@
 use v6;
 
-module MongoDB:ver<0.17.1> {
+module MongoDB:ver<0.18.0> {
   use MongoDB::Wire;
 
   use MongoDB::Connection;

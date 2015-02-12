@@ -227,7 +227,7 @@ are shown in in more than one place place.
 #### Aggregation Commands
 
 * [ ] aggregate. Performs aggregation tasks such as group using the aggregation framework.
-* [ ] count. Counts the number of documents in a collection.
+* [x] count. Counts the number of documents in a collection.
 * [ ] distinct. Displays the distinct values found for a specified key in a collection.
 * [ ] group. Groups documents in a collection by the specified key and performs simple aggregation.
 * [ ] mapReduce. Performs map-reduce aggregation for large data sets.
@@ -358,7 +358,7 @@ are shown in in more than one place place.
 
 * [ ] db.collection.aggregate(). Provides access to the aggregation pipeline.
 * [ ] db.collection.copyTo(). Wraps eval to copy data between collections in a single MongoDB instance.
-* [ ] db.collection.count(). Wraps count to return a count of the number of documents in a collection or matching a query.
+* [x] db.collection.count(). Wraps count to return a count of the number of documents in a collection or matching a query.
 * [ ] db.collection.createIndex(). Builds an index on a collection. Use db.collection.ensureIndex(). Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
 * [ ] db.collection.dataSize(). Returns the size of the collection. Wraps the size field in the output of the collStats.
 * [ ] db.collection.distinct(). Returns an array of documents that have distinct values for the specified field.
@@ -431,6 +431,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.18.0 - Count() in MongoDB::Collection
 * 0.17.1 - Collectionnames are checked. In perl dashes are possible and are also
            accepted by the server. In the mongo shell however it is not possible
            to manipulate these names because it works in a javascript
