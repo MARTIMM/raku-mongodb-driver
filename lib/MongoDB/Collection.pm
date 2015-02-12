@@ -21,8 +21,8 @@ class X::MongoDB::Collection is Exception {
 
 class MongoDB::Collection does MongoDB::Protocol {
 
-  has $.database is rw;
-  has Str $.name is rw;
+  has $.database;
+  has Str $.name;
 
   #-----------------------------------------------------------------------------
   #
@@ -130,6 +130,31 @@ class MongoDB::Collection does MongoDB::Protocol {
       }
 
       return Int($doc<n>);
+  }
+
+  #-----------------------------------------------------------------------------
+  # Find distinct values of a field depending on criteria
+  #
+  method distinct( $field-name!, %criteria = {} --> Array ) {
+
+      my %req = %( distinct => $!name,
+                   query => %criteria,
+                   key => $field-name                # Seen with wireshark
+                 );
+      my $doc = $!database.run_command(%req);
+
+      # Check error and throw X::MongoDB::Collection if there is one
+      #
+      if $doc<ok>.Bool == False {
+          die X::MongoDB::Collection.new(
+              error-text => $doc<errmsg>,
+              oper-name => 'drop_index',
+              oper-data => %req.perl,
+              full-collection-name => [~] $!database.name, '.', $!name
+          );
+      }
+
+      return $doc<values>.list;
   }
 
   #-----------------------------------------------------------------------------
