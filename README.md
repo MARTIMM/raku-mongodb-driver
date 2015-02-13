@@ -17,8 +17,10 @@ Documentation about this driver can be found in doc/Original-README.md and the
 following pod files
 
 * lib/MongoDB.pod
-* lib/MongDB/Connection.pod
-* lib/MongDB/Colection.pod
+* lib/MongoDB/Collection.pod
+* lib/MongoDB/Connection.pod
+* lib/MongoDB/Cursor.pod
+* lib/MongoDB/Database.pod
 
 When you have *Pod::To::HTML* installed and the pdf generator *wkhtmltopdf* then
 you can execute the pod file with perl6 to generate a pdf from the pod document.

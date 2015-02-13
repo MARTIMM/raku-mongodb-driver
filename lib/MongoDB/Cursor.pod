@@ -59,6 +59,23 @@ After calling find to query the collection for data a cursor object is
 returned. With this cursor it is possible to modify the query or ask
 information from the server about the query.
 
+=head1 CLASSES
+
+=for head2
+class MongoDB::Cursor does MongoDB::Protocol;
+
+This class has the following attributes.
+
+=for head3
+has $.collection;
+
+This is the MongoDB::Collection on which the fetch/next has been executed.
+
+=for head3
+has %.criteria;
+
+This is the current search criteria.
+
 =head1 METHODS
 
 =head2 method fetch ( --> Any ) {...}
