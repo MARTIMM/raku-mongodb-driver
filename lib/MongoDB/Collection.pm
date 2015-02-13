@@ -100,11 +100,24 @@ class MongoDB::Collection does MongoDB::Protocol {
   #
   method find_one ( %criteria = { }, %projection = { } --> Hash ) {
 
-      my MongoDB::Cursor $cursor = self.find( %criteria, %projection
-                                            , :number_to_return(1)
+      my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
+                                              :number_to_return(1)
                                             );
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
+  }
+
+  #-----------------------------------------------------------------------------
+  # Get explanation about given search criteria
+  #
+  method explain ( %criteria = { } --> Hash ) {
+
+      my MongoDB::Cursor $cursor = self.find( %( '$query' => %criteria,
+                                                 '$explain' => True
+                                               )
+                                            );
+      my $docs = $cursor.fetch();
+      return $docs;
   }
 
   #-----------------------------------------------------------------------------
@@ -154,6 +167,8 @@ class MongoDB::Collection does MongoDB::Protocol {
           );
       }
 
+      # What do we do with $doc<stats> ?
+      #
       return $doc<values>.list;
   }
 

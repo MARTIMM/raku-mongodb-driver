@@ -180,7 +180,7 @@ are shown in in more than one place place.
   * [ ] limit
   * [ ] sort
   * [ ] eval()
-  * [ ] explain()
+  * [x] explain()
   * [ ] hint() and $hint
 
 
@@ -396,7 +396,7 @@ are shown in in more than one place place.
 * [ ] cursor.addOption(). Adds special wire protocol flags that modify the behavior of the query.\u2019
 * [ ] cursor.batchSize(). Controls the number of documents MongoDB will return to the client in a single network message.
 * [x] cursor.count(). Returns a count of the documents in a cursor.
-* [ ] cursor.explain(). Reports on the query execution plan, including index use, for a cursor.
+* [x] collection.explain(). Done on collection! Reports on the query execution plan, including index use, for a cursor.
 * [ ] cursor.forEach(). Applies a JavaScript function for every document in a cursor.
 * [ ] cursor.hasNext(). Returns true if the cursor has documents and can be iterated.
 * [ ] cursor.hint(). Forces MongoDB to use a specific index for a query.
@@ -433,6 +433,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.19.0 - explain() in MongoDB::Collection
 * 0.18.0 - count() in MongoDB::Collection
          - distinct() in MongoDB::Collection
 * 0.17.1 - Collectionnames are checked. In perl dashes are possible and are also
