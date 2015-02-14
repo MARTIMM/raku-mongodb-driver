@@ -4,6 +4,7 @@
       implicit AND selection            Find with more fields
       projection                        Select fields to return
     cursor.count()                      Count number of docs
+    collection.explain()                Explain what is done for a search
     cursor.kill()                       Kill a cursor
     cursor.next()                       Fetch a document
 }}
