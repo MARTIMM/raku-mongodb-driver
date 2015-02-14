@@ -49,6 +49,20 @@ class MongoDB::Cursor does MongoDB::Protocol {
   # Add support for next() as in the mongo shell
   method next ( --> Any ) { return self.fetch }
 
+  #-----------------------------------------------------------------------------
+  # Get explanation about given search criteria
+  #
+  method explain ( --> Hash ) {
+
+      my MongoDB::Cursor $cursor = $!collection.find( %( '$query' => %!criteria,
+                                                         '$explain' => True
+                                                       )
+                                                       :number_to_return(1)
+                                                    );
+      my $docs = $cursor.fetch();
+      return $docs;
+  }
+
   method kill ( --> Nil ) {
 
       # invalidate cursor on database

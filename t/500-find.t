@@ -5,6 +5,7 @@
       projection                        Select fields to return
     cursor.count()                      Count number of docs
     collection.explain()                Explain what is done for a search
+    cursor.explain()                    Explain what is done for a search
     cursor.kill()                       Kill a cursor
     cursor.next()                       Fetch a document
 }}
@@ -66,6 +67,13 @@ is $doc<cursor>, "BasicCursor", 'No index -> basic cursor';
 is $doc<n>, 1, 'One doc found';
 is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching';
 
+# Do the same via a cursor
+$cursor = $collection.find({test_record => 'tr38'});
+$doc = $cursor.explain;
+is $doc<cursor>, "BasicCursor", 'No index -> basic cursor, explain via cursor';
+is $doc<n>, 1, 'One doc found, explain via cursor';
+is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching, explain via cursor';
+
 # Now set an index on the field and the scan goes only through one document
 #
 $collection.ensure_index( %( test_record => 1));
@@ -76,14 +84,21 @@ ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type';
 is $doc<n>, 1, 'One doc found';
 is $doc<nscanned>, 1, 'Scanned 1 doc, great indexing';
 
+# Do the same via a cursor
+$cursor = $collection.find({test_record => 'tr38'});
+$doc = $cursor.explain;
+ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via cursor';
+is $doc<n>, 1, 'One doc found, explain via cursor';
+is $doc<nscanned>, 1, 'Scanned 1 doc, great indexing, explain via cursor';
+
 #-------------------------------------------------------------------------------
 $cursor.kill;
 my $error-doc = $collection.database.get_last_error;
 ok $error-doc<ok>.Bool, 'No error after kill cursor';
 
-# Is this ok ????
+# Is this ok (No fifty because of test with explain on cursor????
 $cursor.count;
-ok $cursor.count == 50.0, 'Still counting fifty documents';
+is $cursor.count, 1, 'Still counting 1 document';
 
 #-------------------------------------------------------------------------------
 # Cleanup and close

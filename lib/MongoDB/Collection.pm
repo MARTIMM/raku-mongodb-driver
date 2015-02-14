@@ -114,7 +114,8 @@ class MongoDB::Collection does MongoDB::Protocol {
 
       my MongoDB::Cursor $cursor = self.find( %( '$query' => %criteria,
                                                  '$explain' => True
-                                               )
+                                               ),
+                                               :number_to_return(1)
                                             );
       my $docs = $cursor.fetch();
       return $docs;
