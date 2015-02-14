@@ -76,7 +76,7 @@ is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching, explain via cursor';
 
 # Now set an index on the field and the scan goes only through one document
 #
-$collection.ensure_index( %( test_record => 1));
+$collection.ensure_index(%(test_record => 1));
 $doc = $collection.explain({test_record => 'tr38'});
 #say $doc.perl;
 #say "N, scanned: ", $doc<n>, ', ', $doc<nscanned>;
@@ -90,6 +90,20 @@ $doc = $cursor.explain;
 ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via cursor';
 is $doc<n>, 1, 'One doc found, explain via cursor';
 is $doc<nscanned>, 1, 'Scanned 1 doc, great indexing, explain via cursor';
+
+#-------------------------------------------------------------------------------
+$doc = $cursor.hint( %("_id" => 1), :explain);
+#$doc = $cursor.explain;
+#say $doc.perl;
+#say "N, scanned: ", $doc<n>, ', ', $doc<nscanned>;
+ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via bad hint';
+is $doc<n>, 1, 'One doc found, explain via bad hint';
+is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching, explain via bad hint';
+
+$doc = $cursor.hint( %(test_record => 1), :explain);
+ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via good hint';
+is $doc<n>, 1, 'One doc found, explain via a good hint';
+is $doc<nscanned>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
 
 #-------------------------------------------------------------------------------
 $cursor.kill;

@@ -12,6 +12,7 @@ class MongoDB::Cursor does MongoDB::Protocol {
   # batch of documents in last response
   has @.documents;
 
+  #-----------------------------------------------------------------------------
   submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
 
       $!collection = $collection;
@@ -24,6 +25,7 @@ class MongoDB::Cursor does MongoDB::Protocol {
       @!documents = %OP_REPLY{ 'documents' }.list;
   }
 
+  #-----------------------------------------------------------------------------
   method fetch ( --> Any ) {
 
       # there are no more documents in last response batch
@@ -46,6 +48,7 @@ class MongoDB::Cursor does MongoDB::Protocol {
       return +@!documents ?? @!documents.shift !! Nil;
   }
 
+  #-----------------------------------------------------------------------------
   # Add support for next() as in the mongo shell
   method next ( --> Any ) { return self.fetch }
 
@@ -63,6 +66,22 @@ class MongoDB::Cursor does MongoDB::Protocol {
       return $docs;
   }
 
+  #-----------------------------------------------------------------------------
+  # Give the query analizer a hint on what index to use.
+  #
+  method hint ( $index-spec, :$explain = False --> Hash ) {
+
+      my $req = %( '$query' => %!criteria, '$hint' => $index-spec);
+      $req{'$explain'} = 1 if $explain;
+
+      my MongoDB::Cursor $cursor = $!collection.find( $req,
+                                                      :number_to_return(1)
+                                                    );
+      my $docs = $cursor.fetch;
+      return $docs;
+  }
+
+  #-----------------------------------------------------------------------------
   method kill ( --> Nil ) {
 
       # invalidate cursor on database
@@ -74,6 +93,7 @@ class MongoDB::Cursor does MongoDB::Protocol {
       return;
   }
 
+  #-----------------------------------------------------------------------------
   # Get count of found documents
   #
   method count ( Int :$skip = 0, Int :$limit = 0 --> Num ) {

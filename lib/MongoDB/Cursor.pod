@@ -93,7 +93,14 @@ cursor. There are many fields in the document. The fields returned also depend
 on the type of queries. Look for this information on the L<MongoDB
 site|http://docs.mongodb.org/manual/reference/method/cursor.explain>.
 
-=head2 kill ( --> Nil ) {...}
+=for head2
+method hint ( $index-spec, :$explain = False --> Hash ) {...}
+
+Get documents from the database using a hint on what index to use. When
+$explain is True, a document of how things are resolved is send instead. See
+also L<explain> above. 
+
+=head2 method kill ( --> Nil ) {...}
 
 Delete the cursor when it is no longer needed. By default the server will delete
 the cursor after a non-usage period of 10 minutes.

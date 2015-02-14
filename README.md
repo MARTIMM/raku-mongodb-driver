@@ -374,6 +374,7 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.20.0 - list_collections() and collection_names() in MongoDB::Database
+         - hint() on a cursor.
 * 0.19.0 - explain() in MongoDB::Collection and MongoDB::Cursor.
 * 0.18.0 - count() in MongoDB::Collection
          - distinct() in MongoDB::Collection
