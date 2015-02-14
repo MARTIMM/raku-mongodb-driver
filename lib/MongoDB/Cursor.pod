@@ -85,6 +85,14 @@ Get the document from the query. The method returns a document (Hash) or Nil
 when no (more) documents are found. Next() does the same as fetch but is added
 to mimic the API of the Mongo shell.
 
+=for head2
+method explain ( --> Hash ) {...}
+
+Return information on the query plan using the criteria already set in the
+cursor. There are many fields in the document. The fields returned also depend
+on the type of queries. Look for this information on the L<MongoDB
+site|http://docs.mongodb.org/manual/reference/method/cursor.explain>.
+
 =head2 kill ( --> Nil ) {...}
 
 Delete the cursor when it is no longer needed. By default the server will delete

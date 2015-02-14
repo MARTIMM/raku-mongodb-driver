@@ -118,6 +118,18 @@ old documents. If you use this limit, ensure that the size limit is sufficient
 to contain the documents limit.
 
 =for head2
+method list_collections ( --> Array ) {...}
+
+Return an array of docs with all types of collections in the database. To get
+the names of the users collection it is better to use the colection_names()
+method explained below.
+
+=for head2
+method collection_names ( --> Array ) {...}
+
+Return an array of the users collectionnames.
+
+=for head2
 method run_command ( %command --> Hash ) {...}
 
 Run a command against the preselected collection and database. For proper

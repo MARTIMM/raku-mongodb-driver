@@ -183,7 +183,14 @@ method find_one ( %criteria = { }, %projection = { } --> Hash ) {...}
 Same as for find() except it will only return one document.
 
 =for head2
-method count ( %criteria = { }, --> Int ) {
+method explain ( %criteria = { } --> Hash ) {...}
+
+Return information on the query plan using the criteria. There are many fields
+in the document. The fields returned also depend on the type of queries. Look
+for this information on the L<MongoDB site|http://docs.mongodb.org/manual/reference/method/cursor.explain>.
+
+=for head2
+method count ( %criteria = { }, --> Int ) {...}
 
 Count documents using search criteria without using find and a cursor..
 
