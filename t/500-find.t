@@ -6,6 +6,7 @@
     cursor.count()                      Count number of docs
     collection.explain()                Explain what is done for a search
     cursor.explain()                    Explain what is done for a search
+    cursor.hint()                       Control choice of index
     cursor.kill()                       Kill a cursor
     cursor.next()                       Fetch a document
 }}
