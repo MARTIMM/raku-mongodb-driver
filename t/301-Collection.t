@@ -31,11 +31,12 @@ is $collection.count(%(name => 'Piet Hein')), 1, 'One document found';
 
 #-------------------------------------------------------------------------------
 #
-my @code-list = $collection.distinct('code');
-is_deeply @code-list.sort, $( 14, 20), 'Codes found are 14, 20';
+my $code-list = $collection.distinct('code');
+is_deeply $code-list.sort, $( 14, 20), 'Codes found are 14, 20';
 
-@code-list = $collection.distinct( 'code', %(name => 'Piet Hein'));
-is_deeply @code-list.sort, [20], 'Code found is 20';
+$code-list = $collection.distinct( 'code', %(name => 'Piet Hein'));
+is_deeply $code-list, [20], 'Code found is 20';
+
 #-------------------------------------------------------------------------------
 #
 $collection = $database.collection('cl2');

@@ -120,7 +120,7 @@ class MongoDB::Database {
   # Return only the user collection names in the database
   #
   method collection_names ( --> Array ) {
-  
+
       my @docs;
       my $system-indexes = self.collection('system.namespaces');
       my $cursor = $system-indexes.find;
