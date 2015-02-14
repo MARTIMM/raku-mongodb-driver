@@ -61,7 +61,7 @@ There are lists on the MongoDB site see references above. Items from the list
 below will be worked on. There are many items shown here, it might be impossible
 to implement it all. By using run_command(), much can be accomplished. A lot of the
 items are using that call to get the information for you. Also quite a few items
-are shown in in more than one place place.
+are shown in in more than one place place. Removed all internal commands.
 
 ### Database Management
 
@@ -116,7 +116,7 @@ are shown in in more than one place place.
 
 * [x] create_collection(). Create collection explicitly
 * [x] drop
-* [ ] collection list
+* [x] collection list
 * [ ] collection validation
 
 ### Query and Write Operation Commands
@@ -373,6 +373,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.20.0 - list_collections() and collection_names() in MongoDB::Database
 * 0.19.0 - explain() in MongoDB::Collection and MongoDB::Cursor.
 * 0.18.0 - count() in MongoDB::Collection
          - distinct() in MongoDB::Collection

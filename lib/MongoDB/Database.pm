@@ -102,6 +102,39 @@ class MongoDB::Database {
   }
 
   #-----------------------------------------------------------------------------
+  # Return all information from system namespaces
+  #
+  method list_collections ( --> Array ) {
+  
+      my @docs;
+      my $system-indexes = self.collection('system.namespaces');
+      my $cursor = $system-indexes.find;
+      while $cursor.next -> $doc {
+          @docs.push($doc);
+      }
+      
+      return @docs;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Return only the user collection names in the database
+  #
+  method collection_names ( --> Array ) {
+  
+      my @docs;
+      my $system-indexes = self.collection('system.namespaces');
+      my $cursor = $system-indexes.find;
+      while $cursor.next -> $doc {
+          next if $doc<name> ~~ m/\$_id_/;      # Skip names with id in it
+          next if $doc<name> ~~ m/\.system\./;  # Skip system collections
+          $doc<name> ~~ m/\. (.+) $/;
+          @docs.push($/[0].Str);
+      }
+
+      return @docs;
+  }
+
+  #-----------------------------------------------------------------------------
   # Run command should ony be working on the admin database using the virtual
   # $cmd collection. Method is placed here because it works on a database be
   # it a special one.
