@@ -218,7 +218,7 @@ are shown in in more than one place place. Removed all internal commands.
 * [ ] aggregate. Performs aggregation tasks such as group using the aggregation framework.
 * [x] count. Counts the number of documents in a collection.
 * [x] distinct. Displays the distinct values found for a specified key in a collection.
-* [ ] group. Groups documents in a collection by the specified key and performs simple aggregation.
+* [x] group. Groups documents in a collection by the specified key and performs simple aggregation.
 * [ ] mapReduce. Performs map-reduce aggregation for large data sets.
 
 #### Geospatial Commands
@@ -315,7 +315,7 @@ are shown in in more than one place place. Removed all internal commands.
 * [ ] db.collection.getIndexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
 * [x] db.collection.getIndexes(). Returns an array of documents that describe the existing indexes on a collection.
 * [ ] db.collection.getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
-* [ ] db.collection.group(). Provides simple data aggregation function. Groups documents in a collection by a key, and processes the results. Use aggregate() for more complex data aggregation.
+* [x] db.collection.group(). Provides simple data aggregation function. Groups documents in a collection by a key, and processes the results. Use aggregate() for more complex data aggregation.
 * [ ] db.collection.indexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
 * [x] db.collection.insert(). Creates a new document in a collection.
 * [ ] db.collection.isCapped(). Reports if a collection is a capped collection.
@@ -366,6 +366,8 @@ are also items to be implemented in BSON. You need to look there for info
 * Change die() statements to throw exception objects to notify caller.
 * Keys must be checked for illegal characters when inserting documents.
 * Tests for connection to non existing server. timeout setting.
+* Test to compare documents
+* Test group aggregation keyf field and finalize
 
 ## CHANGELOG
 
@@ -373,6 +375,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.21.0 - group in MongoDB::Collection.
 * 0.20.0 - list_collections() and collection_names() in MongoDB::Database
          - hint() on a cursor.
 * 0.19.0 - explain() in MongoDB::Collection and MongoDB::Cursor.

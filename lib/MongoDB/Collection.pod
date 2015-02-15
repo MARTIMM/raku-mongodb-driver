@@ -199,6 +199,11 @@ method distinct ( $field-name!, %criteria = { }, --> Array ) {...}
 
 Find distinct values of a field depending on criteria.
 
+=for head2
+method group ( Str $key, Str $js-reduce-func, :%initial = {} --> Hash ) {...}
+
+
+
 =begin head2 
 method update ( %selector, %update,
                 Bool :$upsert = False, Bool :$multi_update = False

@@ -175,6 +175,44 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   #-----------------------------------------------------------------------------
   #
+  method group ( Str :$key = '', Str :$js_reduce_func = 'function( d, p) {}',
+                 :%initial = {}, Str :$key_js_func = '',
+                 :%condition = {}, Str :$finalize = ''
+                 --> Hash ) {
+      
+      my %req = %( group => %( ns => $!name,
+                   initial => %initial,
+                   '$reduce' => $js_reduce_func
+                 ));
+      if $key_js_func.chars {
+          %req<group><keyf> = $key_js_func;
+      }
+      
+      else {
+          %req<group><key> = %($key => 1);
+      }
+#say "\nG: {%req.perl}\n";
+
+      %req<group><condition> = %condition if +%condition;
+      %req<group><finalize> = $finalize if $finalize;
+      my $doc = $!database.run_command(%req);
+
+      # Check error and throw X::MongoDB::Collection if there is one
+      #
+      if $doc<ok>.Bool == False {
+          die X::MongoDB::Collection.new(
+              error-text => $doc<errmsg>,
+              oper-name => 'group',
+              oper-data => %req.perl,
+              full-collection-name => [~] $!database.name, '.', $!name
+          );
+      }
+
+      return $doc;
+  }
+
+  #-----------------------------------------------------------------------------
+  #
   method update (
       %selector, %update,
       Bool :$upsert = False, Bool :$multi_update = False
