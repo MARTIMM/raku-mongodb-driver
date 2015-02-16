@@ -212,6 +212,48 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   #-----------------------------------------------------------------------------
   #
+  method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
+                      Str :$finalize, Hash :$criteria, Hash :$sort,
+                      Hash :$scope, Int :$limit, Bool :$jsMode = False
+                      --> Hash ) {
+      
+      my Hash $req = { mapReduce => $!name,
+                       map => $map_js_func,
+                       reduce => $reduce_js_func,
+                       :$jsMode
+                     };
+      if $out.defined {
+          $req<out> = $out;
+      }
+      
+      else {
+          $req<out> = %( replace => $!name ~ '_MapReduce');
+      }
+#say "\nMR: {$req.perl}\n";
+
+      $req<query> = $criteria if +$criteria;
+      $req<sort> = $sort if $sort;
+      $req<limit> = $limit if $limit;
+      $req<finalize> = $finalize if $finalize;
+      $req<scope> = $scope if $scope;
+      my $doc = $!database.run_command($req);
+
+      # Check error and throw X::MongoDB::Collection if there is one
+      #
+      if $doc<ok>.Bool == False {
+          die X::MongoDB::Collection.new(
+              error-text => $doc<errmsg>,
+              oper-name => 'group',
+              oper-data => $req.perl,
+              full-collection-name => [~] $!database.name, '.', $!name
+          );
+      }
+
+      return $doc;
+  }
+
+  #-----------------------------------------------------------------------------
+  #
   method update (
       %selector, %update,
       Bool :$upsert = False, Bool :$multi_update = False

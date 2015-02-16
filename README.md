@@ -222,7 +222,7 @@ are shown in in more than one place place. Removed all internal commands.
 * [x] count. Counts the number of documents in a collection.
 * [x] distinct. Displays the distinct values found for a specified key in a collection.
 * [x] group. Groups documents in a collection by the specified key and performs simple aggregation.
-* [ ] mapReduce. Performs map-reduce aggregation for large data sets.
+* [x] mapReduce. Performs map-reduce aggregation for large data sets.
 
 #### Geospatial Commands
 
@@ -322,7 +322,7 @@ are shown in in more than one place place. Removed all internal commands.
 * [ ] db.collection.indexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
 * [x] db.collection.insert(). Creates a new document in a collection.
 * [ ] db.collection.isCapped(). Reports if a collection is a capped collection.
-* [ ] db.collection.mapReduce(). Performs map-reduce style data aggregation.
+* [x] db.collection.mapReduce(). Performs map-reduce style data aggregation.
 * [ ] db.collection.reIndex(). Rebuilds all existing indexes on a collection.
 * [ ] db.collection.remove(). Deletes documents from a collection.
 * [ ] db.collection.renameCollection(). Changes the name of a collection.
@@ -365,12 +365,16 @@ which I have to make to remember to add items to programmed functions. There
 are also items to be implemented in BSON. You need to look there for info
 
 * Speed, protocol correctness and clear code are priorities for now.
+  * Speed can be influenced by specifying types on all variables
+  * Furthermore the speedup of the language perl6 itself would have more impact
+    than the programming of a one month student(me) can accomplish ;-)
 * Cursor count() needs some more options such as hint.
 * Change die() statements to throw exception objects to notify caller.
 * Keys must be checked for illegal characters when inserting documents.
 * Tests for connection to non existing server. timeout setting.
 * Test to compare documents
 * Test group aggregation keyf field and finalize
+* Test map reduce aggregation more thoroughly
 
 ## CHANGELOG
 
@@ -378,7 +382,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
-* 0.21.0 - group in MongoDB::Collection.
+* 0.22.0 - map_reduce() in MongoDB::Collection.
+* 0.21.0 - group() in MongoDB::Collection.
 * 0.20.0 - list_collections() and collection_names() in MongoDB::Database
          - hint() on a cursor.
 * 0.19.0 - explain() in MongoDB::Collection and MongoDB::Cursor.

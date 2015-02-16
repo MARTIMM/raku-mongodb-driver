@@ -20,15 +20,15 @@ use MongoDB;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
-my %d1 = code           => 'd1'
-       , name           => 'name and lastname'
-       , address        => 'address'
-       , city           => 'new york'
-       ;
+my Hash $d1 = { code           => 'd1'
+              , name           => 'name and lastname'
+              , address        => 'address'
+              , city           => 'new york'
+              };
 
 for ^50 -> $i {
-  %d1<test_record> = 'tr' ~ $i;
-  $collection.insert(%d1);
+  $d1<test_record> = 'tr' ~ $i;
+  $collection.insert($d1);
 }
 
 check-document( %( code => 'd1', test_record => 'tr3')

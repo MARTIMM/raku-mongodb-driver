@@ -200,7 +200,10 @@ method distinct ( $field-name!, %criteria = { }, --> Array ) {...}
 Find distinct values of a field depending on criteria.
 
 =for head2
-method group ( Str $key, Str $js-reduce-func, :%initial = {} --> Hash ) {...}
+method group ( Str $js_reduce_func, Str :$key = '',
+               :%initial = {}, Str :$key_js_func = '',
+               :%condition = {}, Str :$finalize = ''
+               --> Hash ) {...}
 
 
 

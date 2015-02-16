@@ -1,6 +1,7 @@
 #`{{
   Testing;
     collection.group()                  Group records
+    collection.map_reduce()             Map reduce
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -19,7 +20,7 @@ my MongoDB::Database $database = $connection.database('test');
 my MongoDB::Collection $collection = $database.collection('cl1');
 
 for ^100 -> $c {
-  $collection.insert( %( name => 'k' ~ Int(6.rand), value => Int($c.rand)));
+  $collection.insert( { name => 'k' ~ Int(6.rand), value => Int($c.rand)});
 }
 
 #show-documents( $collection, {});
@@ -36,7 +37,8 @@ my $reduce-func = q:to/EOJS/;
 
 my $key-func = q:to/EOJS/;
    function(doc) {
-     return {'name': doc.name};
+     printjson(doc);
+     return {'xname': doc.name};
    }
    EOJS
 
@@ -87,6 +89,35 @@ loop ( my $i = 0; $i < +$r; $i++) {
   is $r-doc<value>, %v{$k}<value>, "Value %v{$k}<value>";
   is $r-doc<count>, %v{$k}<count>, "Value %v{$k}<count>";
 }
+
+#-----------------------------------------------------------------------------
+#
+my $map-func = q:to/EOJS/;
+   function() {
+     emit( 'othername', this.name);
+     emit( 'othervalue', this.value);
+   }
+   EOJS
+
+$reduce-func = q:to/EOJS/;
+   function( k, vs) {
+     return { k : vs};
+   }
+   EOJS
+
+
+$result = $collection.map_reduce(
+            $map-func, $reduce-func, 
+            :criteria(%(name => %('$gt' => 'k0'))),
+          );
+#say "\nR:  {$result.perl}\n";
+my $nrecs = $result<counts><output>;
+my $mrColl = $result<result>;
+my MongoDB::Collection $mrc = $database.collection($mrColl);
+#show-documents( $mrc, {});
+is $mrc.count, $nrecs, "There are $nrecs results in collection $mrColl";
+is $mrc.count(%(_id => 'othername')), 1, 'One othername id';
+is $mrc.count(%(_id => 'othervalue')), 1, 'One othervalue id';
 
 #-----------------------------------------------------------------------------
 # Cleanup and close
