@@ -205,7 +205,19 @@ method group ( Str $js_reduce_func, Str :$key = '',
                :%condition = {}, Str :$finalize = ''
                --> Hash ) {...}
 
+Groups documents in a collection by the specified keys and performs simple
+aggregation functions. See also L<this
+page|http://docs.mongodb.org/manual/reference/method/db.collection.group/>.
 
+=for head2
+method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
+                    Str :$finalize, Hash :$criteria, Hash :$sort,
+                    Hash :$scope, Int :$limit, Bool :$jsMode = False
+                    --> Hash ) {...}
+
+The mapReduce command allows you to run map-reduce aggregation operations over
+a collection. See also L<this
+page|http://docs.mongodb.org/manual/reference/command/mapReduce/>.
 
 =begin head2 
 method update ( %selector, %update,
