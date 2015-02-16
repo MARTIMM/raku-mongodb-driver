@@ -28,28 +28,29 @@ for ^100 -> $c {
 # the initial document because these values stay .
 #
 my $reduce-func = q:to/EOJS/;
-function( doc, prev) {
-  prev.value = prev.value + doc.value;
-  prev.count = prev.count + 1;
-}
-EOJS
+   function( doc, prev) {
+     prev.value = prev.value + doc.value;
+     prev.count = prev.count + 1;
+   }
+   EOJS
 
-#my $key-func = q:to/EOJS/;
-#function(x) {
-#  return {x: true};
-#}
-#EOJS
+my $key-func = q:to/EOJS/;
+   function(doc) {
+     return {'name': doc.name};
+   }
+   EOJS
 
 # Run de grouping function using the javascript reduce function and return
 # all results in $r-doc. The results from reduce are found in the field retval.
 #
-my $result = $collection.group( :js_reduce_func($reduce-func),
+my $result = $collection.group( $reduce-func,
                                 :initial(%( value => 0, count => 0)),
                                 :condition(%(name => %('$gt' => 'k0'))),
                                 :key('name'),
 #                                :key_js_func($key-func)
                               );
 #say "\nR:  {$result.perl}\n";
+#exit(0);
 
 # Now do the same in perl by getting the docs and do the work of $reduce
 #

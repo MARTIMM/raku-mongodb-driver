@@ -48,12 +48,15 @@ dependency.
 $ panda install MongoDB
 ```
 
-## VERSION PERL AND MOARVM
+## VERSION PERL, MOARVM and MongoDB
 
 ```
 $ perl6 -v
 This is perl6 version 2015.01-77-gd320f00 built on MoarVM version 2015.01-21-g4ee4925
 ```
+
+The driver code is written with the highest version of MongoDB server in mind.
+
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
 

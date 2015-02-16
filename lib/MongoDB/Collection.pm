@@ -175,21 +175,20 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   #-----------------------------------------------------------------------------
   #
-  method group ( Str :$key = '', Str :$js_reduce_func = 'function( d, p) {}',
+  method group ( Str $js_reduce_func, Str :$key = '',
                  :%initial = {}, Str :$key_js_func = '',
                  :%condition = {}, Str :$finalize = ''
                  --> Hash ) {
       
       my %req = %( group => %( ns => $!name,
-                   initial => %initial,
-                   '$reduce' => $js_reduce_func
-                 ));
+                               initial => %initial,
+                               '$reduce' => $js_reduce_func,
+                               key => %($key => 1)
+                             )
+                 );
       if $key_js_func.chars {
           %req<group><keyf> = $key_js_func;
-      }
-      
-      else {
-          %req<group><key> = %($key => 1);
+          %req<group><key>:delete;
       }
 #say "\nG: {%req.perl}\n";
 
