@@ -1,6 +1,8 @@
 use v6;
 use MongoDB::Collection;
 
+#-------------------------------------------------------------------------------
+#
 class X::MongoDB::Database is Exception {
   has $.error-text;                     # Error text
   has $.error-code;                     # Error code if from server
@@ -18,6 +20,8 @@ class X::MongoDB::Database is Exception {
   }
 }
 
+#-------------------------------------------------------------------------------
+#
 class MongoDB::Database {
 
   has $.connection;

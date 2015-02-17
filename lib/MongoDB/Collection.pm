@@ -2,6 +2,8 @@ use v6;
 use MongoDB::Protocol;
 use MongoDB::Cursor;
 
+#-------------------------------------------------------------------------------
+#
 class X::MongoDB::Collection is Exception {
   has $.error-text;                     # Error text
   has $.error-code;                     # Error code if from server
@@ -19,6 +21,8 @@ class X::MongoDB::Collection is Exception {
   }
 }
 
+#-------------------------------------------------------------------------------
+#
 class MongoDB::Collection does MongoDB::Protocol {
 
   has $.database;
