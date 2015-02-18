@@ -11,7 +11,7 @@ class X::MongoDB::Collection is Exception {
   has $.oper-data;                      # Operation data
   has $.full-collection-name;           # Collection name
 
-  method message() {
+  method message () {
       return [~] "\n$!oper-name\() error:\n",
                  "  $!error-text",
                  $.error-code.defined ?? "\($!error-code)" !! '',

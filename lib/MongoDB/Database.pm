@@ -10,7 +10,7 @@ class X::MongoDB::Database is Exception {
   has $.oper-data;                      # Operation data
   has $.database-name;                  # Database name
 
-  method message() {
+  method message () {
       return [~] "\n$!oper-name\() error:\n",
                  "  $!error-text",
                  $.error-code.defined ?? "\($!error-code)" !! '',
