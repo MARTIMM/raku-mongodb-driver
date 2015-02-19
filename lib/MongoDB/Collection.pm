@@ -1,6 +1,7 @@
 use v6;
 use MongoDB::Protocol;
 use MongoDB::Cursor;
+use BSON::Javascript;
 
 #-------------------------------------------------------------------------------
 #
@@ -179,10 +180,21 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   #-----------------------------------------------------------------------------
   #
-  method group ( Str $reduce_js_func, Str :$key = '',
-                 :%initial = {}, Str :$key_js_func = '',
-                 :%condition = {}, Str :$finalize = ''
-                 --> Hash ) {
+  multi method group ( Str $reduce_js_func, Str :$key = '',
+                       :%initial = {}, Str :$key_js_func = '',
+                       :%condition = {}, Str :$finalize = ''
+                       --> Hash ) {
+
+      self.group( BSON::Javascript.new(:javascript($reduce_js_func)),
+                  :key_js_func(BSON::Javascript.new(:javascript($key_js_func))),
+                  :$key, :%initial, :%condition, :$finalize
+                );
+  }
+
+  multi method group ( BSON::Javascript $reduce_js_func, Str :$key = '',
+                       :%initial = {}, BSON::Javascript :$key_js_func = '',
+                       :%condition = {}, Str :$finalize = ''
+                       --> Hash ) {
 
       my Hash $req = { group => %( ns => $!name,
                                    initial => %initial,
@@ -190,7 +202,7 @@ class MongoDB::Collection does MongoDB::Protocol {
                                    key => %($key => 1)
                                  )
                      };
-      if $key_js_func.chars {
+      if $key_js_func.javascript.chars {
           $req<group><keyf> = $key_js_func;
           $req<group><key>:delete;
       }
@@ -216,16 +228,31 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   #-----------------------------------------------------------------------------
   #
-  method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
-                      Str :$finalize, Hash :$criteria, Hash :$sort,
-                      Hash :$scope, Int :$limit, Bool :$jsMode = False
-                      --> Hash ) {
-      
+  multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
+                            Str :$finalize, Hash :$criteria, Hash :$sort,
+                            Hash :$scope, Int :$limit, Bool :$jsMode = False
+                            --> Hash ) {
+
+      self.map_reduce( BSON::Javascript.new(:javascript($map_js_func)),
+                       BSON::Javascript.new(:javascript($reduce_js_func)),
+                       :finalize(BSON::Javascript.new(:javascript($finalize))),
+                       :$out, :$criteria, :$sort, :$scope, :$limit, :$jsMode
+                     );
+  }
+
+  multi method map_reduce ( BSON::Javascript $map_js_func,
+                            BSON::Javascript $reduce_js_func,
+                            BSON::Javascript :$finalize,
+                            Hash :$out, Hash :$criteria, Hash :$sort,
+                            Hash :$scope, Int :$limit, Bool :$jsMode = False
+                            --> Hash ) {
+
       my Hash $req = { mapReduce => $!name,
                        map => $map_js_func,
                        reduce => $reduce_js_func,
                        :$jsMode
                      };
+
       if $out.defined {
           $req<out> = $out;
       }
