@@ -15,6 +15,7 @@ use Test-support;
 use v6;
 use Test;
 use MongoDB;
+use BSON::Regex;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
@@ -120,6 +121,15 @@ $cursor = $collection.find($query);
 # All but one = 49 docs
 #
 is $cursor.count, 49, '49 documents';
+
+#-----------------------------------------------------------------------------
+$query = { code1 => BSON::Regex.new(:regex('d.2')) };
+$cursor = $collection.find($query);
+is $cursor.count, 9, "Regex 9 documents for /d.2/";
+
+$query = { code2 => BSON::Regex.new(:regex('n.5')) };
+$cursor = $collection.find($query);
+is $cursor.count, 9, "Regex 9 documents for /n.5/";
 
 #-----------------------------------------------------------------------------
 #@code-list = $collection.distinct( 'code', %(name => %(regex =>'Hein')));
