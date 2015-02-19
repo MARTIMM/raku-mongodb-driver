@@ -135,7 +135,7 @@ are shown in in more than one place place. Removed all internal commands.
     * [x] $lt, $lte, $gt, $gte, $ne
     * [x] $in, $nin, $or, $not
     * [ ] null
-    * [ ] regular expressions
+    * [x] regular expressions
     * [ ] arrays, $all, $size, $slice
     * [ ] embedded docs, $elemMatch
     * [ ] $where
