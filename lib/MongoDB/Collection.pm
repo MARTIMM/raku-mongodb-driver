@@ -29,7 +29,7 @@ class MongoDB::Collection does MongoDB::Protocol {
   has $.database;
   has Str $.name;
   
-  has BSON::Javascript $!default_js .= new();
+  has BSON::Javascript $!default_js = BSON::Javascript.new();
 
   #-----------------------------------------------------------------------------
   #
