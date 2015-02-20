@@ -200,24 +200,43 @@ method distinct ( $field-name!, %criteria = { }, --> Array ) {...}
 Find distinct values of a field depending on criteria.
 
 =for head2
-method group ( Str $js_reduce_func, Str :$key = '',
-               :%initial = {}, Str :$key_js_func = '',
-               :%condition = {}, Str :$finalize = ''
-               --> Hash ) {...}
+multi method group ( Str $js_reduce_func, Str :$key = '',
+                    :%initial = {}, Str :$key_js_func = '',
+                    :%condition = {}, Str :$finalize = ''
+                    --> Hash ) {...}
+
+=for head2
+multi method group ( BSON::Javascript $reduce_js_func, Str :$key = '',
+                     :%initial = {}, BSON::Javascript :$key_js_func = '',
+                     :%condition = {}, Str :$finalize = ''
+                     --> Hash ) {...}
 
 Groups documents in a collection by the specified keys and performs simple
 aggregation functions. See also L<this
 page|http://docs.mongodb.org/manual/reference/method/db.collection.group/>.
 
+First method will call second with the javascript texts converted to
+BSON::Javascript.
+
 =for head2
-method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
-                    Str :$finalize, Hash :$criteria, Hash :$sort,
-                    Hash :$scope, Int :$limit, Bool :$jsMode = False
-                    --> Hash ) {...}
+multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
+                          Str :$finalize, Hash :$criteria, Hash :$sort,
+                          Hash :$scope, Int :$limit, Bool :$jsMode = False
+                          --> Hash ) {...}
+=for head2
+multi method map_reduce ( BSON::Javascript $map_js_func,
+                          BSON::Javascript $reduce_js_func,
+                          BSON::Javascript :$finalize,
+                          Hash :$out, Hash :$criteria, Hash :$sort,
+                          Hash :$scope, Int :$limit, Bool :$jsMode = False
+                          --> Hash ) {...}
 
 The mapReduce command allows you to run map-reduce aggregation operations over
 a collection. See also L<this
 page|http://docs.mongodb.org/manual/reference/command/mapReduce/>.
+
+First method will call second with the javascript texts converted to
+BSON::Javascript.
 
 =begin head2 
 method update ( %selector, %update,

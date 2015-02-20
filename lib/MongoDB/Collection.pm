@@ -28,6 +28,8 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   has $.database;
   has Str $.name;
+  
+  has BSON::Javascript $!default_js .= new();
 
   #-----------------------------------------------------------------------------
   #
@@ -180,24 +182,28 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   #-----------------------------------------------------------------------------
   #
-  multi method group ( Str $reduce_js_func, Str :$key = '',
+  multi method Xgroup ( Str $reduce_js_func, Str :$key = '',
                        :%initial = {}, Str :$key_js_func = '',
                        :%condition = {}, Str :$finalize = ''
                        --> Hash ) {
 
       self.group( BSON::Javascript.new(:javascript($reduce_js_func)),
-                  :key_js_func(BSON::Javascript.new(:javascript($key_js_func))),
-                  :$key, :%initial, :%condition, :$finalize
+                  key_js_func => BSON::Javascript.new(:javascript($key_js_func)),
+                  finalize => BSON::Javascript.new(:javascript($finalize)),
+                  :$key, :%initial, :%condition
                 );
   }
 
-  multi method group ( BSON::Javascript $reduce_js_func, Str :$key = '',
-                       :%initial = {}, BSON::Javascript :$key_js_func = '',
-                       :%condition = {}, Str :$finalize = ''
+  multi method group ( BSON::Javascript $reduce_js_func,
+                       BSON::Javascript :$key_js_func = $!default_js,
+                       BSON::Javascript :$finalize = $!default_js,
+                       Str :$key = '',
+                       Hash :$initial = {},
+                       Hash :$condition = {}
                        --> Hash ) {
 
       my Hash $req = { group => %( ns => $!name,
-                                   initial => %initial,
+                                   initial => $initial,
                                    '$reduce' => $reduce_js_func,
                                    key => %($key => 1)
                                  )
@@ -208,7 +214,7 @@ class MongoDB::Collection does MongoDB::Protocol {
       }
 #say "\nG: {$req.perl}\n";
 
-      $req<group><condition> = %condition if +%condition;
+      $req<group><condition> = $condition if +$condition;
       $req<group><finalize> = $finalize if $finalize;
       my $doc = $!database.run_command($req);
 

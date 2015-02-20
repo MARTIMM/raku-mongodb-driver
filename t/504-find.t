@@ -10,11 +10,15 @@ use Test-support;
 use v6;
 use Test;
 use MongoDB;
+use BSON::Javascript;
 
 #-------------------------------------------------------------------------------
 my MongoDB::Connection $connection .= new();
 my MongoDB::Database $database = $connection.database('test');
 
+is 1, 1, '1';
+done();
+exit(0);
 # Create collection and insert data in it!
 #
 my MongoDB::Collection $collection = $database.collection('cl1');
@@ -32,6 +36,7 @@ my $reduce-func = q:to/EOJS/;
    function( doc, prev) {
      prev.value = prev.value + doc.value;
      prev.count = prev.count + 1;
+     prev.count_offset = prev.count + offset;
    }
    EOJS
 
@@ -42,17 +47,25 @@ my $key-func = q:to/EOJS/;
    }
    EOJS
 
+my BSON::Javascript $js-r-scope .= new( javascript => $reduce-func,
+                                        scope => {offset => -100}
+                                      );
+
+my BSON::Javascript $js-kf .= new(javascript => $key-func);
+
+say "BJ: {$js-r-scope.perl}\nType BSON::Javascript = {$js-r-scope ~~ BSON::Javascript}";
+say "$js-r-scope\n";
 # Run de grouping function using the javascript reduce function and return
 # all results in $r-doc. The results from reduce are found in the field retval.
 #
-my $result = $collection.group( $reduce-func,
-                                :initial(%( value => 0, count => 0)),
-                                :condition(%(name => %('$gt' => 'k0'))),
-                                :key('name'),
-#                                :key_js_func($key-func)
-                              );
-#say "\nR:  {$result.perl}\n";
-#exit(0);
+my Hash $result = $collection.group( $js-r-scope,
+                                     key => 'name',
+                                     initial => { value => 0, count => 0},
+#                                     key_js_func => $js-kf,
+                                     condition => %(name => %('$gt' => 'k0'))
+                                   );
+say "\nR:  {$result.perl}\n";
+exit(0);
 
 # Now do the same in perl by getting the docs and do the work of $reduce
 #
