@@ -182,7 +182,7 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   #-----------------------------------------------------------------------------
   #
-  multi method Xgroup ( Str $reduce_js_func, Str :$key = '',
+  multi method group ( Str $reduce_js_func, Str :$key = '',
                        :%initial = {}, Str :$key_js_func = '',
                        :%condition = {}, Str :$finalize = ''
                        --> Hash ) {
@@ -208,14 +208,14 @@ class MongoDB::Collection does MongoDB::Protocol {
                                    key => %($key => 1)
                                  )
                      };
-      if $key_js_func.javascript.chars {
+      if $key_js_func.has_javascript {
           $req<group><keyf> = $key_js_func;
           $req<group><key>:delete;
       }
 #say "\nG: {$req.perl}\n";
 
       $req<group><condition> = $condition if +$condition;
-      $req<group><finalize> = $finalize if $finalize;
+      $req<group><finalize> = $finalize if $finalize.has_javascript;
       my $doc = $!database.run_command($req);
 
       # Check error and throw X::MongoDB::Collection if there is one
@@ -248,7 +248,7 @@ class MongoDB::Collection does MongoDB::Protocol {
 
   multi method map_reduce ( BSON::Javascript $map_js_func,
                             BSON::Javascript $reduce_js_func,
-                            BSON::Javascript :$finalize,
+                            BSON::Javascript :$finalize = $!default_js,
                             Hash :$out, Hash :$criteria, Hash :$sort,
                             Hash :$scope, Int :$limit, Bool :$jsMode = False
                             --> Hash ) {
@@ -266,13 +266,14 @@ class MongoDB::Collection does MongoDB::Protocol {
       else {
           $req<out> = %( replace => $!name ~ '_MapReduce');
       }
-#say "\nMR: {$req.perl}\n";
 
       $req<query> = $criteria if +$criteria;
       $req<sort> = $sort if $sort;
       $req<limit> = $limit if $limit;
-      $req<finalize> = $finalize if $finalize;
-      $req<scope> = $scope if $scope;
+      $req<finalize> = $finalize if $finalize.has_javascript;
+#      $req<scope> = $scope if $scope;
+#say "\nMR: {$req.perl}\n";
+
       my $doc = $!database.run_command($req);
 
       # Check error and throw X::MongoDB::Collection if there is one

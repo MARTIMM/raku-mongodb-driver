@@ -1,5 +1,10 @@
 use v6;
-use BSON:ver<0.8.0+>;
+
+#BEGIN {
+#  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
+#}
+
+use BSON:ver<0.8.3+>;
 
 class MongoDB::Wire is BSON;
 

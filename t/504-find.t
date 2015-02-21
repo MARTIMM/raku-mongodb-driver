@@ -16,9 +16,10 @@ use BSON::Javascript;
 my MongoDB::Connection $connection .= new();
 my MongoDB::Database $database = $connection.database('test');
 
-is 1, 1, '1';
-done();
-exit(0);
+#is 1, 1, '1';
+#done();
+#exit(0);
+
 # Create collection and insert data in it!
 #
 my MongoDB::Collection $collection = $database.collection('cl1');
@@ -53,19 +54,20 @@ my BSON::Javascript $js-r-scope .= new( javascript => $reduce-func,
 
 my BSON::Javascript $js-kf .= new(javascript => $key-func);
 
-say "BJ: {$js-r-scope.perl}\nType BSON::Javascript = {$js-r-scope ~~ BSON::Javascript}";
-say "$js-r-scope\n";
+#say "BJ: {$js-r-scope.perl}\nType BSON::Javascript = {$js-r-scope ~~ BSON::Javascript}";
+#say "$js-r-scope\n";
+
 # Run de grouping function using the javascript reduce function and return
 # all results in $r-doc. The results from reduce are found in the field retval.
 #
 my Hash $result = $collection.group( $js-r-scope,
                                      key => 'name',
                                      initial => { value => 0, count => 0},
-#                                     key_js_func => $js-kf,
                                      condition => %(name => %('$gt' => 'k0'))
+#                                     key_js_func => $js-kf,
                                    );
 say "\nR:  {$result.perl}\n";
-exit(0);
+#exit(0);
 
 # Now do the same in perl by getting the docs and do the work of $reduce
 #
