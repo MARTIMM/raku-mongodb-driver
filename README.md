@@ -52,8 +52,7 @@ $ panda install MongoDB
 
 ```
 $ perl6 -v
-This is perl6 version 2015.01-77-gd320f00 built on MoarVM version 2015.01-21-g4ee4925
-```
+This is perl6 version 2015.02-188-ga99a572 built on MoarVM version 2015.02-25-g3d0404a```
 
 The driver code is written with the highest version of MongoDB server in mind.
 
@@ -382,6 +381,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.22.3 - Upgraded Rakudo *
 * 0.22.2 - Bugfixes in use of javascript
 * 0.22.1 - Add use of BSON::Javascript in group() and map_reduce().
 * 0.22.0 - map_reduce() in MongoDB::Collection.
