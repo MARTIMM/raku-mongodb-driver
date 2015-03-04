@@ -28,7 +28,7 @@ if 1 {
   $database.create_collection('cl1');
   CATCH {
     when X::MongoDB::Database {
-        ok $_.message ~~ m/collection \s* already \s* exists/,
+        ok $_.message ~~ ms/collection already exists/,
            'Collection cl1 already exists'
            ;
     }
