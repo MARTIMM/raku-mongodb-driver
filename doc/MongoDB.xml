@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article [
+<!ENTITY library "Library">
+<!ENTITY nbsp " ">
+]>
+<article xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xl="http://www.w3.org/1999/xlink" version="5.0" xml:lang="en">
+  <title>Library Requirements Document</title>
+  <info>
+    <author>
+      <personname>
+        <firstname>Marcel</firstname>
+        <surname>Timmerman</surname>
+      </personname>
+      <email>mt1957@gmail.com</email>
+    </author>
+    <address>
+      <city>Haarlem</city>
+      <country>Netherlands</country>
+    </address>
+    <copyright>
+      <year>2015, 2016 ... Inf</year>
+      <holder>Marcel Timmerman</holder>
+    </copyright>
+    <date>2015-04-02</date>
+    <abstract>
+      <para>This is a small document of requirements which I think is needed to have a nice library and example programs.</para>
+      <para>The latest version of this document is generated on date 2015-04-02</para>
+    </abstract>
+  </info>
+  <sect1>
+    <title>Introduction</title>
+    <para>Long ago I've started to think about how to maintain the large amount of documents on my system which consists of anything textual or other kinds of imagery like photos, films, music and books. Storing on disk you can give it a name and store in some place in the hope that you can find it later. You can than also make links to the same data to provide extra information in the form of a filename. This will soon be a problem when the file is placed in another location.</para>
+    <para>I now wanted a solution which does not duplicate any information except for a backup and also not clobbering the filesystem with links to some other location. And there this program comes in.</para>
+    <para>In this document I try to make clear what is needed to build the modules and program and what to build myself. This must be viewed in light of a set of prioritized requirements.</para>
+  </sect1>
+  <sect1>
+    <title>Ideas to implement</title>
+    <para>Here a list of thoughts will show what I like to include in this system. It does not mention if this will be feasable or not. That will come in a later part where things like dependencies will be investigated.</para>
+    <sect2>
+      <title>Files can be located anywhere</title>
+      <para>This system will not manage documents. It will manage metadata about the documents. So it is not nessesary to store them somewhere. It is however nice when it can detect duplicates when another document is entered by the user. This duplication can be caused by backups or archives.</para>
+      <para>A file can only be found on the local disk or externally connected disk (directly or network). There are however other places where documents can be found such as network attached storage (<abbrev>NAS</abbrev> ), media stores or on webservers. In the same process as adding the metadata to the database these remote documents might be copied to local store to prevent disappearing from the net when you find it still important.</para>
+    </sect2>
+    <sect2>
+      <title>Not only files</title>
+      <para>A file on a disk is pointed to by a name and path and a drive when working on windows. There are other ways to get to a document like using a unified resource locator (<abbrev>URL</abbrev> ).</para>
+      <sect3>
+        <title>Use of mimetypes and document suffixes</title>
+        <para>Mimetypes are an important type of description method to show what can be done with the document. The list can also be used to start native applications to process a particular document. According to their mimetype of the document it mostly has also a proper suffix such as<emphasis>.txt</emphasis> or<emphasis>.html</emphasis> . See also<citation>MIMETYPES</citation> .</para>
+        <para>A few examples are</para>
+        <itemizedlist>
+          <listitem>
+            <para><emphasis>text/plain:</emphasis> This is simple text format mostly created with simple text editors.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis>audio/mpeg3:</emphasis> A type of audio file with document suffix of<emphasis>mp3</emphasis> .</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+      <sect3>
+        <title>Use of protocols</title>
+        <para>Protocols are used to get to the document before processing it. E.g. the&nbsp;<emphasis>http</emphasis> protocol is used to get a webpage from a site on the network and<emphasis>file</emphasis> is used often to get a document from the local filesystem. See also<citation>MIMETYPES</citation> .</para>
+        <para>The following list is a series of protocols which might be supported.</para>
+        <itemizedlist>
+          <listitem>
+            <para><emphasis>file:</emphasis> Protocol to get documents from a filesystem.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis>http</emphasis> and&nbsp;<emphasis>https:</emphasis> Protocols to get webpage documents from a web server.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis>ftp:</emphasis> File transfer protocol.</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>Metadata</title>
+      <para>What information do we want to store. Well, it must be something about the document. Furthermore, keys under which a document might be catagorized. A description will sometimes help. There are on the internet numerous descriptions available of known items like books and movies. Besides the list below, users must be capable to add new metadat attributes.</para>
+      <itemizedlist>
+        <listitem><emphasis>name:</emphasis> Unique name</listitem>
+        <listitem><emphasis>path:</emphasis> complete and absolute path to the document</listitem>
+        <listitem><emphasis>uri:</emphasis> url or uri</listitem>
+        <listitem><emphasis>description:</emphasis> a description</listitem>
+        <listitem><emphasis>author:</emphasis> a set of data like name and surname, address and email etc.</listitem>
+        <listitem><emphasis>datetime:</emphasis> Date and time of retrieval, date and time of modification or current date and time.</listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Implementation</title>
+    <para>This software package should come with several modules and programs to suit several ways of accessing the data. There is also an issue of making the software platform independent so everyone can be happy with it.</para>
+    <itemizedlist>
+      <listitem>
+        <emphasis>The programming language</emphasis>
+        <para>The first item to think about is the choice of programming language. A scripting language would be a proper choice because these languages have a higher level of coding and will access the underlaying system in a platform independent way. The language I want to choose is perl6. Yes, the still unfinished perl version. I am very confident that the language gets its first release this year(2015) and wanted to learn about the language by doing this project.</para>
+        <para>The second approach is to use a browser to do the work. There we can use<emphasis>html5</emphasis> ,<emphasis>css3</emphasis> and<emphasis>javascript</emphasis> and libraries. There is also a server side scripting which can be any of<emphasis>perl6</emphasis> ,<emphasis>perl 5</emphasis> or javascript<emphasis>(nodejs)</emphasis></para>
+      </listitem>
+      <listitem>
+        <emphasis>The storage method</emphasis>
+      </listitem>
+      <listitem>
+        <emphasis>Storage</emphasis>
+        <para>The name of the database and the names of the collections</para>
+      </listitem>
+    </itemizedlist>
+  </sect1>
+  <sect1>
+    <title>Dependencies</title>
+    <para>The program will be depending on several modules and programs. That is only logical because we do not want to reinvent the wheel(s) again do we? We only try not to select those software which will bind it to some platform as explained above.</para>
+    <itemizedlist>
+      <listitem>
+        <para><emphasis>perl6:</emphasis> The followup version of perl 5.*. The program is not yet completely finished but will be soon (2015-01). This program is a interpreter/compiler which can compile the script into some intermediary</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>perl6:</emphasis> The followup version of perl 5.*. The program is not yet completely finished but will be soon (2015-01).</para>
+      </listitem>
+    </itemizedlist>
+  </sect1>
+  <sect1>
+    <title>Priorities</title>
+    <para/>
+  </sect1>
+  <bibliography>
+    <biblioentry>
+      <abbrev>MIMETYPES</abbrev>
+      <title>A list of all mimetypes</title>
+      <abstract>A list of mimetypes can be found on the</abstract>
+      <ulink url="http://www.sitepoint.com/web-foundations/mime-types-complete-list/">
+        <internet/>
+      </ulink>
+    </biblioentry>
+  </bibliography>
+</article>
