@@ -60,7 +60,8 @@ $article xmlns=http://docbook.org/ns/docbook
         binary version of the javascript JSON.
       ]
 
-      $para [ The latest version of this document is generated on date
+      $para [
+        The latest version of this document is generated on date
         $!SxmlCore.date []
       ]
     ]
