@@ -20,7 +20,7 @@ output/program/chk:
         | rnv /usr/share/xml/docbook5/schema/rng/5.0/docbook.rnc
         ;
 output/program/pdf:
-        | xsltproc --encoding utf-8 --xinclude MongoDB.xsl -
+        | xsltproc --encoding utf-8 --xinclude stylesheet.xsl -
         | xep -fo - -pdf MongoDB.pdf
         ;
 
@@ -54,9 +54,9 @@ $article xmlns=http://docbook.org/ns/docbook
     $date [ $!SxmlCore.date [] ]
     $abstract [
       $para [
-        MongoDB is a\ $citation[NoSQL] database which uses\ $abbrev[BSON] to 
+        MongoDB is a $*citation[NoSQL] database which uses $*abbrev[BSON] to 
         store and load information in a database. For Perl 6 there are two
-        driver libraries\ $citation[MongoDB] and\ $citation[BSON]. BSON is a
+        driver libraries $*citation[MongoDB] and $*citation[BSON]. BSON is a
         binary version of the javascript JSON.
       ]
 

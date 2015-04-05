@@ -6,9 +6,9 @@ options/doctype/show:           1;
 
 output/filepath:                .;
 output/fileext:                 xsl;
-output/filename:                MongoDB;
+#output/filename:                MongoDB;
 
-output/program/xml:             | xmllint --format - > MongoDB-f.xsl;
+output/program/xml:             | xmllint --format - > stylesheet-f.xsl;
 ---
 
 $xsl:stylesheet xmlns:xsl=http://www.w3.org/1999/XSL/Transform version=1.0 [
