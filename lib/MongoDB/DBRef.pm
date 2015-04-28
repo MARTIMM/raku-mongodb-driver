@@ -32,21 +32,21 @@ class MongoDB::DBRef {
 #                          MongoDB::Connection :$connection
                         ) {
 
-      $!database = $database;
-      $!collection = $collection;
-      $!id = $id;
+    $!database = $database;
+    $!collection = $collection;
+    $!id = $id;
 
-      $dbref = {};
-      if ?$!collection {
-          $dbref = { '$id' => $!id, '$ref' => $!collection };
-          if ?$!database {
-              $dbref{'$db'} = $database;
-          }
-      }
+    $dbref = {};
+    if ?$!collection {
+        $dbref = { '$id' => $!id, '$ref' => $!collection };
+        if ?$!database {
+            $dbref{'$db'} = $database;
+        }
+    }
 
-      else {
-        $dbref = $!id;
-      }
+    else {
+      $dbref = $!id;
+    }
   }
 
 #`{{
@@ -58,7 +58,7 @@ class MongoDB::DBRef {
   
      $doc = $dbref;
   }
-  
+
   multi method infix:<=>( BSON::ObjectId $id is rw, MongoDB::DBRef $dbr ) {
       $id = $!id;
   }
