@@ -17,6 +17,7 @@ my MongoDB::Connection $connection .= new();
 # Drop database first then create new databases
 #
 $connection.database('test').drop;
+
 my MongoDB::Database $database = $connection.database('test');
 isa_ok $database, 'MongoDB::Database';
 is $database.name, 'test', 'Check database name';
@@ -24,6 +25,7 @@ is $database.name, 'test', 'Check database name';
 # Create a collection explicitly. Try for a second time
 #
 $database.create_collection('cl1');
+
 if 1 {
   $database.create_collection('cl1');
   CATCH {

@@ -381,55 +381,56 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
-* 0.22.3 - Upgraded Rakudo * and bugfix in Protocol.pm
-* 0.22.2 - Bugfixes in use of javascript
-* 0.22.1 - Add use of BSON::Javascript in group() and map_reduce().
-* 0.22.0 - map_reduce() in MongoDB::Collection.
-* 0.21.0 - group() in MongoDB::Collection.
-* 0.20.0 - list_collections() and collection_names() in MongoDB::Database
-         - hint() on a cursor.
-* 0.19.0 - explain() in MongoDB::Collection and MongoDB::Cursor.
-* 0.18.0 - count() in MongoDB::Collection
-         - distinct() in MongoDB::Collection
-* 0.17.1 - Collectionnames are checked. In perl dashes are possible and are also
-           accepted by the server. In the mongo shell however it is not possible
-           to manipulate these names because it works in a javascript
-           environment which wil see it as a substraction operator. Perhaps
-           other things will go wrong too such as running javascript on the
-           server. It is now tested against m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/.
-           Note the '$', It is accepted because the collection $cmd is sometimes
-           used to get information from. create_collection() will also check the
-           collection name but will not accept the '$'.
-* 0.17.0 - create_collection() to MongoDB::Database
-         - X::MongoDB::Database Exception
-* 0.16.1 - Cleanup databases at the end of tests. Documented tests what is tested
-* 0.16.0 - Name change X::MongoDB::LastError into X::MongoDB::Collection.
-         - Added drop_indexes() drop() get_indexes() to MongoDB::Collection.
-* 0.15.0 - Added drop_index() to MongoDB::Collection.
-* 0.14.1 - Bugfixes find_one(), ensure_index(). Added Class X::MongoDB::LastError
-           and used when ensure_index() fails.
-* 0.14.0 - ensure_index() in MongoDB::Collection
-* 0.13.7 - Changes depending on BSON
-* 0.13.6 - MongoDB::Cursor pod document
-* 0.13.0 - Added next() to MongoDB::Cursor.
-* 0.12.0 - Added count() to MongoDB::Cursor.
-* 0.11.1 - Added Connection.pod and Collection.pod.
-* 0.11.0 - Added methods to get error status in MongoDB::Database.
-* 0.10.0 - Added drop() in MongoDB::Database to drop a database.
-* 0.9.0 - Added list_databases() and database_names() to MongoDB::Connection
-* 0.8.0 - run_command() added to MongoDB::Database
-* 0.7.4 - bugfix return values in MongoDB::Cursor
-* 0.7.3 - bugfix return values in MongoDB::Protocol
-* 0.7.2 - extended signatures for return values
-* 0.7.1 - find extended with return_field_selector
-* 0.6.1 - add tests for insert(@docs)
-* 0.6.0 - switched to semantic versioning
-* 0.5 - compatibility fixes for Rakudo Star 2014.12
-* 0.4 - compatibility fixes for Rakudo Star 2012.02
-* 0.3 - basic flags added to methods (upsert, multi_update, single_remove,...),
-        kill support for cursor
-* 0.2 - adapted to Rakudo NOM 2011.09+.
-* 0.1 - basic Proof-of-concept working on Rakudo 2011.07.
+* 0.22.4 Changes because of modifications in BSON
+* 0.22.3 Upgraded Rakudo * and bugfix in Protocol.pm
+* 0.22.2 Bugfixes in use of javascript
+* 0.22.1 Add use of BSON::Javascript in group() and map_reduce().
+* 0.22.0 map_reduce() in MongoDB::Collection.
+* 0.21.0 group() in MongoDB::Collection.
+* 0.20.0 list_collections() and collection_names() in MongoDB::Database
+         hint() on a cursor.
+* 0.19.0 explain() in MongoDB::Collection and MongoDB::Cursor.
+* 0.18.0 count() in MongoDB::Collection
+         distinct() in MongoDB::Collection
+* 0.17.1 Collectionnames are checked. In perl dashes are possible and are also
+         accepted by the server. In the mongo shell however it is not possible
+         to manipulate these names because it works in a javascript
+         environment which wil see it as a substraction operator. Perhaps
+         other things will go wrong too such as running javascript on the
+         server. It is now tested against m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/.
+         Note the '$', It is accepted because the collection $cmd is sometimes
+         used to get information from. create_collection() will also check the
+         collection name but will not accept the '$'.
+* 0.17.0 create_collection() to MongoDB::Database
+         X::MongoDB::Database Exception
+* 0.16.1 Cleanup databases at the end of tests. Documented tests what is tested
+* 0.16.0 Name change X::MongoDB::LastError into X::MongoDB::Collection.
+         Added drop_indexes() drop() get_indexes() to MongoDB::Collection.
+* 0.15.0 Added drop_index() to MongoDB::Collection.
+* 0.14.1 Bugfixes find_one(), ensure_index(). Added Class X::MongoDB::LastError
+         and used when ensure_index() fails.
+* 0.14.0 ensure_index() in MongoDB::Collection
+* 0.13.7 Changes depending on BSON
+* 0.13.6 MongoDB::Cursor pod document
+* 0.13.0 Added next() to MongoDB::Cursor.
+* 0.12.0 Added count() to MongoDB::Cursor.
+* 0.11.1 Added Connection.pod and Collection.pod.
+* 0.11.0 Added methods to get error status in MongoDB::Database.
+* 0.10.0 Added drop() in MongoDB::Database to drop a database.
+* 0.9.0 Added list_databases() and database_names() to MongoDB::Connection
+* 0.8.0 run_command() added to MongoDB::Database
+* 0.7.4 bugfix return values in MongoDB::Cursor
+* 0.7.3 bugfix return values in MongoDB::Protocol
+* 0.7.2 extended signatures for return values
+* 0.7.1 find extended with return_field_selector
+* 0.6.1 add tests for insert(@docs)
+* 0.6.0 switched to semantic versioning
+* 0.5 compatibility fixes for Rakudo Star 2014.12
+* 0.4 compatibility fixes for Rakudo Star 2012.02
+* 0.3 basic flags added to methods (upsert, multi_update, single_remove,...),
+      kill support for cursor
+* 0.2 adapted to Rakudo NOM 2011.09+.
+* 0.1 basic Proof-of-concept working on Rakudo 2011.07.
 
 ## LICENSE
 

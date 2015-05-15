@@ -26,7 +26,7 @@ $collection.insert( $%( 'name' => 'Jan Hein', code => 20));
 
 #-------------------------------------------------------------------------------
 #
-is $collection.count, 3, 'Two douments in collection';
+is $collection.count, 3, 'Two documents in collection';
 is $collection.count(%(name => 'Piet Hein')), 1, 'One document found';
 
 #-------------------------------------------------------------------------------

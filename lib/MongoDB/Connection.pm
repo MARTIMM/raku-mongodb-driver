@@ -14,16 +14,23 @@ submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
 
 method _send ( Buf $b, Bool $has_response --> Any ) {
 
-    $!sock.write( $b );
+    $!sock.write($b);
 
     # some calls do not expect response
+    #
     return unless $has_response;
 
+    # Initialize bson buffer index to 0
+    #
+    self.wire._init_index;
+    
     # check response size
+    #
     my Buf $l = $!sock.read(4);
     my Int $w = self.wire._dec_int32($l.list) - 4;
 
     # receive remaining response bytes from socket
+    #
     return $l ~ $!sock.read($w);
 }
 

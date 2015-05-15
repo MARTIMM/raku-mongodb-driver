@@ -30,17 +30,17 @@ class MongoDB::Cursor does MongoDB::Protocol {
 
       # there are no more documents in last response batch
       # but there is next batch to fetch from database
-      if not @!documents and [+]( $!id.list ) {
+      if not @!documents and [+]($!id.list) {
 
           # request next batch of documents
-          my %OP_REPLY = self.wire.OP_GETMORE( self );
+          my Hash $OP_REPLY = self.wire.OP_GETMORE(self);
 
           # assign cursorID,
           # it may change to "0" if there are no more documents to fetch
-          $!id = %OP_REPLY{ 'cursor_id' };
+          $!id = $OP_REPLY<cursor_id>;
 
           # assign documents
-          @!documents = %OP_REPLY{ 'documents' }.list;
+          @!documents = $OP_REPLY<documents>.list;
       }
 
       # Return a document when there is one. If none left, return Nil
