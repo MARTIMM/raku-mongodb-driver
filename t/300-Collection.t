@@ -12,7 +12,7 @@
 
 use v6;
 use Test;
-use MongoDB;
+use MongoDB::Connection;
 
 my MongoDB::Connection $connection .= new();
 my MongoDB::Database $database = $connection.database('test');

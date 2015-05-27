@@ -12,7 +12,7 @@
 use v6;
 use Test;
 
-use MongoDB;
+use MongoDB::Connection;
 
 my $connection = MongoDB::Connection.new();
 isa_ok( $connection, 'MongoDB::Connection');

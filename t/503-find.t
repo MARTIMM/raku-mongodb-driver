@@ -15,7 +15,7 @@ use Test-support;
 
 use v6;
 use Test;
-use MongoDB;
+use MongoDB::Collection;
 use BSON::Regex;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');

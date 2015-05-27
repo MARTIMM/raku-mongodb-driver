@@ -11,7 +11,7 @@
 
 use v6;
 use Test;
-use MongoDB;
+use MongoDB::Connection;
 
 #-------------------------------------------------------------------------------
 my MongoDB::Connection $connection .= new();

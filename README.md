@@ -381,6 +381,11 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.22.6
+  * Changes in testfiles to read in the proper module instead of the MongoDB
+    module which will include all modules. Most of the time it is enaugh to
+    use the Connection module only.
+* 0.22.5 Changes to packaging and adding more typing information
 * 0.22.4 Changes because of modifications in BSON
 * 0.22.3 Upgraded Rakudo * and bugfix in Protocol.pm
 * 0.22.2 Bugfixes in use of javascript

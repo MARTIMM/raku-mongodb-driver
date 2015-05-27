@@ -6,7 +6,7 @@
 use v6;
 use Test;
 
-use MongoDB;
+use MongoDB::Connection;
 use MongoDB::DBRef;
 
 #-------------------------------------------------------------------------------

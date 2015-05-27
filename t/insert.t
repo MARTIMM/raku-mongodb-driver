@@ -1,6 +1,6 @@
 use v6;
 use Test;
-use MongoDB;
+use MongoDB::Connection;
 
 my $connection = MongoDB::Connection.new;
 my $database = $connection.database( 'test' );

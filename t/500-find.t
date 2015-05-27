@@ -16,7 +16,7 @@ use Test-support;
 
 use v6;
 use Test;
-use MongoDB;
+use MongoDB::Collection;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 

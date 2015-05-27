@@ -1,5 +1,5 @@
 use v6;
-use MongoDB;
+use MongoDB::Connection;
 
 package Test-support
 {
