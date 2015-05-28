@@ -1,9 +1,11 @@
 use v6;
 use MongoDB::Wire;
 
-role MongoDB::Protocol {
+package MongoDB {
+  role MongoDB::Protocol {
 
-    state MongoDB::Wire $wp = MongoDB::Wire.new;
+      state MongoDB::Wire $wp = MongoDB::Wire.new;
 
-    method wire ( --> MongoDB::Wire ) { return $wp };
-};
+      method wire ( --> MongoDB::Wire ) { return $wp };
+  }
+}

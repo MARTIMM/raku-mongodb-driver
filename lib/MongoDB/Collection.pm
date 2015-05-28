@@ -24,36 +24,35 @@ class X::MongoDB::Collection is Exception {
 
 #-------------------------------------------------------------------------------
 #
-class MongoDB::Collection does MongoDB::Protocol {
+package MongoDB {
+  class MongoDB::Collection does MongoDB::Protocol {
 
-  has $.database;
-  has Str $.name;
-  
-  has BSON::Javascript $!default_js = BSON::Javascript.new();
+    has $.database;
+    has Str $.name;
 
-  #-----------------------------------------------------------------------------
-  #
-  submethod BUILD ( :$database, Str :$name ) {
+    has BSON::Javascript $!default_js = BSON::Javascript.new();
 
+    #-----------------------------------------------------------------------------
+    #
+    submethod BUILD ( :$database, Str :$name ) {
       $!database = $database;
 
       if $name ~~ m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/ {
-          $!name = $name;
+        $!name = $name;
       }
 
       else {
-          die X::MongoDB::Collection.new(
-              error-text => "Illegal collection name: '$name'",
-              oper-name => 'MongoDB::Collection.new()',
-              full-collection-name => [~] $!database.name, '.-Ill-'
-          );
+        die X::MongoDB::Collection.new(
+          error-text => "Illegal collection name: '$name'",
+          oper-name => 'MongoDB::Collection.new()',
+          full-collection-name => [~] $!database.name, '.-Ill-'
+        );
       }
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  #
-  method insert ( **@documents, Bool :$continue_on_error = False --> Nil ) {
-
+    #-----------------------------------------------------------------------------
+    #
+    method insert ( **@documents, Bool :$continue_on_error = False --> Nil ) {
       my $flags = +$continue_on_error;
 
       # TODO validate keys in documents
@@ -79,16 +78,14 @@ class MongoDB::Collection does MongoDB::Protocol {
       self.wire.OP_INSERT( self, $flags, @docs);
 
       return;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  #
-  method find (
-      %criteria = { }, %projection = { },
-      Int :$number_to_skip = 0, Int :$number_to_return = 0,
-      Bool :$no_cursor_timeout = False
-      --> MongoDB::Cursor
-  ) {
+    #-----------------------------------------------------------------------------
+    #
+    method find ( %criteria = { }, %projection = { },
+                  Int :$number_to_skip = 0, Int :$number_to_return = 0,
+                  Bool :$no_cursor_timeout = False
+                  --> MongoDB::Cursor ) {
       my $flags = +$no_cursor_timeout +< 4;
       my $OP_REPLY;
         $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
@@ -101,24 +98,22 @@ class MongoDB::Collection does MongoDB::Protocol {
           OP_REPLY    => $OP_REPLY,
           :%criteria
       );
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  #
-  method find_one ( %criteria = { }, %projection = { } --> Hash ) {
-
+    #-----------------------------------------------------------------------------
+    #
+    method find_one ( %criteria = { }, %projection = { } --> Hash ) {
       my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
                                               :number_to_return(1)
                                             );
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Get explanation about given search criteria
-  #
-  method explain ( %criteria = { } --> Hash ) {
-
+    #-----------------------------------------------------------------------------
+    # Get explanation about given search criteria
+    #
+    method explain ( %criteria = { } --> Hash ) {
       my MongoDB::Cursor $cursor = self.find( %( '$query' => %criteria,
                                                  '$explain' => True
                                                ),
@@ -126,81 +121,82 @@ class MongoDB::Collection does MongoDB::Protocol {
                                             );
       my $docs = $cursor.fetch();
       return $docs;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Get count of documents depending on criteria
-  #
-  method count( %criteria = {} --> Int ) {
-
+    #-----------------------------------------------------------------------------
+    # Get count of documents depending on criteria
+    #
+    method count( %criteria = {} --> Int ) {
       my Hash $req = { count => $!name,
                        query => %criteria,
                        fields => %()           # Seen with wireshark
                      };
+
       my $doc = $!database.run_command($req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
       if $doc<ok>.Bool == False {
-          die X::MongoDB::Collection.new(
-              error-text => $doc<errmsg>,
-              oper-name => 'drop_index',
-              oper-data => $req.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
-          );
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_index',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
       }
 
       return Int($doc<n>);
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Find distinct values of a field depending on criteria
-  #
-  method distinct( $field-name!, %criteria = {} --> Array ) {
-
+    #-----------------------------------------------------------------------------
+    # Find distinct values of a field depending on criteria
+    #
+    method distinct( $field-name!, %criteria = {} --> Array ) {
       my Hash $req = { distinct => $!name,
                        query => %criteria,
                        key => $field-name
                      };
+
       my $doc = $!database.run_command($req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
       if $doc<ok>.Bool == False {
-          die X::MongoDB::Collection.new(
-              error-text => $doc<errmsg>,
-              oper-name => 'drop_index',
-              oper-data => $req.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
-          );
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_index',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
       }
 
       # What do we do with $doc<stats> ?
       #
       return $doc<values>.list;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  #
-  multi method group ( Str $reduce_js_func, Str :$key = '',
-                       :%initial = {}, Str :$key_js_func = '',
-                       :%condition = {}, Str :$finalize = ''
-                       --> Hash ) {
+    #-----------------------------------------------------------------------------
+    #
+    multi method group ( Str $reduce_js_func, Str :$key = '',
+                         :%initial = {}, Str :$key_js_func = '',
+                         :%condition = {}, Str :$finalize = ''
+                         --> Hash ) {
 
-      self.group( BSON::Javascript.new(:javascript($reduce_js_func)),
-                  key_js_func => BSON::Javascript.new(:javascript($key_js_func)),
-                  finalize => BSON::Javascript.new(:javascript($finalize)),
-                  :$key, :%initial, :%condition
-                );
-  }
+      self.group(
+        BSON::Javascript.new(:javascript($reduce_js_func)),
+        key_js_func => BSON::Javascript.new(:javascript($key_js_func)),
+        finalize => BSON::Javascript.new(:javascript($finalize)),
+        :$key, :%initial, :%condition
+      );
+    }
 
-  multi method group ( BSON::Javascript $reduce_js_func,
-                       BSON::Javascript :$key_js_func = $!default_js,
-                       BSON::Javascript :$finalize = $!default_js,
-                       Str :$key = '',
-                       Hash :$initial = {},
-                       Hash :$condition = {}
-                       --> Hash ) {
+    multi method group ( BSON::Javascript $reduce_js_func,
+                         BSON::Javascript :$key_js_func = $!default_js,
+                         BSON::Javascript :$finalize = $!default_js,
+                         Str :$key = '',
+                         Hash :$initial = {},
+                         Hash :$condition = {}
+                         --> Hash ) {
 
       my Hash $req = { group => %( ns => $!name,
                                    initial => $initial,
@@ -208,9 +204,10 @@ class MongoDB::Collection does MongoDB::Protocol {
                                    key => %($key => 1)
                                  )
                      };
+
       if $key_js_func.has_javascript {
-          $req<group><keyf> = $key_js_func;
-          $req<group><key>:delete;
+        $req<group><keyf> = $key_js_func;
+        $req<group><key>:delete;
       }
 #say "\nG: {$req.perl}\n";
 
@@ -221,37 +218,38 @@ class MongoDB::Collection does MongoDB::Protocol {
       # Check error and throw X::MongoDB::Collection if there is one
       #
       if $doc<ok>.Bool == False {
-          die X::MongoDB::Collection.new(
-              error-text => $doc<errmsg>,
-              oper-name => 'group',
-              oper-data => $req.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
-          );
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'group',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
       }
 
       return $doc;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  #
-  multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
-                            Str :$finalize, Hash :$criteria, Hash :$sort,
-                            Hash :$scope, Int :$limit, Bool :$jsMode = False
-                            --> Hash ) {
+    #-----------------------------------------------------------------------------
+    #
+    multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
+                              Str :$finalize, Hash :$criteria, Hash :$sort,
+                              Hash :$scope, Int :$limit, Bool :$jsMode = False
+                              --> Hash ) {
 
       self.map_reduce( BSON::Javascript.new(:javascript($map_js_func)),
                        BSON::Javascript.new(:javascript($reduce_js_func)),
                        :finalize(BSON::Javascript.new(:javascript($finalize))),
                        :$out, :$criteria, :$sort, :$scope, :$limit, :$jsMode
                      );
-  }
+    }
 
-  multi method map_reduce ( BSON::Javascript $map_js_func,
-                            BSON::Javascript $reduce_js_func,
-                            BSON::Javascript :$finalize = $!default_js,
-                            Hash :$out, Hash :$criteria, Hash :$sort,
-                            Hash :$scope, Int :$limit, Bool :$jsMode = False
-                            --> Hash ) {
+    multi method map_reduce ( BSON::Javascript $map_js_func,
+                              BSON::Javascript $reduce_js_func,
+                              BSON::Javascript :$finalize = $!default_js,
+                              Hash :$out, Hash :$criteria, Hash :$sort,
+                              Hash :$scope, Int :$limit, Bool :$jsMode = False
+                              --> Hash
+                            ) {
 
       my Hash $req = { mapReduce => $!name,
                        map => $map_js_func,
@@ -260,11 +258,11 @@ class MongoDB::Collection does MongoDB::Protocol {
                      };
 
       if $out.defined {
-          $req<out> = $out;
+        $req<out> = $out;
       }
-      
+
       else {
-          $req<out> = %( replace => $!name ~ '_MapReduce');
+        $req<out> = %( replace => $!name ~ '_MapReduce');
       }
 
       $req<query> = $criteria if +$criteria;
@@ -279,75 +277,63 @@ class MongoDB::Collection does MongoDB::Protocol {
       # Check error and throw X::MongoDB::Collection if there is one
       #
       if $doc<ok>.Bool == False {
-          die X::MongoDB::Collection.new(
-              error-text => $doc<errmsg>,
-              oper-name => 'group',
-              oper-data => $req.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
-          );
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'group',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
       }
 
       return $doc;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  #
-  method update (
-      %selector, %update,
-      Bool :$upsert = False, Bool :$multi_update = False
-      --> Nil
-  ) {
-
-      my $flags = +$upsert
-          + +$multi_update +< 1;
-
+    #-----------------------------------------------------------------------------
+    #
+    method update ( %selector, %update, Bool :$upsert = False,
+                    Bool :$multi_update = False
+                    --> Nil
+                  ) {
+      my $flags = +$upsert + +$multi_update +< 1;
       self.wire.OP_UPDATE( self, $flags, %selector, %update );
-
       return;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  #
-  method remove (
-      %selector = { },
-      Bool :$single_remove = False
-      --> Nil
-  ) {
-
+    #-----------------------------------------------------------------------------
+    #
+    method remove ( %selector = { }, Bool :$single_remove = False --> Nil ) {
       my $flags = +$single_remove;
-
       self.wire.OP_DELETE( self, $flags, %selector );
-
       return;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Add indexes for collection
-  #
-  # Steps done by the mongo shell
-  #
-  # * Insert a document into a system table <dbname>.system.indexes
-  # * Run get_last_error to see result
-  #
-  # * According to documentation indexes cannot be changed. They must be
-  #   deleted first. Therefore check first. drop index if exists then set new
-  #   index.
-  #
-  method ensure_index ( %key-spec, %options = {} --> Nil ) {
+    #-----------------------------------------------------------------------------
+    # Add indexes for collection
+    #
+    # Steps done by the mongo shell
+    #
+    # * Insert a document into a system table <dbname>.system.indexes
+    # * Run get_last_error to see result
+    #
+    # * According to documentation indexes cannot be changed. They must be
+    #   deleted first. Therefore check first. drop index if exists then set new
+    #   index.
+    #
+    method ensure_index ( %key-spec, %options = {} --> Nil ) {
 
       # Generate name of index if not given in options
       #
       if %options<name>:!exists {
-          my Str $name = '';
+        my Str $name = '';
 
-          # If no name for the index is set then imitate the default of
-          # MongoDB or keyname1_dir1_keyname2_dir2_..._keynameN_dirN.
-          #
-          for %key-spec.keys -> $k {
-              $name ~= [~] ($name ?? '_' !! ''), $k, '_', %key-spec{$k};
-          }
+        # If no name for the index is set then imitate the default of
+        # MongoDB or keyname1_dir1_keyname2_dir2_..._keynameN_dirN.
+        #
+        for %key-spec.keys -> $k {
+            $name ~= [~] ($name ?? '_' !! ''), $k, '_', %key-spec{$k};
+        }
 
-          %options<name> = $name;
+        %options<name> = $name;
       }
 
 
@@ -364,36 +350,34 @@ class MongoDB::Collection does MongoDB::Protocol {
       # Insert index if not exists
       #
       else {
+        my %doc = %( ns => ([~] $!database.name, '.', $!name),
+                     key => %key-spec,
+                     %options
+                   );
 
-          my %doc = %( ns => ([~] $!database.name, '.', $!name),
-                       key => %key-spec,
-                       %options
-                     );
+        $system-indexes.insert(%doc);
 
-          $system-indexes.insert(%doc);
-
-          # Check error and throw X::MongoDB::Collection if there is one
-          #
-          my $error-doc = $!database.get_last_error;
-          if $error-doc<err> {
-              die X::MongoDB::Collection.new(
-                  error-text => $error-doc<err>,
-                  error-code => $error-doc<code>,
-                  oper-name => 'ensure_index',
-                  oper-data => %doc.perl,
-                  full-collection-name => [~] $!database.name, '.', $!name
-              );
-          }
+        # Check error and throw X::MongoDB::Collection if there is one
+        #
+        my $error-doc = $!database.get_last_error;
+        if $error-doc<err> {
+          die X::MongoDB::Collection.new(
+            error-text => $error-doc<err>,
+            error-code => $error-doc<code>,
+            oper-name => 'ensure_index',
+            oper-data => %doc.perl,
+            full-collection-name => [~] $!database.name, '.', $!name
+          );
+        }
       }
 
       return;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Drop an index
-  #
-  method drop_index ( $key-spec --> Hash ) {
-
+    #-----------------------------------------------------------------------------
+    # Drop an index
+    #
+    method drop_index ( $key-spec --> Hash ) {
       my Hash $req = { deleteIndexes => $!name,
                        index => $key-spec,
                      };
@@ -403,49 +387,48 @@ class MongoDB::Collection does MongoDB::Protocol {
       # Check error and throw X::MongoDB::Collection if there is one
       #
       if $doc<ok>.Bool == False {
-          die X::MongoDB::Collection.new(
-              error-text => $doc<errmsg>,
-              oper-name => 'drop_index',
-              oper-data => $req.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
-          );
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_index',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
       }
 
       return $doc;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Drop all indexes
-  #
-  method drop_indexes ( --> Hash ) {
+    #-----------------------------------------------------------------------------
+    # Drop all indexes
+    #
+    method drop_indexes ( --> Hash ) {
       return self.drop_index('*');
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Drop collection
-  #
-  method drop ( --> Hash ) {
-
+    #-----------------------------------------------------------------------------
+    # Drop collection
+    #
+    method drop ( --> Hash ) {
       my Hash $req = {drop => $!name};
       my $doc = $!database.run_command($req);
       if $doc<ok>.Bool == False {
-          die X::MongoDB::Collection.new(
-              error-text => $doc<errmsg>,
-              oper-name => 'drop',
-              oper-data => $req.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
-          );
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
       }
 
       return $doc;
-  }
+    }
 
-  #-----------------------------------------------------------------------------
-  # Get indexes for the current collection
-  #
-  method get_indexes ( --> MongoDB::Cursor ) {
-      
+    #-----------------------------------------------------------------------------
+    # Get indexes for the current collection
+    #
+    method get_indexes ( --> MongoDB::Cursor ) {
       my $system-indexes = $!database.collection('system.indexes');
       return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
+    }
   }
 }
