@@ -181,6 +181,31 @@ $cursor.fetch( ).perl.say;
 method find_one ( %criteria = { }, %projection = { } --> Hash ) {...}
 
 Same as for find() except it will only return one document.
+=for head2
+method find_and_modify ( Hash $criteria = { }, %projection = { },
+                         :$remove = False, :%update = { }, :%sort = { },
+                         :$new = False, :$upsert = False
+                         --> Hash ) {...}
+
+Search record by the given criteria and sort order.
+=begin nested
+=begin code
+my @places = <amsterdam NY LA haarlem utrecht parijs oradour poitiers vienna>;
+my %d1 = code => 'd1 ';
+
+for ^5,(5...1) -> $code-postfix {               # Insert a number of documents
+  %d1<code> ~= $code-postfix;
+  %d1<city> = @places.roll;
+  $collection.insert(%d1);
+}
+
+$doc = $collection.find_and_modify(
+  {code => 'd1 01234543'},                      # Find this code
+  update => { '$set' => {code => 'd1 012'}},    # Change into 'd1 012'
+  :new                                          # Return modified doc
+);
+=end code
+=end nested
 
 =for head2
 method explain ( %criteria = { } --> Hash ) {...}

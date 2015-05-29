@@ -13,12 +13,12 @@ class X::MongoDB::Collection is Exception {
   has $.full-collection-name;           # Collection name
 
   method message () {
-      return [~] "\n$!oper-name\() error:\n",
-                 "  $!error-text",
-                 $.error-code.defined ?? "\($!error-code)" !! '',
-                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-                 "\n  Collection '$!full-collection-name'\n"
-                 ;
+    return [~] "\n$!oper-name\() error:\n",
+               "  $!error-text",
+               $.error-code.defined ?? "\($!error-code)" !! '',
+               $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
+               "\n  Collection '$!full-collection-name'\n"
+               ;
   }
 }
 
@@ -85,7 +85,8 @@ package MongoDB {
     method find ( %criteria = { }, %projection = { },
                   Int :$number_to_skip = 0, Int :$number_to_return = 0,
                   Bool :$no_cursor_timeout = False
-                  --> MongoDB::Cursor ) {
+                  --> MongoDB::Cursor
+                ) {
       my $flags = +$no_cursor_timeout +< 4;
       my $OP_REPLY;
         $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
@@ -94,9 +95,9 @@ package MongoDB {
                                       );
 
       return MongoDB::Cursor.new(
-          collection  => self,
-          OP_REPLY    => $OP_REPLY,
-          :%criteria
+        collection  => self,
+        OP_REPLY    => $OP_REPLY,
+        :%criteria
       );
     }
 
@@ -108,6 +109,41 @@ package MongoDB {
                                             );
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method find_and_modify ( Hash $criteria = { }, %projection = { },
+                             :$remove = False, :%update = { }, :%sort = { },
+                             :$new = False, :$upsert = False
+                             --> Hash
+                           ) {
+      my Hash $req = { findAndModify => self.name,
+                       query => $criteria
+                     };
+      $req<sort> = %sort if ?%sort;
+      $req<remove> = $remove if ?$remove;
+      $req<update> = %update if ?%update;
+      $req<new> = $new if ?$new;
+      $req<upsert> = $upsert if ?$upsert;
+      $req<projection> = %projection if ?%projection;
+
+      # Modify new option if remove is true
+      # $req<new> = False if ?$remove;
+
+      my $doc = $!database.run_command($req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_index',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc<value>;
     }
 
     #-----------------------------------------------------------------------------

@@ -20,30 +20,30 @@ package Test-support
   # Search and show content of documents
   #
   sub show-documents ( MongoDB::Collection $collection,
-                       Hash $criteria
-                       --> Nil
+                       Hash $criteria, Hash $projection = { }
                      ) is export {
 
     say '-' x 80;
 
-    my MongoDB::Cursor $cursor = $collection.find($criteria);
+    my MongoDB::Cursor $cursor = $collection.find( $criteria, $projection);
     while $cursor.fetch() -> %document {
       show-document(%document);
     }
-  
-    return;
   }
   
   #-----------------------------------------------------------------------------
   # Display a document
   #
-  sub show-document ( %document --> Nil ) is export {
+  sub show-document ( Hash $document ) is export {
   
-    say "Document:";
-    say sprintf( "    %10.10s: %s", $_, %document{$_}) for %document.keys;
+    print "Document: ";
+    my $indent = '';
+    for $document.keys -> $k {
+#say $k;
+      say sprintf( "%s%10.10s: %s", $indent, $k, $document{$k});
+      $indent = ' ' x 10 unless $indent;
+    }
     say "";
-  
-    return;
   }
 }
 

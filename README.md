@@ -157,7 +157,11 @@ are shown in in more than one place place. Removed all internal commands.
   
   * [x] update(). Update documents in a collection.
     * [x] upsert
-    * [x] update commands like $inc and $push
+    * [x] update operators: $addToSet, $bit, $currentDate, $each, $inc,
+          $isolated, $max, $min, $mul, $pop, $position, $positional, $pull,
+          $pullAll, $push, $pushAll, $rename, $set, $setOnInsert, $slice,
+          $sort, $unset
+          
 
   * [x] remove(). Remove documents from a collection
 
@@ -233,7 +237,7 @@ are shown in in more than one place place. Removed all internal commands.
 
 * [ ] delete. Deletes one or more documents.
 * [ ] eval. Runs a JavaScript function on the database server.
-* [ ] findAndModify. Returns and modifies a single document.
+* [x] findAndModify. Returns and modifies a single document.
 * [x] getLastError. Returns the success status of the last operation.
 * [x] getPrevError. Returns status document containing all errors since the last resetError command.
 * [x] insert. Inserts one or more documents.
@@ -382,6 +386,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.23.0
+  * Added find_and_modify method in Collection.
 * 0.22.6
   * Changes in testfiles to read in the proper module instead of the MongoDB
     module which will include all modules. Most of the time it is enaugh to
