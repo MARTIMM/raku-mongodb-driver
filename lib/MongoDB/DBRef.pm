@@ -39,10 +39,10 @@ package MongoDB {
 
       $dbref = {};
       if ?$!collection {
-          $dbref = { '$id' => $!id, '$ref' => $!collection };
-          if ?$!database {
-              $dbref{'$db'} = $database;
-          }
+        $dbref = { '$id' => $!id, '$ref' => $!collection };
+        if ?$!database {
+          $dbref{'$db'} = $database;
+        }
       }
 
       else {
@@ -52,23 +52,23 @@ package MongoDB {
 
   #`{{
     multi method infix:<=>( Hash $doc is rw, MongoDB::DBRef $dbr ) {
-       $dbref = {};
-       if ?$!collection {
-          $dbref = { '$id' => $!id, '$ref' => $!collection };
-        }
+     $dbref = {};
+     if ?$!collection {
+        $dbref = { '$id' => $!id, '$ref' => $!collection };
+      }
 
-       $doc = $dbref;
+     $doc = $dbref;
     }
 
     multi method infix:<=>( BSON::ObjectId $id is rw, MongoDB::DBRef $dbr ) {
-        $id = $!id;
+      $id = $!id;
     }
   }}
 
     method doc ( --> Any ) {
 
   #say "DBR: {$dbref.perl}";
-        return $dbref;
+      return $dbref;
     }
   }
 }
