@@ -7,7 +7,7 @@
       $ne                               not equal
       $in, $nin, $or                    or
       $not                              not
-      regex                             using BSON::Regex
+      $regex                            using BSON::Regex
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
