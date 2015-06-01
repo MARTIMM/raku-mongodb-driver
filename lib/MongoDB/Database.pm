@@ -55,7 +55,7 @@ package MongoDB {
       if !($name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
         die X::MongoDB::Database.new(
             error-text => "Illegal collection name: '$name'",
-            oper-name => 'create_collection()',
+            oper-name => 'collection()',
             database-name => $!name
         );
       }
