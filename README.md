@@ -66,14 +66,14 @@ to implement it all. By using run_command(), much can be accomplished. A lot of 
 items are using that call to get the information for you. Also quite a few items
 are shown in in more than one place place. Removed all internal commands.
 
-### Database Management
+Legend;
 
-* [x] create. Happens implicitly after inserting data into a collection.
-* [x] drop() Drop a database.
-* [x] list_databases(). Returns database statistics.
-* [x] database_names(). Returns a list of database names.
-* [x] get_last_error(). Get error status from last operation
-* [x] run_command(), Many helper methods are using this command.
+* [x] Implemented
+* [-] Will not be implemented
+* [C] Implemented in MongoDB::Connection, Connection.pm
+* [D] Implemented in MongoDB::Database, Database.pm
+* [O] Implemented in MongoDB::Collection, Collection.pm
+* [U] Implemented in MongoDB::Cursor, Cursor.pm
 
 ### Role Management Commands
 
@@ -115,70 +115,24 @@ are shown in in more than one place place. Removed all internal commands.
 * [ ] shardingState. Reports whether the mongod is a member of a sharded cluster.
 * [ ] split. Creates a new chunk.
 
-### Collection Management
+### Database Management
 
-* [x] create_collection(). Create collection explicitly
-* [x] drop
-* [x] collection list
-* [ ] collection validation
+* [C] Set database is done with database(). Database is created implicitly after
+      inserting data into a collection.
+* [D] list_databases(). Returns database statistics.
+* [D] database_names(). Returns a list of database names.
+* [D] run_command(), Many helper methods are using this command.
+* [D] get_last_error(). Get error status from last operation
+* [D] get_prev_error().
+* [D] reset_error().
 
-### Query and Write Operation Commands
-  * find(). Find documents in a collection
-    * [x] %criteria (Search criteria)
-    * [x] %projection (Field selection)
-    * [x] Int :$number_to_skip = 0
-    * [x] Int :$number_to_return = 0
-    * [x] Bool :$no_cursor_timeout = False
+### Collection Methods
 
-  * Testing find ()
-    * [x] exact matching, implicit AND.
-    * [x] $lt, $lte, $gt, $gte, $ne
-    * [x] $in, $nin, $or, $not
-    * [ ] null
-    * [x] regular expressions
-    * [ ] arrays, $all, $size, $slice
-    * [ ] embedded docs, $elemMatch
-    * [ ] $where
-
-  * Cursors
-    * [x] full cursor support (e.g. support OP_GET_MORE operation)
-    * [ ] Sending the KillCursors operation when use of a cursor has completed.
-          For efficiency, send these in batches.
-    * [ ] Tailable cursor support
-    * [ ] has_next()
-    * [x] next() and fetch()
-    * [ ] for_each()
-    * [ ] sort()
-    * [ ] limit()
-    * [ ] skip()
-    * [x] count(), Count docs after find using limit and skip.
-
-  * [x] insert(). Insert documents in a collection.
-  
-  * [x] update(). Update documents in a collection.
-    * [x] upsert
-    * [x] update operators: $addToSet, $bit, $currentDate, $each, $inc,
-          $isolated, $max, $min, $mul, $pop, $position, $positional, $pull,
-          $pullAll, $push, $pushAll, $rename, $set, $setOnInsert, $slice,
-          $sort, $unset
-          
-
-  * [x] remove(). Remove documents from a collection
-
-  * [x] ensureIndex commands should be cached to prevent excessive communication
-        with the database. Or, the driver user should be informed that
-        ensureIndex is not a lightweight operation for the particular driver.
-
-  * [x] find_one(). Search and return only one document.
-    * [x] %criteria (Search criteria)
-    * [x] %projection (Field selection)
-
-  * [ ] limit
-  * [ ] sort
-  * [ ] eval()
-  * [x] explain()
-  * [ ] hint() and $hint
-
+* [D] collection(). Set collection. Collection is created implicitly after
+      inserting data into a collection.
+* [D] create_collection(). Create collection explicitly and sets collection parameters.
+* [D] list_collections().
+* [D] collection_names().
 
 ### Data serialization
 
@@ -222,12 +176,6 @@ are shown in in more than one place place. Removed all internal commands.
 
 #### Aggregation Commands
 
-* [ ] aggregate. Performs aggregation tasks such as group using the aggregation framework.
-* [x] count. Counts the number of documents in a collection.
-* [x] distinct. Displays the distinct values found for a specified key in a collection.
-* [x] group. Groups documents in a collection by the specified key and performs simple aggregation.
-* [x] mapReduce. Performs map-reduce aggregation for large data sets.
-
 #### Geospatial Commands
 
 * [ ] geoNear. Performs a geospatial query that returns the documents closest to a given point.
@@ -237,14 +185,8 @@ are shown in in more than one place place. Removed all internal commands.
 
 * [ ] delete. Deletes one or more documents.
 * [ ] eval. Runs a JavaScript function on the database server.
-* [x] findAndModify. Returns and modifies a single document.
-* [x] getLastError. Returns the success status of the last operation.
-* [x] getPrevError. Returns status document containing all errors since the last resetError command.
-* [x] insert. Inserts one or more documents.
 * [ ] parallelCollectionScan. Lets applications use multiple parallel cursors when reading documents from a collection.
-* [x] resetError. Resets the last error status.
 * [ ] text. Performs a text search.
-* [x] update. Updates one or more documents.
 
 #### Query Plan Cache Commands
 
@@ -265,11 +207,6 @@ are shown in in more than one place place. Removed all internal commands.
 * [ ] connectionStatus. Reports the authentication state for the current connection.
 * [ ] convertToCapped. Converts a non-capped collection to a capped collection.
 * [ ] copydb. Copies a database from a remote host to the current host.
-* [x] createIndexes, see ensure_index(). Builds one or more indexes for a collection.
-* [x] create_collection(). Creates a collection and sets collection parameters.
-* [x] dropDatabase. Removes the current database.
-* [x] dropIndexes. Removes indexes from a collection.
-* [x] drop. Removes the specified collection from the database.
 * [ ] filemd5. Returns the md5 hash for files stored using GridFS.
 * [ ] fsync. Flushes pending writes to the storage layer and locks the database to allow backups.
 * [ ] getParameter. Retrieves configuration options.
@@ -306,61 +243,103 @@ are shown in in more than one place place. Removed all internal commands.
 
 ### Collection Methods
 
-* [ ] db.collection.aggregate(). Provides access to the aggregation pipeline.
-* [ ] db.collection.copyTo(). Wraps eval to copy data between collections in a single MongoDB instance.
-* [x] db.collection.count(). Wraps count to return a count of the number of documents in a collection or matching a query.
-* [ ] db.collection.createIndex(). Builds an index on a collection. Use db.collection.ensureIndex(). Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
-* [ ] db.collection.dataSize(). Returns the size of the collection. Wraps the size field in the output of the collStats.
-* [x] db.collection.distinct(). Returns an array of documents that have distinct values for the specified field.
-* [x] db.collection.drop(). Removes the specified collection from the database.
-* [x] db.collection.dropIndex(). Removes a specified index on a collection.
-* [x] db.collection.dropIndexes(). Removes all indexes on a collection.
-* [x] db.collection.ensureIndex(). Creates an index if it does not currently exist. If the index exists ensureIndex() does nothing.
-* [x] db.collection.find(). Performs a query on a collection and returns a cursor object.
-* [ ] db.collection.findAndModify(). Atomically modifies and returns a single document.
-* [x] db.collection.findOne(). Performs a query and returns a single document.
-* [ ] db.collection.getIndexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
-* [x] db.collection.getIndexes(). Returns an array of documents that describe the existing indexes on a collection.
-* [ ] db.collection.getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
-* [x] db.collection.group(). Provides simple data aggregation function. Groups documents in a collection by a key, and processes the results. Use aggregate() for more complex data aggregation.
-* [ ] db.collection.indexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
-* [x] db.collection.insert(). Creates a new document in a collection.
-* [ ] db.collection.isCapped(). Reports if a collection is a capped collection.
-* [x] db.collection.mapReduce(). Performs map-reduce style data aggregation.
-* [ ] db.collection.reIndex(). Rebuilds all existing indexes on a collection.
-* [ ] db.collection.remove(). Deletes documents from a collection.
-* [ ] db.collection.renameCollection(). Changes the name of a collection.
-* [ ] db.collection.save(). Provides a wrapper around an insert() and update() to insert new documents.
-* [ ] db.collection.stats(). Reports on the state of a collection. Provides a wrapper around the collStats.
-* [ ] db.collection.storageSize(). Reports the total size used by the collection in bytes. Provides a wrapper around the storageSize field of the collStats output.
-* [ ] db.collection.totalIndexSize(). Reports the total size used by the indexes on a collection. Provides a wrapper around the totalIndexSize field of the collStats output.
-* [ ] db.collection.totalSize(). Reports the total size of a collection, including the size of all documents and all indexes on a collection.
-* [x] db.collection.update(). Modifies a document in a collection.
-* [ ] db.collection.validate(). Performs diagnostic operations on a collection.
+* [ ] aggregate(). Provides access to the aggregation pipeline. Performs
+      aggregation tasks such as group using the aggregation framework.
+* [ ] copyTo(). Wraps eval to copy data between collections in a single MongoDB instance.
+* [O] count(). Wraps count to return a count of the number of documents in a
+      collection or matching a query.
+* [-] create_index(). Builds an index on a collection. Use ensure_index().
+      Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
+* [-] create_indexes(), see ensure_index(). Builds one or more indexes for a
+      collection.
+* [ ] dataSize(). Returns the size of the collection. Wraps the size field in the output of the collStats.
+* [O] explain(). Done also in collection! Reports on the query execution plan,
+      including index use, for a cursor.
+* [O] distinct(). Returns an array of documents that have distinct values for
+      the specified field. Displays the distinct values found for a specified
+      key in a collection.
+* [O] drop(). Removes the specified collection from the database.
+* [O] drop_index(). Removes a specified index on a collection.
+* [O] drop_indexes(). Removes all indexes on a collection.
+* [O] ensure_index(). Creates an index if it does not currently exist. If the
+      index exists ensure_index() does nothing. Ensure_index commands should be
+      cached to prevent excessive communication with the database. Or, the
+      driver user should be informed that ensureIndex is not a lightweight
+      operation for the particular driver.
+* [O] find(). Performs a query on a collection and returns a cursor object.
+    * [x] %criteria (Search criteria)
+    * [x] %projection (Field selection)
+    * [x] Int :$number_to_skip = 0
+    * [x] Int :$number_to_return = 0
+    * [x] Bool :$no_cursor_timeout = False
+  * Testing find()
+    * [x] exact matching, implicit AND.
+    * [x] $lt, $lte, $gt, $gte, $ne
+    * [x] $in, $nin, $or, $not
+    * [ ] null
+    * [x] regular expressions
+    * [ ] arrays, $all, $size, $slice
+    * [ ] embedded docs, $elemMatch
+    * [ ] $where
+* [O] find_and_modify(). Atomically modifies and returns a single document.
+* [O] find_one(). Performs a query and returns a single document.
+    * [x] %criteria (Search criteria)
+    * [x] %projection (Field selection)
+* [ ] getIndexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
+* [O] get_indexes(). Returns an array of documents that describe the existing
+      indexes on a collection.
+* [ ] getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
+* [O] group(). Provides simple data aggregation function. Groups documents in a
+      collection by a key, and processes the results. Use aggregate() for more
+      complex data aggregation. Groups documents in a collection by the
+      specified key and performs simple aggregation.
+* [ ] indexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
+* [O] insert(). Creates a new document in a collection.
+* [ ] isCapped(). Reports if a collection is a capped collection.
+* [O] map_reduce(). Performs map-reduce style data aggregation for large data
+      sets.
+* [ ] reIndex(). Rebuilds all existing indexes on a collection.
+* [O] remove(). Deletes documents from a collection.
+* [ ] renameCollection(). Changes the name of a collection.
+* [ ] save(). Provides a wrapper around an insert() and update() to insert new documents.
+* [ ] stats(). Reports on the state of a collection. Provides a wrapper around the collStats.
+* [ ] storageSize(). Reports the total size used by the collection in bytes. Provides a wrapper around the storageSize field of the collStats output.
+* [ ] totalIndexSize(). Reports the total size used by the indexes on a collection. Provides a wrapper around the totalIndexSize field of the collStats output.
+* [ ] totalSize(). Reports the total size of a collection, including the size of all documents and all indexes on a collection.
+* [O] update(). Modifies a document in a collection.
+    * [x] upsert
+    * [x] update operators: $addToSet, $bit, $currentDate, $each, $inc,
+          $isolated, $max, $min, $mul, $pop, $position, $positional, $pull,
+          $pullAll, $push, $pushAll, $rename, $set, $setOnInsert, $slice,
+          $sort, $unset
+* [ ] validate(). Performs diagnostic operations on a collection.
 
 ### Cursor Methods
 
-* [ ] cursor.addOption(). Adds special wire protocol flags that modify the behavior of the query.\u2019
-* [ ] cursor.batchSize(). Controls the number of documents MongoDB will return to the client in a single network message.
-* [x] cursor.count(). Also on collection. Returns a count of the documents in a cursor.
-* [x] cursor.explain(). Done also in collection! Reports on the query execution plan, including index use, for a cursor.
-* [ ] cursor.forEach(). Applies a JavaScript function for every document in a cursor.
-* [ ] cursor.hasNext(). Returns true if the cursor has documents and can be iterated.
-* [ ] cursor.hint(). Forces MongoDB to use a specific index for a query.
-* [ ] cursor.limit(). Constrains the size of a cursor\u2019s result set.
-* [ ] cursor.map(). Applies a function to each document in a cursor and collects the return values in an array.
-* [ ] cursor.max(). Specifies an exclusive upper index bound for a cursor. For use with cursor.hint()
-* [ ] cursor.maxTimeMS(). Specifies a cumulative time limit in milliseconds for processing operations on a cursor.
-* [ ] cursor.min(). Specifies an inclusive lower index bound for a cursor. For use with cursor.hint()
-* [x] cursor.next(). Returns the next document in a cursor.
-* [ ] cursor.objsLeftInBatch(). Returns the number of documents left in the current cursor batch.
-* [ ] cursor.readPref(). Specifies a read preference to a cursor to control how the client directs queries to a replica set.
-* [ ] cursor.showDiskLoc(). Returns a cursor with modified documents that include the on-disk location of the document.
-* [ ] cursor.size(). Returns a count of the documents in the cursor after applying skip() and limit() methods.
-* [ ] cursor.skip(). Returns a cursor that begins returning results only after passing or skipping a number of documents.
-* [ ] cursor.snapshot(). Forces the cursor to use the index on the _id field. Ensures that the cursor returns each document, with regards to the value of the _id field, only once.
-* [ ] cursor.sort(). Returns results ordered according to a sort specification.
-* [ ] cursor.toArray(). Returns an array that contains all documents returned by the cursor.
+* [ ] addOption(). Adds special wire protocol flags that modify the behavior of the query.\u2019
+* [ ] batchSize(). Controls the number of documents MongoDB will return to the client in a single network message.
+* [U] count(). Also on collection. Returns a count of the documents in a cursor.
+* [U] explain(). Done also in collection. Reports on the query execution plan,
+      including index use, for a cursor.
+* [U] fetch(). Not found in mongo. Equivalent function is next()
+* [ ] forEach(). Applies a JavaScript function for every document in a cursor.
+* [ ] hasNext(). Returns true if the cursor has documents and can be iterated.
+* [U] hint(). Forces MongoDB to use a specific index for a query.
+* [U] kill().
+* [ ] limit(). Constrains the size of a cursor\u2019s result set.
+* [ ] map(). Applies a function to each document in a cursor and collects the return values in an array.
+* [ ] max(). Specifies an exclusive upper index bound for a cursor. For use with cursor.hint()
+* [ ] maxTimeMS(). Specifies a cumulative time limit in milliseconds for processing operations on a cursor.
+* [ ] min(). Specifies an inclusive lower index bound for a cursor. For use with cursor.hint()
+* [U] next(). Returns the next document in a cursor.
+* [ ] objsLeftInBatch(). Returns the number of documents left in the current cursor batch.
+* [ ] readPref(). Specifies a read preference to a cursor to control how the client directs queries to a replica set.
+* [ ] showDiskLoc(). Returns a cursor with modified documents that include the on-disk location of the document.
+* [ ] size(). Returns a count of the documents in the cursor after applying skip() and limit() methods.
+* [ ] skip(). Returns a cursor that begins returning results only after passing or skipping a number of documents.
+* [ ] snapshot(). Forces the cursor to use the index on the _id field. Ensures that the cursor returns each document, with regards to the value of the _id field, only once.
+* [ ] sort(). Returns results ordered according to a sort specification.
+* [ ] toArray(). Returns an array that contains all documents returned by the cursor.
 
 ## BUGS, KNOWN LIMITATIONS AND TODO
 
@@ -372,7 +351,6 @@ are also items to be implemented in BSON. You need to look there for info
   * Speed can be influenced by specifying types on all variables
   * Furthermore the speedup of the language perl6 itself would have more impact
     than the programming of a one month student(me) can accomplish ;-)
-* Cursor count() needs some more options such as hint.
 * Change die() statements to throw exception objects to notify caller.
 * Keys must be checked for illegal characters when inserting documents.
 * Tests for connection to non existing server. timeout setting.
