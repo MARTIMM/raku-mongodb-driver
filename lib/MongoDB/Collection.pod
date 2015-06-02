@@ -207,6 +207,60 @@ $doc = $collection.find_and_modify(
 =end code
 =end nested
 
+=begin head2 
+method update ( %selector, %update,
+                Bool :$upsert = False, Bool :$multi_update = False
+              ) {...}
+=end head2 
+
+Update documents in the database. There are 2 flags defined.
+
+B<:upsert> If set, the database will insert the supplied object into the
+collection if no matching document is found.
+
+B<:multi_update> If set, the database will update all matching objects in the
+collection. Otherwise only updates first matching doc.
+
+The commands used by MongoDB such as $set, $inc and $push can easily create
+unexpected errors in perl programs because scalars are written the same way.
+Make sure you escape the $ sign or enclose the commands in single quoted strings
+to prevent interpolation.
+
+=begin nested
+=begin code
+# Update all documents
+$collection.update({}, {'$set' => {company => 'Implix'}});
+
+# Update documents for nick 'ph' or, when not existent, create a new document.
+$collection.update( :upsert, {nick => 'pb'}, {'$push' => {versions => 7}});
+=end code
+=end nested
+
+=for head2 
+method remove ( %selector = {}, Bool :$single_remove = False ) {...}
+
+Remove the selected documents from the database.
+
+B<:single_remove> If set, the database will remove only the first matching
+document in the collection. Otherwise all matching documents will be removed.
+
+=begin nested
+=begin code
+# Remove first document for nick 'ph'.
+$collection.remove( :single_remove, {nick => 'pb'});
+
+# Remove all documents
+$collection.remove();
+=end code
+=end nested
+
+=for head2
+method drop ( --> Hash ) {...}
+
+Drop the current collection from the database.
+
+This method will throw a X::MongoDB::Collection exception on failures.
+
 =for head2
 method explain ( %criteria = { } --> Hash ) {...}
 
@@ -263,53 +317,6 @@ page|http://docs.mongodb.org/manual/reference/command/mapReduce/>.
 First method will call second with the javascript texts converted to
 BSON::Javascript.
 
-=begin head2 
-method update ( %selector, %update,
-                Bool :$upsert = False, Bool :$multi_update = False
-              ) {...}
-=end head2 
-
-Update documents in the database. There are 2 flags defined.
-
-B<:upsert> If set, the database will insert the supplied object into the
-collection if no matching document is found.
-
-B<:multi_update> If set, the database will update all matching objects in the
-collection. Otherwise only updates first matching doc.
-
-The commands used by MongoDB such as $set, $inc and $push can easily create
-unexpected errors in perl programs because scalars are written the same way.
-Make sure you escape the $ sign or enclose the commands in single quoted strings
-to prevent interpolation.
-
-=begin nested
-=begin code
-# Update all documents
-$collection.update({}, {'$set' => {company => 'Implix'}});
-
-# Update documents for nick 'ph' or, when not existent, create a new document.
-$collection.update( :upsert, {nick => 'pb'}, {'$push' => {versions => 7}});
-=end code
-=end nested
-
-=for head2 
-method remove ( %selector = {}, Bool :$single_remove = False ) {...}
-
-Remove the selected documents from the database.
-
-B<:single_remove> If set, the database will remove only the first matching
-document in the collection. Otherwise all matching documents will be removed.
-
-=begin nested
-=begin code
-# Remove first document for nick 'ph'.
-$collection.remove( :single_remove, {nick => 'pb'});
-
-# Remove all documents
-$collection.remove();
-=end code
-=end nested
-
 =for head2
 method ensure_index ( %key-spec, %options = {} --> Nil ) {...}
 
@@ -351,18 +358,18 @@ method drop_indexes ( --> Hash ) {...}
 Drop all indexes for the collection except _id.
 
 =for head2
-method drop ( --> Hash ) {...}
-
-Drop the current collection from the database.
-
-This method will throw a X::MongoDB::Collection exception on failures.
-
-=for head2
 method get_indexes ( --> MongoDB::Cursor ) {...}
 
 Get a cursor with which to retrieve documents with index information in
 the current collection. There is always one document of the _id_ index.
 
+=for head2
+method stats ( Int :$scale = 1, Bool :$indexDetails = False,
+               Hash :$indexDetailsField,
+               Str :$indexDetailsName
+               --> Hash ) {...}
+
+Get some statistics about indexes and other things.
 
 =end pod
 

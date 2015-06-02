@@ -32,7 +32,7 @@ package MongoDB {
 
     has BSON::Javascript $!default_js = BSON::Javascript.new();
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     #
     submethod BUILD ( :$database, Str :$name ) {
       $!database = $database;
@@ -50,7 +50,9 @@ package MongoDB {
       }
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    # CRUD - Create(insert), Read(find*), Update, Delete
+    #---------------------------------------------------------------------------
     #
     method insert ( **@documents, Bool :$continue_on_error = False --> Nil ) {
       my $flags = +$continue_on_error;
@@ -80,7 +82,7 @@ package MongoDB {
       return;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     #
     method find ( %criteria = { }, %projection = { },
                   Int :$number_to_skip = 0, Int :$number_to_return = 0,
@@ -101,7 +103,7 @@ package MongoDB {
       );
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     #
     method find_one ( %criteria = { }, %projection = { } --> Hash ) {
       my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
@@ -111,7 +113,7 @@ package MongoDB {
       return $doc.defined ?? $doc !! %();
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     #
     method find_and_modify ( Hash $criteria = { }, %projection = { },
                              :$remove = False, :%update = { }, :%sort = { },
@@ -146,7 +148,46 @@ package MongoDB {
       return $doc<value>;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    #
+    method update ( %selector, %update, Bool :$upsert = False,
+                    Bool :$multi_update = False
+                    --> Nil
+                  ) {
+      my $flags = +$upsert + +$multi_update +< 1;
+      self.wire.OP_UPDATE( self, $flags, %selector, %update );
+      return;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method remove ( %selector = { }, Bool :$single_remove = False --> Nil ) {
+      my $flags = +$single_remove;
+      self.wire.OP_DELETE( self, $flags, %selector );
+      return;
+    }
+
+    #---------------------------------------------------------------------------
+    # Drop collection
+    #
+    method drop ( --> Hash ) {
+      my Hash $req = {drop => $!name};
+      my $doc = $!database.run_command($req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Collection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop',
+          oper-data => $req.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        );
+      }
+
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    # Some methods also created in Cursor.pm
+    #---------------------------------------------------------------------------
     # Get explanation about given search criteria
     #
     method explain ( %criteria = { } --> Hash ) {
@@ -159,7 +200,7 @@ package MongoDB {
       return $docs;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Get count of documents depending on criteria
     #
     method count( %criteria = {} --> Int ) {
@@ -184,7 +225,9 @@ package MongoDB {
       return Int($doc<n>);
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    # 
+    #---------------------------------------------------------------------------
     # Find distinct values of a field depending on criteria
     #
     method distinct( $field-name!, %criteria = {} --> Array ) {
@@ -211,7 +254,9 @@ package MongoDB {
       return $doc<values>.list;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    # Aggregate methods
+    #---------------------------------------------------------------------------
     #
     multi method group ( Str $reduce_js_func, Str :$key = '',
                          :%initial = {}, Str :$key_js_func = '',
@@ -265,7 +310,7 @@ package MongoDB {
       return $doc;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     #
     multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
                               Str :$finalize, Hash :$criteria, Hash :$sort,
@@ -324,26 +369,9 @@ package MongoDB {
       return $doc;
     }
 
-    #-----------------------------------------------------------------------------
-    #
-    method update ( %selector, %update, Bool :$upsert = False,
-                    Bool :$multi_update = False
-                    --> Nil
-                  ) {
-      my $flags = +$upsert + +$multi_update +< 1;
-      self.wire.OP_UPDATE( self, $flags, %selector, %update );
-      return;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method remove ( %selector = { }, Bool :$single_remove = False --> Nil ) {
-      my $flags = +$single_remove;
-      self.wire.OP_DELETE( self, $flags, %selector );
-      return;
-    }
-
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    # Index methods
+    #---------------------------------------------------------------------------
     # Add indexes for collection
     #
     # Steps done by the mongo shell
@@ -442,29 +470,47 @@ package MongoDB {
     }
 
     #-----------------------------------------------------------------------------
-    # Drop collection
+    # Get indexes for the current collection
     #
-    method drop ( --> Hash ) {
-      my Hash $req = {drop => $!name};
+    method get_indexes ( --> MongoDB::Cursor ) {
+      my $system-indexes = $!database.collection('system.indexes');
+      return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
+    }
+
+    #-----------------------------------------------------------------------------
+    # Collection statistics
+    #-----------------------------------------------------------------------------
+    # Get collections statistics
+    #
+    method stats ( Int :$scale = 1, Bool :$indexDetails = False,
+                   Hash :$indexDetailsField,
+                   Str :$indexDetailsName
+                   --> Hash ) {
+
+      my Hash $req = { collstats => $!name,
+                       options => {
+                         scale => $scale
+                       }
+                     };
+      $req<options><indexDetails> = True if $indexDetails;
+      $req<options><indexDetailsName> = $indexDetailsName if ?$indexDetailsName;
+      $req<options><indexDetailsField> = $indexDetailsField
+        if ?$indexDetailsField and !?$indexDetailsName; # One or the other
+
       my $doc = $!database.run_command($req);
+
+      # Check error and throw X::MongoDB::Collection if there is one
+      #
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
-          oper-name => 'drop',
+          oper-name => 'stats',
           oper-data => $req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
 
       return $doc;
-    }
-
-    #-----------------------------------------------------------------------------
-    # Get indexes for the current collection
-    #
-    method get_indexes ( --> MongoDB::Cursor ) {
-      my $system-indexes = $!database.collection('system.indexes');
-      return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
     }
   }
 }

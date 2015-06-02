@@ -183,7 +183,6 @@ Legend;
 
 #### Query and Write Operation Commands
 
-* [ ] delete. Deletes one or more documents.
 * [ ] eval. Runs a JavaScript function on the database server.
 * [ ] parallelCollectionScan. Lets applications use multiple parallel cursors when reading documents from a collection.
 * [ ] text. Performs a text search.
@@ -229,9 +228,7 @@ Legend;
 * [ ] getCmdLineOpts. Returns a document with the run-time arguments to the MongoDB instance and their parsed options.
 * [ ] getLog. Returns recent log messages.
 * [ ] hostInfo. Returns data that reflects the underlying host system.
-* [ ] indexStats. Experimental command that collects and aggregates statistics on all indexes.
 * [ ] listCommands. Lists all database commands provided by the current mongod instance.
-* [x] list_databases. Returns a document that lists all databases and returns basic database statistics.
 * [ ] profile. Interface for the database profiler.
 * [ ] serverStatus. Returns a collection metrics on instance-wide resource utilization and status.
 * [ ] shardConnPoolStats. Reports statistics on a mongos\u2018s connection pool for client operations against shards.
@@ -245,7 +242,8 @@ Legend;
 
 * [ ] aggregate(). Provides access to the aggregation pipeline. Performs
       aggregation tasks such as group using the aggregation framework.
-* [ ] copyTo(). Wraps eval to copy data between collections in a single MongoDB instance.
+* [-] copyTo(). Wraps eval to copy data between collections in a single MongoDB
+      instance. Deprecated since version MongoDB 3.0.
 * [O] count(). Wraps count to return a count of the number of documents in a
       collection or matching a query.
 * [-] create_index(). Builds an index on a collection. Use ensure_index().
@@ -285,7 +283,10 @@ Legend;
 * [O] find_one(). Performs a query and returns a single document.
     * [x] %criteria (Search criteria)
     * [x] %projection (Field selection)
-* [ ] getIndexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
+* [-] getIndexStats(). Renders a human-readable view of the data collected by
+      indexStats which reflects B-tree utilization. The function/command can be
+      run only on a mongod instance that uses the
+      --enableExperimentalIndexStatsCmd option.
 * [O] get_indexes(). Returns an array of documents that describe the existing
       indexes on a collection.
 * [ ] getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
@@ -293,7 +294,8 @@ Legend;
       collection by a key, and processes the results. Use aggregate() for more
       complex data aggregation. Groups documents in a collection by the
       specified key and performs simple aggregation.
-* [ ] indexStats(). Renders a human-readable view of the data collected by indexStats which reflects B-tree utilization.
+* [-] indexStats(). Renders a human-readable view of the data collected by
+      indexStats which reflects B-tree utilization. See getIndexStats().
 * [O] insert(). Creates a new document in a collection.
 * [ ] isCapped(). Reports if a collection is a capped collection.
 * [O] map_reduce(). Performs map-reduce style data aggregation for large data
@@ -302,7 +304,8 @@ Legend;
 * [O] remove(). Deletes documents from a collection.
 * [ ] renameCollection(). Changes the name of a collection.
 * [ ] save(). Provides a wrapper around an insert() and update() to insert new documents.
-* [ ] stats(). Reports on the state of a collection. Provides a wrapper around the collStats.
+* [O] stats(). Reports on the state of a collection. Provides a wrapper around
+      the collStats.
 * [ ] storageSize(). Reports the total size used by the collection in bytes. Provides a wrapper around the storageSize field of the collStats output.
 * [ ] totalIndexSize(). Reports the total size used by the indexes on a collection. Provides a wrapper around the totalIndexSize field of the collStats output.
 * [ ] totalSize(). Reports the total size of a collection, including the size of all documents and all indexes on a collection.
@@ -365,7 +368,7 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.23.0
-  * Added find_and_modify method in Collection.
+  * Added find_and_modify(), stats() methods in Collection.
 * 0.22.6
   * Changes in testfiles to read in the proper module instead of the MongoDB
     module which will include all modules. Most of the time it is enaugh to

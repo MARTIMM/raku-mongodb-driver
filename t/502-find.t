@@ -8,6 +8,8 @@
     cursor.fetch()                      Fetch a document
     
     X::MongoDB::Collection              Catch exceptions
+
+    collection.stats()                  Collection statistics
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -98,6 +100,29 @@ $collection.ensure_index( %( code1 => 1),
 $doc = $collection.drop_index('testindex');
 is $doc<ok>.Bool, True, 'Drop index ok';
 
+#-------------------------------------------------------------------------------
+# Create index again and get some statistics for it
+#
+$collection.ensure_index( %( code1 => 1),
+                          %( name => 'testindex',
+                             background => True
+                           )
+                        );
+my $stats = $collection.stats(:scale(1));
+ok $stats<indexSizes><_id_>:exists, 'Found index stats info on _id_';
+ok $stats<indexSizes><testindex>:exists, 'Found index stats info on testindex';
+
+$collection.ensure_index( %( code1 => 1),
+                          %( name => 'testindex',
+                             background => True
+                           )
+                        );
+$stats = $collection.stats( :scale(1), :indexDetails,
+                            :indexDetailsFields({_id_ => 0})
+                          );
+say $stats.perl;
+
+#-------------------------------------------------------------------------------
 # Drop all indexes
 #
 $doc = $collection.drop_indexes;
