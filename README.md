@@ -250,7 +250,8 @@ Legend;
       Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
 * [-] create_indexes(), see ensure_index(). Builds one or more indexes for a
       collection.
-* [ ] dataSize(). Returns the size of the collection. Wraps the size field in the output of the collStats.
+* [O] data_size(). Returns the size of the collection. Wraps the size field in
+      the output of the collStats.
 * [O] explain(). Done also in collection! Reports on the query execution plan,
       including index use, for a cursor.
 * [O] distinct(). Returns an array of documents that have distinct values for
@@ -368,7 +369,7 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.23.0
-  * Added find_and_modify(), stats() methods in Collection.
+  * Added find_and_modify(), stats(), data_size() methods in Collection.
 * 0.22.6
   * Changes in testfiles to read in the proper module instead of the MongoDB
     module which will include all modules. Most of the time it is enaugh to

@@ -512,5 +512,13 @@ package MongoDB {
 
       return $doc;
     }
+    
+    #-----------------------------------------------------------------------------
+    # Return size of collection in bytes
+    #
+    method data_size ( --> Int ) {
+      my Hash $doc = self.stats();
+      return $doc<size>;
+    }
   }
 }

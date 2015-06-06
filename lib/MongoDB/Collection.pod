@@ -371,5 +371,14 @@ method stats ( Int :$scale = 1, Bool :$indexDetails = False,
 
 Get some statistics about indexes and other things.
 
+=for head2
+method data_size ( --> Int ) {...}
+
+Return size field of statistics. This is the total size of all records in a
+collection. This value does not include the record header, which is 16 bytes per
+record, but does include the record\u2019s padding. Additionally size does not
+include the size of any indexes associated with the collection, which the
+totalIndexSize field reports.
+
 =end pod
 

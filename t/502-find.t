@@ -10,6 +10,7 @@
     X::MongoDB::Collection              Catch exceptions
 
     collection.stats()                  Collection statistics
+    collection.data_size()              $stats<size>
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -117,10 +118,17 @@ $collection.ensure_index( %( code1 => 1),
                              background => True
                            )
                         );
+
+#-------------------------------------------------------------------------------
+# Get statistics and read size
+#
 $stats = $collection.stats( :scale(1), :indexDetails,
                             :indexDetailsFields({_id_ => 0})
                           );
-say $stats.perl;
+#say $stats.perl;
+
+my $size = $collection.data_size();
+is( $size, $stats<size>, "Size $size");
 
 #-------------------------------------------------------------------------------
 # Drop all indexes
