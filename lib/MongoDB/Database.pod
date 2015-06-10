@@ -137,15 +137,14 @@ handling of this command it is nesseary to study the MongoDB site and perhaps
 this perl6 driver code (there are many examples) will it be of any use.
 
 =for head2
-method get_last_error ( Bool :$j = True, Int :$w = 0, Int :$wtimeout = 1000,
+method get_last_error ( Bool :$j = True, Int :$w = 0,
+                        Int :$wtimeout = 1000, Bool :$fsync = False
                         --> Hash
                       ) {...}
 
 Returns the error status of the preceding write operation on the current
 connection. There are methods in classes which use this call implicitly to
 see if all went well.
-
-Note: Mongodb removed fsync from its api somewhere around may 2015.
 
 The arguments are (See also L<here|http://docs.mongodb.org/manual/reference/command/getLastError>);
 
