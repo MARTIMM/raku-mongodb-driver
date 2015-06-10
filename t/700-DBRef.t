@@ -32,7 +32,7 @@ say "D d1: $d1.perl";
 #-------------------------------------------------------------------------------
 #
 my MongoDB::DBRef $dbr .= new(:id($d1<_id>));
-isa_ok $dbr, 'MongoDB::DBRef';
+isa-ok $dbr, 'MongoDB::DBRef';
 
 my BSON::ObjectId $i = $dbr.doc();
 is $i, $d1<_id>, 'Compare object id';

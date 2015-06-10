@@ -20,7 +20,7 @@ my MongoDB::Database $database = $connection.database('test');
 # Create collection and insert data in it!
 #
 my MongoDB::Collection $collection = $database.collection('cl1');
-isa_ok( $collection, 'MongoDB::Collection');
+isa-ok( $collection, 'MongoDB::Collection');
 $collection.insert( $%( 'name' => 'Jan Klaassen'));
 
 # Drop current collection twice
