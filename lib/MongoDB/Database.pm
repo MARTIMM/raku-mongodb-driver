@@ -163,18 +163,20 @@ package MongoDB {
     # code, connectionId, lastOp, n, shards, singleShard, updatedExisting,
     # upserted, wnote, wtimeout, waited, wtime,
     #
-    method get_last_error ( Bool :$j = True, Int :$w = 0, Int :$wtimeout = 1000,
-                            Bool :$fsync = False
+    # mongodb removed fsync from its api somewhere around may 2015.
+    #
+    method get_last_error ( Bool :$j = True, Int :$w = 0,
+                            Int :$wtimeout = 1000,
                             --> Hash
                           ) {
 
-      my %options = :$j, :$fsync;
+      my %options = getLastError => 1, :$j;
       if $w and $wtimeout {
         %options<w> = $w;
         %options<wtimeout> = $wtimeout;
       }
 
-      return self.run_command(%( getLastError => 1, %options));
+      return self.run_command(%options);
     }
 
     #-----------------------------------------------------------------------------
