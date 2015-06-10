@@ -351,6 +351,14 @@ Although the lists above represent one hell of a todo, below are a few notes
 which I have to make to remember to add items to programmed functions. There
 are also items to be implemented in BSON. You need to look there for info
 
+* BIG PROBLEM!!!!!!!!! Should have seen this comming! Its about run_command().
+  A hash needs to be setup with therein a command to be processed. With the new
+  rakudo the hash get hashed properly and the keys are now in some unpredictable
+  order. One of the nessessities of run_command is that the command is found at
+  the first key value pair. During encoding into a BSON byte array the command
+  can be placed anywhere in the string and some other option comming at the
+  first location will be seen as the command.
+  
 * Speed, protocol correctness and clear code are priorities for now.
   * Speed can be influenced by specifying types on all variables
   * Furthermore the speedup of the language perl6 itself would have more impact
@@ -360,7 +368,7 @@ are also items to be implemented in BSON. You need to look there for info
 * Tests for connection to non existing server. timeout setting.
 * Test to compare documents
 * Test group aggregation keyf field and finalize
-* Test map reduce aggregation more thoroughly
+* Test map reduce aggregation more thoroughly.
 
 ## CHANGELOG
 

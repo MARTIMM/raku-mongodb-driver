@@ -131,10 +131,35 @@ package MongoDB {
       $collection.database.connection._send( $msg_header ~ $OP_INSERT, False);
     }
 
-    method OP_QUERY ( $collection, $flags, $number_to_skip, $number_to_return,
-                      %query, %return_field_selector
-                      --> Hash
-                    ) {
+    multi method OP_QUERY (
+      $collection, $flags, $number_to_skip, $number_to_return,
+      Pair @query, %return_field_selector
+      --> Hash
+    ) {
+say "Q0: {@query.perl}";
+      return self.OP_QUERY(
+        $collection, $flags, $number_to_skip, $number_to_return,
+        self._enc_document(@query), %return_field_selector
+      );
+    }
+
+    multi method OP_QUERY (
+      $collection, $flags, $number_to_skip, $number_to_return,
+      %query, %return_field_selector
+      --> Hash
+    ) {
+say "Q1: {%query.perl}";
+      return self.OP_QUERY(
+        $collection, $flags, $number_to_skip, $number_to_return,
+        self._enc_document(%query), %return_field_selector
+      );
+    }
+    
+    multi method OP_QUERY (
+      $collection, $flags, $number_to_skip, $number_to_return,
+      Buf $query, %return_field_selector
+      --> Hash
+    ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
       my Buf $OP_QUERY =
@@ -166,7 +191,7 @@ package MongoDB {
         # document query
         # query object
         #
-        ~ self._enc_document( %query )
+        ~ $query;
         ;
 
       # [ document  returnFieldSelector; ]

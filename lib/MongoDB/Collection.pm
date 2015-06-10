@@ -84,11 +84,12 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method find ( %criteria = { }, %projection = { },
+    multi method find ( %criteria = { }, %projection = { },
                   Int :$number_to_skip = 0, Int :$number_to_return = 0,
                   Bool :$no_cursor_timeout = False
                   --> MongoDB::Cursor
                 ) {
+say "FH: {%criteria.perl}";
       my $flags = +$no_cursor_timeout +< 4;
       my $OP_REPLY;
         $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
@@ -103,10 +104,40 @@ package MongoDB {
       );
     }
 
+    multi method find ( Pair @criteria = { }, %projection = { },
+                  Int :$number_to_skip = 0, Int :$number_to_return = 0,
+                  Bool :$no_cursor_timeout = False
+                  --> MongoDB::Cursor
+                ) {
+say "FP: {@criteria.perl}";
+      my $flags = +$no_cursor_timeout +< 4;
+      my $OP_REPLY;
+        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
+                                        $number_to_return, @criteria,
+                                        %projection
+                                      );
+
+      return MongoDB::Cursor.new(
+        collection      => self,
+        OP_REPLY        => $OP_REPLY,
+        criteria        => %@criteria
+      );
+    }
+
     #---------------------------------------------------------------------------
     #
-    method find_one ( %criteria = { }, %projection = { } --> Hash ) {
+    multi method find_one ( %criteria = { }, %projection = { } --> Hash ) {
+say "F1H: {%criteria.perl}";
       my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
+                                              :number_to_return(1)
+                                            );
+      my $doc = $cursor.fetch();
+      return $doc.defined ?? $doc !! %();
+    }
+
+    multi method find_one ( Pair @criteria = { }, %projection = { } --> Hash ) {
+say "F1P: {@criteria.perl}";
+      my MongoDB::Cursor $cursor = self.find( @criteria, %projection,
                                               :number_to_return(1)
                                             );
       my $doc = $cursor.fetch();
@@ -137,7 +168,7 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
-          oper-name => 'drop_index',
+          oper-name => 'find_and_modify',
           oper-data => $req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
@@ -216,7 +247,7 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
-          oper-name => 'drop_index',
+          oper-name => 'count',
           oper-data => $req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
@@ -231,20 +262,20 @@ package MongoDB {
     # Find distinct values of a field depending on criteria
     #
     method distinct( $field-name!, %criteria = {} --> Array ) {
-      my Hash $req = { distinct => $!name,
-                       query => %criteria,
-                       key => $field-name
-                     };
+      my Pair @req = distinct => $!name,
+                query => %criteria,
+                key => $field-name
+                ;
 
-      my $doc = $!database.run_command($req);
+      my $doc = $!database.run_command(@req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
-          oper-name => 'drop_index',
-          oper-data => $req.perl,
+          oper-name => 'distinct',
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
@@ -360,7 +391,7 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
-          oper-name => 'group',
+          oper-name => 'map_reduce',
           oper-data => $req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );

@@ -148,14 +148,24 @@ package MongoDB {
     # %("ok" => 0e0, "errmsg" => <Some error string>)
     # %("ok" => 1e0, ...);
     #
-    method run_command ( %command --> Hash ) {
+    multi method run_command ( %command --> Hash ) {
 
       my MongoDB::Collection $c .= new(
         database    => self,
         name        => '$cmd',
       );
-
+say "CH: {%command.perl}";
       return $c.find_one(%command);
+    }
+
+    multi method run_command ( Pair @command --> Hash ) {
+
+      my MongoDB::Collection $c .= new(
+        database    => self,
+        name        => '$cmd',
+      );
+say "CP: {@command.perl}";
+      return $c.find_one(@command);
     }
 
     #-----------------------------------------------------------------------------
@@ -163,14 +173,12 @@ package MongoDB {
     # code, connectionId, lastOp, n, shards, singleShard, updatedExisting,
     # upserted, wnote, wtimeout, waited, wtime,
     #
-    # mongodb removed fsync from its api somewhere around may 2015.
-    #
     method get_last_error ( Bool :$j = True, Int :$w = 0,
-                            Int :$wtimeout = 1000,
+                            Int :$wtimeout = 1000, Bool :$fsync = False
                             --> Hash
                           ) {
 
-      my %options = getLastError => 1, :$j;
+      my %options = getLastError => 1, :$j, :$fsync;
       if $w and $wtimeout {
         %options<w> = $w;
         %options<wtimeout> = $wtimeout;

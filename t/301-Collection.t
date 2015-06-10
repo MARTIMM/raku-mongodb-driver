@@ -32,10 +32,10 @@ is $collection.count(%(name => 'Piet Hein')), 1, 'One document found';
 #-------------------------------------------------------------------------------
 #
 my $code-list = $collection.distinct('code');
-is_deeply $code-list.sort, $( 14, 20), 'Codes found are 14, 20';
+is-deeply $code-list.sort, $( 14, 20), 'Codes found are 14, 20';
 
 $code-list = $collection.distinct( 'code', %(name => 'Piet Hein'));
-is_deeply $code-list, [20], 'Code found is 20';
+is-deeply $code-list, [20], 'Code found is 20';
 
 #-------------------------------------------------------------------------------
 #
@@ -46,7 +46,7 @@ my $docs = $database.list_collections;
 is $docs.elems, 5, 'Number of docs: 5 = system table and 2 for each collection';
 
 $docs = $database.collection_names;
-is_deeply $docs.sort, <cl1 cl2>, 'Test collection names';
+is-deeply $docs.sort, <cl1 cl2>, 'Test collection names';
 
 #-------------------------------------------------------------------------------
 # Cleanup
