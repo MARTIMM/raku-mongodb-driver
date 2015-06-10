@@ -45,7 +45,7 @@ my Array $db-docs = $connection.list_databases;
 #
 my %db-names;
 my $idx = 0;
-for $db-docs.[*] -> $doc {
+for $db-docs[*] -> $doc {
   %db-names{$doc<name>} = $idx++;
 }
 

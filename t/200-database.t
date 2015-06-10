@@ -30,13 +30,11 @@ if 1 {
   $database.create_collection('cl1');
   CATCH {
     when X::MongoDB::Database {
-        ok $_.message ~~ ms/collection already exists/,
-           'Collection cl1 already exists'
-           ;
+      ok .message ~~ ms/collection already exists/, 'Collection cl1 exists';
     }
 
     default {
-        say $_.perl;
+      say .perl;
     }
   }
 }
@@ -68,9 +66,10 @@ ok $docs<ok>.Bool, 'Run command ran ok';
 ok $docs<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
 
 my %db-names;
-my @db-docs = @($docs<databases>);
-for (@db-docs) Z ^+@db-docs -> %doc, $idx {
-    %db-names{%doc<name>} = $idx;
+my Array $db-docs = $docs<databases>;
+my $idx = 0;
+for $db-docs[*] -> $doc {
+  %db-names{$doc<name>} = $idx++;
 }
 
 ok %db-names<test>:exists, 'test found';
@@ -89,9 +88,10 @@ $database = $connection.database('admin');
 $docs = $database.run_command(%(listDatabases => 1));
 
 %db-names = %();
-@db-docs = @($docs<databases>);
-for (@db-docs) Z ^+@db-docs -> %doc, $idx {
-    %db-names{%doc<name>} = $idx;
+$idx = 0;
+$db-docs = $docs<databases>;
+for $db-docs[*] -> $doc {
+  %db-names{$doc<name>} = $idx++;
 }
 
 ok %db-names<test>:!exists, 'test not found';
