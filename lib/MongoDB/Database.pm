@@ -165,7 +165,9 @@ say "CH: {%command.perl}";
         name        => '$cmd',
       );
 say "CP: {@command.perl}";
-      return $c.find_one(@command);
+      my MongoDB::Cursor $cursor = $c.find( @command, :number_to_return(1));
+      my $doc = $cursor.fetch();
+      return $doc.defined ?? $doc !! %();
     }
 
     #-----------------------------------------------------------------------------
