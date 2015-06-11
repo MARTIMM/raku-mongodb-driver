@@ -126,18 +126,8 @@ say "FP: {@criteria.perl}";
 
     #---------------------------------------------------------------------------
     #
-    multi method find_one ( %criteria = { }, %projection = { } --> Hash ) {
-say "F1H: {%criteria.perl}";
+    method find_one ( %criteria = { }, %projection = { } --> Hash ) {
       my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
-                                              :number_to_return(1)
-                                            );
-      my $doc = $cursor.fetch();
-      return $doc.defined ?? $doc !! %();
-    }
-
-    multi method find_one ( Pair @criteria = { }, %projection = { } --> Hash ) {
-say "F1P: {@criteria.perl}";
-      my MongoDB::Cursor $cursor = self.find( @criteria, %projection,
                                               :number_to_return(1)
                                             );
       my $doc = $cursor.fetch();
