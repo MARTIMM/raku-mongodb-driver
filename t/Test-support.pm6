@@ -39,8 +39,7 @@ package Test-support
     print "Document: ";
     my $indent = '';
     for $document.keys -> $k {
-#say $k;
-      say sprintf( "%s%10.10s: %s", $indent, $k, $document{$k});
+      say sprintf( "%s%-20.20s: %s", $indent, $k, $document{$k});
       $indent = ' ' x 10 unless $indent;
     }
     say "";
