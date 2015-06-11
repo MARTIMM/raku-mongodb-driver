@@ -3,6 +3,7 @@
     collection.find()                   Query database
       implicit AND selection            Find with more fields
       projection                        Select fields to return
+    collection.find() with pairs ipv hash                  
     cursor.count()                      Count number of docs
     collection.explain()                Explain what is done for a search
     cursor.explain()                    Explain what is done for a search
@@ -31,6 +32,8 @@ for ^50 -> $i {
   $collection.insert($d1);
 }
 
+#show-documents( $collection, {}, {_id => 0});
+
 check-document( %( code => 'd1', test_record => 'tr3')
               , %( _id => 1, code => 1, name => 1, 'some-name' => 0)
               );
@@ -58,6 +61,19 @@ ok $cursor.count(:limit(3)) == 3.0, 'Limiting count to 3 documents';
 
 $cursor = $collection.find();
 ok $cursor.count( :skip(48), :limit(3)) == 2.0, 'Skip 48 then limit 3 yields 2';
+
+#-------------------------------------------------------------------------------
+# Testing find() using Pairs instead of hash.
+#
+my Pair @f = code => 'd1', test_record => 'tr3';
+$cursor = $collection.find( @f, %( _id => 0, code => 1));
+#$cursor = $collection.find( @f);
+is $cursor.count, 1, 'Counting one document';
+my Hash $doc = $cursor.next;
+#show-document($doc);
+ok $doc<code>:exists, 'code field returned';
+ok $doc<_id>:!exists, 'id field not returned';
+ok $doc<name>:!exists, 'name field not returned';
 
 #-------------------------------------------------------------------------------
 # The server needs to scan through all documents to see if the query matches
