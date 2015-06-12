@@ -1,8 +1,8 @@
 use v6;
 
-BEGIN {
-  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
-}
+#BEGIN {
+#  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
+#}
 
 use BSON:ver<0.9.2+>;
 
