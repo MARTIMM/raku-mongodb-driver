@@ -369,6 +369,8 @@ are also items to be implemented in BSON. You need to look there for info
 * Test to compare documents
 * Test group aggregation keyf field and finalize
 * Test map reduce aggregation more thoroughly.
+* map_reduce, look into scope. argument is not used.
+* explain changed after mongodb 3.0
 
 ## CHANGELOG
 
@@ -378,7 +380,9 @@ change at any time. The public API should not be considered stable.*
 
 * 0.23.1
   * Changes caused by rakudo update
-  * fsync argument removed from get_last_error in Database class.
+  * Hashes work like hashes... mongodb run_command needs command on first key
+    value pair. Because of this a few multi methods in several modules are added
+    to process Pair arrays instead of hashes.
 * 0.23.0
   * Added find_and_modify(), stats(), data_size() methods in Collection.
 * 0.22.6

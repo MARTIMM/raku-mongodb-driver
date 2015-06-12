@@ -297,6 +297,9 @@ page|http://docs.mongodb.org/manual/reference/method/db.collection.group/>.
 First method will call second with the javascript texts converted to
 BSON::Javascript.
 
+The group() method does not work with sharded clusters. Use the
+aggregation framework or map-reduce in sharded environments.
+
 =for head2
 multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
                           Str :$finalize, Hash :$criteria, Hash :$sort,
@@ -318,7 +321,7 @@ First method will call second with the javascript texts converted to
 BSON::Javascript.
 
 =for head2
-method ensure_index ( %key-spec, %options = {} --> Nil ) {...}
+method ensure_index ( %key-spec!, %options = {} --> Nil ) {...}
 
 Create a new index on the current collection. The %key-spec document specify
 which indexes must be created and how. The %options is a document on how to
@@ -333,7 +336,7 @@ indexes.
 This method will throw a X::MongoDB::Collection exception on failures.
 
 =for head2
-method drop_index ( $key-spec --> Hash ) {...}
+method drop_index ( $key-spec! --> Hash ) {...}
 
 Drop an index. The %key-spec specifies the keys to be dropped. It has the
 same format as in ensure_index. When the %options<name> key is used when setting

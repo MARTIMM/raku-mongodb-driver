@@ -133,28 +133,32 @@ package MongoDB {
 
     multi method OP_QUERY (
       $collection, $flags, $number_to_skip, $number_to_return,
-      Pair @query, %return_field_selector
-      --> Hash
-    ) {
-say "Q0: {@query.perl}";
-      return self.OP_QUERY(
-        $collection, $flags, $number_to_skip, $number_to_return,
-        self._enc_document(@query), %return_field_selector
-      );
-    }
-
-    multi method OP_QUERY (
-      $collection, $flags, $number_to_skip, $number_to_return,
       %query, %return_field_selector
       --> Hash
     ) {
-say "Q1: {%query.perl}";
       return self.OP_QUERY(
         $collection, $flags, $number_to_skip, $number_to_return,
         self._enc_document(%query), %return_field_selector
       );
     }
+
+    # OP_QUERY on a collection. Now the query is an array of Pair. This
+    # was nessesary for run_command to keep the command on on the first key
+    # value pair.
+    #
+    multi method OP_QUERY (
+      $collection, $flags, $number_to_skip, $number_to_return,
+      Pair @query, %return_field_selector
+      --> Hash
+    ) {
+      return self.OP_QUERY(
+        $collection, $flags, $number_to_skip, $number_to_return,
+        self._enc_document(@query), %return_field_selector
+      );
+    }
     
+    # Mayor work horse with query already converted nito a BSON byte array
+    #
     multi method OP_QUERY (
       $collection, $flags, $number_to_skip, $number_to_return,
       Buf $query, %return_field_selector
@@ -446,7 +450,7 @@ say "Q1: {%query.perl}";
 
       # Extract documents from message.
       #
-      for ^ $OP_REPLY<number_returned> {
+      for ^$OP_REPLY<number_returned> {
         my Hash $document = self._dec_document($a);
         $OP_REPLY<documents>.push($document);
       }

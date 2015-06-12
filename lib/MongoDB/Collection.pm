@@ -83,13 +83,13 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    # Find record in a collection
     #
     multi method find ( %criteria = { }, %projection = { },
                   Int :$number_to_skip = 0, Int :$number_to_return = 0,
                   Bool :$no_cursor_timeout = False
                   --> MongoDB::Cursor
                 ) {
-say "FH: {%criteria.perl}";
       my $flags = +$no_cursor_timeout +< 4;
       my $OP_REPLY;
         $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
@@ -104,12 +104,15 @@ say "FH: {%criteria.perl}";
       );
     }
 
+    # Find record in a collection. Now the criteria is an array of Pair. This
+    # was nessesary for run_command to keep the command on on the first key
+    # value pair.
+    #
     multi method find ( Pair @criteria = { }, %projection = { },
                   Int :$number_to_skip = 0, Int :$number_to_return = 0,
                   Bool :$no_cursor_timeout = False
                   --> MongoDB::Cursor
                 ) {
-say "FP: {@criteria.perl}";
       my $flags = +$no_cursor_timeout +< 4;
       my $OP_REPLY;
         $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
@@ -141,25 +144,29 @@ say "FP: {@criteria.perl}";
                              :$new = False, :$upsert = False
                              --> Hash
                            ) {
-      my Hash $req = { findAndModify => self.name,
-                       query => $criteria
-                     };
-      $req<sort> = %sort if ?%sort;
-      $req<remove> = $remove if ?$remove;
-      $req<update> = %update if ?%update;
-      $req<new> = $new if ?$new;
-      $req<upsert> = $upsert if ?$upsert;
-      $req<projection> = %projection if ?%projection;
+
+      # Note: Rakudo has a problem pushing a new pair onto an array of pairs
+      # The method below works however.
+      #
+      my Hash $h;
+      $h<sort> = %sort if ?%sort;
+      $h<remove> = $remove if ?$remove;
+      $h<update> = %update if ?%update;
+      $h<new> = $new if ?$new;
+      $h<upsert> = $upsert if ?$upsert;
+      $h<projection> = %projection if ?%projection;
+
+      my Pair @req = findAndModify => self.name, query => $criteria, @$h;
 
       # Modify new option if remove is true
       # $req<new> = False if ?$remove;
 
-      my $doc = $!database.run_command($req);
+      my $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
           oper-name => 'find_and_modify',
-          oper-data => $req.perl,
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
@@ -192,13 +199,13 @@ say "FP: {@criteria.perl}";
     # Drop collection
     #
     method drop ( --> Hash ) {
-      my Hash $req = {drop => $!name};
-      my $doc = $!database.run_command($req);
+      my Pair @req = drop => $!name;
+      my $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop',
-          oper-data => $req.perl,
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
@@ -211,12 +218,9 @@ say "FP: {@criteria.perl}";
     #---------------------------------------------------------------------------
     # Get explanation about given search criteria
     #
-    method explain ( %criteria = { } --> Hash ) {
-      my MongoDB::Cursor $cursor = self.find( %( '$query' => %criteria,
-                                                 '$explain' => True
-                                               ),
-                                               :number_to_return(1)
-                                            );
+    method explain ( Hash $criteria = {} --> Hash ) {
+      my Pair @req = '$query' => $criteria, '$explain' => 1;
+      my MongoDB::Cursor $cursor = self.find( @req, :number_to_return(1));
       my $docs = $cursor.fetch();
       return $docs;
     }
@@ -224,13 +228,12 @@ say "FP: {@criteria.perl}";
     #---------------------------------------------------------------------------
     # Get count of documents depending on criteria
     #
-    method count( %criteria = {} --> Int ) {
-      my Hash $req = { count => $!name,
-                       query => %criteria,
-                       fields => %()           # Seen with wireshark
-                     };
+    method count( Hash $criteria = {} --> Int ) {
 
-      my $doc = $!database.run_command($req);
+      # fields is seen with wireshark
+      #
+      my Pair @req = count => $!name, query => $criteria, fields => %();
+      my $doc = $!database.run_command(@req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
@@ -238,7 +241,7 @@ say "FP: {@criteria.perl}";
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
           oper-name => 'count',
-          oper-data => $req.perl,
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
@@ -251,11 +254,11 @@ say "FP: {@criteria.perl}";
     #---------------------------------------------------------------------------
     # Find distinct values of a field depending on criteria
     #
-    method distinct( $field-name!, %criteria = {} --> Array ) {
+    method distinct( Str $field-name!, %criteria = {} --> Array ) {
       my Pair @req = distinct => $!name,
-                query => %criteria,
-                key => $field-name
-                ;
+                     key => $field-name,
+                     query => %criteria
+                     ;
 
       my $doc = $!database.run_command(@req);
 
@@ -300,7 +303,7 @@ say "FP: {@criteria.perl}";
                          Hash :$condition = {}
                          --> Hash ) {
 
-      my Hash $req = { group => %( ns => $!name,
+      my Hash $h = { group => %( ns => $!name,
                                    initial => $initial,
                                    '$reduce' => $reduce_js_func,
                                    key => %($key => 1)
@@ -308,14 +311,16 @@ say "FP: {@criteria.perl}";
                      };
 
       if $key_js_func.has_javascript {
-        $req<group><keyf> = $key_js_func;
-        $req<group><key>:delete;
+        $h<group><keyf> = $key_js_func;
+        $h<group><key>:delete;
       }
-#say "\nG: {$req.perl}\n";
 
-      $req<group><condition> = $condition if +$condition;
-      $req<group><finalize> = $finalize if $finalize.has_javascript;
-      my $doc = $!database.run_command($req);
+      $h<group><condition> = $condition if +$condition;
+      $h<group><finalize> = $finalize if $finalize.has_javascript;
+
+      my Pair @req = @$h;
+
+      my $doc = $!database.run_command(@req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
@@ -323,7 +328,7 @@ say "FP: {@criteria.perl}";
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
           oper-name => 'group',
-          oper-data => $req.perl,
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
@@ -353,28 +358,28 @@ say "FP: {@criteria.perl}";
                               --> Hash
                             ) {
 
-      my Hash $req = { mapReduce => $!name,
-                       map => $map_js_func,
-                       reduce => $reduce_js_func,
-                       :$jsMode
-                     };
+      my Hash $h = { map => $map_js_func,
+                     reduce => $reduce_js_func,
+                     :$jsMode
+                   };
 
       if $out.defined {
-        $req<out> = $out;
+        $h<out> = $out;
       }
 
       else {
-        $req<out> = %( replace => $!name ~ '_MapReduce');
+        $h<out> = %( replace => $!name ~ '_MapReduce');
       }
 
-      $req<query> = $criteria if +$criteria;
-      $req<sort> = $sort if $sort;
-      $req<limit> = $limit if $limit;
-      $req<finalize> = $finalize if $finalize.has_javascript;
-#      $req<scope> = $scope if $scope;
-#say "\nMR: {$req.perl}\n";
+      $h<query> = $criteria if +$criteria;
+      $h<sort> = $sort if $sort;
+      $h<limit> = $limit if $limit;
+      $h<finalize> = $finalize if $finalize.has_javascript;
+#      $h<scope> = $scope if $scope;
 
-      my $doc = $!database.run_command($req);
+      my Pair @req = mapReduce => $!name, @$h;
+
+      my Hash $doc = $!database.run_command(@req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
@@ -382,7 +387,7 @@ say "FP: {@criteria.perl}";
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
           oper-name => 'map_reduce',
-          oper-data => $req.perl,
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
@@ -404,7 +409,7 @@ say "FP: {@criteria.perl}";
     #   deleted first. Therefore check first. drop index if exists then set new
     #   index.
     #
-    method ensure_index ( %key-spec, %options = {} --> Nil ) {
+    method ensure_index ( %key-spec!, %options = {} --> Nil ) {
 
       # Generate name of index if not given in options
       #
@@ -462,12 +467,12 @@ say "FP: {@criteria.perl}";
     #-----------------------------------------------------------------------------
     # Drop an index
     #
-    method drop_index ( $key-spec --> Hash ) {
-      my Hash $req = { deleteIndexes => $!name,
-                       index => $key-spec,
-                     };
+    method drop_index ( $key-spec! --> Hash ) {
+      my Pair @req = deleteIndexes => $!name,
+                     index => $key-spec,
+                     ;
 
-      my $doc = $!database.run_command($req);
+      my $doc = $!database.run_command(@req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
@@ -475,7 +480,7 @@ say "FP: {@criteria.perl}";
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_index',
-          oper-data => $req.perl,
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }
@@ -508,17 +513,15 @@ say "FP: {@criteria.perl}";
                    Str :$indexDetailsName
                    --> Hash ) {
 
-      my Hash $req = { collstats => $!name,
-                       options => {
-                         scale => $scale
-                       }
-                     };
-      $req<options><indexDetails> = True if $indexDetails;
-      $req<options><indexDetailsName> = $indexDetailsName if ?$indexDetailsName;
-      $req<options><indexDetailsField> = $indexDetailsField
+      my Hash $h = {options => {scale => $scale}};
+      $h<options><indexDetails> = True if $indexDetails;
+      $h<options><indexDetailsName> = $indexDetailsName if ?$indexDetailsName;
+      $h<options><indexDetailsField> = $indexDetailsField
         if ?$indexDetailsField and !?$indexDetailsName; # One or the other
 
-      my $doc = $!database.run_command($req);
+      my Pair @req = collstats => $!name, @$h;
+                       
+      my $doc = $!database.run_command(@req);
 
       # Check error and throw X::MongoDB::Collection if there is one
       #
@@ -526,7 +529,7 @@ say "FP: {@criteria.perl}";
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
           oper-name => 'stats',
-          oper-data => $req.perl,
+          oper-data => @req.perl,
           full-collection-name => [~] $!database.name, '.', $!name
         );
       }

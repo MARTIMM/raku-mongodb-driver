@@ -98,13 +98,14 @@ package MongoDB {
     # Get count of found documents
     #
     method count ( Int :$skip = 0, Int :$limit = 0 --> Num ) {
-
         my $database = $!collection.database;
-        my $request = %( count => $!collection.name, query => %!criteria);
-        $request<skip> = $skip if $skip;
-        $request<limit> = $limit if $limit;
 
-        my $docs = $database.run_command($request);
+        my Hash $h;
+        $h<skip> = $skip if $skip;
+        $h<limit> = $limit if $limit;
+        my Pair @request = count => $!collection.name, query => %!criteria, @$h;
+
+        my $docs = $database.run_command(@request);
         return $docs<n>;
     }
   }

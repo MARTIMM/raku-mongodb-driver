@@ -53,7 +53,8 @@ $database.reset_error;
 # Use run_command foolishly
 #
 $database = $connection.database('test');
-my $docs = $database.run_command(%(listDatabases => 1));
+my Pair @req = listDatabases => 1;
+my $docs = $database.run_command(@req);
 ok !$docs<ok>.Bool, 'Run command ran not ok';
 is $docs<errmsg>, 'access denied; use admin db', 'access denied; use admin db';
 
@@ -61,7 +62,7 @@ is $docs<errmsg>, 'access denied; use admin db', 'access denied; use admin db';
 # Use run_command to get database statistics
 #
 $database = $connection.database('admin');
-$docs = $database.run_command(%(listDatabases => 1));
+$docs = $database.run_command(@req);
 ok $docs<ok>.Bool, 'Run command ran ok';
 ok $docs<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
 
@@ -85,7 +86,7 @@ ok %r<ok>.Bool, 'Drop command went well';
 is %r<dropped>, 'test', 'Dropped database name checks ok';
 
 $database = $connection.database('admin');
-$docs = $database.run_command(%(listDatabases => 1));
+$docs = $database.run_command(@req);
 
 %db-names = %();
 $idx = 0;

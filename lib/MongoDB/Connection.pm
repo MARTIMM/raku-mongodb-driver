@@ -3,6 +3,27 @@ use MongoDB::Protocol;
 use MongoDB::Database;
 
 package MongoDB {
+  #-----------------------------------------------------------------------------
+  #
+  class X::MongoDB::Connection is Exception {
+    has $.error-text;                     # Error text
+    has $.error-code;                     # Error code if from server
+    has $.oper-name;                      # Operation name
+    has $.oper-data;                      # Operation data
+    has $.database-name;                  # Database name
+
+    method message () {
+      return [~] "\n$!oper-name\() error:\n",
+                 "  $!error-text",
+                 $.error-code.defined ?? "\($!error-code)" !! '',
+                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
+                 "\n  Database '$!database-name'\n"
+                 ;
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  #
   class MongoDB::Connection does MongoDB::Protocol {
 
     has IO::Socket::INET $!sock;
@@ -44,8 +65,19 @@ package MongoDB {
     #
     method list_databases ( --> Array ) {
       my $database = self.database('admin');
-      my %docs = %($database.run_command(%(listDatabases => 1)));
-      return @(%docs<databases>);
+      my Pair @req = listDatabases => 1;
+      my Hash $doc = $database.run_command(@req);
+
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Connection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop',
+          oper-data => @req.perl,
+          database-name => 'admin.$cmd'
+        );
+      }
+
+      return @($doc<databases>);
     }
 
     # Get database names.

@@ -130,11 +130,15 @@ method collection_names ( --> Array ) {...}
 Return an array of the users collectionnames.
 
 =for head2
-method run_command ( %command --> Hash ) {...}
+method run_command ( Pair @command --> Hash ) {...}
 
 Run a command against the preselected collection and database. For proper
 handling of this command it is nesseary to study the MongoDB site and perhaps
 this perl6 driver code (there are many examples) will it be of any use.
+
+The command argument is special that it is not a hash but an array of pairs.
+Run_command must have the command at the first key value pair. Hashes cannot be
+used because it will not keep the same order for keys as they will be entered.
 
 =for head2
 method get_last_error ( Bool :$j = True, Int :$w = 0,

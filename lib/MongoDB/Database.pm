@@ -42,8 +42,19 @@ package MongoDB {
     # Drop the database
     #
     method drop ( --> Hash ) {
+      my Pair @req = dropDatabase => 1;
+      my $doc =  self.run_command(@req);
 
-      return self.run_command(%(dropDatabase => 1));
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop',
+          oper-data => @req.perl,
+          database-name => $!name
+        );
+      }
+
+      return $doc;
     }
 
     #-----------------------------------------------------------------------------
@@ -83,19 +94,21 @@ package MongoDB {
         );
       }
 
-      my Hash $req = %( create => $collection_name);
-      $req<capped> = $capped if $capped;
-      $req<autoIndexId> = $autoIndexId if $autoIndexId;
-      $req<size> = $size if $size;
-      $req<max> = $max if $max;
-      $req<flags> = $flags if $flags;
+      my Hash $h;
+      $h<capped> = $capped if $capped;
+      $h<autoIndexId> = $autoIndexId if $autoIndexId;
+      $h<size> = $size if $size;
+      $h<max> = $max if $max;
+      $h<flags> = $flags if $flags;
 
-      my Hash $doc = self.run_command($req);
+      my Pair @req = create => $collection_name, @$h;
+
+      my Hash $doc = self.run_command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB::Database.new(
             error-text => $doc<errmsg>,
             oper-name => 'create_collection',
-            oper-data => $req.perl,
+            oper-data => @req.perl,
             database-name => $!name
         );
       }
@@ -148,23 +161,12 @@ package MongoDB {
     # %("ok" => 0e0, "errmsg" => <Some error string>)
     # %("ok" => 1e0, ...);
     #
-    multi method run_command ( %command --> Hash ) {
-
-      my MongoDB::Collection $c .= new(
-        database    => self,
-        name        => '$cmd',
-      );
-say "CH: {%command.perl}";
-      return $c.find_one(%command);
-    }
-
     multi method run_command ( Pair @command --> Hash ) {
 
       my MongoDB::Collection $c .= new(
         database    => self,
         name        => '$cmd',
       );
-say "CP: {@command.perl}";
       my MongoDB::Cursor $cursor = $c.find( @command, :number_to_return(1));
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
@@ -180,13 +182,25 @@ say "CP: {@command.perl}";
                             --> Hash
                           ) {
 
-      my %options = getLastError => 1, :$j, :$fsync;
+      my Hash $h = { :$j, :$fsync};
       if $w and $wtimeout {
-        %options<w> = $w;
-        %options<wtimeout> = $wtimeout;
+        $h<w> = $w;
+        $h<wtimeout> = $wtimeout;
+      }
+      
+      my Pair @req = getLastError => 1, @$h;
+      my Hash $doc = self.run_command(@req);
+
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'get_last_error',
+          oper-data => @req.perl,
+          database-name => $!name
+        );
       }
 
-      return self.run_command(%options);
+      return $doc;
     }
 
     #-----------------------------------------------------------------------------
@@ -194,7 +208,19 @@ say "CP: {@command.perl}";
     #
     method get_prev_error ( --> Hash ) {
 
-      return self.run_command(%( getPrevError => 1));
+      my Pair @req = getPrevError => 1;
+      my Hash $doc =  self.run_command(@req);
+
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'get_prev_error',
+          oper-data => @req.perl,
+          database-name => $!name
+        );
+      }
+
+      return $doc;
     }
 
     #-----------------------------------------------------------------------------
@@ -202,7 +228,19 @@ say "CP: {@command.perl}";
     #
     method reset_error ( --> Hash ) {
 
-      return self.run_command(%( resetError => 1));
+      my Pair @req = resetError => 1;
+      my Hash $doc = self.run_command(@req);
+
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'reset_error',
+          oper-data => @req.perl,
+          database-name => $!name
+        );
+      }
+
+      return $doc;
     }
   }
 }

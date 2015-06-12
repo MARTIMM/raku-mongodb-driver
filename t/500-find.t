@@ -79,7 +79,7 @@ ok $doc<name>:!exists, 'name field not returned';
 # The server needs to scan through all documents to see if the query matches
 # when there is no index set.
 #
-my $doc = $collection.explain({test_record => 'tr38'});
+$doc = $collection.explain({test_record => 'tr38'});
 is $doc<cursor>, "BasicCursor", 'No index -> basic cursor';
 is $doc<n>, 1, 'One doc found';
 is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching';

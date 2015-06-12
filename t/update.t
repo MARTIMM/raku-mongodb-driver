@@ -12,28 +12,28 @@ $collection.remove( );
 # feed test data
 $collection.insert( { 'foo' => 0 }, { 'foo' => 0 } );
 
-lives_ok {
+lives-ok {
     $collection.update( { 'foo' => 0 }, { '$inc' => { 'foo' => 1 } } );
 }, 'update single document';
 
-lives_ok {
+lives-ok {
     $collection.update( { 'foo' => { '$exists' => True } }, { '$inc' => { 'foo' => 1 } }, :multi_update );
 }, 'update many documents with multi_update flag';
 
-lives_ok {
+lives-ok {
     $collection.update( { 'bar' => 0 }, { '$inc' => { 'bar' => 1 } } );
 }, 'update nonexisting document';
 
 
-lives_ok {
+lives-ok {
     $collection.update( { 'bar' => 0 }, { '$inc' => { 'bar' => 1 } }, :upsert );
 }, 'update nonexisting document with upsert flag';
 
-dies_ok {
+dies-ok {
     $collection.update( );
 }, 'update without selector and document is forbidden';
 
-dies_ok {
+dies-ok {
     $collection.update( 1, "a" );
 }, 'update fails on incorrect document types';
 

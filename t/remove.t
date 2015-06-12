@@ -12,22 +12,22 @@ $collection.remove( );
 # feed test data
 $collection.insert( { 'foo' => 0 }, { 'foo' => 0 }, { 'bar' => 0 }, { 'bar' => 0 } );
 
-lives_ok {
+lives-ok {
     $collection.remove( { 'foo' => 0 } );
 }, 'remove many documents';
 
-lives_ok {
+lives-ok {
     $collection.remove( { 'bar' => 0 }, :single_remove );
 }, 'remove single document with single_remove flag';
 
-lives_ok {
+lives-ok {
     $collection.remove( { 'baz' => 0 } );
 }, 'remove no documents';
 
 # TODO check output, expected result
 # { "_id" : ObjectId("..."), "bar" : 0 }
 
-lives_ok {
+lives-ok {
     $collection.remove( );
 }, 'remove all documents';
 
