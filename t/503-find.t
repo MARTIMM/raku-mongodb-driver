@@ -27,14 +27,46 @@ for ^100 -> $i, $j {
   $collection.insert(%d);
 }
 
-#show-documents( $collection, {});
+#show-documents( $collection, {}, {_id => 0});
 
-#show-documents( $collection, %(code1 => 'd1'));
+my MongoDB::Connection $connection = $collection.database.connection;
+my Hash $version = $connection.version;
+say "V: ", $version.perl;
 
 #-----------------------------------------------------------------------------
 my Hash $query = %( code1 => 'd1', code2 => 'n1');
 my MongoDB::Cursor $cursor = $collection.find($query);
 is $cursor.count, 0, 'There are no documents';
+
+#-----------------------------------------------------------------------------
+# Release below 3 gets errors for $eq
+#
+if 1 {
+  $query = %( code1 => {'$eq' => 'd80'},
+              code2 => {'$eq' => 'n19'}
+            );
+
+  if $version<release> < 3 {
+    $cursor = $collection.find($query);
+    my $c = $cursor.count;
+
+    CATCH {
+      when X::MongoDB::Cursor {
+        ok .message ~~ ms/'exception:' 'invalid' 'operator:' '$eq'/,
+           'exception: invalid operator: $eq';
+      }
+
+      default {
+        say .perl;
+      }
+    }
+  }
+
+  else {
+    $cursor = $collection.find($query);
+    is $cursor.count, 1, 'There is 1 document';
+  }
+}
 
 #-----------------------------------------------------------------------------
 $query<code1> = %('$gt' => 'd50');
