@@ -43,9 +43,6 @@ check-document( {code => 'd1'},
 #
 $collection.database.drop;
 
-done();
-exit(0);
-
 #-------------------------------------------------------------------------------
 # Check one document for its fields. Something like {code => 1, nofield => 0}
 # use find_one()
