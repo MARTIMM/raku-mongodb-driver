@@ -35,37 +35,37 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
 
-        $!collection = $collection;
-        %!criteria = %criteria;
+      $!collection = $collection;
+      %!criteria = %criteria;
 
-        # assign cursorID
-        $!id = %OP_REPLY{ 'cursor_id' };
+      # assign cursorID
+      $!id = %OP_REPLY{ 'cursor_id' };
 
-        # assign documents
-        @!documents = %OP_REPLY{ 'documents' }.list;
+      # assign documents
+      @!documents = %OP_REPLY{ 'documents' }.list;
     }
 
     #-----------------------------------------------------------------------------
     method fetch ( --> Any ) {
 
-        # there are no more documents in last response batch
-        # but there is next batch to fetch from database
-        if not @!documents and [+]($!id.list) {
+      # there are no more documents in last response batch
+      # but there is next batch to fetch from database
+      if not @!documents and [+]($!id.list) {
 
-            # request next batch of documents
-            my Hash $OP_REPLY = self.wire.OP_GETMORE(self);
+        # request next batch of documents
+        my Hash $OP_REPLY = self.wire.OP_GETMORE(self);
 
-            # assign cursorID,
-            # it may change to "0" if there are no more documents to fetch
-            $!id = $OP_REPLY<cursor_id>;
+        # assign cursorID,
+        # it may change to "0" if there are no more documents to fetch
+        $!id = $OP_REPLY<cursor_id>;
 
-            # assign documents
-            @!documents = $OP_REPLY<documents>.list;
-        }
+        # assign documents
+        @!documents = $OP_REPLY<documents>.list;
+      }
 
-        # Return a document when there is one. If none left, return Nil
-        #
-        return +@!documents ?? @!documents.shift !! Nil;
+      # Return a document when there is one. If none left, return Nil
+      #
+      return +@!documents ?? @!documents.shift !! Nil;
     }
 
     #-----------------------------------------------------------------------------
@@ -77,13 +77,15 @@ package MongoDB {
     #
     method explain ( --> Hash ) {
 
-        my MongoDB::Cursor $cursor = $!collection.find( %( '$query' => %!criteria,
-                                                           '$explain' => True
-                                                         )
-                                                         :number_to_return(1)
-                                                      );
-        my $docs = $cursor.fetch();
-        return $docs;
+      my MongoDB::Cursor $cursor = $!collection.find(
+         hash( '$query' => %!criteria,
+               '$explain' => True
+             )
+             :number_to_return(1)
+      );
+
+      my $docs = $cursor.fetch();
+      return $docs;
     }
 
     #-----------------------------------------------------------------------------
@@ -91,51 +93,51 @@ package MongoDB {
     #
     method hint ( $index-spec, :$explain = False --> Hash ) {
 
-        my $req = %( '$query' => %!criteria, '$hint' => $index-spec);
-        $req{'$explain'} = 1 if $explain;
+      my $req = %( '$query' => %!criteria, '$hint' => $index-spec);
+      $req{'$explain'} = 1 if $explain;
 
-        my MongoDB::Cursor $cursor = $!collection.find( $req,
-                                                        :number_to_return(1)
-                                                      );
-        my $docs = $cursor.fetch;
-        return $docs;
+      my MongoDB::Cursor $cursor = $!collection.find( $req,
+                                                      :number_to_return(1)
+                                                    );
+      my $docs = $cursor.fetch;
+      return $docs;
     }
 
     #-----------------------------------------------------------------------------
     method kill ( --> Nil ) {
 
-        # invalidate cursor on database
-        self.wire.OP_KILL_CURSORS( self );
+      # invalidate cursor on database
+      self.wire.OP_KILL_CURSORS( self );
 
-        # invalidate cursor id
-        $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 );
+      # invalidate cursor id
+      $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 );
 
-        return;
+      return;
     }
 
     #-----------------------------------------------------------------------------
     # Get count of found documents
     #
     method count ( Int :$skip = 0, Int :$limit = 0 --> Num ) {
-        my $database = $!collection.database;
+      my $database = $!collection.database;
 
-        my Hash $h;
-        $h<skip> = $skip if $skip;
-        $h<limit> = $limit if $limit;
-        my Pair @req = count => $!collection.name, query => %!criteria, @$h;
+      my Hash $h;
+      $h<skip> = $skip if $skip;
+      $h<limit> = $limit if $limit;
+      my Pair @req = count => $!collection.name, query => %!criteria, @$h;
 
-        my Hash $doc = $database.run_command(@req);
-        if $doc<ok>.Bool == False {
-          die X::MongoDB::Cursor.new(
-            error-text => $doc<errmsg>,
-            error-code => $doc<code>,
-            oper-name => 'count',
-            oper-data => @req.perl,
-            full-collection-name => $!collection.name
-          );
-        }
+      my Hash $doc = $database.run_command(@req);
+      if !?$doc<ok>.Bool {
+        die X::MongoDB::Cursor.new(
+          error-text => $doc<errmsg>,
+          error-code => $doc<code>,
+          oper-name => 'count',
+          oper-data => @req.perl,
+          collection-name => $!collection.name
+        );
+      }
 
-        return $doc<n>;
+      return $doc<n>;
     }
   }
 }
