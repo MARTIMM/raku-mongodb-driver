@@ -30,7 +30,11 @@ my $collection = $database.collection('coll');
 
 # Or explicit create. Collection holding at most 30 documents.
 #
-create_collection( 'new_coll', :capped, :max(30), :size(1000));
+create_collection( 'new_coll', :capped, :max(30));
+
+# Get collection names
+#
+say "Collections: ", $database.collection_names();
 
 # Drop whole database
 #
@@ -139,6 +143,41 @@ this perl6 driver code (there are many examples) will it be of any use.
 The command argument is special that it is not a hash but an array of pairs.
 Run_command must have the command at the first key value pair. Hashes cannot be
 used because it will not keep the same order for keys as they will be entered.
+
+There are two ways to prepare the Pair array when some items of the request are
+optional and e.g. depending on what your method is given;
+=begin nested
+=begin code
+
+# Method 1
+#
+my Hash $h;
+$h<sort> = %sort if ?%sort;
+...
+my Pair @req = findAndModify => $collection-name,
+               query => $criteria, @$h;
+my Hash $doc = $database.run_command(@req);
+if $doc<ok>.Bool == False {
+...
+}
+# Method 2, Mind the extra brackets around the pairs list when pushing!
+# Otherwise it will be recognized as named arguments which push does not
+# recognize.
+#
+my Hash $h;
+$h<sort> = %sort if ?%sort;
+...
+my Pair @req = findAndModify => $collection-name,
+               query => $criteria, @$h;
+@req.push((sort => %sort)) if ?%sort;
+...
+my Hash $doc = $database.run_command(@req);
+if $doc<ok>.Bool == False {
+...
+}
+
+=end code
+=end nested
 
 =for head2
 method get_last_error ( Bool :$j = True, Int :$w = 0,
