@@ -161,7 +161,7 @@ package MongoDB {
       # Modify new option if remove is true
       # $req<new> = False if ?$remove;
 
-      my $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB::Collection.new(
           error-text => $doc<errmsg>,
