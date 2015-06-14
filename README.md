@@ -351,13 +351,6 @@ Although the lists above represent one hell of a todo, below are a few notes
 which I have to make to remember to add items to programmed functions. There
 are also items to be implemented in BSON. You need to look there for info
 
-* BIG PROBLEM!!!!!!!!! Should have seen this comming! Its about run_command().
-  A hash needs to be setup with therein a command to be processed. With the new
-  rakudo the hash get hashed properly and the keys are now in some unpredictable
-  order. One of the nessessities of run_command is that the command is found at
-  the first key value pair. During encoding into a BSON byte array the command
-  can be placed anywhere in the string and some other option comming at the
-  first location will be seen as the command.
   
 * Speed, protocol correctness and clear code are priorities for now.
   * Speed can be influenced by specifying types on all variables
@@ -378,11 +371,21 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.23.2
+  * Added error processing in Cursor::count(). Throws X::MongoDB::Cursor
+    exception.
 * 0.23.1
   * Changes caused by rakudo update
-  * Hashes work like hashes... mongodb run_command needs command on first key
-    value pair. Because of this a few multi methods in several modules are added
-    to process Pair arrays instead of hashes.
+  * BIG PROBLEM!!!!!!!!! Should have seen this comming! Its about run_command().
+    A hash needs to be setup with therein a command to be processed. With the new
+    rakudo the hash get hashed properly and the keys are now in some unpredictable
+    order. One of the nessessities of run_command is that the command is found at
+    the first key value pair. During encoding into a BSON byte array the command
+    can be placed anywhere in the string and some other option comming at the
+    first location will be seen as the command.
+    SOLVED; Hashes work like hashes... mongodb run_command needs command on
+    first key value pair. Because of this a few multi methods in several modules
+    are added to process Pair arrays instead of hashes.
 * 0.23.0
   * Added find_and_modify(), stats(), data_size() methods in Collection.
 * 0.22.6

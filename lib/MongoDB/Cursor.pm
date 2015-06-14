@@ -2,6 +2,25 @@ use v6;
 use MongoDB::Protocol;
 
 package MongoDB {
+  #-----------------------------------------------------------------------------
+  #
+  class X::MongoDB::Cursor is Exception {
+    has $.error-text;                     # Error text
+    has $.error-code;                     # Error code if from server
+    has $.oper-name;                      # Operation name
+    has $.oper-data;                      # Operation data
+    has $.collection-name;                # Collection name
+
+    method message () {
+      return [~] "\n$!oper-name\() error:\n",
+                 "  $!error-text",
+                 $.error-code.defined ?? "\($!error-code)" !! '',
+                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
+                 "\n  Database '$!collection-name'\n"
+                 ;
+    }
+  }
+
   class MongoDB::Cursor does MongoDB::Protocol {
 
     has $.collection;
@@ -103,10 +122,20 @@ package MongoDB {
         my Hash $h;
         $h<skip> = $skip if $skip;
         $h<limit> = $limit if $limit;
-        my Pair @request = count => $!collection.name, query => %!criteria, @$h;
+        my Pair @req = count => $!collection.name, query => %!criteria, @$h;
 
-        my $docs = $database.run_command(@request);
-        return $docs<n>;
+        my Hash $doc = $database.run_command(@req);
+        if $doc<ok>.Bool == False {
+          die X::MongoDB::Cursor.new(
+            error-text => $doc<errmsg>,
+            error-code => $doc<code>,
+            oper-name => 'count',
+            oper-data => @req.perl,
+            full-collection-name => $!collection.name
+          );
+        }
+
+        return $doc<n>;
     }
   }
 }
