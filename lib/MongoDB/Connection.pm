@@ -71,7 +71,7 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB::Connection.new(
           error-text => $doc<errmsg>,
-          oper-name => 'drop',
+          oper-name => 'list_databases',
           oper-data => @req.perl,
           database-name => 'admin.$cmd'
         );
@@ -87,6 +87,35 @@ package MongoDB {
       my @names = map {$_<name>}, @db_docs; # Need to do it like this otherwise
                                             # returns List instead of Array.
       return @names;
+    }
+
+    # Get mongodb version.
+    #
+    method version ( --> Hash ) {
+      my Hash $doc = self.build_info;
+      my Hash $version = hash( <release major minor>
+                               Z=> (for $doc<version>.split('.') {Int($_)})
+                             );
+      return $version;
+    }
+
+    # Get mongodb server info.
+    #
+    method build_info ( --> Hash ) {
+      my $database = self.database('admin');
+      my Pair @req = buildinfo => 1;
+      my Hash $doc = $database.run_command(@req);
+
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Connection.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'build_info',
+          oper-data => @req.perl,
+          collection-name => 'admin.$cmd'
+        );
+      }
+
+      return $doc;
     }
   }
 }

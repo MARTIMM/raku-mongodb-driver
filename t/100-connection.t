@@ -4,6 +4,8 @@
     connection.database                 Return database
     connection.list_databases()         Get the statistics of the databases
     connection.database_names()         Get the database names
+    connection.version()                Version name
+    connection.buildinfo()              Server info
 }}
 
 #BEGIN { @*INC.unshift( './t' ) }
@@ -17,6 +19,8 @@ use MongoDB::Connection;
 my $connection = MongoDB::Connection.new();
 isa-ok( $connection, 'MongoDB::Connection');
 
+
+
 #$connection = MongoDB::Connection.new( host => '192.168.0.10', port => 27017);
 
 $connection = MongoDB::Connection.new( host => 'localhost', port => 27017);
@@ -25,6 +29,16 @@ isa-ok( $connection, 'MongoDB::Connection');
 # TODO timeout and error checking
 #$connection = MongoDB::Connection.new( host => 'example.com', port => 27017);
 #isa-ok( $connection, 'MongoDB::Connection');
+
+my Hash $version = $connection.version;
+#say "V: ", $version.perl;
+ok $version<release>:exists, "Version release $version<release>";
+ok $version<major>:exists, "Version major $version<major>";
+ok $version<minor>:exists, "Version minor $version<minor>";
+
+my Hash $buildinfo = $connection.build_info;
+ok $buildinfo<version>:exists, "Version $buildinfo<version>";
+ok $buildinfo<loaderFlags>:exists, "Loader flags $buildinfo<loaderFlags>";
 
 # Create databases with a collection and data to make sure the databases are there
 #
