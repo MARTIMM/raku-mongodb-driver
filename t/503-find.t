@@ -2,10 +2,11 @@
   Testing
     collection.find()                   Query database
       Implicit AND selection            Find with more fields
-      $gt, $gte                         Greater than and friends
+      $eq, $gt, $gte                    Equal, Greater than and friends
       $lt, $lte                         Less than and friends
       $ne                               not equal
-      $in, $nin, $or                    or
+      $in, $nin                         any/none of the values
+      $or                               or
       $not                              not
       $regex                            using BSON::Regex
 }}
@@ -34,12 +35,14 @@ my Hash $version = $connection.version;
 say "V: ", $version.perl;
 
 #-----------------------------------------------------------------------------
+# Implicit $and
+#
 my Hash $query = %( code1 => 'd1', code2 => 'n1');
 my MongoDB::Cursor $cursor = $collection.find($query);
-is $cursor.count, 0, 'There are no documents';
+is $cursor.count, 0, 'Implicit $and, There are no documents';
 
 #-----------------------------------------------------------------------------
-# Release below 3 gets errors for $eq
+# $eq. Mongod release below 3 returns errors for $eq
 #
 if 1 {
   $query = %( code1 => {'$eq' => 'd80'},
@@ -69,38 +72,46 @@ if 1 {
 }
 
 #-----------------------------------------------------------------------------
+# $gt,
+#
 $query<code1> = %('$gt' => 'd50');
 $query<code2>:delete;
 $cursor = $collection.find($query);
 
 # d6, d8 are gt d50! => d6, d8, d52, d54, ...d98 = 26 docs
 #
-is $cursor.count, 26, '26 documents';
+is $cursor.count, 26, 'code1 $gt d50, 26 documents';
 
 #-----------------------------------------------------------------------------
+# $gte
+#
 $query<code1> = %('$gte' => 'd50');
 $cursor = $collection.find($query);
 
 # d6, d8 are gt d50! => d6, d8, d50, d52, d54, ...d98 = 27 docs
 #
-is $cursor.count, 27, '27 documents';
+is $cursor.count, 27, 'code1 $gte d50, 27 documents';
 
 #-----------------------------------------------------------------------------
+# $lt
+#
 $query<code1>:delete;
 $query<code2> = %('$lt' => 'n51');
 $cursor = $collection.find($query);
 
 # n49, n47, n45, .., n1 = 23 docs
 #
-is $cursor.count, 23, '23 documents';
+is $cursor.count, 23, 'code2 $lt n51, 23 documents';
 
 #-----------------------------------------------------------------------------
+# $lte
+#
 $query<code2> = %('$lte' => 'n51');
 $cursor = $collection.find($query);
 
 # n51, n49, n47, n45, .., n1 = 23 docs
 #
-is $cursor.count, 24, '24 documents';
+is $cursor.count, 24, 'code2 $lte n51, 24 documents';
 
 #-----------------------------------------------------------------------------
 $query<code1> = %('$gt' => 'd42');
@@ -109,14 +120,14 @@ $cursor = $collection.find($query);
 
 # d6/n93, d8/n91, d44/n55, d46/n53, d48/n51, d90/n9, d92/n7 = 7 docs
 #
-is $cursor.count, 7, '7 documents';
+is $cursor.count, 7, 'code1 $gt d42 and code2 $gte n51, 7 documents';
 
 #-----------------------------------------------------------------------------
 $query<code1> = %('$ne' => 'd42');
 $query<code2> = %('$ne' => 'n99');
 $cursor = $collection.find($query);
 
-is $cursor.count, 48, '48 documents';
+is $cursor.count, 48, 'code1 $ne d42 and code2 ne n99, 48 documents';
 
 #-----------------------------------------------------------------------------
 $query<code1> = %('$in' => [<d42 d64 d96 d98>]);
@@ -125,17 +136,27 @@ $cursor = $collection.find($query);
 
 # 2 documents because of d96/n3 and d98/n1
 #
-is $cursor.count, 2, '2 documents';
+is $cursor.count,
+   2,
+   'code1 $in [<d42 d64 d96 d98>] and code2 $in [<n1 n3 n11>], 2 documents';
 
 #-----------------------------------------------------------------------------
 $query<code1> = %('$in' => [<d42 d64 d96 d98>]);
 $query<code2> = %('$in' => [<n1 n3 n11>]);
 #say %('$or' => [$query]).perl;
-$cursor = $collection.find(%('$or' => [$query]));
+$cursor = $collection.find( %(
+    '$or' => [
+      { code1 => {'$in' => [<d42 d64 d96 d98>]}},
+      { code2 => {'$in' => [<n1 n3 n11>]}}
+    ]
+  )
+);
 
 # 5 documents because of d96/n3 and d98/n1 overlap
-# ?????????????
-is $cursor.count, 2, '2 documents';
+#
+is $cursor.count,
+   5,
+   '$or [{code1 => {$in => []},{code2 => {$in => []}], 2 documents';
 
 #-----------------------------------------------------------------------------
 $query<code1> = %('$nin' => [<d42 d64 d96 d98>]);
