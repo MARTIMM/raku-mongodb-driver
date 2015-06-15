@@ -1,6 +1,6 @@
 use v6;
 
-package MongoDB:ver<0.23.2> {
+package MongoDB:ver<0.24.0> {
   use MongoDB::Wire;
   use MongoDB::Connection;
   use MongoDB::Database;

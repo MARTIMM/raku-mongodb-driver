@@ -63,5 +63,35 @@ method database_names ( --> Array ) {...}
 
 Using above call the method returns an array of databases.
 
+=for head2
+method version ( --> Hash ) {...}
+
+This method uses build_info (see below) to get version information. The returned
+hash will have the following fields;
+
+=item B<release1>: First number of release.
+=item B<release2>: Second number or release. When odd it a development version.
+=item B<revision>: Release bug fixes and backwards-compatible changes.
+=item B<release-type>: Type can be one of 'production' or 'development'.
+
+=for head2
+method build_info ( --> Hash ) {...}
+
+Method to get server information. The following fields are defined in the
+returned hash;
+
+=item B<version>: Version string, see version().
+=item B<gitVersion>: The commit identifier that identifies the state of the code used to build the mongod
+=item B<sysInfo>: A string that holds information about the operating system, hostname, kernel, date, and Boost version used to compile the mongod
+=item B<loaderFlags>: The flags passed to the loader that loads the mongod.
+=item B<compilerFlags>: The flags passed to the compiler that builds the mongod binary.
+=item B<allocator>: The memory allocator that mongod uses. By default this is tcmalloc after version 2.2, and system before 2.2.
+=item B<versionArray>: An array that conveys version information about the mongod instance. See version for a more readable version of this string.
+=item B<javascriptEngine>: A string that reports the JavaScript engine used in the mongod instance. By default, this is V8 after version 2.4, and SpiderMonkey before 2.4.
+=item B<bits>: A number that reflects the target processor architecture of the mongod binary.
+=item B<debug>: A boolean. true when built with debugging options.
+=item B<maxBsonObjectSize>: A number that reports the Maximum BSON Document Size.
+
+
 =end pod
 

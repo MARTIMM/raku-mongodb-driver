@@ -46,7 +46,7 @@ if 1 {
               code2 => {'$eq' => 'n19'}
             );
 
-  if $version<release> < 3 {
+  if $version<release1> < 3 {
     $cursor = $collection.find($query);
     my $c = $cursor.count;
 

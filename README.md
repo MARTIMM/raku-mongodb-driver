@@ -371,6 +371,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.24.0
+  * Added version() and build_info() to MongoDB::Connection.
 * 0.23.2
   * Added error processing in Cursor::count(). Throws X::MongoDB::Cursor
     exception.

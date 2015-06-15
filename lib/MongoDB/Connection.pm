@@ -89,13 +89,25 @@ package MongoDB {
       return @names;
     }
 
+    # Get this drivers version.
+    #
+#    method driver_version ( --> Str ) {
+#say "P: {@*META.perl}";
+#      my $version = '0.0.0';
+#      return $version;
+#    }
+
     # Get mongodb version.
     #
     method version ( --> Hash ) {
       my Hash $doc = self.build_info;
-      my Hash $version = hash( <release major minor>
+      my Hash $version = hash( <release1 release2 revision>
                                Z=> (for $doc<version>.split('.') {Int($_)})
                              );
+      $version<release-type> = $version<release2> %% 2
+                               ?? 'production'
+                               !! 'development'
+                               ;
       return $version;
     }
 
