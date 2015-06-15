@@ -6,8 +6,10 @@
       $lt, $lte                         Less than and friends
       $ne                               not equal
       $in, $nin                         any/none of the values
-      $or                               or
-      $not                              not
+      $or, $andm, $not, $nor            or, and, not, nor
+      $exists                           field exists
+      $type                             type check on field
+      $mod                              modulo operation on the value of a field
       $regex                            using BSON::Regex
 }}
 
@@ -25,14 +27,14 @@ my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 #
 for ^100 -> $i, $j {
   my %d = %( code1 => 'd' ~ $i, code2 => 'n' ~ (100 - $j));
+  %d<code3> = $i + $j if any(10..20) ~~ $i;
   $collection.insert(%d);
 }
 
-#show-documents( $collection, {}, {_id => 0});
+show-documents( $collection, {}, {_id => 0});
 
 my MongoDB::Connection $connection = $collection.database.connection;
 my Hash $version = $connection.version;
-say "V: ", $version.perl;
 
 #-----------------------------------------------------------------------------
 # Implicit $and
@@ -141,9 +143,10 @@ is $cursor.count,
    'code1 $in [<d42 d64 d96 d98>] and code2 $in [<n1 n3 n11>], 2 documents';
 
 #-----------------------------------------------------------------------------
+# $or
+#
 $query<code1> = %('$in' => [<d42 d64 d96 d98>]);
 $query<code2> = %('$in' => [<n1 n3 n11>]);
-#say %('$or' => [$query]).perl;
 $cursor = $collection.find( %(
     '$or' => [
       { code1 => {'$in' => [<d42 d64 d96 d98>]}},
@@ -157,6 +160,84 @@ $cursor = $collection.find( %(
 is $cursor.count,
    5,
    '$or [{code1 => {$in => []},{code2 => {$in => []}], 2 documents';
+
+#-----------------------------------------------------------------------------
+# $and
+#
+$query<code1> = %('$in' => [<d42 d64 d96 d98>]);
+$query<code2> = %('$in' => [<n1 n3 n11>]);
+$cursor = $collection.find( %(
+    '$and' => [
+      { code1 => {'$in' => [<d42 d64 d96 d98>]}},
+      { code2 => {'$in' => [<n1 n3 n11>]}}
+    ]
+  )
+);
+
+# 2 documents because of d96/n3 and d98/n1 are found together
+#
+is $cursor.count,
+   2,
+   '$and [{code1 => {$in => []},{code2 => {$in => []}], 2 documents';
+
+#-----------------------------------------------------------------------------
+# $nor
+#
+$query<code1> = %('$in' => [<d42 d64 d96 d98>]);
+$query<code2> = %('$in' => [<n1 n3 n11>]);
+$cursor = $collection.find( %(
+    '$nor' => [
+      { code1 => {'$nin' => [<d42 d64 d96 d98>]}},
+      { code2 => {'$nin' => [<n1 n3 n11>]}}
+    ]
+  )
+);
+
+# 2 documents because of d96/n3 and d98/n1 are found together
+#
+is $cursor.count,
+   2,
+   '$nor [{code1 => {$nin => []},{code2 => {$nin => []}], 2 documents';
+
+#-----------------------------------------------------------------------------
+# $mod
+#
+$cursor = $collection.find( %(code3 => {'$mod' => [ 3, 0]}));
+is $cursor.count, 2, 'code3 => {$mod => [ 3, 0]}, 2 documents';
+
+#-----------------------------------------------------------------------------
+# $mod faulty args
+#
+if $version<release1> == 2 and $version<release2> < 6 {
+  $cursor = $collection.find( %(code3 => {'$mod' => [ ]}));
+  is $cursor.count, 2, 'code3 => {$mod => [ ]}, 2 documents';
+  CATCH {
+    when X::MongoDB::Cursor {
+      ok .message ~~ ms/'mod' 'can\'t' 'be' '0'/,
+         'exception: mod can\'t be 0 (code3 => {$mod => [ ]})';
+    }
+
+    default {
+      say .perl;
+    }
+  }
+}
+
+elsif $version<release1> == 2 and $version<release2> >= 6 {
+  $cursor = $collection.find( %(code3 => {'$mod' => [ 3, 0, 1]}));
+  is $cursor.count, 2, 'code3 => {$mod => [ ]}, 2 documents';
+  CATCH {
+    when X::MongoDB::Cursor {
+      ok .message ~~ ms/'mod' 'can\'t' 'be' '0'/,
+         'exception: mod can\'t be 0 (code3 => {$mod => [ 3, 0, 1]})';
+    }
+
+    default {
+      say .perl;
+    }
+  }
+}
+
 
 #-----------------------------------------------------------------------------
 $query<code1> = %('$nin' => [<d42 d64 d96 d98>]);
@@ -175,6 +256,51 @@ $cursor = $collection.find($query);
 # All but one = 49 docs
 #
 is $cursor.count, 49, '49 documents';
+
+#-----------------------------------------------------------------------------
+# $exists
+#
+$cursor = $collection.find(%(code3 => {'$exists' => 1}));
+
+# 6 documents have code3
+#
+is $cursor.count, 6, 'code 3 $exists, 6 documents';
+
+#-----------------------------------------------------------------------------
+# $exists = 0
+#
+$cursor = $collection.find(%(code3 => {'$exists' => 0}));
+
+# 44 documents have code3
+#
+is $cursor.count, 50 - 6, 'code 3 $exists = 0, 44 documents';
+
+#-----------------------------------------------------------------------------
+# $not $exists
+#
+$cursor = $collection.find(%(code3 => {'$not' => {'$exists' => 1}}));
+
+# 44 documents have code3
+#
+is $cursor.count, 50 - 6, 'code 3 $not $exists, 44 documents';
+
+#-----------------------------------------------------------------------------
+# $exists and $in
+#
+$cursor = $collection.find(%(code3 => {'$exists' => 1, '$in' => [33..45]}));
+
+# 3 documents have code3 and whithin range
+#
+is $cursor.count, 3, 'code 3 $exists and $in => [33..45], 3 documents';
+
+#-----------------------------------------------------------------------------
+# $type
+#
+$cursor = $collection.find(%(code3 => {'$type' => 16}));
+
+# 3 documents have code3 and whithin range
+#
+is $cursor.count, 6, 'code 3 has type int32, 3 documents';
 
 #-----------------------------------------------------------------------------
 $query = { code1 => BSON::Regex.new(:regex('d.2')) };

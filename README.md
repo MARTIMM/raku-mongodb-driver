@@ -273,13 +273,16 @@ Legend;
     * [x] Bool :$no_cursor_timeout = False
   * Testing find()
     * [x] exact matching, implicit AND.
-    * [x] $lt, $lte, $gt, $gte, $ne
-    * [x] $in, $nin, $or, $not
-    * [ ] null
-    * [x] regular expressions
+    * [x] $eq, $lt, $lte, $gt, $gte, $ne
+    * [x] $in, $nin
+    * [x] $or, $and, $not, $nor
+    * [x] $exists, $type
+    * [~] $mod, $text, $where
+    * [x] $regex: regular expressions
     * [ ] arrays, $all, $size, $slice
     * [ ] embedded docs, $elemMatch
-    * [ ] $where
+    * [ ] null
+
 * [O] find_and_modify(). Atomically modifies and returns a single document.
 * [O] find_one(). Performs a query and returns a single document.
     * [x] %criteria (Search criteria)
@@ -312,7 +315,7 @@ Legend;
 * [ ] totalSize(). Reports the total size of a collection, including the size of all documents and all indexes on a collection.
 * [O] update(). Modifies a document in a collection.
     * [x] upsert
-    * [x] update operators: $addToSet, $bit, $currentDate, $each, $inc,
+    * [ ] update operators: $addToSet, $bit, $currentDate, $each, $inc,
           $isolated, $max, $min, $mul, $pop, $position, $positional, $pull,
           $pullAll, $push, $pushAll, $rename, $set, $setOnInsert, $slice,
           $sort, $unset
