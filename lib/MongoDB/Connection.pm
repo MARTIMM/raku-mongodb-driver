@@ -1,6 +1,11 @@
 use v6;
-use MongoDB::Protocol;
+
+BEGIN {
+  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
+}
+
 use MongoDB::Database;
+use BSON::EDC-Tools;
 
 package MongoDB {
   #-----------------------------------------------------------------------------
@@ -24,7 +29,7 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class MongoDB::Connection does MongoDB::Protocol {
+  class MongoDB::Connection {
 
     has IO::Socket::INET $!sock;
 
@@ -40,14 +45,11 @@ package MongoDB {
       #
       return unless $has_response;
 
-      # Initialize bson buffer index to 0
-      #
-      self.wire._init_index;
-
       # check response size
       #
+      my $index = 0;
       my Buf $l = $!sock.read(4);
-      my Int $w = self.wire._dec_int32($l.list) - 4;
+      my Int $w = decode_int32( $l.list, $index) - 4;
 
       # receive remaining response bytes from socket
       #

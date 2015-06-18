@@ -1,13 +1,14 @@
 use v6;
 
-#BEGIN {
-#  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
-#}
+BEGIN {
+  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
+}
 
-use BSON:ver<0.9.2+>;
+use BSON:ver<0.9.6+>;
+use BSON::EDC-Tools;
 
 package MongoDB {
-  class Wire is BSON {
+  class Wire is BSON::Bson {
 
     # Implements Mongo Wire Protocol
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol
@@ -38,28 +39,28 @@ package MongoDB {
         # int32 messageLength
         # total message size, including this
         #
-        self._enc_int32($length + 4 * 4),
+        encode_int32($length + 4 * 4),
 
         # int32 requestID
         # identifier for this message
         #
-        self._enc_int32($.request_id++),
+        encode_int32($.request_id++),
 
         # int32 responseTo
         # requestID from the original request
         # (used in reponses from db)
         #
-        self._enc_int32(0),
+        encode_int32(0),
 
         # int32 opCode
         # request type
         #
-        self._enc_int32(%.op_codes{$op_code});
+        encode_int32(%.op_codes{$op_code});
 
       return $msg_header;
     }
 
-    method _dec_msg_header ( Array $a --> Hash ) {
+    method _dec_msg_header ( Array $a, $index is rw --> Hash ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
       # struct MsgHeader
@@ -69,23 +70,23 @@ package MongoDB {
         # int32 messageLength
         # total message size, including this
         #
-        'message_length'    => self._dec_int32($a),
+        'message_length'    => decode_int32( $a, $index),
 
         # int32 requestID
         # identifier for this message
         #
-        'request_id'        => self._dec_int32($a),
+        'request_id'        => decode_int32( $a, $index),
 
         # int32 responseTo
         # requestID from the original request
         # (used in reponses from db)
         #
-        'response_to'       => self._dec_int32($a),
+        'response_to'       => decode_int32( $a, $index),
 
         # int32 opCode
         # request type
         #
-        'op_code'           => self._dec_int32($a)
+        'op_code'           => decode_int32( $a, $index)
       );
 
       # the only allowed message returned from database is OP_REPLY
@@ -104,12 +105,12 @@ package MongoDB {
         # int32 flags
         # bit vector
         #
-        self._enc_int32($flags),
+        encode_int32($flags),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        self._enc_cstring( join '.',
+        encode_cstring( join '.',
                                 $collection.database.name,
                                 $collection.name
                            );
@@ -136,6 +137,7 @@ package MongoDB {
       %query, %return_field_selector
       --> Hash
     ) {
+      self._init_index;
       return self.OP_QUERY(
         $collection, $flags, $number_to_skip, $number_to_return,
         self._enc_document(%query), %return_field_selector
@@ -171,12 +173,12 @@ package MongoDB {
         # int32 flags
         # bit vector of query options
         #
-        self._enc_int32( $flags )
+        encode_int32( $flags )
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        ~ self._enc_cstring( join '.',
+        ~ encode_cstring( join '.',
                                   $collection.database.name,
                                   $collection.name
                            )
@@ -184,13 +186,13 @@ package MongoDB {
         # int32 numberToSkip
         # number of documents to skip
         #
-        ~ self._enc_int32( $number_to_skip )
+        ~ encode_int32( $number_to_skip )
 
         # int32 numberToReturn
         # number of documents to return
         # in the first OP_REPLY batch
         #
-        ~ self._enc_int32( $number_to_return )
+        ~ encode_int32( $number_to_return )
 
         # document query
         # query object
@@ -238,12 +240,12 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        self._enc_int32(0),
+        encode_int32(0),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        self._enc_cstring( join '.',
+        encode_cstring( join '.',
                                 $cursor.collection.database.name,
                                 $cursor.collection.name
                          ),
@@ -251,7 +253,7 @@ package MongoDB {
         # int32 numberToReturn
         # number of documents to return
         #
-        self._enc_int32(0),
+        encode_int32(0),
 
         # int64 cursorID
         # cursorID from the OP_REPLY
@@ -293,12 +295,12 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        self._enc_int32(0),
+        encode_int32(0),
 
         # int32 numberOfCursorIDs
         # number of cursorIDs in message
         #
-        self._enc_int32( +@cursors );
+        encode_int32( +@cursors );
 
       # int64* cursorIDs
       # sequence of cursorIDs to close
@@ -316,7 +318,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      @cursors[0].collection.database.connection._send( $msg_header ~ $OP_KILL_CURSORS, False );
+      @cursors[0].collection.database.connection._send( $msg_header ~ $OP_KILL_CURSORS, False);
     }
 
     method OP_UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
@@ -327,20 +329,20 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        self._enc_int32(0),
+        encode_int32(0),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        self._enc_cstring( join '.',
-                                $collection.database.name,
-                                $collection.name
-                         ),
+        encode_cstring( join '.',
+                          $collection.database.name,
+                          $collection.name
+                      ),
 
         # int32 flags
         # bit vector
         #
-        self._enc_int32($flags),
+        encode_int32($flags),
 
         # document selector
         # query object
@@ -359,7 +361,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg_header ~ $OP_UPDATE, False );
+      $collection.database.connection._send( $msg_header ~ $OP_UPDATE, False);
     }
 
     method OP_DELETE ( $collection, Int $flags, %selector --> Nil ) {
@@ -370,20 +372,20 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        self._enc_int32(0),
+        encode_int32(0),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        self._enc_cstring( join '.',
-                                $collection.database.name,
-                                $collection.name
-                         ),
+        encode_cstring( join '.',
+                          $collection.database.name,
+                          $collection.name
+                      ),
 
         # int32 flags
         # bit vector
         #
-        self._enc_int32($flags),
+        encode_int32($flags),
 
         # document selector
         # query object
@@ -397,7 +399,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg_header ~ $OP_DELETE, False );
+      $collection.database.connection._send( $msg_header ~ $OP_DELETE, False);
     }
 
     method OP_REPLY ( Buf $b --> Hash ) {
@@ -412,35 +414,36 @@ package MongoDB {
       # mean time using this object because this attribute will be disturbed.
       #
       self._init_index;
+      my $index = 0;
 
       my Hash $OP_REPLY = hash(
 
         # MsgHeader header
         # standard message header
         #
-        'msg_header' => self._dec_msg_header($a),
+        'msg_header' => self._dec_msg_header( $a, $index),
 
         # int32 responseFlags
         # bit vector
         #
-        'response_flags' => self._dec_int32($a),
+        'response_flags' => decode_int32( $a, $index),
 
         # int64 cursorID
         # cursor id if client needs to do get more's
         # TODO big integers are not yet implemented in Rakudo
         # so cursor is build using raw Buf
         #
-        'cursor_id' => self._dec_nyi( $a, 8),
+        'cursor_id' => self._dec_nyi( $a, 8, $index),
 
         # int32 startingFrom
         # where in the cursor this reply is starting
         #
-        'starting_from' => self._dec_int32($a),
+        'starting_from' => decode_int32( $a, $index),
 
         # int32 numberReturned
         # number of documents in the reply
         #
-        'number_returned' => self._dec_int32($a),
+        'number_returned' => decode_int32( $a, $index),
 
         # document* documents
         # documents
@@ -451,24 +454,25 @@ package MongoDB {
       # Extract documents from message.
       #
       for ^$OP_REPLY<number_returned> {
-        my Hash $document = self._dec_document($a);
+        my Hash $document = self._dec_document( $a, $index);
         $OP_REPLY<documents>.push($document);
       }
 
       # Every response byte must be consumed
       #
-      die 'Unexpected bytes at the end of response' if self.index < $a.elems;
+      die 'Unexpected bytes at the end of response' if $index < $a.elems;
 
       return $OP_REPLY;
     }
 
-    method _dec_nyi ( Array $a, Int $length --> Buf ) {
+    method _dec_nyi ( Array $a, Int $length, $index is rw --> Buf ) {
       # fetch given amount of bytes from Array and return as Buffer
       # mostly used to jump over not yet implemented decoding
 
       my @a;
       @a.push($a[$_]) for ^$length;
-      self.adjust_index($length);
+#      self.adjust_index($length);
+      $index += $length;
       return Buf.new(@a);
     }
   }

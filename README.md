@@ -271,14 +271,14 @@ Legend;
     * [x] Int :$number_to_skip = 0
     * [x] Int :$number_to_return = 0
     * [x] Bool :$no_cursor_timeout = False
-  * Testing find()
+  * Testing find(). Not all is tested because e.g. $eq is not yet supported in
+    my version of Mongod.
     * [x] exact matching, implicit AND.
     * [x] $eq, $lt, $lte, $gt, $gte, $ne
     * [x] $in, $nin
     * [x] $or, $and, $not, $nor
     * [x] $exists, $type
-    * [~] $mod, $text, $where
-    * [x] $regex: regular expressions
+    * [x] $mod, $text, $where, $regex: regular expressions
     * [ ] arrays, $all, $size, $slice
     * [ ] embedded docs, $elemMatch
     * [ ] null

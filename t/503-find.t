@@ -11,6 +11,8 @@
       $type                             type check on field
       $mod                              modulo operation on the value of a field
       $regex                            using BSON::Regex
+      $text                             text search
+      $where                            serverside javascript testing
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -20,6 +22,7 @@ use v6;
 use Test;
 use MongoDB::Collection;
 use BSON::Regex;
+use BSON::Javascript;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
@@ -303,6 +306,8 @@ $cursor = $collection.find(%(code3 => {'$type' => 16}));
 is $cursor.count, 6, 'code 3 has type int32, 3 documents';
 
 #-----------------------------------------------------------------------------
+# $regex
+#
 $query = { code1 => BSON::Regex.new(:regex('d.2')) };
 $cursor = $collection.find($query);
 is $cursor.count, 9, "Regex 9 documents for /d.2/";
@@ -310,6 +315,50 @@ is $cursor.count, 9, "Regex 9 documents for /d.2/";
 $query = { code2 => BSON::Regex.new(:regex('n.5')) };
 $cursor = $collection.find($query);
 is $cursor.count, 9, "Regex 9 documents for /n.5/";
+
+$query = { code2 => BSON::Regex.new(:regex('n\\d$')) };
+$cursor = $collection.find($query);
+is $cursor.count, 5, 'Regex 5 documents for /n\\d$/';
+
+#-----------------------------------------------------------------------------
+# $text
+#
+if $version<release1> == 2 and $version<release2> < 6 {
+  $cursor = $collection.find( %(
+      '$text' => {
+         '$search' => 'n9',
+         '$language' => 'none'
+      }
+    )
+  );
+
+  # 2 documents has n9: n9 and n99
+  #
+  is $cursor.count, 2, '$text => {$search => n9}, 2 documents';
+  CATCH {
+    when X::MongoDB::Cursor {
+      ok .message ~~ m/'invalid operator: ' ('$language'|'$search')/,
+         'exception: invalid operator: $language/$search, $text => {$search => n9}';
+    }
+  }
+}
+
+#-----------------------------------------------------------------------------
+# $where
+#
+$cursor = $collection.find(%('$where' => 'this.code3 <= 27'));
+
+# 3 documents have code3 and whithin range
+#
+is $cursor.count, 2, 'code 3 $where <= 27, 2 documents';
+
+my BSON::Javascript $js .= new(javascript => 'this.code3 <= 29');
+$cursor = $collection.find(%('$where' => $js));
+
+# 3 documents have code3 and whithin range
+#
+is $cursor.count, 3, 'code 3 $where <= 29, 3 documents';
+
 
 #-----------------------------------------------------------------------------
 #@code-list = $collection.distinct( 'code', %(name => %(regex =>'Hein')));
