@@ -119,7 +119,7 @@ package MongoDB {
       # one or more documents to insert into the collection
       #
       for @documents -> $document {
-        $OP_INSERT ~= self._enc_document($document);
+        $OP_INSERT ~= self.encode_document($document);
       }
 
       # MsgHeader header
@@ -140,7 +140,7 @@ package MongoDB {
       self._init_index;
       return self.OP_QUERY(
         $collection, $flags, $number_to_skip, $number_to_return,
-        self._enc_document(%query), %return_field_selector
+        self.encode_document(%query), %return_field_selector
       );
     }
 
@@ -155,7 +155,7 @@ package MongoDB {
     ) {
       return self.OP_QUERY(
         $collection, $flags, $number_to_skip, $number_to_return,
-        self._enc_document(@query), %return_field_selector
+        self.encode_document(@query), %return_field_selector
       );
     }
     
@@ -204,7 +204,7 @@ package MongoDB {
       # Optional. Selector indicating the fields to return
       #
       if +%return_field_selector {
-        $OP_QUERY ~= self._enc_document(%return_field_selector);
+        $OP_QUERY ~= self.encode_document(%return_field_selector);
       }
 
 
@@ -347,12 +347,12 @@ package MongoDB {
         # document selector
         # query object
         #
-        self._enc_document(%selector),
+        self.encode_document(%selector),
 
         # document update
         # specification of the update to perform
         #
-        self._enc_document(%update);
+        self.encode_document(%update);
 
       # MsgHeader header
       # standard message header
@@ -390,7 +390,7 @@ package MongoDB {
         # document selector
         # query object
         #
-        self._enc_document(%selector);
+        self.encode_document(%selector);
 
       # MsgHeader header
       # standard message header
@@ -454,7 +454,7 @@ package MongoDB {
       # Extract documents from message.
       #
       for ^$OP_REPLY<number_returned> {
-        my Hash $document = self._dec_document( $a, $index);
+        my Hash $document = self.decode_document( $a, $index);
         $OP_REPLY<documents>.push($document);
       }
 
