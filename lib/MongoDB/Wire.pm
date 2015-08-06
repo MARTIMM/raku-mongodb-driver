@@ -5,7 +5,7 @@ use v6;
 #}
 
 use BSON:ver<0.9.6+>;
-use BSON::EDC-Tools;
+use BSON::EDCTools;
 
 package MongoDB {
   class Wire is BSON::Bson {

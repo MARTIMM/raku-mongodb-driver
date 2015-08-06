@@ -5,7 +5,7 @@ use v6;
 #}
 
 use MongoDB::Database;
-use BSON::EDC-Tools;
+use BSON::EDCTools;
 
 package MongoDB {
   #-----------------------------------------------------------------------------
