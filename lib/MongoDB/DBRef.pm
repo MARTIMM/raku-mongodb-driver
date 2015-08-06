@@ -1,5 +1,11 @@
 use v6;
+
+#BEGIN {
+#  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
+#}
+
 use MongoDB::Connection;
+use BSON::ObjectId;
 
 #-------------------------------------------------------------------------------
 #

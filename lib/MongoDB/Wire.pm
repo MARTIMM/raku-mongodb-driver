@@ -1,8 +1,8 @@
 use v6;
 
-BEGIN {
-  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
-}
+#BEGIN {
+#  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
+#}
 
 use BSON:ver<0.9.6+>;
 use BSON::EDC-Tools;
@@ -132,6 +132,9 @@ package MongoDB {
       $collection.database.connection._send( $msg_header ~ $OP_INSERT, False);
     }
 
+    # OP_QUERY on a collection. Query is in the form of a hash. Commands cannot
+    # be given this way. See method below for that.
+    #
     multi method OP_QUERY (
       $collection, $flags, $number_to_skip, $number_to_return,
       %query, %return_field_selector
@@ -158,7 +161,7 @@ package MongoDB {
         self.encode_document(@query), %return_field_selector
       );
     }
-    
+
     # Mayor work horse with query already converted nito a BSON byte array
     #
     multi method OP_QUERY (
@@ -179,9 +182,9 @@ package MongoDB {
         # "dbname.collectionname"
         #
         ~ encode_cstring( join '.',
-                                  $collection.database.name,
-                                  $collection.name
-                           )
+                               $collection.database.name,
+                               $collection.name
+                        )
 
         # int32 numberToSkip
         # number of documents to skip
