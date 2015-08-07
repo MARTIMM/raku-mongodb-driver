@@ -3,7 +3,7 @@
     collection.find()                   Query database
       implicit AND selection            Find with more fields
       projection                        Select fields to return
-    collection.find() with pairs ipv hash                  
+    collection.find() with pairs ipv hash
     cursor.count()                      Count number of docs
     collection.explain()                Explain what is done for a search
     cursor.explain()                    Explain what is done for a search
@@ -131,6 +131,20 @@ ok $error-doc<ok>.Bool, 'No error after kill cursor';
 $cursor.count;
 is $cursor.count, 1, 'Still counting 1 document';
 
+
+#-------------------------------------------------------------------------------
+subtest {
+  if 1 {
+    my Hash $d2 = { '$abc' => 'pqr'};
+    $collection.insert($d2);
+    CATCH {
+      when X::MongoDB::Collection {
+        ok $_.message ~~ m:s/is not properly defined/, "Key not properly defined";
+      }
+    }
+  }
+}, 'Faulty insert tests';
+
 #-------------------------------------------------------------------------------
 # Cleanup and close
 #
@@ -151,12 +165,12 @@ sub check-document ( $criteria, %field-list, %projection = { })
       if %field-list{$k} {
         is( %document{$k}:exists, True, "Key '$k' exists. Check using find()/fetch()");
       }
-      
+
       else {
         is( %document{$k}:exists, False, "Key '$k' does not exist. Check using find()/fetch()");
       }
     }
-  
+
     last;
   }
 }
