@@ -18,6 +18,7 @@ use Test-support;
 use v6;
 use Test;
 use MongoDB::Collection;
+use BSON::ObjectId;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 
@@ -162,7 +163,7 @@ subtest {
     $collection.insert($d2);
     CATCH {
       when X::MongoDB::Collection {
-        ok $_.message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
+        ok .message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
       }
     }
   }
@@ -172,7 +173,24 @@ subtest {
     $collection.insert($d2);
     CATCH {
       when X::MongoDB::Collection {
-        ok $_.message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
+        ok .message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
+      }
+    }
+  }
+
+  if 1 {
+    $d2 = { _id => BSON::ObjectId.encode('123456789012123456789012'),
+            x => 'y',
+            a => 'c'
+          };
+    $collection.insert($d2);
+    $d2 = { _id => BSON::ObjectId.encode('123456789012123456789012'),
+            b => 'c'
+          };
+    $collection.insert($d2);
+    CATCH {
+      when X::MongoDB::Collection {
+        ok .message ~~ m:s/not unique/, .message;
       }
     }
   }

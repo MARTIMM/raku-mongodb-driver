@@ -115,6 +115,18 @@ package MongoDB {
 
           elsif $k ~~ m/ ^ '_id' $ / {
             # Check if unique in the document
+            my $cursor = self.find( hash( _id => $d{$k}));
+            
+            # If there are records(at most one!) this id is not unique
+            #
+            if $cursor.count {
+              die X::MongoDB::Collection.new(
+                error-text => "$k => $d{$k} value for id is not unique",
+                oper-name => 'insert',
+                oper-data => @docs.perl,
+                full-collection-name => [~] $!database.name, '.', $!name
+              );
+            }
           }
 
           elsif $d{$k} ~~ Hash {
