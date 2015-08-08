@@ -100,6 +100,33 @@ package MongoDB {
     method !check-doc-keys ( @docs ) {
       for @docs -> $d {
         for $d.keys -> $k {
+          if $k ~~ m/ (^ '$' | '.') / {
+            die X::MongoDB::Collection.new(
+              error-text => qq:to/EODIE/,
+                $k is not properly defined.
+                Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
+                point 1; Data storage
+                EODIE
+              oper-name => 'insert',
+              oper-data => @docs.perl,
+              full-collection-name => [~] $!database.name, '.', $!name
+            );
+          }
+
+          elsif $k ~~ m/ ^ '_id' $ / {
+            # Check if unique in the document
+          }
+
+          elsif $d{$k} ~~ Hash {
+            self!cdk($d{$k});
+          }
+        }
+      }
+    }
+
+    method !cdk ($sub-doc) {
+      for $sub-doc.keys -> $k {
+        if $k ~~ m/ (^ '$' | '.') / {
           die X::MongoDB::Collection.new(
             error-text => qq:to/EODIE/,
               $k is not properly defined.
@@ -107,13 +134,13 @@ package MongoDB {
               point 1; Data storage
               EODIE
             oper-name => 'insert',
-            oper-data => @docs.perl,
+            oper-data => $sub-doc.perl,
             full-collection-name => [~] $!database.name, '.', $!name
-          ) if $k ~~ m/ (^ '$' | '.') /;
+          );
+        }
 
-          if $k ~~ m/ ^ '_id' $ / {
-            # Check if unique in the document
-          }
+        elsif $sub-doc{$k} ~~ Hash {
+          self!cdk($sub-doc{$k});
         }
       }
     }
