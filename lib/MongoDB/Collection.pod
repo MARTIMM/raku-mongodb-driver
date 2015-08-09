@@ -127,13 +127,22 @@ If attribute is defined it holds the name of the collection.
 
 =head1 METHODS
 
-=head2 method insert ( **@documents, Bool :$continue_on_error = False ) {...}
+=for head2
+ method insert (
+   **@documents,
+   Bool :$continue_on_error = False
+ )
 
 Insert a document. You may specify more than one. These documents must all be
-hashes. Below are the possible ways to insert documents.
+hashes. Below are the possible ways to insert documents. Checks are made to see
+if there are key names starting with a '$' or having a '.' in the name. Top
+level keys are checked to see if C<_id> is used. When found, the collection
+is checked for the value of the key to see it has been used before. The value
+must be unique!
 
 The flag B<:continue_on_error> can be set to let the insert continue its job
-when a document fails.
+when a document insertion fails. This will not prevent checking of key names
+mentioned above.
 
 =begin nested
 =begin code
