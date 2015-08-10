@@ -237,6 +237,48 @@ method reset_error ( --> Hash ) {...}
 
 Reset all errors.
 
+=for head2
+  method set_pw_security (
+    Int :$min_un_length where $min_un_length >= 2,
+    Int :$min_pw_length where $min_pw_length >= 2,
+    Int :$pw-attribs = $PW-LOWERCASE
+  )
+
+Method to specify some checks upon usernames and passwords. Default values for
+the username minimal length is 2. For passwords idem depending on the password
+attribute code. $pw-attribs specifies how passwords are to be checked. There are
+4 codes recognized.
+
+=item $PW-LOWERCASE. All is accepted but lowercase characters must at least be
+used. When $min_pw_length is not set it will be set to 2.
+
+=item $PW-UPPERCASE. All is accepted but lowercase and uppercase characters must
+at least be used. When $min_pw_length is not set it will be set to 2.
+
+=item $PW-NUMBERS. All is accepted but lowercase, uppercase characters and
+numbers must at least be used. When $min_pw_length is not set it will be set to
+3.
+
+=item $PW-OTHER-CHARS. All is accepted but lowercase, uppercase characters,
+numbers and special characters like @ ! $ etcetera, must at least be used. When
+$min_pw_length is not set it will be set to 4.
+
+If e.g. $PW-OTHER-CHARS and $min_pw_length is set to 2 then when using a
+password of less the 4 characters is bound to fail.
+
+=for head2
+  method create_user (
+    Str :$user, Str :$password,
+    :$custom_data, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Method to create a user
+
+=for head2
+  method drop_user ( Str :$user, Int :$timeout --> Hash )
+
+Delete user from the database.
 
 =end pod
 

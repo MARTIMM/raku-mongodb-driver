@@ -1,7 +1,8 @@
 {
   "author": "Pawel Pabian (2011-2015), Marcel Timmerman (2015-present)",
   "depends": [
-      "BSON"
+    "BSON",
+    "Digest::MD5"
   ],
   "description": "MongoDB driver",
   "name": "MongoDB",
@@ -15,5 +16,5 @@
     "MongoDB::Wire":            "lib/MongoDB/Wire.pm"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.24.1"
+  "version": "0.25.0"
 }

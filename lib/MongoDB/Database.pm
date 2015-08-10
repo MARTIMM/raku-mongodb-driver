@@ -1,5 +1,6 @@
 use v6;
 use MongoDB::Collection;
+use Digest::MD5;
 
 #-------------------------------------------------------------------------------
 #
@@ -21,14 +22,22 @@ package MongoDB {
     }
   }
 
-  #-------------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   #
   class MongoDB::Database {
 
     has $.connection;
     has Str $.name;
+    has Int $.min-un-length = 2;
+    has Int $.min-pw-length = 2;
+    has Regex $.pw-attribs = /./;
 
-    #-----------------------------------------------------------------------------
+    constant $PW-LOWERCASE = 0;
+    constant $PW-UPPERCASE = 1;
+    constant $PW-NUMBERS = 2;
+    constant $PW-OTHER-CHARS = 3;
+
+    #---------------------------------------------------------------------------
     #
     submethod BUILD ( :$connection, Str :$name ) {
 
@@ -38,7 +47,7 @@ package MongoDB {
       $!name = $name;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Drop the database
     #
     method drop ( --> Hash ) {
@@ -57,7 +66,7 @@ package MongoDB {
       return $doc;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Select a collection. When it is new it comes into existence only
     # after inserting data
     #
@@ -77,7 +86,7 @@ package MongoDB {
       );
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Create collection explicitly with control parameters
     #
     method create_collection ( Str $collection_name, Bool :$capped,
@@ -119,7 +128,7 @@ package MongoDB {
       );
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Return all information from system namespaces
     #
     method list_collections ( --> Array ) {
@@ -134,7 +143,7 @@ package MongoDB {
       return @docs;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Return only the user collection names in the database
     #
     method collection_names ( --> Array ) {
@@ -152,7 +161,7 @@ package MongoDB {
       return @docs;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Run command should ony be working on the admin database using the virtual
     # $cmd collection. Method is placed here because it works on a database be
     # it a special one.
@@ -163,16 +172,21 @@ package MongoDB {
     #
     multi method run_command ( Pair @command --> Hash ) {
 
+      # Create a local collection structure here
+      #
       my MongoDB::Collection $c .= new(
         database    => self,
         name        => '$cmd',
       );
+      
+      # Use it to do a find on it, get the doc and return it.
+      #
       my MongoDB::Cursor $cursor = $c.find( @command, :number_to_return(1));
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Get the last error. Returns one or more of the following keys: ok, err,
     # code, connectionId, lastOp, n, shards, singleShard, updatedExisting,
     # upserted, wnote, wtimeout, waited, wtime,
@@ -187,7 +201,7 @@ package MongoDB {
         $h<w> = $w;
         $h<wtimeout> = $wtimeout;
       }
-      
+
       my Pair @req = getLastError => 1, @$h;
       my Hash $doc = self.run_command(@req);
 
@@ -203,7 +217,7 @@ package MongoDB {
       return $doc;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Get errors since last reset error command
     #
     method get_prev_error ( --> Hash ) {
@@ -223,7 +237,7 @@ package MongoDB {
       return $doc;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Reset error command
     #
     method reset_error ( --> Hash ) {
@@ -240,6 +254,136 @@ package MongoDB {
         );
       }
 
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    # Use management
+    #---------------------------------------------------------------------------
+    #
+    method set_pw_security (
+      Int :$min_un_length where $min_un_length >= 2,
+      Int :$min_pw_length where $min_pw_length >= 2,
+      Int :$pw-attribs = $PW-LOWERCASE
+    ) {
+      given $pw-attribs {
+        when $PW-LOWERCASE {
+          $!pw-attribs = /<[a..z]>/;
+          $!min-pw-length = $min_pw_length // 2;
+        }
+
+        when $PW-UPPERCASE {
+          $!pw-attribs = /<[a..z]> && <[A..Z]>/;
+          $!min-pw-length = $min_pw_length // 2;
+        }
+
+        when $PW-NUMBERS {
+          $!pw-attribs = /<[a..z]> && <[A..Z]> && <[0..9]>/;
+          $!min-pw-length = $min_pw_length // 3;
+        }
+
+        when $PW-OTHER-CHARS {
+          $!pw-attribs = /<[a..z]> && <[A..Z]> && <[0..9]> &&
+                          <[\#@!$%^&*\(\)_\+\-=\{\}\[\]:\"|;\'\\\<\>?,.\/]>
+                         /;
+          $!min-pw-length = $min_pw_length // 4;
+        }
+
+        default {
+          $!pw-attribs = /./;
+          $!min-pw-length = $min_pw_length // 2;
+        }
+      }
+      
+      $!min-un-length = $min_un_length;
+#note "pwa: $pw-attribs, ", $!pw-attribs.perl;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method create_user (
+      Str :$user, Str :$password,
+      :$custom_data, Array :$roles, Int :$timeout
+      --> Hash
+    ) {
+#note "\ncu: $password, ", $!pw-attribs.perl;
+      if $user.chars < $!min-un-length {
+        die X::MongoDB::Database.new(
+          error-text => "Username too short, must be >= $!min-un-length",
+          oper-name => 'create_user',
+          oper-data => $user,
+          database-name => [~] $!name
+        );
+      }
+
+      elsif $password.chars < $!min-pw-length {
+        die X::MongoDB::Database.new(
+          error-text => "Password too short, must be >= $!min-pw-length",
+          oper-name => 'create_user',
+          oper-data => $password,
+          database-name => [~] $!name
+        );
+      }
+
+      else {
+if 0 {
+        my $m = $password ~~ $!pw-attribs;
+        die X::MongoDB::Database.new(
+          error-text => "Password does not have the proper elements",
+          oper-name => 'create_user',
+          oper-data => $password,
+          database-name => [~] $!name
+        ) unless ?$m;
+}
+      }
+
+      my Pair @req = (
+        createUser => $user,
+        pwd => Digest::MD5.md5_hex( [~] $user, ':mongo:', $password),
+        digestPassword => False,
+        roles => $roles
+      );
+
+      @req.push( writeConcern => { j => True, wtimeout => $timeout })
+        if ?$timeout;
+
+      my Hash $doc = self.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'create_user',
+          oper-data => @req.perl,
+          database-name => [~] $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method drop_user ( Str :$user, Int :$timeout --> Hash ) {
+      my Pair @req = (
+        dropUser => $user
+      );
+
+      @req.push( writeConcern => { j => True, wtimeout => $timeout })
+        if ?$timeout;
+
+      my Hash $doc = self.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_user',
+          oper-data => @req.perl,
+          database-name => [~] $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
       return $doc;
     }
   }

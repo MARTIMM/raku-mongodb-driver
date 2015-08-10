@@ -48,14 +48,11 @@ dependency.
 $ panda install MongoDB
 ```
 
-## VERSION PERL, MOARVM and MongoDB
+## Versions of PERL, MOARVM and MongoDB
 
-```
-$ perl6 -v
-This is perl6 version 2015.02-188-ga99a572 built on MoarVM version 2015.02-25-g3d0404a```
-```
-
-The driver code is written with the highest version of MongoDB server in mind.
+Perl6 version ```2015.02-188-ga99a572```
+MoarVM version ```2015.02-25-g3d0404a```
+MongoDB version ```3.0.5```
 
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
@@ -161,12 +158,12 @@ Legend;
 
 ### User Management Commands
 
-* [ ] createUser. Creates a new user.
+* [x] createUser. Creates a new user.
 * [ ] dropAllUsersFromDatabase. Deletes all users associated with a database.
-* [ ] dropUser. Removes a single user.
+* [x] dropUser. Removes a single user.
 * [ ] grantRolesToUser. Grants a role and its privileges to a user.
 * [ ] revokeRolesFromUser. Removes a role from a user.
-* [ ] updateUser. Updates a user\u2019s data.
+* [ ] updateUser. Updates a user's data.
 * [ ] usersInfo. Returns information about the specified users.
 
 
@@ -374,7 +371,13 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
-* 0.24.1 Added document checks to inserts
+* 0.25.0
+  * Create user
+  * Drop user
+* 0.24.1
+  * Added document checks to inserts. No dollars on first char of keys and no
+    dots in keys. This is checked on all levels. On top level the key ```_id```
+    is checked if the value is unique in te collection.
 * 0.24.0
   * Added version() and build_info() to MongoDB::Connection.
 * 0.23.2
