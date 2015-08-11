@@ -135,15 +135,52 @@ subtest {
   );
 
   ok $doc<ok>, 'User mt created';
-  
+
   $doc = $database.users_info(:user('mt'));
   my $u = $doc<users>[0];
   is $u<_id>, 'test.mt', $u<_id>;
   is $u<roles>[0]<role>, 'readWrite', $u<roles>[0]<role>;
 
+  $doc = $database.update_user(
+    :user('mt'),
+    :password('mt+++'),
+    :custom_data({license => 'to_heal'}),
+    :roles([{role => 'readWrite', db => 'test1'},
+            {role => 'dbAdmin', db => 'test2'}
+           ]
+          )
+  );
+
+  ok $doc<ok>, 'User mt updated';
+
+  $doc = $database.users_info(:user('mt'));
+  $u = $doc<users>[0];
+  is $u<roles>[0]<role>, any(<readWrite dbAdmin>), $u<roles>[0]<role>;
+  is $u<roles>[0]<db>, any(<test1 test2>), $u<roles>[0]<db>;
+  is $u<roles>[1]<role>, any(<readWrite dbAdmin>), $u<roles>[1]<role>;
+  is $u<roles>[1]<db>, any(<test1 test2>), $u<roles>[1]<db>;
+
+  $doc = $database.grant_roles_to_user( :user('mt'), :roles(['dbOwner']));
+  ok $doc<ok>, 'User roles mt updated';
+  $doc = $database.users_info(:user('mt'));
+  $u = $doc<users>[0];
+  is $u<roles>.elems, 3, 'Now 3 roles defined';
+  is $u<roles>[2]<role>, any(<readWrite dbAdmin dbOwner>), $u<roles>[2]<role>;
+  is $u<roles>[0]<role>, any(<readWrite dbAdmin dbOwner>), $u<roles>[0]<role>;
+
+  $doc = $database.revoke_roles_from_user(
+    :user('mt'),
+    :roles([{role => 'dbAdmin', db => 'test2'}])
+  );
+  ok $doc<ok>, 'User roles mt revoked';
+  $doc = $database.users_info(:user('mt'));
+  $u = $doc<users>[0];
+  is $u<roles>.elems, 2, 'Now 2 roles left';
+  is $u<roles>[0]<role>, any(<readWrite dbOwner>), $u<roles>[0]<role>;
+
   $doc = $database.drop_all_users_from_database();
   ok $doc<ok>, 'All users dropped';
-  
+
   $doc = $database.users_info(:user('mt'));
   is $doc<users>.elems, 0, 'No users in database';
 }, 'account info and drop all users';

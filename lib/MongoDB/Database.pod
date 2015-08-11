@@ -285,6 +285,30 @@ Delete user from the database.
 
 Drop all users from the database
 
+=for head2
+  method grant_roles_to_user (
+    Str :$user, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Grant roles to user.
+
+=for head2
+  method revoke_roles_from_user (
+    Str :$user, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Revoke roles from user
+
+=for head2
+  method update_user (
+    Str :$user, Str :$password,
+    :$custom_data, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Update user accont data
 
 =for head2
   method users_info (

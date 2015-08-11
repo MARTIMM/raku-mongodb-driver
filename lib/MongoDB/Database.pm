@@ -178,7 +178,7 @@ package MongoDB {
         database    => self,
         name        => '$cmd',
       );
-      
+
       # Use it to do a find on it, get the doc and return it.
       #
       my MongoDB::Cursor $cursor = $c.find( @command, :number_to_return(1));
@@ -360,10 +360,10 @@ package MongoDB {
       my Pair @req = (
         createUser => $user,
         pwd => Digest::MD5.md5_hex( [~] $user, ':mongo:', $password),
-        digestPassword => False,
-        roles => $roles
+        digestPassword => False
       );
 
+      @req.push((roles => $roles)) if ?$roles;
       @req.push( (writeConcern => { j => True, wtimeout => $timeout }))
         if ?$timeout;
 
@@ -422,6 +422,145 @@ package MongoDB {
         die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_user',
+          oper-data => @req.perl,
+          database-name => [~] $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method grant_roles_to_user (
+      Str :$user, Array :$roles, Int :$timeout
+      --> Hash
+    ) {
+      my Pair @req = ( grantRolesToUser => $user );
+
+      @req.push((roles => $roles)) if ?$roles;
+      @req.push(( writeConcern => { j => True, wtimeout => $timeout }))
+        if ?$timeout;
+
+      my Hash $doc = self.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_user',
+          oper-data => @req.perl,
+          database-name => [~] $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method revoke_roles_from_user (
+      Str :$user, Array :$roles, Int :$timeout
+      --> Hash
+    ) {
+      my Pair @req = ( revokeRolesFromUser => $user );
+
+      @req.push((roles => $roles)) if ?$roles;
+      @req.push(( writeConcern => { j => True, wtimeout => $timeout }))
+        if ?$timeout;
+
+      my Hash $doc = self.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_user',
+          oper-data => @req.perl,
+          database-name => [~] $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method update_user (
+      Str :$user, Str :$password,
+      :$custom_data, Array :$roles, Int :$timeout
+      --> Hash
+    ) {
+      my Pair @req = ( updateUser => $user, digestPassword => False );
+
+      if ?$password {
+        if $password.chars < $!min-pw-length {
+          die X::MongoDB::Database.new(
+            error-text => "Password too short, must be >= $!min-pw-length",
+            oper-name => 'create_user',
+            oper-data => $password,
+            database-name => [~] $!name
+          );
+        }
+
+        my Bool $pw-ok = False;
+        given $!pw-attribs-code {
+          when $PW-LOWERCASE {
+            $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
+          }
+
+          when $PW-UPPERCASE {
+            $pw-ok = (
+              $password ~~ m/ <[a..z]> / and
+              $password ~~ m/ <[A..Z]> /
+            ).Bool;          
+          }
+
+          when $PW-NUMBERS {
+            $pw-ok = (
+              $password ~~ m/ <[a..z]> / and
+              $password ~~ m/ <[A..Z]> / and
+              $password ~~ m/ \d /
+            ).Bool;          
+          }
+
+          when $PW-OTHER-CHARS {
+            $pw-ok = (
+              $password ~~ m/ <[a..z]> / and
+              $password ~~ m/ <[A..Z]> / and
+              $password ~~ m/ \d / and
+              $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
+            ).Bool;          
+          }
+        }
+
+        if $pw-ok {
+          @req.push((pwd => Digest::MD5.md5_hex("$user:mongo:$password")));
+        }
+
+        else {
+          die X::MongoDB::Database.new(
+            error-text => "Password does not have the proper elements",
+            oper-name => 'create_user',
+            oper-data => $password,
+            database-name => [~] $!name
+          );
+        }
+      }
+
+      @req.push((writeConcern => { j => True, wtimeout => $timeout }))
+        if ?$timeout;
+
+      @req.push((roles => $roles)) if ?$roles;
+      @req.push((customData => $custom_data)) if ?$custom_data;
+
+      my Hash $doc = self.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'create_user',
           oper-data => @req.perl,
           database-name => [~] $!name
         );

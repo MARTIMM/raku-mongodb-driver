@@ -160,13 +160,13 @@ Legend;
 
 ### User Management Commands
 
-* [x] createUser. Creates a new user.
-* [x] dropAllUsersFromDatabase. Deletes all users associated with a database.
-* [x] dropUser. Removes a single user.
-* [ ] grantRolesToUser. Grants a role and its privileges to a user.
-* [ ] revokeRolesFromUser. Removes a role from a user.
-* [ ] updateUser. Updates a user's data.
-* [x] usersInfo. Returns information about the specified users.
+* [D] createUser. Creates a new user.
+* [D] dropAllUsersFromDatabase. Deletes all users associated with a database.
+* [D] dropUser. Removes a single user.
+* [D] grantRolesToUser. Grants a role and its privileges to a user.
+* [D] revokeRolesFromUser. Removes a role from a user.
+* [D] updateUser. Updates a user's data.
+* [D] usersInfo. Returns information about the specified users.
 
 
 
@@ -380,6 +380,9 @@ change at any time. The public API should not be considered stable.*
   * Drop user
   * Drop all users
   * Users info
+  * Grant roles
+  * Revoke roles
+  * Update users
 * 0.24.1
   * Added document checks to inserts. No dollars on first char of keys and no
     dots in keys. This is checked on all levels. On top level the key ```_id```
