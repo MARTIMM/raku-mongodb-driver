@@ -26,16 +26,16 @@ package MongoDB {
   #
   class MongoDB::Database {
 
-    has $.connection;
-    has Str $.name;
-    has Int $.min-un-length = 2;
-    has Int $.min-pw-length = 2;
-    has Regex $.pw-attribs = /./;
-
     constant $PW-LOWERCASE = 0;
     constant $PW-UPPERCASE = 1;
     constant $PW-NUMBERS = 2;
     constant $PW-OTHER-CHARS = 3;
+
+    has $.connection;
+    has Str $.name;
+    has Int $.min-un-length = 2;
+    has Int $.min-pw-length = 2;
+    has Int $.pw-attribs-code = $PW-LOWERCASE;
 
     #---------------------------------------------------------------------------
     #
@@ -258,45 +258,39 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # Use management
+    # User management
     #---------------------------------------------------------------------------
     #
     method set_pw_security (
       Int :$min_un_length where $min_un_length >= 2,
       Int :$min_pw_length where $min_pw_length >= 2,
-      Int :$pw-attribs = $PW-LOWERCASE
+      Int :$pw_attribs = $PW-LOWERCASE
     ) {
-      given $pw-attribs {
+
+      given $pw_attribs {
         when $PW-LOWERCASE {
-          $!pw-attribs = /<[a..z]>/;
           $!min-pw-length = $min_pw_length // 2;
         }
 
         when $PW-UPPERCASE {
-          $!pw-attribs = /<[a..z]> && <[A..Z]>/;
           $!min-pw-length = $min_pw_length // 2;
         }
 
         when $PW-NUMBERS {
-          $!pw-attribs = /<[a..z]> && <[A..Z]> && <[0..9]>/;
           $!min-pw-length = $min_pw_length // 3;
         }
 
         when $PW-OTHER-CHARS {
-          $!pw-attribs = /<[a..z]> && <[A..Z]> && <[0..9]> &&
-                          <[\#@!$%^&*\(\)_\+\-=\{\}\[\]:\"|;\'\\\<\>?,.\/]>
-                         /;
           $!min-pw-length = $min_pw_length // 4;
         }
 
         default {
-          $!pw-attribs = /./;
           $!min-pw-length = $min_pw_length // 2;
         }
       }
-      
+
+      $!pw-attribs-code = $pw_attribs;
       $!min-un-length = $min_un_length;
-#note "pwa: $pw-attribs, ", $!pw-attribs.perl;
     }
 
     #---------------------------------------------------------------------------
@@ -306,7 +300,6 @@ package MongoDB {
       :$custom_data, Array :$roles, Int :$timeout
       --> Hash
     ) {
-#note "\ncu: $password, ", $!pw-attribs.perl;
       if $user.chars < $!min-un-length {
         die X::MongoDB::Database.new(
           error-text => "Username too short, must be >= $!min-un-length",
@@ -326,15 +319,42 @@ package MongoDB {
       }
 
       else {
-if 0 {
-        my $m = $password ~~ $!pw-attribs;
+        my Bool $pw-ok = False;
+        given $!pw-attribs-code {
+          when $PW-LOWERCASE {
+            $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
+          }
+
+          when $PW-UPPERCASE {
+            $pw-ok = (
+              $password ~~ m/ <[a..z]> / and
+              $password ~~ m/ <[A..Z]> /
+            ).Bool;          
+          }
+
+          when $PW-NUMBERS {
+            $pw-ok = (
+              $password ~~ m/ <[a..z]> / and
+              $password ~~ m/ <[A..Z]> / and
+              $password ~~ m/ \d /
+            ).Bool;          
+          }
+
+          when $PW-OTHER-CHARS {
+            $pw-ok = (
+              $password ~~ m/ <[a..z]> / and
+              $password ~~ m/ <[A..Z]> / and
+              $password ~~ m/ \d / and
+              $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
+            ).Bool;          
+          }
+        }
         die X::MongoDB::Database.new(
           error-text => "Password does not have the proper elements",
           oper-name => 'create_user',
           oper-data => $password,
           database-name => [~] $!name
-        ) unless ?$m;
-}
+        ) unless $pw-ok;
       }
 
       my Pair @req = (

@@ -1,7 +1,10 @@
 #`{{
   Testing;
-    database.create_user()              Create a new user
-    database.drop_user()                Drop user
+    database.set_pw_security            username and password check init
+    database.create_user()
+    database.drop_user()
+    database.drop_all_users_from_database()
+    database.users_info()
 }}
 
 use v6;
@@ -53,7 +56,7 @@ subtest {
   $database.set_pw_security(
     :min_un_length(5),
     :min_pw_length(6),
-    :pw-attribs($MongoDB::Database::PW-OTHER-CHARS)
+    :pw_attribs($MongoDB::Database::PW-OTHER-CHARS)
   );
 
   if 1 {
@@ -86,7 +89,7 @@ subtest {
     }
   }
 
-if 0 {
+if 1 {
   if 1 {
     $doc = $database.create_user(
       :user('mt-and-another-few-chars'),
@@ -111,12 +114,7 @@ if 0 {
       :roles(['readWrite'])
     );
 
-    CATCH {
-      when X::MongoDB::Database {
-        ok .error-text eq 'Password does not have the proper elements',
-           .error-text;
-      }
-    }
+    ok $doc<ok>, 'User mt-and-another-few-chars created';
   }
 
   $doc = $database.drop_user(:user('mt-and-another-few-chars'));
