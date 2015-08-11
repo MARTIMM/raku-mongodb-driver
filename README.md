@@ -12,6 +12,8 @@ Plenty of documents can be found on the MongoDB site
 * [Collection methods](http://docs.mongodb.org/manual/reference/method/js-collection/)
 * [Cursor methods](http://docs.mongodb.org/manual/reference/method/js-cursor/)
 * [Administration Commands](http://docs.mongodb.org/manual/reference/command/nav-administration/)
+* [Authentication](http://docs.mongodb.org/manual/core/authentication/)
+* [Create a User Administrator](http://docs.mongodb.org/manual/tutorial/add-user-administrator/)
 
 Documentation about this driver can be found in doc/Original-README.md and the
 following pod files
