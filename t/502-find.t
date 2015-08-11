@@ -63,7 +63,7 @@ if 1 {
   $collection.ensure_index(%());
   CATCH {
     when X::MongoDB::Collection {
-       ok $_.message ~~ m/no \s+ index \s+ name \s+ specified/, 'No index name';
+       ok .message ~~ m:s/exception\: index names cannot be empty/, .error-text;
     }
   }
 }
@@ -74,7 +74,7 @@ if 1 {
   $collection.ensure_index( %(), %(name => 'testindex'));
   CATCH {
     when X::MongoDB::Collection {
-       ok $_.message ~~ m/bad \s+ add \s+ index \s+ attempt/, 'Bad add index attempt';
+       ok .message ~~ m:s/exception\: bad index key pattern '{}:' Index keys cannot be empty/, .error-text;
     }
   }
 }
@@ -86,7 +86,8 @@ if 1 {
   $doc = $collection.drop_index( %( code1 => 1));
   CATCH {
     when X::MongoDB::Collection {
-      ok $_.message ~~ m/can\'t \s+ find \s+ index \s+ with \s+ key/, q/Can't find index/;
+      ok .message ~~ m/can\'t \s+ find \s+ index \s+ with \s+ key/,
+         .error-text;
     }
   }
 }

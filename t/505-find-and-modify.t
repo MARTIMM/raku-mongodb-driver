@@ -72,11 +72,24 @@ $doc = $collection.find_and_modify( {code => 'd1 01234'}, :remove);
 $cursor = $collection.find({code => 'd1 01234'});
 is $cursor.count, 0, 'Record d1 01234 gone (after remove)';
 
-# Remove one record
+# Remove one record. Use remove and return new throws an error
 #
+if 1 {
+  $doc = $collection.find_and_modify(
+    {code => BSON::Regex.new(:regex('^d1 .*454.*'))},
+    :remove, :sort({code => -1}), :new
+  );
+  CATCH {
+    when X::MongoDB::Collection {
+      is .error-text ~~ m:s/remove and returnNew can\'t co\-exist/,
+         .error-text;
+    }
+  }
+}
+
 $doc = $collection.find_and_modify(
   {code => BSON::Regex.new(:regex('^d1 .*454.*'))},
-  :remove, :sort({code => -1}), :new
+  :remove, :sort({code => -1})
 );
 is $doc<code>, 'd1 0123454321', 'Returned removed doc, code = d1 0123454321';
 $cursor = $collection.find({code => 'd1 0123454321'});

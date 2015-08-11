@@ -27,7 +27,8 @@ $collection.insert( $%( 'name' => 'Jan Klaassen'));
 #
 my $doc = $collection.drop;
 ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
-is $doc<msg>, 'indexes dropped for collection', 'Drop message ok';
+is $doc<ns>, 'test.cl1', 'Dropped collection';
+is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 
 if 1 {
   $doc = $collection.drop;

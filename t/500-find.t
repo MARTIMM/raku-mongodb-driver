@@ -21,6 +21,7 @@ use MongoDB::Collection;
 use BSON::ObjectId;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
+$collection.database.drop;
 
 my Hash $d1 = { code           => 'd1'
               , name           => 'name and lastname'
@@ -89,33 +90,35 @@ subtest {
   # when there is no index set.
   #
   $doc = $collection.explain({test_record => 'tr38'});
-  is $doc<cursor>, "BasicCursor", 'No index -> basic cursor';
-  is $doc<n>, 1, 'One doc found';
-  is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching';
+  my $s = $doc<executionStats>;
+#  is $doc<cursor>, "BasicCursor", 'No index -> basic cursor';
+  is $s<nReturned>, 1, 'One doc found';
+  is $s<totalDocsExamined>, 50, 'Scanned 50 docs, bad searching';
 
   # Do the same via a cursor
   $cursor = $collection.find({test_record => 'tr38'});
   $doc = $cursor.explain;
-  is $doc<cursor>, "BasicCursor", 'No index -> basic cursor, explain via cursor';
-  is $doc<n>, 1, 'One doc found, explain via cursor';
-  is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching, explain via cursor';
+  $s = $doc<executionStats>;
+#  is $doc<cursor>, "BasicCursor", 'No index -> basic cursor, explain via cursor';
+  is $s<nReturned>, 1, 'One doc found, explain via cursor';
+  is $s<totalDocsExamined>, 50, 'Scanned 50 docs, bad searching, explain via cursor';
 
   # Now set an index on the field and the scan goes only through one document
   #
   $collection.ensure_index(%(test_record => 1));
   $doc = $collection.explain({test_record => 'tr38'});
-  #say $doc.perl;
-  #say "N, scanned: ", $doc<n>, ', ', $doc<nscanned>;
-  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type';
-  is $doc<n>, 1, 'One doc found';
-  is $doc<nscanned>, 1, 'Scanned 1 doc, great indexing';
+#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type';
+  $s = $doc<executionStats>;
+  is $s<nReturned>, 1, 'One doc found';
+  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing';
 
   # Do the same via a cursor
   $cursor = $collection.find({test_record => 'tr38'});
   $doc = $cursor.explain;
-  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via cursor';
-  is $doc<n>, 1, 'One doc found, explain via cursor';
-  is $doc<nscanned>, 1, 'Scanned 1 doc, great indexing, explain via cursor';
+#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via cursor';
+  $s = $doc<executionStats>;
+  is $s<nReturned>, 1, 'One doc found, explain via cursor';
+  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via cursor';
 }, "Testing explain and performance using cursor";
 
 #-------------------------------------------------------------------------------
@@ -124,14 +127,16 @@ subtest {
   #$doc = $cursor.explain;
   #say $doc.perl;
   #say "N, scanned: ", $doc<n>, ', ', $doc<nscanned>;
-  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via bad hint';
-  is $doc<n>, 1, 'One doc found, explain via bad hint';
-  is $doc<nscanned>, 50, 'Scanned 50 docs, bad searching, explain via bad hint';
+#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via bad hint';
+  my $s = $doc<executionStats>;
+  is $s<nReturned>, 1, 'One doc found, explain via bad hint';
+  is $s<totalDocsExamined>, 50, 'Scanned 50 docs, bad searching, explain via bad hint';
 
   $doc = $cursor.hint( %(test_record => 1), :explain);
-  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via good hint';
-  is $doc<n>, 1, 'One doc found, explain via a good hint';
-  is $doc<nscanned>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
+#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via good hint';
+  $s = $doc<executionStats>;
+  is $s<nReturned>, 1, 'One doc found, explain via a good hint';
+  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
 }, "Testing explain and performance using hint";
 
 #-------------------------------------------------------------------------------
@@ -190,7 +195,7 @@ subtest {
     $collection.insert($d2);
     CATCH {
       when X::MongoDB::Collection {
-        ok .message ~~ m:s/not unique/, .message;
+        ok .message ~~ m:s/not unique/, .error-text;
       }
     }
   }

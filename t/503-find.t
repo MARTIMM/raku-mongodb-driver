@@ -25,6 +25,7 @@ use BSON::Regex;
 use BSON::Javascript;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
+$collection.database.drop;
 
 # Fill: d0/n99, d2/n97, d4/n95, d6/n93 ... d96/n3, d98/n1
 #
@@ -205,8 +206,20 @@ is $cursor.count,
 #-----------------------------------------------------------------------------
 # $mod
 #
-$cursor = $collection.find( %(code3 => {'$mod' => [ 3, 0]}));
-is $cursor.count, 2, 'code3 => {$mod => [ 3, 0]}, 2 documents';
+if 1 {
+  $cursor = $collection.find( %(code3 => {'$mod' => [ 3, 0]}));
+  my $cc = $cursor.count;
+
+  CATCH {
+    when X::MongoDB::Cursor {
+      is .error-text ~~ m:s/divisor cannot be 0/, .error-text;
+    }
+  }
+}
+
+#$cursor = $collection.find( %(code3 => {'$mod' => [ 3, 7]}));
+#say "cc: ", $cursor.count;
+#is $cursor.count, 2, 'code3 => {$mod => [ 3, 0]}, 2 documents';
 
 #-----------------------------------------------------------------------------
 # $mod faulty args
@@ -231,8 +244,8 @@ elsif $version<release1> == 2 and $version<release2> >= 6 {
   is $cursor.count, 2, 'code3 => {$mod => [ ]}, 2 documents';
   CATCH {
     when X::MongoDB::Cursor {
-      ok .message ~~ ms/'mod' 'can\'t' 'be' '0'/,
-         'exception: mod can\'t be 0 (code3 => {$mod => [ 3, 0, 1]})';
+      ok .message ~~ m:s/mod can\'t be 0/,
+         .error-text;
     }
 
     default {

@@ -364,6 +364,8 @@ are also items to be implemented in BSON. You need to look there for info
 * Test map reduce aggregation more thoroughly.
 * map_reduce, look into scope. argument is not used.
 * explain changed after mongodb 3.0
+* Testing $mod in queries seems to have problems in version 3.0.5
+
 
 ## CHANGELOG
 
@@ -378,6 +380,8 @@ change at any time. The public API should not be considered stable.*
   * Added document checks to inserts. No dollars on first char of keys and no
     dots in keys. This is checked on all levels. On top level the key ```_id```
     is checked if the value is unique in te collection.
+  * Changes in code caused by upgrading from MongoDB 2.4 to 3.0.5. Many of the
+    servers return messages were changed.
 * 0.24.0
   * Added version() and build_info() to MongoDB::Connection.
 * 0.23.2

@@ -66,7 +66,7 @@ my Hash $result = $collection.group( $js-r-scope,
                                      condition => %(name => %('$gt' => 'k0'))
 #                                     key_js_func => $js-kf,
                                    );
-say "\nR:  {$result.perl}\n";
+#say "\nR:  {$result.perl}\n";
 #exit(0);
 
 # Now do the same in perl by getting the docs and do the work of $reduce

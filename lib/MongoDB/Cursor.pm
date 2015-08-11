@@ -118,7 +118,7 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Get count of found documents
     #
-    method count ( Int :$skip = 0, Int :$limit = 0 --> Num ) {
+    method count ( Int :$skip = 0, Int :$limit = 0 --> Int ) {
       my $database = $!collection.database;
 
       my Hash $h;
