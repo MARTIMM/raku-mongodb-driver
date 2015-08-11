@@ -344,7 +344,7 @@ if 0 {
         roles => $roles
       );
 
-      @req.push( writeConcern => { j => True, wtimeout => $timeout })
+      @req.push( (writeConcern => { j => True, wtimeout => $timeout }))
         if ?$timeout;
 
       my Hash $doc = self.run_command(@req);
@@ -369,8 +369,64 @@ if 0 {
         dropUser => $user
       );
 
-      @req.push( writeConcern => { j => True, wtimeout => $timeout })
+      @req.push((writeConcern => { j => True, wtimeout => $timeout }))
         if ?$timeout;
+
+      my Hash $doc = self.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_user',
+          oper-data => @req.perl,
+          database-name => [~] $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method Xdrop_all_users_from_database ( Str :$user, Int :$timeout --> Hash ) {
+      my Pair @req = (
+        dropUser => $user
+      );
+
+      @req.push(( writeConcern => { j => True, wtimeout => $timeout }))
+        if ?$timeout;
+
+      my Hash $doc = self.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_user',
+          oper-data => @req.perl,
+          database-name => [~] $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method users_info (
+      Str :$user,
+      Bool :$show_credentials,
+      Bool :$show_privileges,
+      Str :$database
+      --> Hash
+    ) {
+      my Pair @req = (
+        usersInfo => { user => $user, db => $database // $!name}
+      );
+
+      @req.push((showCredentials => True)) if ?$show_credentials;
+      @req.push((showPrivileges => True)) if ?$show_privileges;
 
       my Hash $doc = self.run_command(@req);
       if $doc<ok>.Bool == False {

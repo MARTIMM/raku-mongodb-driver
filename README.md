@@ -164,7 +164,7 @@ Legend;
 * [ ] grantRolesToUser. Grants a role and its privileges to a user.
 * [ ] revokeRolesFromUser. Removes a role from a user.
 * [ ] updateUser. Updates a user's data.
-* [ ] usersInfo. Returns information about the specified users.
+* [x] usersInfo. Returns information about the specified users.
 
 
 
@@ -365,7 +365,7 @@ are also items to be implemented in BSON. You need to look there for info
 * map_reduce, look into scope. argument is not used.
 * explain changed after mongodb 3.0
 * Testing $mod in queries seems to have problems in version 3.0.5
-
+* get info about multiple accounts
 
 ## CHANGELOG
 
@@ -376,6 +376,7 @@ change at any time. The public API should not be considered stable.*
 * 0.25.0
   * Create user
   * Drop user
+  * Users info
 * 0.24.1
   * Added document checks to inserts. No dollars on first char of keys and no
     dots in keys. This is checked on all levels. On top level the key ```_id```

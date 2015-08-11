@@ -50,13 +50,13 @@ Class to manipulate MongoDB databases.
 =head1 CLASSES
 
 =for head2
-class X::MongoDB::Database is Exception {...}
+class X::MongoDB::Database is Exception
 
 Some methods from the C<MongoDB::Database> class will throw exceptions when
 things go wrong. E.g. creating a database with faulty arguments..
 
 =for head2
-class MongoDB::Database {...}
+class MongoDB::Database
 
 Methods below are from this class.
 
@@ -73,12 +73,12 @@ if attribute is defined it holds the name of the database.
 =head1 METHODS
 
 =for head2
-method drop ( --> Hash ) {...}
+method drop ( --> Hash )
 
 Drop the database. All indexes and other stuff involved are removed.
 
 =for head2
-method collection ( Str $name --> MongoDB::Collection ) {...}
+method collection ( Str $name --> MongoDB::Collection )
 
 Select collection and return a collection object. When the collection is new it
 will only be created when data is inserted.
@@ -88,7 +88,7 @@ method create_collection ( Str $collection_name, Bool :$capped,
                            Bool :$autoIndexId, Int :$size,
                            Int :$max, Int :$flags
                            --> MongoDB::Collection
-                         ) {...}
+                         )
 
 Create a collection explicitly and return a collection object. The arguments
 are (See also L<here|http://docs.mongodb.org/manual/reference/command/create/>);.
@@ -122,19 +122,19 @@ old documents. If you use this limit, ensure that the size limit is sufficient
 to contain the documents limit.
 
 =for head2
-method list_collections ( --> Array ) {...}
+method list_collections ( --> Array )
 
 Return an array of docs with all types of collections in the database. To get
 the names of the users collection it is better to use the colection_names()
 method explained below.
 
 =for head2
-method collection_names ( --> Array ) {...}
+method collection_names ( --> Array )
 
 Return an array of the users collectionnames.
 
 =for head2
-method run_command ( Pair @command --> Hash ) {...}
+method run_command ( Pair @command --> Hash )
 
 Run a command against the preselected collection and database. For proper
 handling of this command it is nesseary to study the MongoDB site and perhaps
@@ -183,7 +183,7 @@ if $doc<ok>.Bool == False {
 method get_last_error ( Bool :$j = True, Int :$w = 0,
                         Int :$wtimeout = 1000, Bool :$fsync = False
                         --> Hash
-                      ) {...}
+                      )
 
 Returns the error status of the preceding write operation on the current
 connection. There are methods in classes which use this call implicitly to
@@ -228,12 +228,12 @@ C<err> are the most obvious. Read the information on the MongoDB site to find
 out more.
 
 =for head2
-method get_prev_error ( --> Hash ) {...}
+method get_prev_error ( --> Hash )
 
 Returns all error documents since last reset.
 
 =for head2
-method reset_error ( --> Hash ) {...}
+method reset_error ( --> Hash )
 
 Reset all errors.
 
@@ -279,6 +279,17 @@ Method to create a user
   method drop_user ( Str :$user, Int :$timeout --> Hash )
 
 Delete user from the database.
+
+=for head2
+  method users_info (
+    Str :$user,
+    Bool :$show_credentials,
+    Bool :$show_privileges,
+    Str :$database
+    --> Hash
+  )
+
+Get information about a user
 
 =end pod
 

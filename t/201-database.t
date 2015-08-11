@@ -126,6 +126,28 @@ if 0 {
 }, "Test username and password checks";
 
 #-------------------------------------------------------------------------------
+subtest {
+  my Hash $doc;
+  $database.set_pw_security(:min_un_length(2), :min_pw_length(2));
+  $doc = $database.create_user(
+    :user('mt'),
+    :password('mt++'),
+    :custom_data({license => 'to_kill'}),
+    :roles(['readWrite'])
+  );
+
+  ok $doc<ok>, 'User mt created';
+  
+  $doc = $database.users_info(:user('mt'));
+  my $u = $doc<users>[0];
+  is $u<_id>, 'test.mt', $u<_id>;
+  is $u<roles>[0]<role>, 'readWrite', $u<roles>[0]<role>;
+
+  $doc = $database.drop_user(:user('mt'));
+  ok $doc<ok>, 'User mt dropped';
+}, 'account info';
+
+#-------------------------------------------------------------------------------
 # Cleanup
 #
 $connection.database('test').drop;
