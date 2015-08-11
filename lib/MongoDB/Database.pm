@@ -389,9 +389,9 @@ if 0 {
 
     #---------------------------------------------------------------------------
     #
-    method Xdrop_all_users_from_database ( Str :$user, Int :$timeout --> Hash ) {
+    method drop_all_users_from_database ( Int :$timeout --> Hash ) {
       my Pair @req = (
-        dropUser => $user
+        dropAllUsersFromDatabase => 1
       );
 
       @req.push(( writeConcern => { j => True, wtimeout => $timeout }))

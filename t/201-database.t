@@ -143,9 +143,12 @@ subtest {
   is $u<_id>, 'test.mt', $u<_id>;
   is $u<roles>[0]<role>, 'readWrite', $u<roles>[0]<role>;
 
-  $doc = $database.drop_user(:user('mt'));
-  ok $doc<ok>, 'User mt dropped';
-}, 'account info';
+  $doc = $database.drop_all_users_from_database();
+  ok $doc<ok>, 'All users dropped';
+  
+  $doc = $database.users_info(:user('mt'));
+  is $doc<users>.elems, 0, 'No users in database';
+}, 'account info and drop all users';
 
 #-------------------------------------------------------------------------------
 # Cleanup

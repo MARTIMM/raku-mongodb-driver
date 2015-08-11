@@ -159,7 +159,7 @@ Legend;
 ### User Management Commands
 
 * [x] createUser. Creates a new user.
-* [ ] dropAllUsersFromDatabase. Deletes all users associated with a database.
+* [x] dropAllUsersFromDatabase. Deletes all users associated with a database.
 * [x] dropUser. Removes a single user.
 * [ ] grantRolesToUser. Grants a role and its privileges to a user.
 * [ ] revokeRolesFromUser. Removes a role from a user.
@@ -376,6 +376,7 @@ change at any time. The public API should not be considered stable.*
 * 0.25.0
   * Create user
   * Drop user
+  * Drop all users
   * Users info
 * 0.24.1
   * Added document checks to inserts. No dollars on first char of keys and no

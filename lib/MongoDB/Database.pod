@@ -281,6 +281,12 @@ Method to create a user
 Delete user from the database.
 
 =for head2
+  method drop_all_users_from_database ( Int :$timeout --> Hash )
+
+Drop all users from the database
+
+
+=for head2
   method users_info (
     Str :$user,
     Bool :$show_credentials,
