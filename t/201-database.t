@@ -41,7 +41,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Database::Users {
+      when X::MongoDB::Database {
         ok .error-text eq 'User "mt@test" already exists', .error-text;
       }
     }
@@ -71,7 +71,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Database::Users {
+      when X::MongoDB::Database {
         ok .error-text eq 'Username too short, must be >= 5', .error-text;
       }
     }
@@ -86,7 +86,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Database::Users {
+      when X::MongoDB::Database {
         ok .error-text eq 'Password too short, must be >= 6', .error-text;
       }
     }
@@ -101,7 +101,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Database::Users {
+      when X::MongoDB::Database {
         ok .error-text eq 'Password does not have the proper elements',
            .error-text;
       }

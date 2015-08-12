@@ -5,22 +5,6 @@ use Digest::MD5;
 #-------------------------------------------------------------------------------
 #
 package MongoDB {
-  class X::MongoDB::Database::Users is Exception {
-    has $.error-text;                     # Error text
-    has $.error-code;                     # Error code if from server
-    has $.oper-name;                      # Operation name
-    has $.oper-data;                      # Operation data
-    has $.database-name;                  # Database name
-
-    method message () {
-      return [~] "\n$!oper-name\() error:\n",
-                 "  $!error-text",
-                 $.error-code.defined ?? "\($!error-code)" !! '',
-                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-                 "\n  Database '$!database-name'\n"
-                 ;
-    }
-  }
 
   #-----------------------------------------------------------------------------
   #
@@ -86,7 +70,7 @@ package MongoDB {
       --> Hash
     ) {
       if $user.chars < $!min-un-length {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => "Username too short, must be >= $!min-un-length",
           oper-name => 'create_user',
           oper-data => $user,
@@ -95,7 +79,7 @@ package MongoDB {
       }
 
       elsif $password.chars < $!min-pw-length {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => "Password too short, must be >= $!min-pw-length",
           oper-name => 'create_user',
           oper-data => $password,
@@ -114,7 +98,7 @@ package MongoDB {
             $pw-ok = (
               $password ~~ m/ <[a..z]> / and
               $password ~~ m/ <[A..Z]> /
-            ).Bool;          
+            ).Bool;
           }
 
           when $PW-NUMBERS {
@@ -122,7 +106,7 @@ package MongoDB {
               $password ~~ m/ <[a..z]> / and
               $password ~~ m/ <[A..Z]> / and
               $password ~~ m/ \d /
-            ).Bool;          
+            ).Bool;
           }
 
           when $PW-OTHER-CHARS {
@@ -131,10 +115,10 @@ package MongoDB {
               $password ~~ m/ <[A..Z]> / and
               $password ~~ m/ \d / and
               $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
-            ).Bool;          
+            ).Bool;
           }
         }
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => "Password does not have the proper elements",
           oper-name => 'create_user',
           oper-data => $password,
@@ -154,7 +138,7 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'create_user',
           oper-data => @req.perl,
@@ -179,7 +163,7 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_user',
           oper-data => @req.perl,
@@ -204,7 +188,7 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_user',
           oper-data => @req.perl,
@@ -231,7 +215,7 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_user',
           oper-data => @req.perl,
@@ -258,7 +242,7 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_user',
           oper-data => @req.perl,
@@ -282,7 +266,7 @@ package MongoDB {
 
       if ?$password {
         if $password.chars < $!min-pw-length {
-          die X::MongoDB::Database::Users.new(
+          die X::MongoDB::Database.new(
             error-text => "Password too short, must be >= $!min-pw-length",
             oper-name => 'create_user',
             oper-data => $password,
@@ -300,7 +284,7 @@ package MongoDB {
             $pw-ok = (
               $password ~~ m/ <[a..z]> / and
               $password ~~ m/ <[A..Z]> /
-            ).Bool;          
+            ).Bool;
           }
 
           when $PW-NUMBERS {
@@ -308,7 +292,7 @@ package MongoDB {
               $password ~~ m/ <[a..z]> / and
               $password ~~ m/ <[A..Z]> / and
               $password ~~ m/ \d /
-            ).Bool;          
+            ).Bool;
           }
 
           when $PW-OTHER-CHARS {
@@ -317,7 +301,7 @@ package MongoDB {
               $password ~~ m/ <[A..Z]> / and
               $password ~~ m/ \d / and
               $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
-            ).Bool;          
+            ).Bool;
           }
         }
 
@@ -326,7 +310,7 @@ package MongoDB {
         }
 
         else {
-          die X::MongoDB::Database::Users.new(
+          die X::MongoDB::Database.new(
             error-text => "Password does not have the proper elements",
             oper-name => 'create_user',
             oper-data => $password,
@@ -343,7 +327,7 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'create_user',
           oper-data => @req.perl,
@@ -374,7 +358,7 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database::Users.new(
+        die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_user',
           oper-data => @req.perl,

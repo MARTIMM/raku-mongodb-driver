@@ -12,7 +12,7 @@
     "MongoDB::Connection":              "lib/MongoDB/Connection.pm",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm",
     "MongoDB::DataBase":                "lib/MongoDB/DataBase.pm",
-    "MongoDB::DataBase::Users":         "lib/MongoDB/DataBase/Users.pm",
+    "MongoDB::DataBase::Users":         "lib/MongoDB/DataBase/Users.pm6",
     "MongoDB::Protocol":                "lib/MongoDB/Protocol.pm",
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm"
   },
