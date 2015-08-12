@@ -1,0 +1,181 @@
+#!/usr/bin/env perl6
+#
+use v6;
+
+# Running the pod file will create a pdf using wkhtmltopdf
+#
+my Str $pod = "$*PROGRAM";
+my Str $pdf = $pod;
+$pdf ~~ s/\. <-[.]>+ $/.pdf/;
+shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
+
+#-------------------------------------------------------------------------------
+
+=begin pod
+
+=head1 NAME MongoDB::Database::Users - User administration
+
+=head1 SYNOPSIS
+
+=begin nested
+=begin code
+
+use MongoDB::Connection;
+use MongoDB::Database::Users;
+
+# Initialize
+#
+my $connection = MongoDB::Connection.new;
+my $database = $connection.database('test');
+
+my MongoDB::Database $database = $connection.database('test1');
+my MongoDB::Database::Users $users .= new(:$database);
+
+my Hash $doc = $users.create_user(
+  :user('John'),
+  :password('simple'),
+  :custom_data({license => 'to_kill'}),
+  :roles(['readWrite'])
+);
+
+$users.set_pw_security(
+  :min_un_length(5),
+  :min_pw_length(8),
+  :pw_attribs($MongoDB::Database::PW-OTHER-CHARS)
+);
+
+my Hash $doc = $users.create_user(
+  :user('Long-John'),
+  :password('N0t-s0-S!mPl3'),
+  :custom_data({license => 'to_kill'}),
+  :roles([{role => 'readWrite', db => 'test3'}])
+);
+
+$doc = $users.update_user(
+  :user('John'),
+  :password('mt+++'),
+  :custom_data({license => 'to_heal'}),
+  :roles([{role => 'readWrite', db => 'test1'},
+          {role => 'dbAdmin', db => 'test2'}
+         ]
+        )
+);
+
+$doc = $users.drop_user(:user('John'));
+
+$doc = $users.grant_roles_to_user( :user('Long-John'), :roles(['dbOwner']));
+
+$doc = $users.revoke_roles_from_user(
+  :user('Long-John'),
+  :roles([{role => 'readWrite', db => 'test1'}])
+);
+
+$doc = $users.users_info(:user('Long-John'));
+
+$doc = $users.drop_all_users_from_database();
+
+=end code
+=end nested
+
+=head1 DESCRIPTION
+
+Class to manipulate accounts used for authentication.
+
+=head1 CLASSES
+
+=for head2
+class X::MongoDB::Database::Users is Exception
+
+Some methods from the C<MongoDB::Database::Users> class will throw exceptions
+when things go wrong. E.g. creating a user which already exists with faulty
+arguments.
+
+
+=head1 METHODS
+
+=for head2
+  method set_pw_security (
+    Int :$min_un_length where $min_un_length >= 2,
+    Int :$min_pw_length where $min_pw_length >= 2,
+    Int :$pw-attribs = $PW-LOWERCASE
+  )
+
+Method to specify some checks upon usernames and passwords. Default values for
+the username minimal length is 2. For passwords idem depending on the password
+attribute code. $pw-attribs specifies how passwords are to be checked. There are
+4 codes recognized.
+
+=item $PW-LOWERCASE. All is accepted but lowercase characters must at least be
+used. When $min_pw_length is not set it will be set to 2.
+
+=item $PW-UPPERCASE. All is accepted but lowercase and uppercase characters must
+at least be used. When $min_pw_length is not set it will be set to 2.
+
+=item $PW-NUMBERS. All is accepted but lowercase, uppercase characters and
+numbers must at least be used. When $min_pw_length is not set it will be set to
+3.
+
+=item $PW-OTHER-CHARS. All is accepted but lowercase, uppercase characters,
+numbers and special characters like @ ! $ etcetera, must at least be used. When
+$min_pw_length is not set it will be set to 4.
+
+If e.g. $PW-OTHER-CHARS and $min_pw_length is set to 2 then when using a
+password of less the 4 characters is bound to fail.
+
+=for head2
+  method create_user (
+    Str :$user, Str :$password,
+    :$custom_data, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Method to create a user
+
+=for head2
+  method drop_user ( Str :$user, Int :$timeout --> Hash )
+
+Delete user from the database.
+
+=for head2
+  method drop_all_users_from_database ( Int :$timeout --> Hash )
+
+Drop all users from the database
+
+=for head2
+  method grant_roles_to_user (
+    Str :$user, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Grant roles to user.
+
+=for head2
+  method revoke_roles_from_user (
+    Str :$user, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Revoke roles from user
+
+=for head2
+  method update_user (
+    Str :$user, Str :$password,
+    :$custom_data, Array :$roles, Int :$timeout
+    --> Hash
+  )
+
+Update user accont data
+
+=for head2
+  method users_info (
+    Str :$user,
+    Bool :$show_credentials,
+    Bool :$show_privileges,
+    Str :$database
+    --> Hash
+  )
+
+Get information about a user
+
+=end pod
+

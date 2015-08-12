@@ -383,6 +383,8 @@ change at any time. The public API should not be considered stable.*
   * Grant roles
   * Revoke roles
   * Update users
+  
+  * Refactered code from Database to Database::Users
 * 0.24.1
   * Added document checks to inserts. No dollars on first char of keys and no
     dots in keys. This is checked on all levels. On top level the key ```_id```

@@ -13,7 +13,7 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=head1 NAME MongoDB::Collection - Operations on a MongoDB Collection
+=head1 NAME MongoDB::Database - Operations on a MongoDB database
 
 =head1 SYNOPSIS
 
@@ -54,21 +54,6 @@ class X::MongoDB::Database is Exception
 
 Some methods from the C<MongoDB::Database> class will throw exceptions when
 things go wrong. E.g. creating a database with faulty arguments..
-
-=for head2
-class MongoDB::Database
-
-Methods below are from this class.
-
-=for head3
-has $.connection;
-
-if attribute is defined it holds the object of the current connection.
-
-=for head3
-has Str $.name;
-
-if attribute is defined it holds the name of the database.
 
 =head1 METHODS
 
@@ -236,90 +221,6 @@ Returns all error documents since last reset.
 method reset_error ( --> Hash )
 
 Reset all errors.
-
-=for head2
-  method set_pw_security (
-    Int :$min_un_length where $min_un_length >= 2,
-    Int :$min_pw_length where $min_pw_length >= 2,
-    Int :$pw-attribs = $PW-LOWERCASE
-  )
-
-Method to specify some checks upon usernames and passwords. Default values for
-the username minimal length is 2. For passwords idem depending on the password
-attribute code. $pw-attribs specifies how passwords are to be checked. There are
-4 codes recognized.
-
-=item $PW-LOWERCASE. All is accepted but lowercase characters must at least be
-used. When $min_pw_length is not set it will be set to 2.
-
-=item $PW-UPPERCASE. All is accepted but lowercase and uppercase characters must
-at least be used. When $min_pw_length is not set it will be set to 2.
-
-=item $PW-NUMBERS. All is accepted but lowercase, uppercase characters and
-numbers must at least be used. When $min_pw_length is not set it will be set to
-3.
-
-=item $PW-OTHER-CHARS. All is accepted but lowercase, uppercase characters,
-numbers and special characters like @ ! $ etcetera, must at least be used. When
-$min_pw_length is not set it will be set to 4.
-
-If e.g. $PW-OTHER-CHARS and $min_pw_length is set to 2 then when using a
-password of less the 4 characters is bound to fail.
-
-=for head2
-  method create_user (
-    Str :$user, Str :$password,
-    :$custom_data, Array :$roles, Int :$timeout
-    --> Hash
-  )
-
-Method to create a user
-
-=for head2
-  method drop_user ( Str :$user, Int :$timeout --> Hash )
-
-Delete user from the database.
-
-=for head2
-  method drop_all_users_from_database ( Int :$timeout --> Hash )
-
-Drop all users from the database
-
-=for head2
-  method grant_roles_to_user (
-    Str :$user, Array :$roles, Int :$timeout
-    --> Hash
-  )
-
-Grant roles to user.
-
-=for head2
-  method revoke_roles_from_user (
-    Str :$user, Array :$roles, Int :$timeout
-    --> Hash
-  )
-
-Revoke roles from user
-
-=for head2
-  method update_user (
-    Str :$user, Str :$password,
-    :$custom_data, Array :$roles, Int :$timeout
-    --> Hash
-  )
-
-Update user accont data
-
-=for head2
-  method users_info (
-    Str :$user,
-    Bool :$show_credentials,
-    Bool :$show_privileges,
-    Str :$database
-    --> Hash
-  )
-
-Get information about a user
 
 =end pod
 

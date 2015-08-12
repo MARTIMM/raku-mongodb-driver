@@ -10,6 +10,7 @@
 use v6;
 use Test;
 use MongoDB::Connection;
+use MongoDB::Database::Users;
 
 my MongoDB::Connection $connection .= new();
 
@@ -18,9 +19,11 @@ my MongoDB::Connection $connection .= new();
 $connection.database('test').drop;
 
 my MongoDB::Database $database = $connection.database('test');
+my MongoDB::Database::Users $users .= new(:$database);
+
 #-------------------------------------------------------------------------------
 subtest {
-  my Hash $doc = $database.create_user(
+  my Hash $doc = $users.create_user(
     :user('mt'),
     :password('mt++'),
     :custom_data({license => 'to_kill'}),
@@ -30,7 +33,7 @@ subtest {
   ok $doc<ok>, 'User mt created';
 
   if 1 {
-    $doc = $database.create_user(
+    $doc = $users.create_user(
       :user('mt'),
       :password('mt++'),
       :custom_data({license => 'to_kill'}),
@@ -38,13 +41,13 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Database {
+      when X::MongoDB::Database::Users {
         ok .error-text eq 'User "mt@test" already exists', .error-text;
       }
     }
   }
 
-  $doc = $database.drop_user(:user('mt'));
+  $doc = $users.drop_user(:user('mt'));
   ok $doc<ok>, 'User mt dropped';
 
 }, "Test user management";
@@ -53,14 +56,14 @@ subtest {
 #
 subtest {
   my Hash $doc;
-  $database.set_pw_security(
+  $users.set_pw_security(
     :min_un_length(5),
     :min_pw_length(6),
-    :pw_attribs($MongoDB::Database::PW-OTHER-CHARS)
+    :pw_attribs($MongoDB::Database::Users::PW-OTHER-CHARS)
   );
 
   if 1 {
-    $doc = $database.create_user(
+    $doc = $users.create_user(
       :user('mt'),
       :password('mt++'),
       :custom_data({license => 'to_kill'}),
@@ -68,14 +71,14 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Database {
+      when X::MongoDB::Database::Users {
         ok .error-text eq 'Username too short, must be >= 5', .error-text;
       }
     }
   }
 
   if 1 {
-    $doc = $database.create_user(
+    $doc = $users.create_user(
       :user('mt-and-another-few-chars'),
       :password('mt++'),
       :custom_data({license => 'to_kill'}),
@@ -83,15 +86,14 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Database {
+      when X::MongoDB::Database::Users {
         ok .error-text eq 'Password too short, must be >= 6', .error-text;
       }
     }
   }
 
-if 1 {
   if 1 {
-    $doc = $database.create_user(
+    $doc = $users.create_user(
       :user('mt-and-another-few-chars'),
       :password('mt++tdt'),
       :custom_data({license => 'to_kill'}),
@@ -99,7 +101,7 @@ if 1 {
     );
 
     CATCH {
-      when X::MongoDB::Database {
+      when X::MongoDB::Database::Users {
         ok .error-text eq 'Password does not have the proper elements',
            .error-text;
       }
@@ -107,7 +109,7 @@ if 1 {
   }
 
   if 1 {
-    $doc = $database.create_user(
+    $doc = $users.create_user(
       :user('mt-and-another-few-chars'),
       :password('mt++tdt0A'),
       :custom_data({license => 'to_kill'}),
@@ -117,17 +119,16 @@ if 1 {
     ok $doc<ok>, 'User mt-and-another-few-chars created';
   }
 
-  $doc = $database.drop_user(:user('mt-and-another-few-chars'));
+  $doc = $users.drop_user(:user('mt-and-another-few-chars'));
   ok $doc<ok>, 'User mt-and-another-few-chars dropped';
-}
 
 }, "Test username and password checks";
 
 #-------------------------------------------------------------------------------
 subtest {
   my Hash $doc;
-  $database.set_pw_security(:min_un_length(2), :min_pw_length(2));
-  $doc = $database.create_user(
+  $users.set_pw_security(:min_un_length(2), :min_pw_length(2));
+  $doc = $users.create_user(
     :user('mt'),
     :password('mt++'),
     :custom_data({license => 'to_kill'}),
@@ -136,12 +137,12 @@ subtest {
 
   ok $doc<ok>, 'User mt created';
 
-  $doc = $database.users_info(:user('mt'));
+  $doc = $users.users_info(:user('mt'));
   my $u = $doc<users>[0];
   is $u<_id>, 'test.mt', $u<_id>;
   is $u<roles>[0]<role>, 'readWrite', $u<roles>[0]<role>;
 
-  $doc = $database.update_user(
+  $doc = $users.update_user(
     :user('mt'),
     :password('mt+++'),
     :custom_data({license => 'to_heal'}),
@@ -153,35 +154,35 @@ subtest {
 
   ok $doc<ok>, 'User mt updated';
 
-  $doc = $database.users_info(:user('mt'));
+  $doc = $users.users_info(:user('mt'));
   $u = $doc<users>[0];
   is $u<roles>[0]<role>, any(<readWrite dbAdmin>), $u<roles>[0]<role>;
   is $u<roles>[0]<db>, any(<test1 test2>), $u<roles>[0]<db>;
   is $u<roles>[1]<role>, any(<readWrite dbAdmin>), $u<roles>[1]<role>;
   is $u<roles>[1]<db>, any(<test1 test2>), $u<roles>[1]<db>;
 
-  $doc = $database.grant_roles_to_user( :user('mt'), :roles(['dbOwner']));
+  $doc = $users.grant_roles_to_user( :user('mt'), :roles(['dbOwner']));
   ok $doc<ok>, 'User roles mt updated';
-  $doc = $database.users_info(:user('mt'));
+  $doc = $users.users_info(:user('mt'));
   $u = $doc<users>[0];
   is $u<roles>.elems, 3, 'Now 3 roles defined';
   is $u<roles>[2]<role>, any(<readWrite dbAdmin dbOwner>), $u<roles>[2]<role>;
   is $u<roles>[0]<role>, any(<readWrite dbAdmin dbOwner>), $u<roles>[0]<role>;
 
-  $doc = $database.revoke_roles_from_user(
+  $doc = $users.revoke_roles_from_user(
     :user('mt'),
     :roles([{role => 'dbAdmin', db => 'test2'}])
   );
   ok $doc<ok>, 'User roles mt revoked';
-  $doc = $database.users_info(:user('mt'));
+  $doc = $users.users_info(:user('mt'));
   $u = $doc<users>[0];
   is $u<roles>.elems, 2, 'Now 2 roles left';
   is $u<roles>[0]<role>, any(<readWrite dbOwner>), $u<roles>[0]<role>;
 
-  $doc = $database.drop_all_users_from_database();
+  $doc = $users.drop_all_users_from_database();
   ok $doc<ok>, 'All users dropped';
 
-  $doc = $database.users_info(:user('mt'));
+  $doc = $users.users_info(:user('mt'));
   is $doc<users>.elems, 0, 'No users in database';
 }, 'account info and drop all users';
 
