@@ -81,14 +81,9 @@ $doc = $users.drop_all_users_from_database();
 
 Class to manipulate accounts used for authentication.
 
-=head1 CLASSES
-
-=for head2
-class X::MongoDB::Database::Users is Exception
-
-Some methods from the C<MongoDB::Database::Users> class will throw exceptions
-when things go wrong. E.g. creating a user which already exists with faulty
-arguments.
+Some methods from the C<MongoDB::Database::Users> class will throw
+C<X::MongoDB::Database> exceptions when things go wrong. E.g. creating a user
+which already exists with faulty arguments.
 
 
 =head1 METHODS
