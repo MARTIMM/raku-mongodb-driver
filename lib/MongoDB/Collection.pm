@@ -116,7 +116,7 @@ package MongoDB {
           elsif $k ~~ m/ ^ '_id' $ / {
             # Check if unique in the document
             my $cursor = self.find( hash( _id => $d{$k}));
-            
+
             # If there are records(at most one!) this id is not unique
             #
             if $cursor.count {

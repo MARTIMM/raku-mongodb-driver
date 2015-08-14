@@ -369,10 +369,13 @@ are also items to be implemented in BSON. You need to look there for info
 * Test to compare documents
 * Test group aggregation keyf field and finalize
 * Test map reduce aggregation more thoroughly.
-* map_reduce, look into scope. argument is not used.
-* explain changed after mongodb 3.0
+* Map_reduce, look into scope. argument is not used.
+* Explain changed after mongodb 3.0
 * Testing $mod in queries seems to have problems in version 3.0.5
-* get info about multiple accounts
+* Get info about multiple accounts instead of one at the time
+* Need a change in throwing exceptions. Not all errors are unrecoverable. Return
+  e.g. a failure instead of die with an exception.
+* Need a sandbox to start mongod in. No problems then with user databases.
 
 ## CHANGELOG
 
@@ -388,8 +391,8 @@ change at any time. The public API should not be considered stable.*
   * Grant roles
   * Revoke roles
   * Update users
-  
-  * Refactered code from Database to Database::Users
+
+  * Refactored code from Database to Database::Users
 * 0.24.1
   * Added document checks to inserts. No dollars on first char of keys and no
     dots in keys. This is checked on all levels. On top level the key ```_id```

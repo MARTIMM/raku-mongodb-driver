@@ -23,7 +23,6 @@ my MongoDB::Database::Authenticate $auth .= new(:$database);
 subtest {
 
 my Hash $doc;
-if 0 {
  $doc = $users.create_user(
     :user('mt'),
     :password('mt++'),
@@ -32,13 +31,14 @@ if 0 {
   );
 
   ok $doc<ok>, 'User mt created';
-}
 
+if 0 {
   $doc = $auth.login( :user('mt'), :password('mt++'));
   ok $doc<ok>, 'User mt logged in';
 
   $doc = $auth.logout(:user('mt'));
   ok $doc<ok>, 'User mt logged out';
+}
 
 
   $doc = $users.drop_all_users_from_database();
