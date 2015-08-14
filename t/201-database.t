@@ -1,10 +1,13 @@
 #`{{
   Testing;
-    database.set_pw_security            username and password check init
-    database.create_user()
-    database.drop_user()
-    database.drop_all_users_from_database()
-    database.users_info()
+    Username and password check init
+    Create a user
+    Drop a user
+    Drop all users
+    Users info
+    Grant roles
+    Revoke roles
+    Update user
 }}
 
 use v6;
