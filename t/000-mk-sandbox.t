@@ -7,10 +7,14 @@
 
 #BEGIN { @*INC.unshift( './t' ) }
 #use Test-support;
-use MongoDB::Connection;
 
+#-----------------------------------------------------------------------------
+#
 use v6;
+use MongoDB::Connection;
 use Test;
+
+note "\n\nSetting up involves initializing mongodb data files which takes time";
 
 #-----------------------------------------------------------------------------
 # Check directory Sandbox
@@ -52,9 +56,9 @@ my $port-number;
 
 #given $*KERNEL.name {
 #  when /'win'\d\d/ {
-  
+
 #  }
-  
+
   # Search from port 65000 until the last of possible port numbers for a free
   # port. this will be configured in the mongodb config file. At least one
   # should be found here.
@@ -139,11 +143,25 @@ my $exit_code = shell( "mongod --config '$*CWD/Sandbox/m.conf'");
 
 # Test communication
 #
-my MongoDB::Connection $connection .= new(
-  host => 'localhost',
-  port => $port-number
-);
-isa-ok( $connection, 'MongoDB::Connection');
+my MongoDB::Connection $connection;
+for ^10 {
+  $connection .= new( :host('localhost'), :port($port-number));
+  isa-ok( $connection, 'MongoDB::Connection');
+  last;
+
+  CATCH {
+    default {
+      diag [~] "Error: ", .message, ". Wait a bit longer";
+      sleep 2;
+    }
+  }
+}
+
+# Test version
+#
+my $version = $connection.version;
+diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
+ok $version<release1> >= 3, "MongoDB release >= 3";
 
 
 #-----------------------------------------------------------------------------
