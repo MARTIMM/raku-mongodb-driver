@@ -375,7 +375,8 @@ are also items to be implemented in BSON. You need to look there for info
 * Get info about multiple accounts instead of one at the time
 * Need a change in throwing exceptions. Not all errors are unrecoverable. Return
   e.g. a failure instead of die with an exception.
-* Need a sandbox to start mongod in. No problems then with user databases.
+* Use version 3.* type of config (in YAML) for sandbox setup.
+* Modify Mongo.pm. Remove use statements and add variables for use by modules.
 
 ## CHANGELOG
 
@@ -383,6 +384,11 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.25.1
+  * Installed a sandbox to start mongod in. Now no problems can occur with user
+    databases and collections when testing. The sandbox is made in
+    t/000-mk-sandbox.t and broken down in 999-rm-sandbox.t. This setup also
+    helps in testing replication and sharding.
 * 0.25.0
   * Create user
   * Drop user

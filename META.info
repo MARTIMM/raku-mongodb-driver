@@ -17,5 +17,5 @@
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.25.0"
+  "version": "0.25.1"
 }
