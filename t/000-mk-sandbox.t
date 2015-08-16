@@ -1,19 +1,22 @@
 #`{{
   Setup sandbox
-  Testing;
+  Generate mongo config
+  Start mongo daemon
+  Test connection
 }}
 
-BEGIN { @*INC.unshift( './t' ) }
-use Test-support;
+#BEGIN { @*INC.unshift( './t' ) }
+#use Test-support;
 use MongoDB::Connection;
 
 use v6;
 use Test;
 
-my $port-number;
-
+#-----------------------------------------------------------------------------
 # Check directory Sandbox
-#...
+#
+mkdir( 'Sandbox', 0o700) unless 'Sandbox'.IO ~~ :d;
+mkdir( 'Sandbox/m.data', 0o700) unless 'Sandbox/m.data'.IO ~~ :d;
 
 #`{{
   Test for usable port number
@@ -45,32 +48,31 @@ my $port-number;
   have the option of specifying a custom range anywhere within 1025-365535.
 }}
 
-given $*KERNEL.name {
-  when /'win'\d\d/ {
+my $port-number;
+
+#given $*KERNEL.name {
+#  when /'win'\d\d/ {
   
-  }
+#  }
   
   # Search from port 65000 until the last of possible port numbers for a free
   # port. this will be configured in the mongodb config file. At least one
   # should be found here.
   #
-  when /'linux' | 'darwin'/ {
+#  when /'linux' | 'darwin'/ {
     for 65000 ..^ 2**16 -> $p {
       my $s = IO::Socket::INET.new( :host('localhost'), :port($p));
       $s.close;
 
       CATCH {
         default {
-          say .message;
           $port-number = $p;
           last;
         }
       }
     }
-
-    say "Port: $port-number";
-  }
-}
+#  }
+#}
 
 # Save portnumber for later tests
 #
@@ -78,71 +80,33 @@ spurt 'Sandbox/port-number', $port-number;
 
 # Generate mongodb config in Sandbox
 #
-spurt 'Sandbox/mongodb.conf', qq:to/EOCNF/;
+my $config = qq:to/EOCNF/;
 
   bind_ip = localhost
   port = $port-number
   fork = true
-  pidfilepath = $*CWD/Sandbox/mongodb.pid
-  logpath = $*CWD/Sandbox/mongodb.log
-  dbpath = $*CWD/Sandbox/Data
+  pidfilepath = $*CWD/Sandbox/m.pid
+  logpath = $*CWD/Sandbox/m.log
+  dbpath = $*CWD/Sandbox/m.data
   journal = true
 
   # Enables periodic logging of CPU utilization and I/O wait
-  #cpu = true
-
-  # Turn on/off security.  Off is currently the default
-  #noauth = true
-  #auth = true
+  cpu = true
 
   # Verbose logging output.
-  #verbose = true
+  verbose = true
 
-  # Inspect all client data for validity on receipt (useful for
-  # developing drivers)
-  #objcheck = true
+  EOCNF
 
-  # Enable db quota management
-  #quota = true
+spurt 'Sandbox/m.conf', $config;
+spurt 'Sandbox/m-auth.conf', $config ~ qq:to/EOCNF/;
 
-  # Set oplogging level where n is
-  #   0=off (default)
-  #   1=W
-  #   2=R
-  #   3=both
-  #   7=W+some reads
-  #oplog = 0
+  # Turn on security.
+  auth = true
 
-  # Diagnostic/debugging option
-  #nocursors = true
+  EOCNF
 
-  # Ignore query hints
-  #nohints = true
-
-  # Disable the HTTP interface (Defaults to port+1000).
-  nohttpinterface = true
-
-  # Turns off server-side scripting.  This will result in greatly limited
-  # functionality
-  #noscripting = true
-
-  # Turns off table scans.  Any query that would do a table scan fails.
-  #notablescan = true
-
-  # Disable data file preallocation.
-  #noprealloc = true
-
-  # Specify .ns file size for new databases.
-  # nssize = <size>
-
-  # Accout token for Mongo monitoring server.
-  #mms-token = <token>
-
-  # Server name for Mongo monitoring server.
-  #mms-name = <server-name>
-
-  # Ping interval for Mongo monitoring server.
-  #mms-interval = <seconds>
+spurt 'Sandbox/m-repl.conf', $config ~ qq:to/EOCNF/;
 
   # Replication Options
 
@@ -170,10 +134,8 @@ spurt 'Sandbox/mongodb.conf', qq:to/EOCNF/;
 
 # Start mongodb
 #
-my $exit_code = shell( "mongod --config '$*CWD/Sandbox/mongodb.conf'");
-say "EC: $exit_code";
-diag "Wait for server to start up";
-sleep 6;
+diag "Wait for server to start up using port $port-number";
+my $exit_code = shell( "mongod --config '$*CWD/Sandbox/m.conf'");
 
 # Test communication
 #
