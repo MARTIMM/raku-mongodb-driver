@@ -15,7 +15,10 @@ use Test;
 use MongoDB::Connection;
 use MongoDB::Database::Users;
 
-my MongoDB::Connection $connection .= new();
+BEGIN { @*INC.unshift( './t' ) }
+use Test-support;
+
+my MongoDB::Connection $connection = get-connection();
 
 # Drop database first then create new databases
 #

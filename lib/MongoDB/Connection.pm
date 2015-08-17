@@ -33,11 +33,16 @@ package MongoDB {
 
     has IO::Socket::INET $!sock;
 
+    #---------------------------------------------------------------------------
+    #
     submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
       $!sock = IO::Socket::INET.new( host => $host, port => $port );
-    #  $!sock = IO::Socket::INET.new( host => "$host/?connectTimeoutMS=3000", port => $port );
+    #  $!sock = IO::Socket::INET.new( host => "$host/?connectTimeoutMS=3000",
+    # port => $port );
     }
 
+    #---------------------------------------------------------------------------
+    #
     method _send ( Buf $b, Bool $has_response --> Any ) {
       $!sock.write($b);
 
@@ -56,6 +61,8 @@ package MongoDB {
       return $l ~ $!sock.read($w);
     }
 
+    #---------------------------------------------------------------------------
+    #
     method database ( Str $name --> MongoDB::Database ) {
       return MongoDB::Database.new(
         connection  => self,
@@ -63,6 +70,7 @@ package MongoDB {
       );
     }
 
+    #---------------------------------------------------------------------------
     # List databases using MongoDB db.runCommand({listDatabases: 1});
     #
     method list_databases ( --> Array ) {
@@ -82,6 +90,7 @@ package MongoDB {
       return @($doc<databases>);
     }
 
+    #---------------------------------------------------------------------------
     # Get database names.
     #
     method database_names ( --> Array ) {
@@ -91,14 +100,7 @@ package MongoDB {
       return @names;
     }
 
-    # Get this drivers version.
-    #
-#    method driver_version ( --> Str ) {
-#say "P: {@*META.perl}";
-#      my $version = '0.0.0';
-#      return $version;
-#    }
-
+    #---------------------------------------------------------------------------
     # Get mongodb version.
     #
     method version ( --> Hash ) {
@@ -113,6 +115,7 @@ package MongoDB {
       return $version;
     }
 
+    #---------------------------------------------------------------------------
     # Get mongodb server info.
     #
     method build_info ( --> Hash ) {

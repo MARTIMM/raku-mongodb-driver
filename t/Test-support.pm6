@@ -5,6 +5,44 @@ use Test;
 package Test-support
 {
   #-----------------------------------------------------------------------------
+  # Get selected port number. When file is not there the process fails.
+  #
+  sub get-port-number ( --> Int ) is export {
+    if 'Sandbox/port-number'.IO !~~ :e {
+      plan 1;
+      flunk('No port number found, Sandbox cleaned up?');
+      skip-rest('No port number found, Sandbox cleaned up?');
+      exit(0);
+    }
+
+    my $port-number = slurp('Sandbox/port-number').Int;
+    diag "MongoDB server ready on port $port-number";
+    return $port-number
+  }
+
+  #-----------------------------------------------------------------------------
+  # Get a connection and test version. When version is wrong the process fails.
+  #
+  sub get-connection ( --> MongoDB::Connection ) is export {
+    my Int $port-number = get-port-number();
+    my MongoDB::Connection $connection .= new(
+      :host('localhost'),
+      :port($port-number)
+      );
+
+    my $version = $connection.version;
+    diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
+    if $version<release1> < 3 {
+      plan 1;
+      flunk('Version not ok to use this set of modules?');
+      skip-rest('Version not ok to use this set of modules?');
+      exit(0);
+    }
+
+    return $connection;
+  }
+
+  #-----------------------------------------------------------------------------
   # Get collection object
   #
   sub get-test-collection ( Str $db-name,
@@ -12,7 +50,7 @@ package Test-support
                             --> MongoDB::Collection
                           ) is export {
                           
-    my MongoDB::Connection $connection .= new();
+    my MongoDB::Connection $connection = get-connection();
     my MongoDB::Database $database = $connection.database($db-name);
     return $database.collection($col-name);
   }
@@ -44,43 +82,6 @@ package Test-support
       $indent = ' ' x 10 unless $indent;
     }
     say "";
-  }
-
-  #-----------------------------------------------------------------------------
-  # Get selected port number. When file is not there the process fails.
-  #
-  sub get-port-number ( --> Int ) is export {
-    if 'Sandbox/port-number'.IO !~~ :e {
-      plan 1;
-      flunk('No port number found, Sandbox cleaned up?');
-      skip-rest('No port number found, Sandbox cleaned up?');
-      exit(0);
-    }
-
-    return slurp('Sandbox/port-number').Int;
-  }
-
-  #-----------------------------------------------------------------------------
-  # Get a connection and test version. When version is wrong the process fails.
-  #
-  sub get-connection ( --> MongoDB::Connection ) is export {
-    my Int $port-number = get-port-number();
-    my MongoDB::Connection $connection .= new(
-      :host('localhost'),
-      :port($port-number)
-      );
-
-    my $version = $connection.version;
-    diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
-#    ok $version<release1> >= 3, "MongoDB release >= 3";
-    if $version<release1> < 3 {
-      plan 1;
-      flunk('Version not ok to use this set of modules?');
-      skip-rest('Version not ok to use this set of modules?');
-      exit(0);
-    }
-    
-    return $connection;
   }
 }
 

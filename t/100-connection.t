@@ -8,27 +8,17 @@
     connection.buildinfo()              Server info
 }}
 
-#BEGIN { @*INC.unshift( './t' ) }
-#use Test-support;
+BEGIN { @*INC.unshift( './t' ) }
+use Test-support;
 
 use v6;
 use Test;
 
 use MongoDB::Connection;
 
-my $connection = MongoDB::Connection.new();
+my $connection = get-connection();
 isa-ok( $connection, 'MongoDB::Connection');
 
-#say "Drivers version: ", $connection.driver_version;
-
-#$connection = MongoDB::Connection.new( host => '192.168.0.10', port => 27017);
-
-$connection = MongoDB::Connection.new( host => 'localhost', port => 27017);
-isa-ok( $connection, 'MongoDB::Connection');
-
-# TODO timeout and error checking
-#$connection = MongoDB::Connection.new( host => 'example.com', port => 27017);
-#isa-ok( $connection, 'MongoDB::Connection');
 
 my Hash $version = $connection.version;
 #say "V: ", $version.perl;

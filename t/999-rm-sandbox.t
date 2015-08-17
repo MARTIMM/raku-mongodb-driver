@@ -42,12 +42,12 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
   next unless $path.IO ~~ :d;
   for dir($path) -> $dir-entry {
     if $dir-entry.IO ~~ :d {
-      diag "delete directory $dir-entry";
+#      diag "delete directory $dir-entry";
       rmdir $dir-entry;
     }
 
     else {
-      diag "delete file $dir-entry";
+#      diag "delete file $dir-entry";
       unlink $dir-entry;
     }
   }

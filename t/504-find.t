@@ -13,7 +13,7 @@ use MongoDB::Connection;
 use BSON::Javascript;
 
 #-------------------------------------------------------------------------------
-my MongoDB::Connection $connection .= new();
+my MongoDB::Connection $connection = get-connection();
 my MongoDB::Database $database = $connection.database('test');
 
 #is 1, 1, '1';

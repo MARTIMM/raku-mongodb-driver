@@ -3,6 +3,9 @@
     DBRef
 }}
 
+BEGIN { @*INC.unshift( './t' ) }
+use Test-support;
+
 use v6;
 use Test;
 
@@ -11,7 +14,7 @@ use MongoDB::DBRef;
 
 #-------------------------------------------------------------------------------
 #
-my MongoDB::Connection $connection .= new();
+my MongoDB::Connection $connection = get-connection();
 my MongoDB::Database $database = $connection.database('test');
 
 # Create collection and insert data in it!
