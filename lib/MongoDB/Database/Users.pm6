@@ -63,12 +63,15 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    # Create a user in the mongodb authentication database
     #
     method create_user (
       Str :$user, Str :$password,
       :$custom_data, Array :$roles, Int :$timeout
       --> Hash
     ) {
+      # Check if username is too short
+      #
       if $user.chars < $!min-un-length {
         die X::MongoDB::Database.new(
           error-text => "Username too short, must be >= $!min-un-length",
@@ -78,6 +81,8 @@ package MongoDB {
         );
       }
 
+      # Check if password is too short
+      #
       elsif $password.chars < $!min-pw-length {
         die X::MongoDB::Database.new(
           error-text => "Password too short, must be >= $!min-pw-length",
@@ -87,6 +92,8 @@ package MongoDB {
         );
       }
 
+      # Check if password answers to rule given by attribute code
+      #
       else {
         my Bool $pw-ok = False;
         given $!pw-attribs-code {
@@ -363,6 +370,26 @@ package MongoDB {
           oper-name => 'drop_user',
           oper-data => @req.perl,
           database-name => [~] $database // $!database.name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method get_users ( --> Hash ) {
+      my Pair @req = ( usersInfo => 1 );
+
+      my Hash $doc = $!database.run_command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB::Database.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop_user',
+          oper-data => @req.perl,
+          database-name => $!database.name
         );
       }
 

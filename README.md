@@ -76,6 +76,8 @@ Legend;
 * [-] Will not be implemented
 * [C] Implemented in MongoDB::Connection, Connection.pm
 * [D] Implemented in MongoDB::Database, Database.pm
+* [DU] Implemented in MongoDB::Database::Users, Database/Users.pm
+* [DA] Implemented in MongoDB::Database::Authentication, Database/Authentication.pm
 * [O] Implemented in MongoDB::Collection, Collection.pm
 * [U] Implemented in MongoDB::Cursor, Cursor.pm
 
@@ -165,14 +167,16 @@ Legend;
 
 ### User Management Commands
 
-* [D] createUser. Creates a new user.
-* [D] dropAllUsersFromDatabase. Deletes all users associated with a database.
-* [D] dropUser. Removes a single user.
-* [D] grantRolesToUser. Grants a role and its privileges to a user.
-* [D] revokeRolesFromUser. Removes a role from a user.
-* [D] updateUser. Updates a user's data.
-* [D] usersInfo. Returns information about the specified users.
-
+* [DU] create_user. Creates a new user.
+* [DU] drop_all_users_from_database. Deletes all users associated with a
+       database.
+* [DU] drop_user. Removes a single user.
+* [DU] grant_roles_to_user. Grants a role and its privileges to a user.
+* [DU] revoke_roles_from_user. Removes a role from a user.
+* [DU] update_user. Updates a user's data.
+* [DU] users_info. Returns information about the specified users.
+* [DU] set_pw_security, Specify restrictions on username and password.
+* [DU] get_users, Get info about all users
 
 
 
@@ -401,6 +405,7 @@ change at any time. The public API should not be considered stable.*
     database for you. Because ```MongoDB::Database``` is then loaded,
     ```MongoDB::Collection``` is then loaded too because a database must be able
     to create a collection.
+  * get_users() to get info about all users.
 
 * 0.25.0
   * Create user

@@ -172,5 +172,10 @@ Update user accont data
 
 Get information about a user
 
+=for head2
+  method get_users ( --> Hash )
+
+Get information about all users
+
 =end pod
 
