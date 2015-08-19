@@ -389,6 +389,19 @@ change at any time. The public API should not be considered stable.*
     databases and collections when testing. The sandbox is made in
     t/000-mk-sandbox.t and broken down in 999-rm-sandbox.t. This setup also
     helps in testing replication and sharding.
+  * Changed top module ```MongoDB```. Originally there are use statements to
+    load other modules in. Modules are changed later in such a way that modules
+    needed to be loaded in other modules as well and then it will be some
+    overhead of loading the modules twice or more. So I want to clean these
+    statements from the module. Now the user can decide for himself what he
+    needs. Not all modules are always needed and some are loaded by others. E.g.
+    ```MongoDB::Document::Users``` is needed only to add or remove accounts.
+    Furthermore when a connection is made using ```MongoDB::Connection```,
+    ```MongoDB::Database``` will be available because it needs to create a
+    database for you. Because ```MongoDB::Database``` is then loaded,
+    ```MongoDB::Collection``` is then loaded too because a database must be able
+    to create a collection.
+
 * 0.25.0
   * Create user
   * Drop user
