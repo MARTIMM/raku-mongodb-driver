@@ -43,6 +43,37 @@ package Test-support
   }
 
   #-----------------------------------------------------------------------------
+  # Test communication after starting up db server
+  #
+  sub get-connection-try10 ( --> MongoDB::Connection ) is export {
+    my Int $port-number = get-port-number();
+    my MongoDB::Connection $connection;
+    for ^10 {
+      $connection .= new( :host('localhost'), :port($port-number));
+      isa-ok( $connection, 'MongoDB::Connection');
+      last;
+
+      CATCH {
+        default {
+          diag [~] "Error: ", .message, ". Wait a bit longer";
+          sleep 2;
+        }
+      }
+    }
+
+    my $version = $connection.version;
+    diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
+    if $version<release1> < 3 {
+      plan 1;
+      flunk('Version not ok to use this set of modules?');
+      skip-rest('Version not ok to use this set of modules?');
+      exit(0);
+    }
+
+    return $connection;
+  }
+
+  #-----------------------------------------------------------------------------
   # Get collection object
   #
   sub get-test-collection ( Str $db-name,
