@@ -140,6 +140,7 @@ package MongoDB {
       );
 
       @req.push((roles => $roles)) if ?$roles;
+      @req.push((customData => $custom_data)) if ?$custom_data;
       @req.push( (writeConcern => { j => True, wtimeout => $timeout }))
         if ?$timeout;
 
