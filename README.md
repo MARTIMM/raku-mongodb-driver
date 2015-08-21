@@ -379,8 +379,10 @@ are also items to be implemented in BSON. You need to look there for info
 * Get info about multiple accounts instead of one at the time
 * Need a change in throwing exceptions. Not all errors are unrecoverable. Return
   e.g. a failure instead of die with an exception.
-* Use version 3.* type of config (in YAML) for sandbox setup.
 * Modify Mongo.pm. Remove use statements and add variables for use by modules.
+* While we can add users to the database we cannot authenticate due to the lack
+  of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
+  authenticate with. 
 
 ## CHANGELOG
 
@@ -406,6 +408,7 @@ change at any time. The public API should not be considered stable.*
     ```MongoDB::Collection``` is then loaded too because a database must be able
     to create a collection.
   * get_users() to get info about all users.
+  * Use version 3.* type of config (in YAML) for sandbox setup.
 
 * 0.25.0
   * Create user

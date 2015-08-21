@@ -5,8 +5,8 @@
   Test connection
 }}
 
-#BEGIN { @*INC.unshift( './t' ) }
-#use Test-support;
+BEGIN { @*INC.unshift( './t' ) }
+use Test-support;
 
 #-----------------------------------------------------------------------------
 #
@@ -82,34 +82,82 @@ my $port-number;
 #
 spurt 'Sandbox/port-number', $port-number;
 
-# Generate mongodb config in Sandbox
+# Generate mongodb config in Sandbox using YAML
 #
 my $config = qq:to/EOCNF/;
 
-  bind_ip = localhost
-  port = $port-number
-  fork = true
-  pidfilepath = $*CWD/Sandbox/m.pid
-  logpath = $*CWD/Sandbox/m.log
-  dbpath = $*CWD/Sandbox/m.data
-  journal = true
+  systemLog:
+    verbosity:                  0
+    quiet:                      false
+    traceAllExceptions:         true
+  #  syslogFacility:             user
+    path:                       $*CWD/Sandbox/m.log
+    logAppend:                  true
+    logRotate:                  rename
+    destination:                file
+    timeStampFormat:            iso8601-local
+    component:
+      accessControl:
+        verbosity:              2
+      command:
+        verbosity:              0
+      control:
+        verbosity:              0
+      geo:
+        verbosity:              0
+      index:
+        verbosity:              0
+      network:
+        verbosity:              0
+      query:
+        verbosity:              0
+      replication:
+        verbosity:              0
+      sharding:
+        verbosity:              0
+      storage:
+        verbosity:              0
+        journal:
+          verbosity:            0
+      write:
+        verbosity:              0
 
-  # Enables periodic logging of CPU utilization and I/O wait
-  cpu = true
+  processManagement:
+    fork:                       true
+    pidFilePath:                $*CWD/Sandbox/m.pid
 
-  # Verbose logging output.
-  verbose = true
+  net:
+    bindIp:                     localhost
+    port:                       $port-number
+    wireObjectCheck:            true
+    http:
+      enabled:                  false
+
+  storage:
+    dbPath:                     $*CWD/Sandbox/m.data
+    journal:
+      enabled:                  true
+    directoryPerDB:             false
 
   EOCNF
 
 spurt 'Sandbox/m.conf', $config;
+
+# Generate mongodb config in Sandbox using YAML with authentication turned on
+#
 spurt 'Sandbox/m-auth.conf', $config ~ qq:to/EOCNF/;
 
-  # Turn on security.
-  auth = true
+  security:
+#    keyFile:                    m.key-file
+#    clusterAuthMode:            keyFile
+    authorization:              enabled
+
+  setParameter:
+    enableLocalhostAuthBypass:  false
 
   EOCNF
 
+if 0 {
 spurt 'Sandbox/m-repl.conf', $config ~ qq:to/EOCNF/;
 
   # Replication Options
@@ -135,34 +183,22 @@ spurt 'Sandbox/m-repl.conf', $config ~ qq:to/EOCNF/;
   #opIdMem = <bytes>
 
   EOCNF
+}
 
 # Start mongodb
 #
 diag "Wait for server to start up using port $port-number";
-my $exit_code = shell( "mongod --config '$*CWD/Sandbox/m.conf'");
+my $exit_code = shell("mongod --config '$*CWD/Sandbox/m.conf'");
 
 # Test communication
 #
-my MongoDB::Connection $connection;
-for ^10 {
-  $connection .= new( :host('localhost'), :port($port-number));
-  isa-ok( $connection, 'MongoDB::Connection');
-  last;
-
-  CATCH {
-    default {
-      diag [~] "Error: ", .message, ". Wait a bit longer";
-      sleep 2;
-    }
-  }
-}
+my MongoDB::Connection $connection = get-connection-try10();
 
 # Test version
 #
 my $version = $connection.version;
 diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
 ok $version<release1> >= 3, "MongoDB release >= 3";
-
 
 #-----------------------------------------------------------------------------
 # Cleanup and close

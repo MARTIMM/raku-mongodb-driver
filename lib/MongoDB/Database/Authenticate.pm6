@@ -18,13 +18,12 @@ package MongoDB {
       $!database = $database;
     }
 
-
     #---------------------------------------------------------------------------
     #
-    method login ( Str :$user, Str :$password --> Hash ) {
+    method authenticate ( Str :$user, Str :$password --> Hash ) {
       my Pair @req = (getnonce => 1);
       my Hash $doc = $!database.run_command(@req);
-say "N: ", $doc.perl;
+say "N0: ", $doc.perl;
       if $doc<ok>.Bool == False {
         die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
@@ -33,9 +32,12 @@ say "N: ", $doc.perl;
           database-name => $!database.name
         );
       }
+
       @req = (
         authenticate => 1,
         user => $user,
+#        mechanism => 'MONGODB-CR',
+        mechanism => 'SCRAM-SHA-1',
         nonce => $doc<nonce>,
         key => Digest::MD5.md5_hex(
                  [~] $doc<nonce>, $user,
@@ -44,7 +46,7 @@ say "N: ", $doc.perl;
       );
 
       $doc = $!database.run_command(@req);
-say "N: ", $doc.perl;
+say "N2: ", $doc.perl;
       if $doc<ok>.Bool == False {
         die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
