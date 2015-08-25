@@ -1,5 +1,5 @@
 {
-  "author": "Pawel Pabian (2011-2015), Marcel Timmerman (2015-present)",
+  "author": "Paweł Pabian (2011-2015), Marcel Timmerman (2015-present)",
   "depends": [
     "BSON",
     "Digest::MD5"
