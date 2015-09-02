@@ -7,4 +7,8 @@ perl6:
   - 2015.07
 install:
   - rakudobrew build-panda
-#  - panda install Template::Mojo
+  - panda update
+  - panda install BSON
+services:
+  - mongodb
+
