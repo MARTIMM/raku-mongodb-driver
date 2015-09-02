@@ -57,7 +57,6 @@ package MongoDB {
     method insert ( **@documents, Bool :$continue_on_error = False --> Nil ) {
       my $flags = +$continue_on_error;
 
-      # TODO validate keys in documents
       my @docs;
       if @documents.isa(LoL) {
         if @documents[0].isa(Array) and [&&] @documents[0].list>>.isa(Hash) {
@@ -79,12 +78,12 @@ package MongoDB {
       }
 
       else {
-            die X::MongoDB::Collection.new(
-              error-text => "Error: Document type not handled by insert",
-              oper-name => 'insert',
-              oper-data => @docs.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
-            )
+        die X::MongoDB::Collection.new(
+          error-text => "Error: Document type not handled by insert",
+          oper-name => 'insert',
+          oper-data => @docs.perl,
+          full-collection-name => [~] $!database.name, '.', $!name
+        )
       }
 
       self!check-doc-keys(@docs);
