@@ -61,8 +61,9 @@ $ panda install MongoDB
 * MoarVM version ```2015.07-108-g7e9f29e```
 * MongoDB version ```3.0.5```
 
-Maybe we also need to test other version of Mongo such as 2.6.* but will make
-it a bit slower caused by tests.
+Maybe we also need to test other versions of mongodb such as 2.6.* and provide
+functionality for it. This will make it a bit slower caused by tests on version
+and act on it but it is not on all methods nessesary.
 
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
