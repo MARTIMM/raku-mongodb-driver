@@ -78,5 +78,5 @@ ok !(any(@dbns) ~~ 'test'), 'test not found in list';
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-done();
+done-testing();
 exit(0);

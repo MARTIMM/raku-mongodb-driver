@@ -107,5 +107,5 @@ ok %db-names<test>:!exists, 'test not found';
 #
 $connection.database('test').drop;
 
-done();
+done-testing();
 exit(0);

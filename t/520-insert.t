@@ -57,5 +57,5 @@ subtest {
 #
 #$database.drop;
 
-done();
+done-testing();
 exit(0);

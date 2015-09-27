@@ -381,5 +381,5 @@ is $cursor.count, 3, 'code 3 $where <= 29, 3 documents';
 #
 $collection.database.drop;
 
-done();
+done-testing();
 exit(0);

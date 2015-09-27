@@ -144,7 +144,7 @@ ok $doc<msg> ~~ m/non\-_id \s+ indexes \s+ dropped \s+ for \s+ collection/,
 #
 $collection.database.drop;
 
-done();
+done-testing();
 exit(0);
 
 #-------------------------------------------------------------------------------

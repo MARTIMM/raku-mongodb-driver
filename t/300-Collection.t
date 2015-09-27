@@ -92,5 +92,5 @@ is $cursor.count, 10, 'Only 10 records in collection';
 #
 $database.drop;
 
-done();
+done-testing();
 exit(0);

@@ -101,6 +101,6 @@ is $cursor.count, 0, 'Record d1 01 23454321 gone (after remove and sort)';
 #
 #$collection.database.drop;
 
-done();
+done-testing();
 exit(0);
 

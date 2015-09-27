@@ -53,5 +53,5 @@ is-deeply $docs.sort, <cl1 cl2>, 'Test collection names';
 #
 $database.drop;
 
-done();
+done-testing();
 exit(0);

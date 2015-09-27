@@ -197,5 +197,5 @@ subtest {
 #
 $connection.database('test').drop;
 
-done();
+done-testing();
 exit(0);

@@ -139,5 +139,5 @@ is $mrc.count(%(_id => 'othervalue')), 1, 'One othervalue id';
 #
 $collection.database.drop;
 
-done();
+done-testing();
 exit(0);

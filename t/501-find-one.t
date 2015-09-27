@@ -43,7 +43,7 @@ check-document( {code => 'd1'},
 #
 $collection.database.drop;
 
-done();
+done-testing();
 exit(0);
 
 #-------------------------------------------------------------------------------

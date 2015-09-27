@@ -49,5 +49,5 @@ is $h<$ref>, $collection.name, 'Test collection name';
 #
 $connection.database('test').drop;
 
-done();
+done-testing();
 exit(0);

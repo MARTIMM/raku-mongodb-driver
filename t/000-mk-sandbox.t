@@ -204,5 +204,5 @@ ok $version<release1> >= 3, "MongoDB release >= 3";
 # Cleanup and close
 #
 
-done();
+done-testing();
 exit(0);
