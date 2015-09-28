@@ -65,8 +65,8 @@ package MongoDB {
     #
     method database ( Str $name --> MongoDB::Database ) {
       return MongoDB::Database.new(
-        connection  => self,
-        name        => $name,
+        :connection(self),
+        :name($name)
       );
     }
 

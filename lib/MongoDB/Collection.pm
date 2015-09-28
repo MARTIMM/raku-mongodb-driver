@@ -58,7 +58,8 @@ package MongoDB {
       my $flags = +$continue_on_error;
 
       my @docs;
-      if @documents.isa(LoL) {
+#say "DType: ", @documents.^name;
+      if @documents.isa(Array) {
         if @documents[0].isa(Array) and [&&] @documents[0].list>>.isa(Hash) {
           @docs = @documents[0].list;
         }
@@ -195,9 +196,9 @@ package MongoDB {
                                       );
 
       return MongoDB::Cursor.new(
-        collection      => self,
-        OP_REPLY        => $OP_REPLY,
-        criteria        => %@criteria
+        :collection(self),
+        :OP_REPLY($OP_REPLY),
+        :criteria(%@criteria)
       );
     }
 

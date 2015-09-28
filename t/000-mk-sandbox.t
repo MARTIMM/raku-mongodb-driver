@@ -148,8 +148,8 @@ spurt 'Sandbox/m.conf', $config;
 spurt 'Sandbox/m-auth.conf', $config ~ qq:to/EOCNF/;
 
   security:
-#    keyFile:                    m.key-file
-#    clusterAuthMode:            keyFile
+  #  keyFile:                    m.key-file
+  #  clusterAuthMode:            keyFile
     authorization:              enabled
 
   setParameter:
