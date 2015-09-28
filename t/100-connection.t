@@ -38,7 +38,7 @@ ok $buildinfo<loaderFlags>:exists, "Loader flags $buildinfo<loaderFlags>";
 my MongoDB::Database $database = $connection.database('test');
 isa-ok( $database, 'MongoDB::Database');
 
-my MongoDB::Collection $collection = $database.collection( 'perl6_driver1' );
+my MongoDB::Collection $collection = $database.collection('perl6_driver1');
 $collection.insert( $%( 'name' => 'Jan Klaassen'));
 
 #-------------------------------------------------------------------------------

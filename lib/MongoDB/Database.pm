@@ -74,10 +74,7 @@ package MongoDB {
         );
       }
 
-      return MongoDB::Collection.new(
-        database    => self,
-        name        => $name,
-      );
+      return MongoDB::Collection.new: :database(self), :name($name);
     }
 
     #---------------------------------------------------------------------------
@@ -97,14 +94,14 @@ package MongoDB {
         );
       }
 
-      my Hash $h;
-      $h<capped> = $capped if $capped;
-      $h<autoIndexId> = $autoIndexId if $autoIndexId;
-      $h<size> = $size if $size;
-      $h<max> = $max if $max;
-      $h<flags> = $flags if $flags;
-
-      my Pair @req = create => $collection_name, @$h;
+      # Setup the collection create command
+      #
+      my Pair @req = create => $collection_name;
+      @req.push: (:$capped) if $capped;
+      @req.push: (:$autoIndexId) if $autoIndexId;
+      @req.push: (:$size) if $size;
+      @req.push: (:$max) if $max;
+      @req.push: (:$flags) if $flags;
 
       my Hash $doc = self.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -116,10 +113,7 @@ package MongoDB {
         );
       }
 
-      return MongoDB::Collection.new(
-        database    => self,
-        name        => $collection_name,
-      );
+      return MongoDB::Collection.new: :database(self), :name($collection_name);
     }
 
     #---------------------------------------------------------------------------
@@ -190,15 +184,11 @@ package MongoDB {
                             --> Hash
                           ) {
 
-      my Hash $h = { :$j, :$fsync};
-      if $w and $wtimeout {
-        $h<w> = $w;
-        $h<wtimeout> = $wtimeout;
-      }
+      my Pair @req = getLastError => 1;
+      @req.push: ( :$j, :$fsync);
+      @req.push: ( :$w, :$wtimeout) if $w and $wtimeout;
 
-      my Pair @req = getLastError => 1, @$h;
       my Hash $doc = self.run_command(@req);
-
       if $doc<ok>.Bool == False {
         die X::MongoDB::Database.new(
           error-text => $doc<errmsg>,
