@@ -25,7 +25,7 @@ my MongoDB::Connection $connection = get-connection();
 $connection.database('test').drop;
 
 my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Database::Users $users .= new(:$database);
+my MongoDB::Database::Users $users .= new(database => $database);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -177,7 +177,7 @@ subtest {
 
   $doc = $users.revoke_roles_from_user(
     :user('mt'),
-    :roles([{role => 'dbAdmin', db => 'test2'}])
+    :roles([${role => 'dbAdmin', db => 'test2'}])
   );
   ok $doc<ok>, 'User roles mt revoked';
   $doc = $users.users_info(:user('mt'));

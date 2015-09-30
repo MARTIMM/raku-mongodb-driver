@@ -48,7 +48,7 @@ my Hash $doc = $users.create_user(
   :user('Long-John'),
   :password('N0t-s0-S!mPl3'),
   :custom_data({license => 'to_kill'}),
-  :roles([{role => 'readWrite', db => 'test3'}])
+  :roles([${role => 'readWrite', db => 'test3'}])
 );
 
 $doc = $users.update_user(
@@ -67,7 +67,7 @@ $doc = $users.grant_roles_to_user( :user('Long-John'), :roles(['dbOwner']));
 
 $doc = $users.revoke_roles_from_user(
   :user('Long-John'),
-  :roles([{role => 'readWrite', db => 'test1'}])
+  :roles([${role => 'readWrite', db => 'test1'}])
 );
 
 $doc = $users.users_info(:user('Long-John'));
@@ -86,9 +86,9 @@ C<X::MongoDB::Database> exceptions when things go wrong. E.g. creating a user
 which already exists with faulty arguments.
 
 
-=head1 METHODS
+=head2 METHODS
 
-=for head2
+=for head3
   method set_pw_security (
     Int :$min_un_length where $min_un_length >= 2,
     Int :$min_pw_length where $min_pw_length >= 2,
@@ -117,26 +117,52 @@ $min_pw_length is not set it will be set to 4.
 If e.g. $PW-OTHER-CHARS and $min_pw_length is set to 2 then when using a
 password of less the 4 characters is bound to fail.
 
-=for head2
+=for head3
   method create_user (
     Str :$user, Str :$password,
     :$custom_data, Array :$roles, Int :$timeout
     --> Hash
   )
 
-Method to create a user
+Method to create a user. Roles can be specified in several ways. It is an array
+with entries of strings or hashes. When it is a string it specifies the role
+assigned to the user. When it is a hash, the hash must have two keys. One is
+C<role> and the other is C<db>. In this case the role is assigned to the user
+but only for a specific daabase.
 
-=for head2
+Important note; When one hash is used it is important to itemize the hash
+because otherwise the hash will be flattened into a list of pairs which will
+probably not what you mean.
+
+Some examples of the roles option;
+=begin nested
+=begin code
+:roles(['readWrite'])
+
+:roles([{role => 'readWrite', db => 'test1'},
+        {role => 'dbAdmin', db => 'test2'}
+       ]
+      )
+
+:roles([${role => 'dbAdmin', db => 'test2'}])
+
+:roles([{role => 'dbAdmin', db => 'test2'},])
+=end code
+=end nested
+Notice the $ in the 3rd and the comma in the last example.
+
+
+=for head3
   method drop_user ( Str :$user, Int :$timeout --> Hash )
 
 Delete user from the database.
 
-=for head2
+=for head3
   method drop_all_users_from_database ( Int :$timeout --> Hash )
 
 Drop all users from the database
 
-=for head2
+=for head3
   method grant_roles_to_user (
     Str :$user, Array :$roles, Int :$timeout
     --> Hash
@@ -144,7 +170,7 @@ Drop all users from the database
 
 Grant roles to user.
 
-=for head2
+=for head3
   method revoke_roles_from_user (
     Str :$user, Array :$roles, Int :$timeout
     --> Hash
@@ -152,7 +178,7 @@ Grant roles to user.
 
 Revoke roles from user
 
-=for head2
+=for head3
   method update_user (
     Str :$user, Str :$password,
     :$custom_data, Array :$roles, Int :$timeout
@@ -161,7 +187,7 @@ Revoke roles from user
 
 Update user accont data
 
-=for head2
+=for head3
   method users_info (
     Str :$user,
     Bool :$show_credentials,
@@ -172,7 +198,7 @@ Update user accont data
 
 Get information about a user
 
-=for head2
+=for head3
   method get_users ( --> Hash )
 
 Get information about all users

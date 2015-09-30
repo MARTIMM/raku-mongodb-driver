@@ -67,7 +67,7 @@ package MongoDB {
     #
     method create_user (
       Str :$user, Str :$password,
-      :$custom_data, Array :$roles, Int :$timeout
+      :$custom_data, Array :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
       # Check if username is too short
@@ -133,16 +133,17 @@ package MongoDB {
         ) unless $pw-ok;
       }
 
-      my Pair @req = (
-        createUser => $user,
-        pwd => Digest::MD5.md5_hex( [~] $user, ':mongo:', $password),
-        digestPassword => False
-      );
+      # Create user where digestPassword is set false
+      #
+      my Pair @req =
+        :createUser($user),
+        :pwd(Digest::MD5.md5_hex( [~] $user, ':mongo:', $password)),
+        :!digestPassword
+      ;
 
-      @req.push((roles => $roles)) if ?$roles;
-      @req.push((customData => $custom_data)) if ?$custom_data;
-      @req.push( (writeConcern => { j => True, wtimeout => $timeout }))
-        if ?$timeout;
+      @req.push: (:$roles) if ?$roles;
+      @req.push: (:customData($custom_data)) if ?$custom_data;
+      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -161,13 +162,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method drop_user ( Str :$user, Int :$timeout --> Hash ) {
-      my Pair @req = (
-        dropUser => $user
-      );
+    method drop_user ( Str :$user, Int :timeout($wtimeout) --> Hash ) {
 
-      @req.push((writeConcern => { j => True, wtimeout => $timeout }))
-        if ?$timeout;
+      my Pair @req = dropUser => $user;
+      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
+
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -186,13 +185,10 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method drop_all_users_from_database ( Int :$timeout --> Hash ) {
-      my Pair @req = (
-        dropAllUsersFromDatabase => 1
-      );
+    method drop_all_users_from_database ( Int :timeout($wtimeout) --> Hash ) {
 
-      @req.push(( writeConcern => { j => True, wtimeout => $timeout }))
-        if ?$timeout;
+      my Pair @req = dropAllUsersFromDatabase => 1;
+      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -212,14 +208,13 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method grant_roles_to_user (
-      Str :$user, Array :$roles, Int :$timeout
+      Str :$user, Array :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
-      my Pair @req = ( grantRolesToUser => $user );
 
-      @req.push((roles => $roles)) if ?$roles;
-      @req.push(( writeConcern => { j => True, wtimeout => $timeout }))
-        if ?$timeout;
+      my Pair @req = grantRolesToUser => $user;
+      @req.push: (:$roles) if ?$roles;
+      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -239,14 +234,13 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method revoke_roles_from_user (
-      Str :$user, Array :$roles, Int :$timeout
+      Str :$user, Array :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
-      my Pair @req = ( revokeRolesFromUser => $user );
 
-      @req.push((roles => $roles)) if ?$roles;
-      @req.push(( writeConcern => { j => True, wtimeout => $timeout }))
-        if ?$timeout;
+      my Pair @req = :revokeRolesFromUser($user);
+      @req.push: (:$roles) if ?$roles;
+      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -254,6 +248,7 @@ package MongoDB {
           error-text => $doc<errmsg>,
           oper-name => 'drop_user',
           oper-data => @req.perl,
+#          oper-doc => $doc.perl,
           database-name => [~] $!database.name
         );
       }
@@ -267,10 +262,11 @@ package MongoDB {
     #
     method update_user (
       Str :$user, Str :$password,
-      :$custom_data, Array :$roles, Int :$timeout
+      :custom_data($customData), Array :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
-      my Pair @req = ( updateUser => $user, digestPassword => False );
+
+      my Pair @req = :updateUser($user), :digestPassword;
 
       if ?$password {
         if $password.chars < $!min-pw-length {
@@ -314,7 +310,7 @@ package MongoDB {
         }
 
         if $pw-ok {
-          @req.push((pwd => Digest::MD5.md5_hex("$user:mongo:$password")));
+          @req.push: (:pwd(Digest::MD5.md5_hex("$user:mongo:$password")));
         }
 
         else {
@@ -327,11 +323,9 @@ package MongoDB {
         }
       }
 
-      @req.push((writeConcern => { j => True, wtimeout => $timeout }))
-        if ?$timeout;
-
-      @req.push((roles => $roles)) if ?$roles;
-      @req.push((customData => $custom_data)) if ?$custom_data;
+      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
+      @req.push: (:$roles) if ?$roles;
+      @req.push: (:$customData) if ?$customData;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -357,12 +351,10 @@ package MongoDB {
       Str :$database
       --> Hash
     ) {
-      my Pair @req = (
-        usersInfo => { user => $user, db => $database // $!database.name}
-      );
 
-      @req.push((showCredentials => True)) if ?$show_credentials;
-      @req.push((showPrivileges => True)) if ?$show_privileges;
+      my Pair @req = :usersInfo({ :$user, :db($database // $!database.name)});
+      @req.push: (:showCredentials) if ?$show_credentials;
+      @req.push: (:showPrivileges) if ?$show_privileges;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -382,7 +374,8 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method get_users ( --> Hash ) {
-      my Pair @req = ( usersInfo => 1 );
+
+      my Pair @req = usersInfo => 1;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
