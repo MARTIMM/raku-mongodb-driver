@@ -183,7 +183,7 @@ package MongoDB {
     # was nessesary for run_command to keep the command on on the first key
     # value pair.
     #
-    multi method find ( Pair @criteria = { }, %projection = { },
+    multi method find ( Pair @criteria = [ ], %projection = { },
                   Int :$number_to_skip = 0, Int :$number_to_return = 0,
                   Bool :$no_cursor_timeout = False
                   --> MongoDB::Cursor
@@ -195,11 +195,12 @@ package MongoDB {
                                         %projection
                                       );
 
-      return MongoDB::Cursor.new(
-        :collection(self),
-        :OP_REPLY($OP_REPLY),
-        :criteria(%@criteria)
+      my $c = MongoDB::Cursor.new(
+        collection      => self,
+        OP_REPLY        => $OP_REPLY,
+        criteria        => %@criteria
       );
+      return $c;
     }
 
     #---------------------------------------------------------------------------
