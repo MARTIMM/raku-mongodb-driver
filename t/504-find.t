@@ -120,7 +120,6 @@ $reduce-func = q:to/EOJS/;
    }
    EOJS
 
-
 $result = $collection.map_reduce(
             $map-func, $reduce-func, 
             :criteria(%(name => %('$gt' => 'k0'))),

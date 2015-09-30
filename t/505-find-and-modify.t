@@ -23,10 +23,11 @@ $collection.database.drop;
 my @places = <amsterdam NY LA haarlem utrecht parijs oradour poitiers vienna>;
 my %d1 = code => 'd1 ';
 
-for ^5,(5...1) -> $code-postfix {
+for (^5, (5...1)).flat -> $code-postfix {
   %d1<code> ~= $code-postfix;
   %d1<city> = @places.roll;
   $collection.insert(%d1);
+say "insert using $code-postfix";
 }
 
 #show-documents( $collection, {}, { _id => 0, code => 1, city => 1});

@@ -172,11 +172,12 @@ package MongoDB {
                                         %projection
                                       );
 
-      return MongoDB::Cursor.new(
+      my $c = MongoDB::Cursor.new(
         collection  => self,
         OP_REPLY    => $OP_REPLY,
         :%criteria
       );
+      return $c;
     }
 
     # Find record in a collection. Now the criteria is an array of Pair. This
@@ -221,21 +222,13 @@ package MongoDB {
                              --> Hash
                            ) {
 
-      # Note: Rakudo has a problem pushing a new pair onto an array of pairs
-      # The method below works however.
-      #
-      my Hash $h;
-      $h<sort> = %sort if ?%sort;
-      $h<remove> = $remove if ?$remove;
-      $h<update> = %update if ?%update;
-      $h<new> = $new if ?$new;
-      $h<upsert> = $upsert if ?$upsert;
-      $h<projection> = %projection if ?%projection;
-
-      my Pair @req = findAndModify => self.name, query => $criteria, @$h;
-
-      # Modify new option if remove is true
-      # $req<new> = False if ?$remove;
+      my Pair @req = findAndModify => self.name, query => $criteria;
+      @req.push: (:%sort) if ?%sort;
+      @req.push: (:remove) if $remove;
+      @req.push: (:%update) if ?%update;
+      @req.push: (:new) if $new;
+      @req.push: (:upsert) if $upsert;
+      @req.push: (:%projection) if ?%projection;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
@@ -379,22 +372,19 @@ package MongoDB {
                          Hash :$condition = {}
                          --> Hash ) {
 
-      my Hash $h = { group => %( ns => $!name,
-                                   initial => $initial,
-                                   '$reduce' => $reduce_js_func,
-                                   key => %($key => 1)
-                                 )
-                     };
+      my Pair @req = group => {};
+      @req[0]<group><ns> = $!name;
+      @req[0]<group><initial> = $initial;
+      @req[0]<group>{'$reduce'} = $reduce_js_func;
+      @req[0]<group><key> = {$key => 1};
 
       if $key_js_func.has_javascript {
-        $h<group><keyf> = $key_js_func;
-        $h<group><key>:delete;
+        @req[0]<group><keyf> = $key_js_func;
+        @req[0]<group><key>:delete;
       }
 
-      $h<group><condition> = $condition if +$condition;
-      $h<group><finalize> = $finalize if $finalize.has_javascript;
-
-      my Pair @req = @$h;
+      @req[0]<group><condition> = $condition if ?$condition;
+      @req[0]<group><finalize> = $finalize if $finalize.has_javascript;
 
       my $doc = $!database.run_command(@req);
 
@@ -429,32 +419,33 @@ package MongoDB {
     multi method map_reduce ( BSON::Javascript $map_js_func,
                               BSON::Javascript $reduce_js_func,
                               BSON::Javascript :$finalize = $!default_js,
-                              Hash :$out, Hash :$criteria, Hash :$sort,
+                              Hash :$out, Hash :criteria($query), Hash :$sort,
                               Hash :$scope, Int :$limit, Bool :$jsMode = False
                               --> Hash
                             ) {
 
-      my Hash $h = { map => $map_js_func,
-                     reduce => $reduce_js_func,
-                     :$jsMode
-                   };
+      my Pair @req = mapReduce => $!name;
+      @req.push: (:$query) if ?$query;
+      @req.push: (:$sort) if $sort;
+      @req.push: (:$limit) if $limit;
+      @req.push: (:$finalize) if $finalize.has_javascript;
+      @req.push: (:$scope) if $scope;
 
-      if $out.defined {
-        $h<out> = $out;
+      @req.push: (
+        :map($map_js_func),
+        :reduce($reduce_js_func),
+        :$jsMode
+      );
+
+      if ?$out {
+        @req.push: (:$out);
       }
 
       else {
-        $h<out> = %( replace => $!name ~ '_MapReduce');
+        @req.push: (:out(:replace($!name ~ '_MapReduce')));
       }
 
-      $h<query> = $criteria if +$criteria;
-      $h<sort> = $sort if $sort;
-      $h<limit> = $limit if $limit;
-      $h<finalize> = $finalize if $finalize.has_javascript;
-#      $h<scope> = $scope if $scope;
-
-      my Pair @req = mapReduce => $!name, @$h;
-
+#say "MPR P: {@req.perl}";
       my Hash $doc = $!database.run_command(@req);
 
       # Check error and throw X::MongoDB::Collection if there is one
@@ -589,13 +580,12 @@ package MongoDB {
                    Str :$indexDetailsName
                    --> Hash ) {
 
-      my Hash $h = {options => {scale => $scale}};
-      $h<options><indexDetails> = True if $indexDetails;
-      $h<options><indexDetailsName> = $indexDetailsName if ?$indexDetailsName;
-      $h<options><indexDetailsField> = $indexDetailsField
+      my Pair @req = collstats => $!name, options => {:$scale};
+      @req[1]<options><indexDetails> = True if $indexDetails;
+      @req[1]<options><indexDetailsName> = $indexDetailsName
+        if ?$indexDetailsName;
+      @req[1]<options><indexDetailsField> = $indexDetailsField
         if ?$indexDetailsField and !?$indexDetailsName; # One or the other
-
-      my Pair @req = collstats => $!name, @$h;
 
       my $doc = $!database.run_command(@req);
 

@@ -119,12 +119,12 @@ package MongoDB {
     # Get count of found documents
     #
     method count ( Int :$skip = 0, Int :$limit = 0 --> Int ) {
+
       my $database = $!collection.database;
 
-      my Hash $h;
-      $h<skip> = $skip if $skip;
-      $h<limit> = $limit if $limit;
-      my Pair @req = count => $!collection.name, query => %!criteria, @$h;
+      my Pair @req = count => $!collection.name, query => %!criteria;
+      @req.push: (:$skip) if $skip;
+      @req.push: (:$limit) if $limit;
 
       my Hash $doc = $database.run_command(@req);
       if !?$doc<ok>.Bool {
