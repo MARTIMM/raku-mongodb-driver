@@ -8,6 +8,12 @@
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
+#if %*ENV<TRAVIS>  {
+#  plan 1;
+#  skip-rest('No sandboxing on TRAVIS-CI?');
+#  exit(0);
+#}
+
 #-----------------------------------------------------------------------------
 #
 use v6;
