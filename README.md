@@ -57,8 +57,8 @@ $ panda install MongoDB
 
 ## Versions of PERL, MOARVM and MongoDB
 
-* Perl6 version ```2015.07.1-182-g5ba44fc```
-* MoarVM version ```2015.07-108-g7e9f29e```
+* Perl6 version ```2015.09-162-gdd6c855```
+* MoarVM version ```2015.09-39-g1434283```
 * MongoDB version ```3.0.5```
 
 Maybe we also need to test other versions of mongodb such as 2.6.* and provide
@@ -394,6 +394,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.25.2
+  * Changes because of updates in perl6
 * 0.25.1
   * Installed a sandbox to start mongod in. Now no problems can occur with user
     databases and collections when testing. The sandbox is made in

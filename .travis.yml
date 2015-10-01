@@ -1,15 +1,18 @@
 branches:
-  except:
-    - gh-pages
+  only:
+    - master
+
 language: perl6
+
 perl6:
   - latest
-  - 2015.07
+
 install:
   - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
   - panda installdeps .
   - panda update
-  - panda install BSON
+  - panda install BSON Digest::MD5
+
 services:
   - mongodb
 
