@@ -22,7 +22,7 @@ if %*ENV<NOSANDBOX> {
 # the middle ages (2.4.12)
 #
 my $mongodb-server-path = 'mongod';
-if %*ENV<TRAVIS> {
+if ? %*ENV<TRAVIS> {
   $mongodb-server-path = "$*CWD/Travis-ci/MongoDB/mongod";
 }
 

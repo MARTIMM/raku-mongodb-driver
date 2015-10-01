@@ -12,7 +12,7 @@ package Test-support
     # Skip sandbox setup if testing on TRAVIS-CI or no sandboxing is requested,
     # just return default port.
     #
-    if %*ENV<TRAVIS> or %*ENV<NOSANDBOX> {
+    if %*ENV<NOSANDBOX> {
       return 27017;
     }
 
@@ -58,7 +58,8 @@ package Test-support
     my Int $port-number = get-port-number();
     my MongoDB::Connection $connection;
     for ^10 {
-      $connection .= new( :host('localhost'), :port($port-number));
+say "C: $connection .= new( :host<localhost>, :port($port-number))";
+      $connection .= new( :host<localhost>, :port($port-number));
       isa-ok( $connection, 'MongoDB::Connection');
       last;
 
