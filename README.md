@@ -4,14 +4,17 @@
 
 # IMPORTANT NOTICE
 As of version 0.25.1 a sandbox is setup to run a separate mongod server. Since
-version 0.25.3 it tests the environment variables TRAVIS or NOSANDBOX
-to turn off sand-boxing. This can be used to speedup testing. The default port
-number of 27017 is used to get to the mongod server. *IT IS IMPORTANT TO KNOW
-THAT ANYTHING MAY HAPPEN DURING TESTS INCLUDING DELETION OF ANY DATABASES AND
-COLLECTIONS ON YOUR SERVER! THIS WILL BE TOTALLY AT YOUR OWN RISK.*
+version 0.25.3 it tests the environment variable or NOSANDBOX to turn off
+sand-boxing. This can be used to speedup testing. The default port number of
+27017 is used to get to the mongod server.
 
-Also when sandboxing is turned on, the testing programs are also capable of
-testing administration, authentication and multi server setup.
+*IT IS IMPORTANT TO KNOW THAT ANYTHING MAY HAPPEN DURING TESTS INCLUDING
+ACCIDENTAL DELETION OF ANY DATABASES AND COLLECTIONS ON YOUR SERVER! ALSO
+TESTING ADMINISTRATION TASKS MAY CREATE PROBLEMS FOR EXISTING ACCOUNTS! THIS
+WILL BE TOTALLY AT YOUR OWN RISK.*
+
+Also when sandboxing is turned on, the testing programs are free to test
+administration tasks, authentication and multi server setup.
 
 See also the license link below
 
@@ -408,6 +411,11 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.25.4
+  * Travis-ci uses a mongod version of 2.4.12 which can not be used (yet) by
+    this driver. A situation is now created to use the sandbox also for Travis
+    for which a proper version mongodb server is downloaded as a pre install
+    step.
 * 0.25.3
   * Extending the sandbox control. When environment variables TRAVIS or
     NOSANDBOX is set sandboxing is not done. Default portnumber of 27017 is used

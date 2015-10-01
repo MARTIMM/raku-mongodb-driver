@@ -4,6 +4,7 @@ use v6;
 #  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
 #}
 
+use MongoDB;
 use MongoDB::Database;
 use BSON::EDCTools;
 
@@ -37,6 +38,7 @@ package MongoDB {
     #
     submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
       $!sock = IO::Socket::INET.new( host => $host, port => $port );
+      $MongoDB::version = self.version;
     #  $!sock = IO::Socket::INET.new( host => "$host/?connectTimeoutMS=3000",
     # port => $port );
     }
