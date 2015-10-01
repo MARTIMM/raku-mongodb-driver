@@ -5,10 +5,13 @@
 # IMPORTANT NOTICE
 As of version 0.25.1 a sandbox is setup to run a separate mongod server. Since
 version 0.25.3 it tests the environment variables TRAVIS or NOSANDBOX
-to turn off sand-boxing. The default port number of 27017 is used to get to the
-mongod server. IMPORTANT TO BE SURE THAT ANYTHING MAY HAPPEN DURING TESTS
-INCLUDING DELETION OF ANY DATABASES AND COLLECTIONS ON YOUR SERVER! THIS WILL BE
-TOTALLY AT YOUR OWN RISK.
+to turn off sand-boxing. This can be used to speedup testing. The default port
+number of 27017 is used to get to the mongod server. *IT IS IMPORTANT TO KNOW
+THAT ANYTHING MAY HAPPEN DURING TESTS INCLUDING DELETION OF ANY DATABASES AND
+COLLECTIONS ON YOUR SERVER! THIS WILL BE TOTALLY AT YOUR OWN RISK.*
+
+Also when sandboxing is turned on, the testing programs are also capable of
+testing administration, authentication and multi server setup.
 
 See also the license link below
 
