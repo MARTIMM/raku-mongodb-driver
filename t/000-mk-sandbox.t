@@ -9,12 +9,21 @@ BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
 #-----------------------------------------------------------------------------
-# Skip sandbox setup if testing on TRAVIS-CI
+# Skip sandbox setup if requested
 #
-if %*ENV<TRAVIS> or %*ENV<NOSANDBOX> {
+if %*ENV<NOSANDBOX> {
   plan 1;
-  skip-rest('No sandboxing requested or testing on TRAVIS-CI');
+  skip-rest('No sand-boxing requested');
   exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Download mongodb binaries before testing on TRAVIS-CI. Version is still from
+# the middle ages (2.4.12)
+#
+my $mongodb-server-path = 'mongod';
+if %*ENV<TRAVIS> {
+  $mongodb-server-path = "$*CWD/Travis-ci/MongoDB/mongod";
 }
 
 #-----------------------------------------------------------------------------
@@ -197,7 +206,8 @@ spurt 'Sandbox/m-repl.conf', $config ~ qq:to/EOCNF/;
 # Start mongodb
 #
 diag "Wait for server to start up using port $port-number";
-my $exit_code = shell("mongod --config '$*CWD/Sandbox/m.conf'");
+say "Starting \"$mongodb-server-path --config '$*CWD/Sandbox/m.conf'\"";
+my $exit_code = shell("$mongodb-server-path --config '$*CWD/Sandbox/m.conf'");
 
 # Test communication
 #

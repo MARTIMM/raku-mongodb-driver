@@ -1,4 +1,5 @@
 use v6;
+use MongoDB;
 use MongoDB::Connection;
 use Test;
 
@@ -37,7 +38,8 @@ package Test-support
       :port($port-number)
     );
 
-    my $version = $connection.version;
+#    my $version = $connection.version;
+    my $version = $MongoDB::version;
     diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
     if $version<release1> < 3 {
       plan 1;
@@ -68,7 +70,8 @@ package Test-support
       }
     }
 
-    my $version = $connection.version;
+#    my $version = $connection.version;
+    my $version = $MongoDB::version;
     diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
     if $version<release1> < 3 {
       plan 1;

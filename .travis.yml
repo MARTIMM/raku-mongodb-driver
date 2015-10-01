@@ -7,12 +7,24 @@ language: perl6
 perl6:
   - latest
 
+# Install mongodb server at ./Travis-ci/MongoDB
+#
+before_install:
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
+
+#env:
+#  - PATH=.:$TRAVIS_BUILD_DIR/Travis-ci/MongoDB:$PATH
+
 install:
   - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
   - panda installdeps .
   - panda update
   - panda install BSON Digest::MD5
 
-services:
-  - mongodb
+
+#services:
+#  - mongodb
+#
+#before_script:
+#  - sleep 10
 

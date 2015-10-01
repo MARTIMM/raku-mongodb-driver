@@ -13,12 +13,11 @@ use v6;
 use Test;
 
 #-----------------------------------------------------------------------------
-# Stop mongodb unless sandbox isn't found, no sandbox requested or we are
-# testing on TRAVIS-CI
+# Stop mongodb unless sandbox isn't found, no sandbox requested
 #
-if %*ENV<TRAVIS> or %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
+if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
   plan 1;
-  skip-rest('No sandboxing requested or testing on TRAVIS-CI!');
+  skip-rest('No sand-boxing requested');
   exit(0);
 }
 
