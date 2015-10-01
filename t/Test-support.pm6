@@ -8,7 +8,14 @@ package Test-support
   # Get selected port number. When file is not there the process fails.
   #
   sub get-port-number ( --> Int ) is export {
-    if 'Sandbox/port-number'.IO !~~ :e {
+    # Skip sandbox setup if testing on TRAVIS-CI or no sandboxing is requested,
+    # just return default port.
+    #
+    if %*ENV<TRAVIS> or %*ENV<NOSANDBOX> {
+      return 27017;
+    }
+
+    elsif 'Sandbox/port-number'.IO !~~ :e {
       plan 1;
       flunk('No port number found, Sandbox cleaned up?');
       skip-rest('No port number found, Sandbox cleaned up?');
@@ -28,7 +35,7 @@ package Test-support
     my MongoDB::Connection $connection .= new(
       :host('localhost'),
       :port($port-number)
-      );
+    );
 
     my $version = $connection.version;
     diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";

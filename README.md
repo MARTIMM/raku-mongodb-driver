@@ -2,6 +2,17 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png)
 
+# IMPORTANT NOTICE
+As of version 0.25.1 a sandbox is setup to run a separate mongod server. Since
+version 0.25.3 it tests the environment variables TRAVIS or NOSANDBOX
+to turn off sand-boxing. The default port number of 27017 is used to get to the
+mongod server. IMPORTANT TO BE SURE THAT ANYTHING MAY HAPPEN DURING TESTS
+INCLUDING DELETION OF ANY DATABASES AND COLLECTIONS ON YOUR SERVER! THIS WILL BE
+TOTALLY AT YOUR OWN RISK.
+
+See also the license link below
+
+
 ## DOCUMENTATION
 
 Plenty of documents can be found on the MongoDB site
@@ -394,6 +405,11 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.25.3
+  * Extending the sandbox control. When environment variables TRAVIS or
+    NOSANDBOX is set sandboxing is not done. Default portnumber of 27017 is used
+    to get to the mongod server. Important to be sure that anything may happen
+    including deletion of any databases and collections on the server!
 * 0.25.2
   * Changes because of updates in perl6
 * 0.25.1
@@ -519,6 +535,6 @@ Current maintainer Marcel Timmerman (2015-present) (MARTIMM on github)
 ```
 ## CONTACT
 
-MARTIMM on github: MARTIMM/MongoDB
+MARTIMM on github: MARTIMM/mongo-perl6-driver
 
 

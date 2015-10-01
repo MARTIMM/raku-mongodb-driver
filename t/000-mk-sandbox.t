@@ -8,11 +8,14 @@
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
-#if %*ENV<TRAVIS>  {
-#  plan 1;
-#  skip-rest('No sandboxing on TRAVIS-CI?');
-#  exit(0);
-#}
+#-----------------------------------------------------------------------------
+# Skip sandbox setup if testing on TRAVIS-CI
+#
+if %*ENV<TRAVIS> or %*ENV<NOSANDBOX> {
+  plan 1;
+  skip-rest('No sandboxing requested or testing on TRAVIS-CI');
+  exit(0);
+}
 
 #-----------------------------------------------------------------------------
 #

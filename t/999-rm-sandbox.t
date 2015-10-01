@@ -13,14 +13,17 @@ use v6;
 use Test;
 
 #-----------------------------------------------------------------------------
-# Stop mongodb
+# Stop mongodb unless sandbox isn't found, no sandbox requested or we are
+# testing on TRAVIS-CI
 #
-if 'Sandbox/port-number'.IO !~~ :e {
+if %*ENV<TRAVIS> or %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
   plan 1;
-  skip-rest('No port number found, Sandbox cleaned up?');
+  skip-rest('No sandboxing requested or testing on TRAVIS-CI!');
   exit(0);
 }
 
+#-----------------------------------------------------------------------------
+#
 my Int $port-number = slurp('Sandbox/port-number').Int;
 
 lives-ok {
