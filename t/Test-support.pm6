@@ -38,7 +38,6 @@ package Test-support
       :port($port-number)
     );
 
-#    my $version = $connection.version;
     my $version = $MongoDB::version;
     diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
     if $version<release1> < 3 {
@@ -58,7 +57,6 @@ package Test-support
     my Int $port-number = get-port-number();
     my MongoDB::Connection $connection;
     for ^10 {
-say "C: $connection .= new( :host<localhost>, :port($port-number))";
       $connection .= new( :host<localhost>, :port($port-number));
       isa-ok( $connection, 'MongoDB::Connection');
       last;
@@ -71,7 +69,6 @@ say "C: $connection .= new( :host<localhost>, :port($port-number))";
       }
     }
 
-#    my $version = $connection.version;
     my $version = $MongoDB::version;
     diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
     if $version<release1> < 3 {
