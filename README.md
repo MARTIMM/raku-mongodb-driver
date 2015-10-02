@@ -1,6 +1,6 @@
 # MongoDB Driver
 
-![Leaf](http://modules.perl6.org/logos/MongoDB.png)
+![Leaf](http://modules.perl6.org/logos/MongoDB.png) [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver)
 
 # IMPORTANT NOTICE
 As of version 0.25.1 a sandbox is setup to run a separate mongod server. Since
