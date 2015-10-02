@@ -35,7 +35,7 @@ for ^100 -> $i, $j {
   $collection.insert(%d);
 }
 
-show-documents( $collection, {}, {_id => 0});
+#show-documents( $collection, {}, {_id => 0});
 
 my MongoDB::Connection $connection = $collection.database.connection;
 my Hash $version = $connection.version;

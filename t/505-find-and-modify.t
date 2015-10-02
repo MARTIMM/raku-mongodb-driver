@@ -27,7 +27,7 @@ for (^5, (5...1)).flat -> $code-postfix {
   %d1<code> ~= $code-postfix;
   %d1<city> = @places.roll;
   $collection.insert(%d1);
-say "insert using $code-postfix";
+#say "insert using $code-postfix";
 }
 
 #show-documents( $collection, {}, { _id => 0, code => 1, city => 1});
