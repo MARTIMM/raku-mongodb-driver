@@ -431,7 +431,7 @@ package MongoDB {
       @req.push: (:$finalize) if $finalize.has_javascript;
       @req.push: (:$scope) if $scope;
 
-      @req.push: (
+      @req.push: |(
         :map($map_js_func),
         :reduce($reduce_js_func),
         :$jsMode

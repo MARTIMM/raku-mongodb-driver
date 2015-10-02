@@ -185,8 +185,8 @@ package MongoDB {
                           ) {
 
       my Pair @req = getLastError => 1;
-      @req.push: ( :$j, :$fsync);
-      @req.push: ( :$w, :$wtimeout) if $w and $wtimeout;
+      @req.push: |( :$j, :$fsync);
+      @req.push: |( :$w, :$wtimeout) if $w and $wtimeout;
 
       my Hash $doc = self.run_command(@req);
       if $doc<ok>.Bool == False {
