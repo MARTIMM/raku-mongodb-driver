@@ -34,9 +34,9 @@ package MongoDB {
     #    { doc => { '$ref' => $cl, '$id' => $id, '$db' => $db}
     #
     multi submethod BUILD ( Str :$database, Str :$collection,
-                            BSON::ObjectId :$id!
-  #                          Hash :$search,
-  #                          MongoDB::Connection :$connection
+                            BSON::ObjectId:D :$id
+#                            Hash :$search,
+#                            MongoDB::Connection :$connection
                           ) {
 
       $!database = $database;

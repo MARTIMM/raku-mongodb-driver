@@ -45,7 +45,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method _send ( Buf $b, Bool $has_response --> Any ) {
+    method _send ( Buf:D $b, Bool $has_response --> Any ) {
       $!sock.write($b);
 
       # some calls do not expect response
@@ -65,7 +65,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method database ( Str $name --> MongoDB::Database ) {
+    method database ( Str:D $name --> MongoDB::Database ) {
       return MongoDB::Database.new(
         :connection(self),
         :name($name)

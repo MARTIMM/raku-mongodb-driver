@@ -29,7 +29,7 @@ package MongoDB {
       'OP_KILL_CURSORS'   => 2007,    # Tell database client is done with a cursor
     );
 
-    method _enc_msg_header ( Int $length, Str $op_code --> Buf ) {
+    method !enc_msg_header ( Int $length, Str $op_code --> Buf ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
       # struct MsgHeader
@@ -60,7 +60,7 @@ package MongoDB {
       return $msg_header;
     }
 
-    method _dec_msg_header ( Array $a, $index is rw --> Hash ) {
+    method !dec_msg_header ( Array $a, $index is rw --> Hash ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
       # struct MsgHeader
@@ -125,7 +125,7 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self._enc_msg_header( $OP_INSERT.elems, 'OP_INSERT');
+      my Buf $msg_header = self!enc_msg_header( $OP_INSERT.elems, 'OP_INSERT');
 
       # send message without waiting for response
       #
@@ -214,7 +214,7 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self._enc_msg_header( $OP_QUERY.elems, 'OP_QUERY');
+      my Buf $msg_header = self!enc_msg_header( $OP_QUERY.elems, 'OP_QUERY');
 
       # send message and wait for response
       #
@@ -267,7 +267,7 @@ package MongoDB {
       # standard message header
       # (watch out for inconsistent OP_code and messsage name)
       #
-      my Buf $msg_header = self._enc_msg_header( $OP_GETMORE.elems, 'OP_GET_MORE');
+      my Buf $msg_header = self!enc_msg_header( $OP_GETMORE.elems, 'OP_GET_MORE');
 
       # send message and wait for response
       #
@@ -315,7 +315,7 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self._enc_msg_header( $OP_KILL_CURSORS.elems,
+      my Buf $msg_header = self!enc_msg_header( $OP_KILL_CURSORS.elems,
                                                  'OP_KILL_CURSORS'
                                                );
 
@@ -360,7 +360,7 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self._enc_msg_header( $OP_UPDATE.elems, 'OP_UPDATE');
+      my Buf $msg_header = self!enc_msg_header( $OP_UPDATE.elems, 'OP_UPDATE');
 
       # send message without waiting for response
       #
@@ -398,7 +398,7 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self._enc_msg_header( $OP_DELETE.elems, 'OP_DELETE');
+      my Buf $msg_header = self!enc_msg_header( $OP_DELETE.elems, 'OP_DELETE');
 
       # send message without waiting for response
       #
@@ -424,7 +424,7 @@ package MongoDB {
         # MsgHeader header
         # standard message header
         #
-        'msg_header' => self._dec_msg_header( $a, $index),
+        'msg_header' => self!dec_msg_header( $a, $index),
 
         # int32 responseFlags
         # bit vector
@@ -436,7 +436,7 @@ package MongoDB {
         # TODO big integers are not yet implemented in Rakudo
         # so cursor is build using raw Buf
         #
-        'cursor_id' => self._dec_nyi( $a, 8, $index),
+        'cursor_id' => self!dec_nyi( $a, 8, $index),
 
         # int32 startingFrom
         # where in the cursor this reply is starting
@@ -468,7 +468,7 @@ package MongoDB {
       return $OP_REPLY;
     }
 
-    method _dec_nyi ( Array $a, Int $length, $index is rw --> Buf ) {
+    method !dec_nyi ( Array $a, Int $length, $index is rw --> Buf ) {
       # fetch given amount of bytes from Array and return as Buffer
       # mostly used to jump over not yet implemented decoding
 

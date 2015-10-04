@@ -34,7 +34,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( :$database, Str :$name ) {
+    submethod BUILD ( :$database, Str:D :$name ) {
       $!database = $database;
 
       if $name ~~ m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/ {
@@ -97,7 +97,7 @@ package MongoDB {
     # Check keys in documents for insert operations
     # See http://docs.mongodb.org/meta-driver/latest/legacy/bson/
     #
-    method !check-doc-keys ( @docs ) {
+    method !check-doc-keys ( @docs! ) {
       for @docs -> $d {
         for $d.keys -> $k {
           if $k ~~ m/ (^ '$' | '.') / {
@@ -136,7 +136,9 @@ package MongoDB {
       }
     }
 
-    method !cdk ($sub-doc) {
+    #---------------------------------------------------------------------------
+    #
+    method !cdk ( $sub-doc! ) {
       for $sub-doc.keys -> $k {
         if $k ~~ m/ (^ '$' | '.') / {
           die X::MongoDB::Collection.new(
@@ -247,7 +249,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method update ( %selector, %update, Bool :$upsert = False,
+    method update ( %selector, %update!, Bool :$upsert = False,
                     Bool :$multi_update = False
                     --> Nil
                   ) {
@@ -323,7 +325,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Find distinct values of a field depending on criteria
     #
-    method distinct( Str $field-name!, %criteria = {} --> Array ) {
+    method distinct( Str:D $field-name, %criteria = {} --> Array ) {
       my Pair @req = distinct => $!name,
                      key => $field-name,
                      query => %criteria
@@ -404,9 +406,10 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
-                              Str :$finalize, Hash :$criteria, Hash :$sort,
-                              Hash :$scope, Int :$limit, Bool :$jsMode = False
+    multi method map_reduce ( Str:D $map_js_func, Str:D $reduce_js_func,
+                              Hash :$out, Str :$finalize, Hash :$criteria,
+                              Hash :$sort, Hash :$scope, Int :$limit,
+                              Bool :$jsMode = False
                               --> Hash ) {
 
       self.map_reduce( BSON::Javascript.new(:javascript($map_js_func)),
@@ -416,8 +419,8 @@ package MongoDB {
                      );
     }
 
-    multi method map_reduce ( BSON::Javascript $map_js_func,
-                              BSON::Javascript $reduce_js_func,
+    multi method map_reduce ( BSON::Javascript:D $map_js_func,
+                              BSON::Javascript:D $reduce_js_func,
                               BSON::Javascript :$finalize = $!default_js,
                               Hash :$out, Hash :criteria($query), Hash :$sort,
                               Hash :$scope, Int :$limit, Bool :$jsMode = False
