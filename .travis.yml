@@ -24,7 +24,6 @@ install:
 cache:
   directories:
     - $TRAVIS_BUILD_DIR/Travis-ci
-    - $TRAVIS_BUILD_DIR/.rakudobrew
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #
