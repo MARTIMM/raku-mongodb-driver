@@ -83,7 +83,7 @@ Module MongoDB depends on Module C<BSON> and C<Digest::MD5>.
 The MongoDB site at L<http://www.mongodb.org/>
 
 
-=head1 TODO
+=head1 BUGS and TODO
 
 There is a lot still to be implemented. A non exhaustive list of todo's:
 
@@ -105,10 +105,67 @@ the programming of a several month student(me) can accomplish ;-). As of
 september 2015 a great improvement is made.
 
 =for item1
+Keys must be checked for illegal characters when inserting documents.
+
+=for item1
+Test to compare documents
+
+=for item1
+Test group aggregation keyf field and finalize
+
+=for item1
+Test map reduce aggregation more thoroughly.
+
+=for item1
+In method map_reduce the parameter scope is not used.
+
+=for item1
+Explain changed after mongodb 3.0
+
+=for item1
+Testing $mod in queries seems to have problems in version 3.0.5
+
+=for item1
+Get info about multiple accounts instead of one at the time
+
+=for item1
+Need a change in throwing exceptions. Not all errors are unrecoverable. Return
+e.g. a failure instead of throwing an exception. C<MongoDB::Connect.new()> is
+the first method who saves an exception in its c<$.status> attribute.
+
+=for item1
+Modify Mongo.pm. Remove use statements and add variables for use by modules.
+This is done now.
+
+=for item1
+While we can add users to the database we cannot authenticate due to the lack
+of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
+authenticate with. 
+
+=for item1
+Change method names with an underscore into names with a dash. E.g. map_reduce
+will become then map-reduce. When it will be defined, the old names with an
+underscore will show deprecation warnings.
+
+=for item1
+At the moment the packages is written to use the latest mongo version 3.* only.
+Perhaps also the latest 2.* version should be supported too.
 
 
+=head1 RELEASE NOTES
 
-=head1 BUGS
+=for item1
+Version 0.24
+
+=for item2
+Added document checks to inserts. No dollars on first char of keys and no
+dots in keys. This is checked on all levels. On top level the key ```_id```
+is checked if the value is unique in te collection.
+
+=for item2
+Changes in code caused by upgrading from MongoDB 2.4 to 3.0.5. Many of the
+servers return messages were changed.
+
 
 
 =head1 AUTHORS
@@ -118,7 +175,7 @@ september 2015 a great improvement is made.
 
 =head1 LICENSE AND COPYRIGHT
 
-Released under [Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0).
+Released under L<Artistic License 2.0|http://www.perlfoundation.org/artistic_license_2_0>.
 
 =end pod
 
