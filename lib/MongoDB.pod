@@ -13,181 +13,108 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 #
 =begin pod
 
-=head1 NAME MongoDB - Access MongoDB server
+=TITLE MongoDB Package
 
-=head1 SYNOPSIS
-
-=begin nested
-=begin code
-
-use MongoDB;
-
-# Initialize
-#
-my $connection = MongoDB::Connection.new( );
-my $database = $connection.database( 'test' );
-my $collection = $database.collection( 'perl_users' );
-
-# Insert documents
-#
-$collection.insert( %(name => 'Piet Hein', nick => 'ph', versions => [ 5, 6])
-                  , %(name => 'Pietje Bell', nick => 'pb')
-                  );
-
-# Find everything
-#
-my $cursor = $collection.find( );
-while $cursor.fetch( ) -> %document { %document.perl.say; }
-
-# Or narrow down using condition.
-#
-$cursor = $collection.find( { nick => 'ph' } );
-$cursor.fetch( ).perl.say;
-
-# Update any document, watchout for the MongoDB commands which uses $'s
-#
-$collection.update( {}, {'$set' => {company => 'Dutch Corners'}});
-
-# Update a specific document
-#
-$collection.update( {nick => 'ph'}, {'$set' => { company => 'Dutch Corners'}});
-
-# Remove specific documents.
-#
-$collection.remove( { nick => 'ph' } );
-
-# Remove all documents.
-#
-$collection.remove( );
-
-=end code
-=end nested
+=SUBTITLE Package using mongod server for storage and retrieval of data
 
 
 =head1 DESCRIPTION
 
-This set of modules will help you accessing a MongoDB server. All primitive
-functions are installed to insert, update, find and remove documents.
-http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-wire-protocol/
-
-=head1 METHODS
-
-=head2 method insert ( **@documents, Bool :$continue_on_error = False ) {...}
-
-Insert a document. You may specify more than one. These documents must all be
-hashes. Below are the possible ways to insert documents.
-
-The flag B<:continue_on_error> can be set to let the insert continue its job
-when a document fails.
-
-=begin nested
-=begin code
-
-my %d1 = k1 => 'v1', k2 => 'v2';
-my $d2 = %(k1 => 'v1a');
-$collection.insert( :continue_on_error, {%d1}, $d2);
-
-my @docs = $%( k2 => 'v2a', k5 => 'v5'), $%( k1 => 'v1b', k2 => 'v2b');
-$collection.insert(@docs);
-
-=end code
-=end nested
-
-=begin head2 
-method find ( %criteria = { },, %projection = { },
-              Int :$number_to_skip = 0, Int :$number_to_return = 0,
-              Bool :$no_cursor_timeout = False
-            ) {...}
-=end head2
-
-Find documents in the database. When %criteria is empty all documents are
-returned, There are 2 options and a flag to control the search. %projection is
-used to select the fields to be returned. It looks like {field => 1/0}. When 1
-it is included, when 0 it will be excluded. The _id field is always included
-unless explicitly excluded like {_id => 0}. The function returns a
-MongoDB::Cursor.
-
-B<:number_to_skip> is used to skip a number of documents.
-
-B<:number_to_return> is used to ask for a specific number of documents.
-
-B<:no_cursor_timeout> The server normally times out idle cursors after an
-inactivity period (10 minutes) to prevent excess memory use. Set this option to
-prevent that.
-
-=begin nested
-=begin code
-$cursor = $collection.find({nick => 'pb'});
-$cursor.fetch( ).perl.say;
-=end code
-=end nested
+This package holds a set of modules which will help you accessing a MongoDB
+server. All primitive functions are installed to insert, update, find and remove
+documents.
 
 
+=head1 MODULES
 
-=begin head2 
-method update ( %selector, %update,
-                Bool :$upsert = False, Bool :$multi_update = False
-              ) {...}
-=end head2 
+=head2 MongoDB::Connection
 
-Update documents in the database. There are 2 flags defined.
+Module to connect to server and to get basic information. See
+L<pod file|MongoDB/Connection.pod>.
 
-B<:upsert> If set, the database will insert the supplied object into the
-collection if no matching document is found.
+=head2 MongoDB::DataBase
 
-B<:multi_update> If set, the database will update all matching objects in the
-collection. Otherwise only updates first matching doc.
+Module to handle specific database tasks.
 
-The commands used by MongoDB such as $set, $inc and $push can easily create
-unexpected errors in perl programs because scalars are written the same way.
-Make sure you escape the $ sign or enclose the commands in single quoted strings
-to prevent interpolation.
+=head2 MongoDB::DataBase::Authenticate
 
-=begin nested
-=begin code
-# Update all documents
-$collection.update({}, {'$set' => {company => 'Implix'}});
+Module to authenticate users.
 
-# Update documents for nick 'ph' or, when not existent, create a new document.
-$collection.update( :upsert, {nick => 'pb'}, {'$push' => {versions => 7}});
-=end code
-=end nested
+=head2 MongoDB::DataBase::Users
 
-=for head2 
-method remove ( %selector = {}, Bool :$single_remove = False ) {...}
+Module to administer user accounts.
 
-Remove the selected documents from the database.
+=head2 MongoDB::Collection
 
-B<:single_remove> If set, the database will remove only the first matching
-document in the collection. Otherwise all matching documents will be removed.
+Module to perfoem the standard CRUD operations. See
+L<pod file|MongoDB/Collection.pod>.
 
-=begin nested
-=begin code
-# Remove first document for nick 'ph'.
-$collection.remove( :single_remove, {nick => 'pb'});
+=head2 MongoDB::Cursor
 
-# Remove all documents
-$collection.remove();
-=end code
-=end nested
+Module to iterate through found data search for by methods from the
+C<MongoDB::Collection> module.
+
+=head2 MongoDB::DBRef
+
+Module to handle references between documents.
+
+=head2 MongoDB::Protocol
+
+Module to define a role used by classes C<MongoDB::Collection> and C<MongoDB::Cursor>
+to have access to an instantiated wire class.
+
+=head2 MongoDB::Wire
+
+Module for which its methods access the C<BSON> encoding methods are used
+before sending and decoding tools after receiving data from the server.
+
+=head2 MongoDB
+
+Module to hold basic information reachable from other modules.
+
 
 =head1 DEPENDENCIES
 
-Module MongoDB depends on Module BSON.
+Module MongoDB depends on Module C<BSON> and C<Digest::MD5>.
+
 
 =head1 SEE ALSO
 
 The MongoDB site at L<http://www.mongodb.org/>
 
+
+=head1 TODO
+
+There is a lot still to be implemented. A non exhaustive list of todo's:
+
+=for item1
+Mongo priority recomendations. Following L<priority
+recomendations|http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/>
+from the mongodb site about writing drivers.
+
+=for item1
+Speed, protocol correctness and clear code are priorities for now.
+
+=for item2
+Speed can be influenced by specifying types on all variables. Also setting
+constraints like (un)definedness etc on parameters. Most of it is already done.
+
+=for item2
+Furthermore the speedup of the language perl6 itself would have more impact than
+the programming of a several month student(me) can accomplish ;-). As of
+september 2015 a great improvement is made.
+
+=for item1
+
+
+
 =head1 BUGS
 
+
 =head1 AUTHORS
-=begin nested
-=begin code
-Paweł Pabian - Creator of the modules til january 2015
-Marcel Timmerman - Maintainer since january 2015 (MARTIMM on github)
-=end code
-=end nested
+
+  Paweł Pabian - Creator of the modules until january 2015
+  Marcel Timmerman - Maintainer since january 2015 (MARTIMM on github)
 
 =head1 LICENSE AND COPYRIGHT
 

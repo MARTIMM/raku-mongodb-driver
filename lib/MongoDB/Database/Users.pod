@@ -85,7 +85,6 @@ Some methods from the C<MongoDB::Database::Users> class will throw
 C<X::MongoDB::Database> exceptions when things go wrong. E.g. creating a user
 which already exists with faulty arguments.
 
-
 =head2 METHODS
 
 =for head3
