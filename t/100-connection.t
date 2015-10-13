@@ -16,64 +16,111 @@ use Test;
 
 use MongoDB::Connection;
 
-my $connection = get-connection();
-isa-ok( $connection, 'MongoDB::Connection');
-
-
-my Hash $version = $connection.version;
-#say "V: ", $version.perl;
-ok $version<release1>:exists, "Version release $version<release1>";
-ok $version<release2>:exists, "Version major $version<release2>";
-ok $version<revision>:exists, "Version minor $version<revision>";
-is $version<release-type>,
-   $version<release2> %% 2 ?? 'production' !! 'development',
-   "Version type $version<release-type>";
-
-my Hash $buildinfo = $connection.build_info;
-ok $buildinfo<version>:exists, "Version $buildinfo<version>";
-ok $buildinfo<loaderFlags>:exists, "Loader flags $buildinfo<loaderFlags>";
-
-# Create databases with a collection and data to make sure the databases are there
-#
-my MongoDB::Database $database = $connection.database('test');
-isa-ok( $database, 'MongoDB::Database');
-
-my MongoDB::Collection $collection = $database.collection('perl6_driver1');
-$collection.insert( $%( 'name' => 'Jan Klaassen'));
+my MongoDB::Connection $connection;
 
 #-------------------------------------------------------------------------------
-# Get the statistics of the databases
-#
-my Array $db-docs = $connection.list_databases;
+subtest {
+  $connection .= new( :host<localhost>, :port(763245));
+  is $connection.^name,
+     'MongoDB::Connection',
+     "Connection isa {$connection.^name}";
 
-# Get the database name from the statistics and save the index into the array
-# with that name. Use the zip operator to pair the array entries %doc with
-# their index number $idx.
-#
-my %db-names;
-my $idx = 0;
-for $db-docs[*] -> $doc {
-  %db-names{$doc<name>} = $idx++;
-}
+  is $connection.status.^name,
+     'X::MongoDB::Connection',
+     "1 Status isa {$connection.status.^name}";
 
-ok %db-names<test>:exists, 'database test found';
+  ok $connection.status ~~ X::MongoDB::Connection,
+     "2 Status isa {$connection.status.^name}";
 
-ok !$db-docs[%db-names<test>]<empty>, 'Database test is not empty';
+  ok $connection.status ~~ Exception, "3 Status is also an Exception";
+  ok ? $connection.status, "Status is defined";
+
+  is $connection.status.error-text,
+     "Failed to connect to localhost at 763245",
+     '1 ' ~ $connection.status.error-text;
+
+  try {
+    die $connection.status;
+    CATCH {
+      default {
+        ok .message ~~ m:s/'connect' 'to' 'localhost' 'at' \d+/,
+        '2 ' ~ .error-text
+      }
+    }
+  }
+
+}, "Connect failure testing";
 
 #-------------------------------------------------------------------------------
-# Get all database names
-#
-my @dbns = $connection.database_names();
+subtest {
+  $connection = get-connection();
+  is $connection.status.^name, 'Exception', '1 Status isa Exception';
+  ok $connection.status ~~ Exception, '2 Status isa Exception';
+  ok $connection.status !~~ X::MongoDB::Connection,
+     '3 Status is not a !X::MongoDB::Connection';
+  ok ! ? $connection.status, "Status is not defined";
 
-ok any(@dbns) ~~ 'test', 'test is found in list';
+  my Hash $version = $connection.version;
+  #say "V: ", $version.perl;
+  ok $version<release1>:exists, "Version release $version<release1>";
+  ok $version<release2>:exists, "Version major $version<release2>";
+  ok $version<revision>:exists, "Version minor $version<revision>";
+  is $version<release-type>,
+     $version<release2> %% 2 ?? 'production' !! 'development',
+     "Version type $version<release-type>";
+
+  my Hash $buildinfo = $connection.build_info;
+  ok $buildinfo<version>:exists, "Version $buildinfo<version>";
+  ok $buildinfo<loaderFlags>:exists, "Loader flags $buildinfo<loaderFlags>";
+}, "Test buildinfo and version";
 
 #-------------------------------------------------------------------------------
-# Drop database db2
-#
-$database.drop;
+subtest {
 
-@dbns = $connection.database_names();
-ok !(any(@dbns) ~~ 'test'), 'test not found in list';
+  #-------------------------------------------------------------------------------
+  # Create databases with a collection and data to make sure the databases are
+  # there
+  #
+  my MongoDB::Database $database = $connection.database('test');
+  isa-ok( $database, 'MongoDB::Database');
+
+  my MongoDB::Collection $collection = $database.collection('perl6_driver1');
+  $collection.insert( $%( 'name' => 'Jan Klaassen'));
+
+  #-------------------------------------------------------------------------------
+  # Get the statistics of the databases
+  #
+  my Array $db-docs = $connection.list_databases;
+
+  # Get the database name from the statistics and save the index into the array
+  # with that name. Use the zip operator to pair the array entries %doc with
+  # their index number $idx.
+  #
+  my %db-names;
+  my $idx = 0;
+  for $db-docs[*] -> $doc {
+    %db-names{$doc<name>} = $idx++;
+  }
+
+  ok %db-names<test>:exists, 'database test found';
+
+  ok !$db-docs[%db-names<test>]<empty>, 'Database test is not empty';
+
+  #-------------------------------------------------------------------------------
+  # Get all database names
+  #
+  my @dbns = $connection.database_names();
+
+  ok any(@dbns) ~~ 'test', 'test is found in database list';
+
+  #-------------------------------------------------------------------------------
+  # Drop database db2
+  #
+  $database.drop;
+
+  @dbns = $connection.database_names();
+  ok !(any(@dbns) ~~ 'test'), 'test not found in database list';
+}, "Create database, collection. Collect database info, drop data";
 
 #-------------------------------------------------------------------------------
 # Cleanup
