@@ -2,7 +2,7 @@ use v6;
 use MongoDB::Wire;
 
 package MongoDB {
-  role MongoDB::Protocol {
+  role Protocol {
 
     state MongoDB::Wire $wp = MongoDB::Wire.new;
 
