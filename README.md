@@ -166,9 +166,9 @@ Legend;
 * [x] Convert all strings to UTF-8. This is inherent to perl6. Everything is
       UTF8 and conversion to buffers is done using encode and decode.
 * [x] Automatic _id generation. See BSON module.
-* [ ] BSON serialization/deserialization. See BSON module and [Site](http://bsonspec.org/).
-      Parts are finished but not all variable types are supported. See BSON
-      documentation of what is supported.
+* [x] BSON serialization/deserialization. See [BSON module](https://github.com/MARTIMM/BSON) and
+      [Site](http://bsonspec.org/). Parts are finished but not all variable
+      types are supported. See BSON documentation of what is supported.
 * [ ] Support detecting max BSON size on connection (e.g., using buildInfo or
       isMaster commands) and allowing users to insert docs up to that size.
 * [ ] File chunking (/applications/gridfs)
@@ -386,11 +386,11 @@ are also items to be implemented in BSON. You need to look there for info
 * Following [priority recomendations](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/) from the mongodb site about writing drivers.
 * Speed, protocol correctness and clear code are priorities for now.
   * Speed can be influenced by specifying types on all variables
+  * Also setting constraints like (un)definedness etc on parameters
   * Furthermore the speedup of the language perl6 itself would have more impact
-    than the programming of a one month student(me) can accomplish ;-)
-* Change die() statements to throw exception objects to notify caller.
+    than the programming of a several month student(me) can accomplish ;-).
+    As of september 2015 a great improvement is made.
 * Keys must be checked for illegal characters when inserting documents.
-* Tests for connection to non existing server. timeout setting.
 * Test to compare documents
 * Test group aggregation keyf field and finalize
 * Test map reduce aggregation more thoroughly.
@@ -411,6 +411,9 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.25.5
+  * Tests for connection to non existing server. There is no timeout setting
+    at the moment. Sets $.status to an Exception object when it fails.
 * 0.25.4
   * Travis-ci uses a mongod version of 2.4.12 which can not be used (yet) by
     this driver. A situation is now created to use the sandbox also for Travis
