@@ -1,5 +1,6 @@
 use v6;
-use MongoDB::Protocol;
+
+use MongoDB::Wire;
 use MongoDB::Cursor;
 use BSON::Javascript;
 
@@ -25,7 +26,11 @@ class X::MongoDB::Collection is Exception {
 #-------------------------------------------------------------------------------
 #
 package MongoDB {
-  class MongoDB::Collection does MongoDB::Protocol {
+
+  class MongoDB::Collection {
+
+    state MongoDB::Wire:D $wp = MongoDB::Wire.new;
+    has MongoDB::Wire:D $.wire = $wp;
 
     has $.database;
     has Str $.name;
