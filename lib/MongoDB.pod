@@ -145,7 +145,10 @@ authenticate with.
 =for item1
 Change method names with an underscore into names with a dash. E.g. map_reduce
 will become then map-reduce. When it will be defined, the old names with an
-underscore will show deprecation warnings.
+underscore will show deprecation warnings. Other names starting with an
+underscore has always been the perl5 notion of being a private variable or
+routine. In perl6 this a method can be initiated with an exclamation mark to
+make it private.
 
 =for item1
 At the moment the packages is written to use the latest mongo version 3.* only.
