@@ -13,7 +13,7 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=head1 NAME MongoDB::Database::Users - User administration
+=head1 NAME MongoDB::Users - User administration
 
 =head1 SYNOPSIS
 
@@ -21,7 +21,7 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 =begin code
 
 use MongoDB::Connection;
-use MongoDB::Database::Users;
+use MongoDB::Users;
 
 # Initialize
 #
@@ -29,7 +29,7 @@ my $connection = MongoDB::Connection.new;
 my $database = $connection.database('test');
 
 my MongoDB::Database $database = $connection.database('test1');
-my MongoDB::Database::Users $users .= new(:$database);
+my MongoDB::Users $users .= new(:$database);
 
 my Hash $doc = $users.create_user(
   :user('John'),
@@ -41,7 +41,7 @@ my Hash $doc = $users.create_user(
 $users.set_pw_security(
   :min_un_length(5),
   :min_pw_length(8),
-  :pw_attribs($MongoDB::Database::PW-OTHER-CHARS)
+  :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
 );
 
 my Hash $doc = $users.create_user(
@@ -81,10 +81,9 @@ $doc = $users.drop_all_users_from_database();
 
 Class to manipulate accounts used for authentication.
 
-Some methods from the C<MongoDB::Database::Users> class will throw
+Some methods from the C<MongoDB::Users> class will throw
 C<X::MongoDB::Database> exceptions when things go wrong. E.g. creating a user
 which already exists with faulty arguments.
-
 
 =head2 METHODS
 

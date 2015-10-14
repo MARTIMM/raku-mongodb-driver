@@ -12,18 +12,18 @@ package MongoDB {
   #-----------------------------------------------------------------------------
   #
   class X::MongoDB::Connection is Exception {
-    has $.error-text;                     # Error text
-    has $.error-code;                     # Error code if from server
-    has $.oper-name;                      # Operation name
-    has $.oper-data;                      # Operation data
-    has $.database-name;                  # Database name
+    has Str $.error-text;                     # Error text
+    has Str $.error-code;                     # Error code if from server
+    has Str $.oper-name;                      # Operation name
+    has Str $.oper-data;                      # Operation data
+    has Str $.database-name;                  # Database name
 
     method message () {
       return [~] "\n$!oper-name\() error:\n",
                  "  $!error-text",
-                 $.error-code.defined ?? "\($!error-code)" !! '',
-                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-                 "\n  Database '$!database-name'\n"
+                 ? $!error-code ?? "\($!error-code)" !! '',
+                 ? $!oper-data ?? "\n  Data $!oper-data" !! '',
+                 ? $!database-name ?? "\n  Database '$!database-name'\n" !! ''
                  ;
     }
   }
@@ -33,19 +33,39 @@ package MongoDB {
   class MongoDB::Connection {
 
     has IO::Socket::INET $!sock;
+    has Exception $.status = Nil;
 
     #---------------------------------------------------------------------------
     #
     submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
-      $!sock = IO::Socket::INET.new( host => $host, port => $port );
-      $MongoDB::version = self.version;
-    #  $!sock = IO::Socket::INET.new( host => "$host/?connectTimeoutMS=3000",
-    # port => $port );
+
+      try {
+        if ? $!sock {
+          $!sock.close;
+          $!sock = IO::Socket::INET;
+        }
+
+        $!status = Nil;
+        $!sock .= new( :$host, :$port);
+        CATCH {
+          default {
+            $!status = X::MongoDB::Connection.new(
+              :error-text("Failed to connect to $host at $port"),
+              :error-code(Nil),
+              :oper-name<connect>,
+              :oper-data(Nil),
+              :database-name(Nil)
+            );
+          }
+        }
+      }
+
+      $MongoDB::version = self.version unless ? $!status;
     }
 
     #---------------------------------------------------------------------------
     #
-    method _send ( Buf $b, Bool $has_response --> Any ) {
+    method _send ( Buf:D $b, Bool $has_response --> Any ) {
       $!sock.write($b);
 
       # some calls do not expect response
@@ -65,7 +85,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method database ( Str $name --> MongoDB::Database ) {
+    method database ( Str:D $name --> MongoDB::Database ) {
       return MongoDB::Database.new(
         :connection(self),
         :name($name)

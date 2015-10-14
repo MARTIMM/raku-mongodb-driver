@@ -64,7 +64,7 @@ package MongoDB {
     # Select a collection. When it is new it comes into existence only
     # after inserting data
     #
-    method collection ( Str $name --> MongoDB::Collection ) {
+    method collection ( Str:D $name --> MongoDB::Collection ) {
 
       if !($name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
         die X::MongoDB::Database.new(
@@ -80,7 +80,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Create collection explicitly with control parameters
     #
-    method create_collection ( Str $collection_name, Bool :$capped,
+    method create_collection ( Str:D $collection_name, Bool :$capped,
                                Bool :$autoIndexId, Int :$size,
                                Int :$max, Int :$flags
                                --> MongoDB::Collection
@@ -158,7 +158,7 @@ package MongoDB {
     # %("ok" => 0e0, "errmsg" => <Some error string>)
     # %("ok" => 1e0, ...);
     #
-    multi method run_command ( Pair @command --> Hash ) {
+    multi method run_command ( Pair:D @command --> Hash ) {
 
       # Create a local collection structure here
       #

@@ -1,27 +1,33 @@
 use v6;
-use MongoDB::Protocol;
+use MongoDB::Wire;
 
-package MongoDB {
-  #-----------------------------------------------------------------------------
-  #
-  class X::MongoDB::Cursor is Exception {
-    has $.error-text;                     # Error text
-    has $.error-code;                     # Error code if from server
-    has $.oper-name;                      # Operation name
-    has $.oper-data;                      # Operation data
-    has $.collection-name;                # Collection name
+#-------------------------------------------------------------------------------
+#
+class X::MongoDB::Cursor is Exception {
+  has $.error-text;                     # Error text
+  has $.error-code;                     # Error code if from server
+  has $.oper-name;                      # Operation name
+  has $.oper-data;                      # Operation data
+  has $.collection-name;                # Collection name
 
-    method message () {
-      return [~] "\n$!oper-name\() error:\n",
-                 "  $!error-text",
-                 $.error-code.defined ?? "\($!error-code)" !! '',
-                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-                 "\n  Database '$!collection-name'\n"
-                 ;
-    }
+  method message () {
+    return [~] "\n$!oper-name\() error:\n",
+               "  $!error-text",
+               $.error-code.defined ?? "\($!error-code)" !! '',
+               $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
+               "\n  Database '$!collection-name'\n"
+               ;
   }
+}
 
-  class MongoDB::Cursor does MongoDB::Protocol {
+#-------------------------------------------------------------------------------
+#
+package MongoDB {
+
+  class MongoDB::Cursor {
+
+    state MongoDB::Wire:D $wp = MongoDB::Wire.new;
+    has MongoDB::Wire:D $.wire = $wp;
 
     has $.collection;
     has %.criteria;

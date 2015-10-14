@@ -207,7 +207,23 @@ spurt 'Sandbox/m-repl.conf', $config ~ qq:to/EOCNF/;
 #
 diag "Wait for server to start up using port $port-number";
 say "Starting \"$mongodb-server-path --config '$*CWD/Sandbox/m.conf'\"";
-my $exit_code = shell("$mongodb-server-path --config '$*CWD/Sandbox/m.conf'");
+my Proc $proc = shell("$mongodb-server-path --config '$*CWD/Sandbox/m.conf'");
+
+if $proc.exitcode != 0 {
+  spurt 'Sandbox/NO-MONGODB-SEFVER', '' unless $proc.exitcode == 0;
+  plan 1;
+  flunk('No database server started!');
+  skip-rest('No database server started!');
+  exit(0);
+}
+
+else {
+  # Remove the file if still there
+  #
+  if 'Sandbox/NO-MONGODB-SEFVER'.IO ~~ :e {
+    unlink 'Sandbox/NO-MONGODB-SEFVER';
+  }
+}
 
 # Test communication
 #
@@ -216,7 +232,6 @@ my MongoDB::Connection $connection = get-connection-try10();
 # Test version
 #
 my $version = $connection.version;
-diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
 ok $version<release1> >= 3, "MongoDB release >= 3";
 
 #-----------------------------------------------------------------------------

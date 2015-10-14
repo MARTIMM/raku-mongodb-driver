@@ -13,7 +13,7 @@
 use v6;
 use Test;
 use MongoDB::Connection;
-use MongoDB::Database::Users;
+use MongoDB::Users;
 
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
@@ -25,7 +25,7 @@ my MongoDB::Connection $connection = get-connection();
 $connection.database('test').drop;
 
 my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Database::Users $users .= new(database => $database);
+my MongoDB::Users $users .= new(database => $database);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -65,7 +65,7 @@ subtest {
   $users.set_pw_security(
     :min_un_length(5),
     :min_pw_length(6),
-    :pw_attribs($MongoDB::Database::Users::PW-OTHER-CHARS)
+    :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
   );
 
   if 1 {

@@ -6,7 +6,7 @@ use Digest::MD5;
 #
 package MongoDB {
 
-  class MongoDB::Database::Authenticate {
+  class MongoDB::Authenticate {
 
     has MongoDB::Database $.database;
 
@@ -20,7 +20,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method authenticate ( Str :$user, Str :$password --> Hash ) {
+    method authenticate ( Str:D :$user, Str :$password --> Hash ) {
       my Pair @req = (getnonce => 1);
       my Hash $doc = $!database.run_command(@req);
 say "N0: ", $doc.perl;
@@ -61,7 +61,7 @@ say "N2: ", $doc.perl;
 
     #---------------------------------------------------------------------------
     #
-    method logout ( Str :$user --> Hash ) {
+    method logout ( Str:D :$user --> Hash ) {
       my Pair @req = (logout => 1);
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {

@@ -32,6 +32,14 @@ package Test-support
   # Get a connection and test version. When version is wrong the process fails.
   #
   sub get-connection ( --> MongoDB::Connection ) is export {
+
+    if 'Sandbox/NO-MONGODB-SEFVER'.IO ~~ :e {
+      plan 1;
+      flunk('No database server started!');
+      skip-rest('No database server started!');
+      exit(0);
+    }
+
     my Int $port-number = get-port-number();
     my MongoDB::Connection $connection .= new(
       :host('localhost'),

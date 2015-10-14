@@ -8,7 +8,7 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class MongoDB::Database::Users {
+  class MongoDB::Users {
 
     constant $PW-LOWERCASE = 0;
     constant $PW-UPPERCASE = 1;
@@ -31,8 +31,8 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method set_pw_security (
-      Int :$min_un_length where $min_un_length >= 2,
-      Int :$min_pw_length where $min_pw_length >= 2,
+      Int:D :$min_un_length where $min_un_length >= 2,
+      Int:D :$min_pw_length where $min_pw_length >= 2,
       Int :$pw_attribs = $PW-LOWERCASE
     ) {
 
@@ -66,7 +66,7 @@ package MongoDB {
     # Create a user in the mongodb authentication database
     #
     method create_user (
-      Str :$user, Str :$password,
+      Str:D :$user, Str:D :$password,
       :$custom_data, Array :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
@@ -162,7 +162,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method drop_user ( Str :$user, Int :timeout($wtimeout) --> Hash ) {
+    method drop_user ( Str:D :$user, Int :timeout($wtimeout) --> Hash ) {
 
       my Pair @req = dropUser => $user;
       @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
@@ -208,7 +208,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method grant_roles_to_user (
-      Str :$user, Array :$roles, Int :timeout($wtimeout)
+      Str:D :$user, Array:D :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
 
@@ -234,7 +234,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method revoke_roles_from_user (
-      Str :$user, Array :$roles, Int :timeout($wtimeout)
+      Str:D :$user, Array:D :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
 
@@ -261,7 +261,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method update_user (
-      Str :$user, Str :$password,
+      Str:D :$user, Str :$password,
       :custom_data($customData), Array :$roles, Int :timeout($wtimeout)
       --> Hash
     ) {
@@ -345,7 +345,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method users_info (
-      Str :$user,
+      Str:D :$user,
       Bool :$show_credentials,
       Bool :$show_privileges,
       Str :$database

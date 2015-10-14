@@ -18,13 +18,17 @@ before_install:
 install:
   - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
   - panda installdeps .
-  - panda update
-  - panda install BSON Digest::MD5
+#  - panda update
+#  - panda install BSON Digest::MD5
 
+cache:
+  directories:
+    - $TRAVIS_BUILD_DIR/Travis-ci
 
+# Cannot use the mongod service because the version is too low (2.4.12)
+#
 #services:
 #  - mongodb
-#
-#before_script:
-#  - sleep 10
+
+
 

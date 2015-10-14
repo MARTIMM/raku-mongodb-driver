@@ -13,11 +13,19 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=head1 NAME MongoDB::Connection - Operations on a MongoDB Connection
+=TITLE class Connection in package MongoDB
 
-=head1 SYNOPSIS
+=SUBTITLE Mongod server connection and info
 
-=begin nested
+  package MongoDB { class Connection { ... }
+
+The class provides methods such as connecting to mongod server and ask
+information from the server.
+
+This class helps the client to connect to the server and provides some
+maintenance commands. The class is loaded automatically with the MongoDB
+module.
+
 =begin code
 
 use v6;
@@ -32,22 +40,64 @@ my @db-status-info = $connection.list_databases();
 # Get an array of database names
 my @db-names = $connection.list_databases();
 
-if( any(@db-names
-my MongoDB::Database $database = $connection.database('test');
-
 =end code
-=end nested
 
-=head1 DESCRIPTION
 
-This class helps the client to connect to the server and provides some
-maintenance commands. The class is loaded automatically with the MongoDB
-module.
+=head1 Exceptions
+
+=head2 X::MongoDB::Connection
+
+=head3 Attributes
+
+=head4 Str $.error-text
+ 
+Error is set from error message found in response data from server. One
+exception is when making a connection fails. Then the text is set by the method
+C<new>. Field will always be defined.
+
+ Str $.error-code;                     # Error code if from server
+ Str $.oper-name;                      # Operation name
+ Str $.oper-data;                      # Operation data
+ Str $.database-name;                  # Database name
 
 =head1 METHODS
 
-=for head2
-method database ( Str $name --> MongoDB::Database ) {...}
+=head2 method new
+
+Defined as:
+
+  method new ( Str :$host = 'localhost', Int :$port = 27017 )
+
+Usage:
+
+  my MongoDB::Connection $c .= new( :host<example.com>, :port(1234));
+
+Creates a new C<Connection> object. When all is ok the connection status will
+be undefined (Exception). Otherwise it will hold the X::MongoDB::Connection
+exception which can be thrown when needed.
+
+Example:
+
+  my MongoDB::Connection $c .= new(:host<non-existent-host.gov>);
+  if ? $c.status {
+    note 'Oh oh not good, try something else';
+    note $c.status.error-text;
+
+    # Try default or die
+    $c .= new;
+    die $connection.status if ? $c.status;
+  }
+
+
+=head2 method database
+
+Defined as:
+
+  method database ( Str $name --> MongoDB::Database )
+
+Usage:
+
+
 
 Get a database object named $name. When nonexistend, it will be created after
 inserting documents in the databases collection.
