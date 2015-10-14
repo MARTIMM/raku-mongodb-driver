@@ -6,7 +6,7 @@ use Digest::MD5;
 #
 package MongoDB {
 
-  class MongoDB::Database::Authenticate {
+  class MongoDB::Authenticate {
 
     has MongoDB::Database $.database;
 

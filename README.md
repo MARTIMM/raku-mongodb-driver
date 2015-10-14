@@ -414,6 +414,9 @@ change at any time. The public API should not be considered stable.*
 * 0.25.5
   * Tests for connection to non existing server. There is no timeout setting
     at the moment. Sets $.status to an Exception object when it fails.
+  * Moved modules User and Authenticate out of Database directory into toplevel
+    MongoDB because User is not a Database, i.e. User is not inheriting from
+    Database. Same goes for Authentication.
 * 0.25.4
   * Travis-ci uses a mongod version of 2.4.12 which can not be used (yet) by
     this driver. A situation is now created to use the sandbox also for Travis

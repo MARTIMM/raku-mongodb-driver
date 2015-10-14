@@ -6,8 +6,8 @@
 use v6;
 use Test;
 use MongoDB::Connection;
-use MongoDB::Database::Users;
-use MongoDB::Database::Authenticate;
+use MongoDB::Users;
+use MongoDB::Authenticate;
 
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
@@ -19,8 +19,8 @@ my MongoDB::Connection $connection = get-connection();
 #$connection.database('test').drop;
 
 my MongoDB::Database $database;
-my MongoDB::Database::Users $users;
-my MongoDB::Database::Authenticate $auth;
+my MongoDB::Users $users;
+my MongoDB::Authenticate $auth;
 
 my Hash $doc;
 my $exit_code;
@@ -40,7 +40,7 @@ subtest {
   $users.set_pw_security(
     :min_un_length(10), 
     :min_pw_length(8),
-    :pw_attribs($MongoDB::Database::Users::PW-OTHER-CHARS)
+    :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
   );
 
   $doc = $users.create_user(

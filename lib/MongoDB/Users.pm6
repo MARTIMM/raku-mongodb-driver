@@ -8,7 +8,7 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class MongoDB::Database::Users {
+  class MongoDB::Users {
 
     constant $PW-LOWERCASE = 0;
     constant $PW-UPPERCASE = 1;
