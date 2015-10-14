@@ -154,18 +154,62 @@ Perhaps also the latest 2.* version should be supported too.
 
 =head1 RELEASE NOTES
 
+This section is partly taken over from the README.md document which is included
+in this package.
+
 =for item1
-Version 0.24
+Version 0.25
+
+=for item2
+Addition of methods to administer user accounts
+
+=begin nested
+
+  Create user
+  Drop user
+  Drop all users
+  Users info
+  Grant roles
+  Revoke roles
+  Update users
+
+=end nested
 
 =for item2
 Added document checks to inserts. No dollars on first char of keys and no
-dots in keys. This is checked on all levels. On top level the key ```_id```
+dots in keys. This is checked on all levels. On top level the key C<_id>
 is checked if the value is unique in te collection.
 
 =for item2
 Changes in code caused by upgrading from MongoDB 2.4 to 3.0.5. Many of the
 servers return messages were changed.
 
+
+=for item1
+Version 0.24
+
+=for item2
+Added C<version> and C<build_info> to MongoDB::Connection.
+
+=for item2
+Added error processing in method C<count> in module C<MongoDB::Cursor>. Throws
+C<X::MongoDB::Cursor> exception.
+
+=for item2
+Changes caused by rakudo update in June 2015. BIG PROBLEM!!!!!!!!! Should have
+seen this coming! Its about C<run_command>. A hash needs to be setup with
+therein a command to be processed. With the new rakudo the hash get hashed
+properly and the keys are now in some unpredictable order. One of the
+necessities of run_command is that the command is found at the first key value
+pair. During encoding into a BSON byte array the command can be placed anywhere
+in the string and some other option coming at the first location will be seen
+as the command. SOLVED; mongodb run_command needs command on first key value
+pair. Because of this a few multi methods in several modules are added to
+process Pair arrays instead of hashes.
+
+=for item2
+Added C<find_and_modify>, C<stats>, C<data_size> methods in module
+C<MongoDB::Collection>.
 
 
 =head1 AUTHORS
