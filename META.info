@@ -16,7 +16,6 @@
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm",
     "MongoDB::DataBase":                "lib/MongoDB/DataBase.pm",
     "MongoDB::DBRef":                   "lib/MongoDB/DBRef.pm",
-    "MongoDB::Protocol":                "lib/MongoDB/Protocol.pm",
     "MongoDB::Users":                   "lib/MongoDB/Users.pm6",
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm",
     "MongoDB":                          "lib/MongoDB.pm"
