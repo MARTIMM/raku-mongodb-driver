@@ -66,19 +66,16 @@ package Test-support
     my MongoDB::Connection $connection;
     for ^10 {
       $connection .= new( :host<localhost>, :port($port-number));
-      isa-ok( $connection, 'MongoDB::Connection');
-      last;
-
-      CATCH {
-        default {
-          diag [~] "Error: ", .message, ". Wait a bit longer";
+        if ? $connection.status {
+          diag [~] "Error: ",
+                   $connection.status.error-text,
+                   ". Wait a bit longer";
           sleep 2;
         }
-      }
     }
 
     my $version = $MongoDB::version;
-    diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
+    diag "MongoDB version: " ~ $version<release1 release2 revision>.join('.');
     if $version<release1> < 3 {
       plan 1;
       flunk('Version not ok to use this set of modules?');

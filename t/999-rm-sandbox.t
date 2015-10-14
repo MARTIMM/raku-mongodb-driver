@@ -25,13 +25,9 @@ if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
 #
 my Int $port-number = slurp('Sandbox/port-number').Int;
 
-lives-ok {
-  my MongoDB::Connection $connection .= new(
-    :host('localhost'),
-    :port($port-number)
-    );
-  },
-  'MongoDB still running';
+
+my MongoDB::Connection $connection .= new( :host<localhost>, :port($port-number));
+ok !? $connection.status, 'MongoDB still running';
 
 diag "Wait for server to stop";
 my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
@@ -58,13 +54,8 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 diag "delete directory Sandbox";
 rmdir "Sandbox";
 
-dies-ok {
-  my MongoDB::Connection $connection .= new(
-    :host('localhost'),
-    :port($port-number)
-    );
-  },
-  'MongoDB not running';
+$connection .= new( :host<localhost>, :port($port-number));
+ok ? $connection.status, 'MongoDB not running';
 
 #-----------------------------------------------------------------------------
 # Cleanup and close
