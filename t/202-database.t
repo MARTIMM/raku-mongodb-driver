@@ -26,7 +26,7 @@ my Hash $doc;
 my $exit_code;
 
 plan 1;
-skip-rest "Some authentication modules not yet supported in perl 6";
+skip-rest "Some modules needed for authentication are not yet supported in perl 6";
 exit(0);
 
 #-------------------------------------------------------------------------------
