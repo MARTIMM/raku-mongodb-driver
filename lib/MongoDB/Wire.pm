@@ -4,7 +4,7 @@ use v6;
 #  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
 #}
 
-use BSON:ver<0.9.6+>;
+use BSON;
 use BSON::EDCTools;
 
 package MongoDB {
@@ -13,8 +13,10 @@ package MongoDB {
     # Implements Mongo Wire Protocol
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol
 
-    has Bool $.debug is rw = False;
-    has Int $.request_id is rw = 0;
+    # These variables must be shared between Wire objects.
+    #
+    my Bool $debug = False;
+    my Int $request_id = 0;
 
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
     has %.op_codes = (
@@ -44,7 +46,7 @@ package MongoDB {
         # int32 requestID
         # identifier for this message
         #
-        encode_int32($.request_id++),
+        encode_int32($request_id++),
 
         # int32 responseTo
         # requestID from the original request
@@ -224,7 +226,7 @@ package MongoDB {
       #
       my Hash $H_OP_REPLY = self.OP_REPLY($OP_REPLY);
 
-      if $.debug {
+      if $debug {
         say 'OP_QUERY:', $H_OP_REPLY.perl;
       }
 
@@ -277,7 +279,7 @@ package MongoDB {
       #
       my Hash $H_OP_REPLY = self.OP_REPLY($OP_REPLY);
 
-      if $.debug {
+      if $debug {
         say 'OP_GETMORE:', $H_OP_REPLY.perl;
       }
 
