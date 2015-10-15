@@ -24,7 +24,6 @@ package Test-support
     }
 
     my $port-number = slurp('Sandbox/port-number').Int;
-    diag "MongoDB server ready on port $port-number";
     return $port-number
   }
 
@@ -47,11 +46,22 @@ package Test-support
     );
 
     my $version = $MongoDB::version;
-    diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
-    if $version<release1> < 3 {
+    if ? $version {
+      diag "MongoDB server ready on port $port-number";
+      diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
+      if $version<release1> < 3 {
+        plan 1;
+        flunk('Mongod version not ok to use this set of modules?');
+        skip-rest('Mongod version not ok to use this set of modules?');
+        exit(0);
+      }
+    }
+
+    else {
+      diag "No version found === no mongod server found";
       plan 1;
-      flunk('Version not ok to use this set of modules?');
-      skip-rest('Version not ok to use this set of modules?');
+      flunk('No mongod server found?');
+      skip-rest('No mongod server found?');
       exit(0);
     }
 
@@ -66,12 +76,12 @@ package Test-support
     my MongoDB::Connection $connection;
     for ^10 {
       $connection .= new( :host<localhost>, :port($port-number));
-        if ? $connection.status {
-          diag [~] "Error: ",
-                   $connection.status.error-text,
-                   ". Wait a bit longer";
-          sleep 2;
-        }
+      if ? $connection.status {
+        diag [~] "Error: ",
+                 $connection.status.error-text,
+                 ". Wait a bit longer";
+        sleep 2;
+      }
     }
 
     my $version = $MongoDB::version;
@@ -93,12 +103,12 @@ package Test-support
                             Str $col-name
                             --> MongoDB::Collection
                           ) is export {
-                          
+
     my MongoDB::Connection $connection = get-connection();
     my MongoDB::Database $database = $connection.database($db-name);
     return $database.collection($col-name);
   }
-  
+
   #-----------------------------------------------------------------------------
   # Search and show content of documents
   #
@@ -113,12 +123,12 @@ package Test-support
       show-document(%document);
     }
   }
-  
+
   #-----------------------------------------------------------------------------
   # Display a document
   #
   sub show-document ( Hash $document ) is export {
-  
+
     print "Document: ";
     my $indent = '';
     for $document.keys -> $k {
