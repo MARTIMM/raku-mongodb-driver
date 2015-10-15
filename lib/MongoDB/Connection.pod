@@ -43,22 +43,6 @@ my @db-names = $connection.list_databases();
 =end code
 
 
-=head1 Exceptions
-
-=head2 X::MongoDB::Connection
-
-=head3 Attributes
-
-=head4 Str $.error-text
- 
-Error is set from error message found in response data from server. One
-exception is when making a connection fails. Then the text is set by the method
-C<new>. Field will always be defined.
-
- Str $.error-code;                     # Error code if from server
- Str $.oper-name;                      # Operation name
- Str $.oper-data;                      # Operation data
- Str $.database-name;                  # Database name
 
 =head1 METHODS
 

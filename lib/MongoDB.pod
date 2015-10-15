@@ -73,6 +73,41 @@ before sending and decoding tools after receiving data from the server.
 Module to hold basic information reachable from other modules.
 
 
+=head1 EXCEPTION X::MongoDB
+
+Exception type X::MongoDB is set when something fails. The data in this object
+is mostly but partly set by data from the server except when the server did not
+play a role in it. Not all methods return information depending on the classes
+and operations involved.
+
+C<$error-text> is set from error message found in response data from
+server. One exception is when making a connection fails. Then the text is set by
+the method C<new>. Field will always be defined.
+
+=head1 EXCEPTION X::MongoDB::Connection
+
+Exception object is set when something fails. The data in this object is partly
+set by data from the server except when connecting to the server fails.
+C<$error-text> is set from error message found in response data from server. One
+exception is when making a connection fails. Then the text is set by the method
+C<new>. Field will always be defined.
+
+=head2 METHODS
+
+=head3 error-text
+ 
+C<$error-text> is set from error message found in response data from server. One
+exception is when making a connection fails. Then the text is set by the method
+C<new>. Field will always be defined.
+
+ Str $.error-code;                     # Error code if from server
+ Str $.oper-name;                      # Operation name
+ Str $.oper-data;                      # Operation data
+ Str $.database-name;                  # Database name
+
+=head3 Methods
+
+
 =head1 DEPENDENCIES
 
 Module MongoDB depends on Module C<BSON> and C<Digest::MD5>.
