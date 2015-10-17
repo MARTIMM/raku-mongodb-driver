@@ -13,7 +13,6 @@ package MongoDB:ver<0.25.6> {
     has Str $.error-code;       # originated from the mongod server
     has Str $.oper-name;        # Used operation or server request
     has Str $.oper-data;        # Operation data are items sent to the server
-    has Str $.class-name;       # Class name
     has Str $.method;           # Method or routine name
     has Str $.database-name;    # Database name involved
     has Str $.collection-name;  # Collection name involved
@@ -25,7 +24,6 @@ package MongoDB:ver<0.25.6> {
       Str :$error-code,
       Str :$oper-name,
       Str :$oper-data,
-      Str :$class-name,
       Str :$method,
       Str :$database-name,
       Str :$collection-name
@@ -77,9 +75,9 @@ say '';
           $!file = $cf.file;
 
           $cf = callframe($fn + 1);
-          %h<method> = ~&($cf.code);
-          say "  name: ", ~&($cf.code);
-          say "  class: ", $cf.code.WHAT;
+          %h<method> = ~($cf.code);
+#          say "  name: ", ~($cf.code);
+#          say "  class: ", $cf.code.WHAT;
         }
 
         # We have our info so stop
@@ -91,7 +89,6 @@ say '';
       $!error-code      = $error-code;
       $!oper-name       = $oper-name;
       $!oper-data       = $oper-data;
-      $!class-name      = $class-name;
       $!method          = $method // %h<method>;
       $!database-name   = $database-name;
       $!collection-name = $collection-name;
@@ -103,7 +100,6 @@ say '';
                  ? $!oper-data ?? "\n  Request data $!oper-data" !! '',
                  ? $!database-name ?? "\n  Database '$!database-name'" !! '',
                  ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
-                 ? $!class-name ?? "\n  Class name $!class-name" !! '',
                  ? $!method ?? "\n  In method $!method" !! '',
                  "\n  At: $!file\:$!line\n"
                  ;

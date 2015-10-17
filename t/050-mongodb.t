@@ -26,16 +26,11 @@ subtest {
     :error-code('X007-a'),
     :oper-name('test-a'),
     :oper-data({ a => 1, b => 2}.perl),
-#    :class-name         Nil,
-#    :method             Nil,
     :database-name('test'),
-#    :collection-name    Nil
   );
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
-
-say "\nError message:\n", $e.message;
 
 }, "Exception block tests 1";
 
@@ -53,10 +48,8 @@ subtest {
           :error-code('X007-x'),
           :oper-name('test-x'),
           :oper-data({ ax => 11, bx => 22}.perl),
-      #    :class-name         Nil,
-      #    :method             Nil,
-      #    :database-name('test-x'),
-      #    :collection-name    Nil
+          :database-name('test-x'),
+          :collection-name('coll-tests')
         );
       }
     }
@@ -69,8 +62,18 @@ subtest {
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
+  is $e.collection-name, 'coll-tests';
+  is $e.method, 'set-x';
 
-say "\nError message:\n", $e.message;
+  try {
+    die $e;
+    
+    CATCH {
+      default {
+        ok .message ~~ m:s/ 'foutje,' 'bedankt!' /, 'Died well';
+      }
+    }
+  }
 
 }, "Exception block tests 2";
 
