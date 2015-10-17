@@ -42,7 +42,7 @@ if 1 {
 #-------------------------------------------------------------------------------
 # Create using illegal collection name
 #
-if 1 {
+try {
   $database.create_collection('abc-def and a space');
   CATCH {
     when X::MongoDB::Database {

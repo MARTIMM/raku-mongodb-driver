@@ -62,8 +62,8 @@ subtest {
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
-  is $e.collection-name, 'coll-tests';
-  is $e.method, 'set-x';
+  is $e.collection-name, 'coll-tests', 'Collection noted ok';
+  is $e.method, 'set-x', 'Method set-x()';
 
   try {
     die $e;
