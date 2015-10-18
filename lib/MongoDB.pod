@@ -22,55 +22,65 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 This package holds a set of modules which will help you accessing a MongoDB
 server. All primitive functions are installed to insert, update, find and remove
-documents.
+documents. This package will be continuesly improved to provide more and more
+functionality.
 
 
 =head1 MODULES
 
-=head2 MongoDB::Connection
+The modules in this package are the following
 
-Module to connect to server and to get basic information. See
-L<pod file|MongoDB/Connection.pod>.
+=head2 Module MongoDB/Authenticate.pm6
 
-=head2 MongoDB::DataBase
+Definition of class MongoDB::Authenticate which provides authentication of
+users defined with methods from MongoDB::Users.
+See also L<its pod file|MongoDB/Authenticate.pod>.
 
-Module to handle specific database tasks.
+=head2 Module MongoDB/Connection.pm
 
-=head2 MongoDB::DataBase::Authenticate
+This file defines class C<MongoDB::Connection> and is used to connect to a
+mongod server and to get basic information. See also L<its pod
+file|MongoDB/Connection.pod>.
 
-Module to authenticate users.
+=head2 Module MongoDB/Collection.pm
 
-=head2 MongoDB::DataBase::Users
+Defines class MongoDB::Collection. This is a module to perfoem the standard CRUD
+operations. See also L<its pod file|MongoDB/Collection.pod>.
 
-Module to administer user accounts.
+=head2 Module MongoDB/Cursor.pm
 
-=head2 MongoDB::Collection
+Defines class MongoDB::Cursor. The module is used to iterate through found data
+search for by methods from the C<MongoDB::Collection> module. See also L<its pod
+file|MongoDB/Cursor.pod>.
 
-Module to perfoem the standard CRUD operations. See
-L<pod file|MongoDB/Collection.pod>.
+=head2 Module MongoDB/DataBase.pm
 
-=head2 MongoDB::Cursor
+Definition of class MongoDB::DataBase which handles specific database tasks.
+See also L<its pod file|MongoDB/DataBase.pod>.
 
-Module to iterate through found data search for by methods from the
-C<MongoDB::Collection> module.
+=head2 Module MongoDB/DBRef.pm
 
-=head2 MongoDB::DBRef
+Defines MongoDB::DBRef to handle references between documents.
+See also L<its pod file|MongoDB/DBRef.pod>.
 
-Module to handle references between documents.
+=head2 Module MongoDB/Users.pm6
 
-=head2 MongoDB::Protocol
+Defines class MongoDB::Users to administer user accounts.
+See also L<its pod file|MongoDB/Users.pod>.
 
-Module to define a role used by classes C<MongoDB::Collection> and C<MongoDB::Cursor>
-to have access to an instantiated wire class.
+=head2 Module MongoDB/Wire.pm
 
-=head2 MongoDB::Wire
+Defines class MongoDB::Wire. Module for which its methods access the C<BSON>
+encoding methods are used before sending and decoding tools after receiving data
+from the server. See also L<its pod file|MongoDB/Wire.pod>.
 
-Module for which its methods access the C<BSON> encoding methods are used
-before sending and decoding tools after receiving data from the server.
+=head2 Module MongoDB
 
-=head2 MongoDB
+Module to hold basic information reachable from other modules. Further it
+defines a role and an Exception class. See for more below.
 
-Module to hold basic information reachable from other modules.
+
+=head1 MongoDB
 
 
 =head1 EXCEPTION X::MongoDB
