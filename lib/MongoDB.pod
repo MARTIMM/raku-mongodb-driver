@@ -79,8 +79,151 @@ from the server. See also L<its pod file|MongoDB/Wire.pod>.
 Module to hold basic information reachable from other modules. Further it
 defines a role and an Exception class. See for more below.
 
+=for COMMENT
+################################################################################
 
 =head1 MongoDB
+
+Defined as
+
+  package MongoDB:ver<0.0.1> { ... }
+
+Used as
+
+  use MongoDB;
+
+Base module to hold basic information
+
+
+=head1 TYPES
+
+=head2 Severity
+
+Defined as:
+
+  enum Severity <debug info warning error fatal>;
+
+Used as:
+
+  use MongoDB;
+  my $sv = MongoDB::Severity::warning
+
+An enumerated type holding names of severity levels
+
+
+=head1 EXPORTED SUBS
+
+=head2 set-exception-throw-level
+
+Defined as:
+
+  sub set-exception-throw-level ( Severity:D $s ) is export
+
+use as:
+
+  set-exception-throw-level(MongoDB::Severity::warning);
+
+Exceptions are thrown by the C<test-severity> method in the C<Logging> role if
+the severity level in the exception object is higher then this threshold.
+
+=head2 set-logfile-name
+
+Defined as:
+
+  sub set-logfile-name ( Str:D $filename ) is export
+
+Use as:
+
+  set-logfile-name('My-logfile.log');
+
+Set the name of a logfile. Default set value is C<MongoDB.log>. When the first
+log is done, the file is automatically opened. After that the filename change
+will not have any effect. Call open-logfile explicitly to switch to the new
+logfile.
+
+=head2 open-logfile
+
+Defined as:
+
+  sub open-logfile (  ) is export
+
+Use as:
+
+  open-logfile();
+
+Open the logfile. If any previously opened logfile is closed.
+
+
+=head1 ROLE Logging
+
+Defined as:
+
+  role Logging[Exception $e] { ... }
+
+Used as:
+
+  my $e = X::MongoDB.new(...);
+  my $l = MongoDB::Logging[$e];
+
+The role is parameterized to be used with an exception object. After
+instantiating all methods in the role work on the same exception object. This
+role looks for specific attributes and methods which must be defined there.
+These are the attributes C<date-time> and C<severity> which hold the date and
+time of object creation and severity saying something about how bad it is (all
+relative of course ;-). Furthermore for each severity level there must be a
+method. These methods must return a string with info about the exception.
+
+E.g.
+
+  method debug ( --> Str ) {
+    return "some error text from fields within...";
+  }
+
+The levels are shown above with the definition of C<Severity>. It is not
+nessesary to add date,time and severity because that will be handled by the
+C<log> method described below.
+
+The Exception does not have to be defined in which case all methods will act as
+a noop.
+
+=head2 METHODS
+
+=head3 log
+
+Defined as:
+
+  method log ( --> Exception )
+
+Use as
+
+  my $e = Logging[X::MongoDB.new(...)].log;
+
+or maybe as
+
+  my $e = X::MongoDB.new(...);
+  my $l = MongoDB::Logging[$e];
+  $l.log;
+
+Log the error in the logfile using the message facilities in the exception.. 
+
+=head3 test-severity
+
+Defined as:
+
+  method test-severity (  )
+
+Used as
+
+  my $e = X::MongoDB.new(...);
+  my $l = MongoDB::Logging[$e];
+  $l.test-severity;
+
+Or log and test in one go:
+
+  MongoDB::Logging[$e].log.test-severity;
+
+Test severity of the exception and throw when level gets to high (above
+threshold set with C<set-exception-throw-level>.
 
 
 =head1 EXCEPTION X::MongoDB
@@ -95,9 +238,10 @@ Defined as
     Str:D :$error-text,
     Str:D :$error-code,
     Str:D :$oper-name,
-    Str:D :$oper-data,
+    Str :$oper-data,
     Str :$database-name,
-    Str :$collection-name
+    Str :$collection-name,
+    MongoDB::Severity :$severity = MongoDB::Severity::warning
   )
 
 Usage as
@@ -113,17 +257,24 @@ Creates an exception object C<X::MongoDB>. Most of the methods will return this
 object when an error occurred. In a few occations it is stored in a local
 $.status attribute. A part of the data in this object is often set from data
 originating from the server after a request. However, it will be set by the
-method when the server did not play a role in the action.
+method itself when the server did not play a role in the action.
 
-Some of the fields can be undefined. E.g. when an error occurs while dropping a
-database, the collection name would not be set for that operation. When you
-think that you can not handle the exception you can throw the exception
+Some of the fields can be left undefined. E.g. when an error occurs while
+dropping a database, the collection name would not be set for that operation.
+When you think that you cannot handle the exception you can throw the exception
 yourself like so:
 
   my $collection = $database.collection('persons addresses');
+  die $collection.status if ? $collection.status;
+
+or, when taking the examples above:
+
+  my $collection = $database.collection('persons addresses');
+  my $l = MongoDB::Logging[$collection.status];
+  $l.test-severity;
 
 =head3 error-text
- 
+
 C<$error-text> is set from error message found in response data from server. One
 exception is when making a connection fails. Then the text is set by the method
 C<new>. Field will always be defined.
@@ -231,19 +382,9 @@ in this package.
 Version 0.25
 
 =for item2
-Addition of methods to administer user accounts
-
-=begin nested
-
-  Create user
-  Drop user
-  Drop all users
-  Users info
-  Grant roles
-  Revoke roles
-  Update users
-
-=end nested
+Addition of methods to administer user accounts. These are; create a user,
+drop a user, drop all users, get users info, grant roles, revoke roles and
+update users.
 
 =for item2
 Added document checks to inserts. No dollars on first char of keys and no

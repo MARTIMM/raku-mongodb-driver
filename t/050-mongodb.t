@@ -85,11 +85,13 @@ subtest {
   try {
     # No throwing yet
     #
-    MongoDB::Logging[$e].log;
+    my $l = MongoDB::Logging[$e];
+    $l.log;
+    $l.test-severity;
     ok ? $e, 'Still not dead';
 
     set-exception-throw-level(MongoDB::Severity::warning);
-    MongoDB::Logging[$e].log;
+    $l.test-severity;
 
     CATCH {
       default {
@@ -98,6 +100,11 @@ subtest {
       }
     }
   }
+    
+  set-exception-throw-level(MongoDB::Severity::fatal);
+  my $l = MongoDB::Logging[Exception];
+  $l.log;
+  $l.test-severity;
 
 }, "Exception block tests 2";
 

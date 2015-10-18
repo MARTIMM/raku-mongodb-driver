@@ -8,35 +8,55 @@ package MongoDB:ver<0.25.6> {
   #
   our $version = Nil;
 
-  # A role to be used to check a severity level to throw the error or to only
-  # log it.
-  #
-  enum Severity <debug info warning error critical>;
-  our $severity-throw-level = critical;
+  enum Severity <debug info warning error fatal>;
+  our $severity-throw-level = fatal;
   our $log-fn = 'MongoDB.log';
-  our $log-fh = $log-fn.IO.open: :a;
+  our $log-fh;
 
+  #-----------------------------------------------------------------------------
+  #
   sub set-exception-throw-level ( Severity:D $s ) is export {
     $severity-throw-level = $s;
   }
 
   #-----------------------------------------------------------------------------
   #
-  role Logging[Exception:D $e] {
+  sub set-logfile-name ( Str:D $filename ) is export {
+    $log-fn = $filename;
+  }
 
+  #-----------------------------------------------------------------------------
+  #
+  sub open-logfile (  ) is export {
+    $log-fh.close if ?$log-fh;
+    $log-fh = $log-fn.IO.open: :a;
+  }
+
+  #-----------------------------------------------------------------------------
+  # A role to be used to handle exceptions. It is parameterized with the
+  # exception and the exception is then visible in all methods.
+  #
+  role Logging [ Exception $e ] {
+
+    #---------------------------------------------------------------------------
+    #
     method log ( --> Exception ) {
+      return $e unless ?$e;
 
-      my Str $etxt = "\n", $e.date-time.Str, " [{uc $e.severity}]";
+      open-logfile() unless ?$log-fh;
+
+      my Str $etxt = [~] "\n", $e.date-time.Str, " [{uc $e.severity}]";
       $etxt ~= $e."{$e.severity}"();
-      $log-fh.print( "\n", $e.date-time.Str, " [{uc $e.severity}]");
+      $log-fh.print($etxt);
+      return $e;
+    }
 
-      if $e.severity < $severity-throw-level {
-        return $e;
-      }
+    #---------------------------------------------------------------------------
+    #
+    method test-severity (  ) {
+      return unless ?$e;
 
-      else {
-        die $e;
-      }
+      die $e if $e.severity >= $severity-throw-level;
     }
   }
 }
@@ -58,6 +78,8 @@ class X::MongoDB is Exception {
   has DateTime $.date-time .= now;
                                 # Date and time of creation.
 
+  #-----------------------------------------------------------------------------
+  #
   submethod BUILD (
     Str:D :$error-text,
     Str:D :$error-code,
@@ -109,44 +131,56 @@ class X::MongoDB is Exception {
     $!severity          = $severity;
   }
 
-  method debug () {
-    return [~] "\n{$!oper-name}\() {$!error-text}\({$!error-code})",
-               " at: $!file\:$!line\n"
+  #-----------------------------------------------------------------------------
+  #
+  method debug ( --> Str ) {
+    return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
+               " at $!file\:$!line\n"
                ;
   }
 
-  method info () {
-    return [~] "\n{$!oper-name}\() {$!error-text}\({$!error-code})",
+  #-----------------------------------------------------------------------------
+  #
+  method info ( --> Str ) {
+    return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
                ? $!database-name ?? "\n  Database '$!database-name'" !! '',
                ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
-               " at: $!file\:$!line\n"
+               " at $!file\:$!line\n"
                ;
   }
 
-  method warning () {
-    return [~] "\n{$!oper-name}\() {$!error-text}\({$!error-code})",
+  #-----------------------------------------------------------------------------
+  #
+  method warning ( --> Str ) {
+    return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
                ? $!database-name ?? "\n  Database '$!database-name'" !! '',
                ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
                ? $!method ?? "\n  In method $!method" !! '',
-               " at: $!file\:$!line\n"
+               " at $!file\:$!line\n"
                ;
   }
 
-  method error () {
+  #-----------------------------------------------------------------------------
+  #
+  method error ( --> Str ) {
     return self.message;
   }
 
-  method critical () {
+  #-----------------------------------------------------------------------------
+  #
+  method fatal ( --> Str ) {
     return self.message;
   }
 
-  method message () {
-    return [~] "\n$!oper-name\() error:\n  $!error-text\($!error-code)",
+  #-----------------------------------------------------------------------------
+  #
+  method message ( --> Str ) {
+    return [~] "\n  $!oper-name\(): $!error-text\($!error-code)",
                ? $!oper-data ?? "\n  Request data $!oper-data" !! '',
                ? $!database-name ?? "\n  Database '$!database-name'" !! '',
                ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
                ? $!method ?? "\n  In method $!method" !! '',
-               "\n  At: $!file\:$!line\n"
+               " at $!file\:$!line\n"
                ;
   }
 }
