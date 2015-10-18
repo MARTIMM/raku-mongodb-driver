@@ -6,6 +6,7 @@
 use v6;
 use Test;
 
+use MongoDB;
 use MongoDB::Connection;
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -21,16 +22,19 @@ my MongoDB::Database $database = $connection.database('test');
 
 #-------------------------------------------------------------------------------
 subtest {
-  my $e = X::MongoDB.new(
-    :error-text('foutje, bedankt!'),
+  my $e0 = X::MongoDB.new(
+    :error-text('Number of exceptions raised to Inf'),
     :error-code('X007-a'),
     :oper-name('test-a'),
     :oper-data({ a => 1, b => 2}.perl),
-    :database-name('test'),
+    :severity(MongoDB::Severity::info)
   );
+  
+  my $e = MongoDB::Logging[$e0].log;
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
+  is $e.severity, MongoDB::Severity::info, 'Severity still info';
 
 }, "Exception block tests 1";
 
@@ -49,7 +53,8 @@ subtest {
           :oper-name('test-x'),
           :oper-data({ ax => 11, bx => 22}.perl),
           :database-name('test-x'),
-          :collection-name('coll-tests')
+          :collection-name('coll-tests'),
+          :severity(MongoDB::Severity::error)
         );
       }
     }
@@ -57,7 +62,7 @@ subtest {
 
   my TE_P::TE $te .= new;
   my $e = $te.set-x(11);
-
+  
   is $te.x, 11, 'X set to 11';
 
   ok ? $e, 'Defined exception';
@@ -65,12 +70,31 @@ subtest {
   is $e.collection-name, 'coll-tests', 'Collection noted ok';
   is $e.method, 'set-x', 'Method set-x()';
 
+  # Cannot handle myself so throw it
+  #
   try {
     die $e;
     
     CATCH {
       default {
         ok .message ~~ m:s/ 'foutje,' 'bedankt!' /, 'Died well';
+      }
+    }
+  }
+
+  try {
+    # No throwing yet
+    #
+    MongoDB::Logging[$e].log;
+    ok ? $e, 'Still not dead';
+
+    set-exception-throw-level(MongoDB::Severity::warning);
+    MongoDB::Logging[$e].log;
+
+    CATCH {
+      default {
+        ok .message ~~ m:s/ 'foutje,' 'bedankt!' /,
+           'Immanent deadth caused by raised severity level';
       }
     }
   }

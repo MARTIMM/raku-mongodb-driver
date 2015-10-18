@@ -406,6 +406,7 @@ are also items to be implemented in BSON. You need to look there for info
   authenticate with. 
 
 * modify 'if 1 { with CATCH }' in try {}. Prevent leakages.
+* modify file with extention .pm into .pm6
 * Moving out exception code in modules into MongoDB.pm.
 
 ## CHANGELOG
@@ -417,6 +418,8 @@ change at any time. The public API should not be considered stable.*
 * 0.25.6
   * Module MongoDB::Protocol removed
   * Moving out exception code in modules into MongoDB.pm.
+  * Logging role added to log exception information. This logging will throw
+    when severity is above some level.
 * 0.25.5
   * Tests for connection to non existing server. There is no timeout setting
     at the moment. Sets $.status to an Exception object when it fails.
