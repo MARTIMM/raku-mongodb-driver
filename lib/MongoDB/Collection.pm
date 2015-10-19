@@ -93,7 +93,7 @@ package MongoDB {
       }
 
       self!check-doc-keys(@docs);
-      self.wire.OP_INSERT( self, $flags, @docs);
+      self.wire.OP-INSERT( self, $flags, @docs);
 
       return;
     }

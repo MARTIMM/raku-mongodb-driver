@@ -99,7 +99,13 @@ package MongoDB {
       return $msg_header;
     }
 
-    method OP_INSERT ( $collection, Int $flags, *@documents --> Nil ) {
+    method OP_INSERT (
+      $collection, Int $flags, *@documents --> Nil
+    ) is DEPRECATED('OP-INSERT') {
+      self.OP-INSERT( $collection, $flags, @documents);
+    }
+
+    method OP-INSERT ( $collection, Int $flags, *@documents --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
 
       my Buf $OP_INSERT = [~]
