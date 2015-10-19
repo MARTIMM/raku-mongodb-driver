@@ -218,10 +218,6 @@ Used as
   my $l = MongoDB::Logging[$e];
   $l.test-severity;
 
-Or log and test in one go:
-
-  MongoDB::Logging[$e].log.test-severity;
-
 Test severity of the exception and throw when level gets to high (above
 threshold set with C<set-exception-throw-level>.
 
@@ -271,7 +267,8 @@ or log and maybe die using the examples shown above:
 
   my $collection = $database.collection('persons addresses');
   my $l = MongoDB::Logging[$collection.status];
-  $l.log.test-severity;
+  $l.log;
+  $l.test-severity;
 
 =head3 error-text
 
