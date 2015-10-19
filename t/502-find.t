@@ -55,7 +55,7 @@ ok any(@index-names) ~~ 'testindex', 'Index name testindex found';
 
 # Now we kick it
 #
-if 1 {
+try {
   # Its an empty key specification, but will complain about 'no index
   # name'. This is because of ensure_index() not being able to generate
   # one from the key specification.
@@ -68,7 +68,7 @@ if 1 {
   }
 }
 
-if 1 {
+try {
   # Now the name is specified, We can get a 'bad add index' error.
   #
   $collection.ensure_index( %(), %(name => 'testindex'));
@@ -82,7 +82,7 @@ if 1 {
 # Drop the same index twice. We get a 'can't find index' error.
 #
 $doc = $collection.drop_index( %( code1 => 1));
-if 1 {
+try {
   $doc = $collection.drop_index( %( code1 => 1));
   CATCH {
     when X::MongoDB::Collection {

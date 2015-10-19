@@ -29,7 +29,7 @@ is $database.name, 'test', 'Check database name';
 #
 $database.create_collection('cl1');
 
-if 1 {
+try {
   $database.create_collection('cl1');
   CATCH {
     when X::MongoDB::Database {

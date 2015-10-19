@@ -50,7 +50,7 @@ is $cursor.count, 0, 'Implicit $and, There are no documents';
 #-----------------------------------------------------------------------------
 # $eq. Mongod release below 3 returns errors for $eq
 #
-if 1 {
+try {
   $query = %( code1 => {'$eq' => 'd80'},
               code2 => {'$eq' => 'n19'}
             );
@@ -206,7 +206,7 @@ is $cursor.count,
 #-----------------------------------------------------------------------------
 # $mod
 #
-if 1 {
+try {
   $cursor = $collection.find( %(code3 => {'$mod' => [ 3, 0]}));
   my $cc = $cursor.count;
 

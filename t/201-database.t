@@ -38,7 +38,7 @@ subtest {
 
   ok $doc<ok>, 'User mt created';
 
-  if 1 {
+  try {
     $doc = $users.create_user(
       :user('mt'),
       :password('mt++'),
@@ -68,7 +68,7 @@ subtest {
     :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
   );
 
-  if 1 {
+  try {
     $doc = $users.create_user(
       :user('mt'),
       :password('mt++'),
@@ -83,7 +83,7 @@ subtest {
     }
   }
 
-  if 1 {
+  try {
     $doc = $users.create_user(
       :user('mt-and-another-few-chars'),
       :password('mt++'),
@@ -98,7 +98,7 @@ subtest {
     }
   }
 
-  if 1 {
+  try {
     $doc = $users.create_user(
       :user('mt-and-another-few-chars'),
       :password('mt++tdt'),
@@ -114,16 +114,14 @@ subtest {
     }
   }
 
-  if 1 {
-    $doc = $users.create_user(
-      :user('mt-and-another-few-chars'),
-      :password('mt++tdt0A'),
-      :custom_data({license => 'to_kill'}),
-      :roles(['readWrite'])
-    );
+  $doc = $users.create_user(
+    :user('mt-and-another-few-chars'),
+    :password('mt++tdt0A'),
+    :custom_data({license => 'to_kill'}),
+    :roles(['readWrite'])
+  );
 
-    ok $doc<ok>, 'User mt-and-another-few-chars created';
-  }
+  ok $doc<ok>, 'User mt-and-another-few-chars created';
 
   $doc = $users.drop_user(:user('mt-and-another-few-chars'));
   ok $doc<ok>, 'User mt-and-another-few-chars dropped';
