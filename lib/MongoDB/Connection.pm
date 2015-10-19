@@ -9,24 +9,6 @@ use MongoDB::Database;
 use BSON::EDCTools;
 
 package MongoDB {
-  #-----------------------------------------------------------------------------
-  #
-  class X::MongoDB::Connection is Exception {
-    has Str $.error-text;                     # Error text
-    has Str $.error-code;                     # Error code if from server
-    has Str $.oper-name;                      # Operation name
-    has Str $.oper-data;                      # Operation data
-    has Str $.database-name;                  # Database name
-
-    method message () {
-      return [~] "\n$!oper-name\() error:\n",
-                 "  $!error-text",
-                 ? $!error-code ?? "\($!error-code)" !! '',
-                 ? $!oper-data ?? "\n  Data $!oper-data" !! '',
-                 ? $!database-name ?? "\n  Database '$!database-name'\n" !! ''
-                 ;
-    }
-  }
 
   #-----------------------------------------------------------------------------
   #
@@ -49,12 +31,9 @@ package MongoDB {
         $!sock .= new( :$host, :$port);
         CATCH {
           default {
-            $!status = X::MongoDB::Connection.new(
+            $!status = X::MongoDB.new(
               :error-text("Failed to connect to $host at $port"),
-              :error-code(Nil),
-              :oper-name<connect>,
-              :oper-data(Nil),
-              :database-name(Nil)
+              :oper-name<connect>
             );
           }
         }
@@ -101,7 +80,7 @@ package MongoDB {
       my Hash $doc = $database.run_command(@req);
 
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Connection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'list_databases',
           oper-data => @req.perl,
@@ -146,7 +125,7 @@ package MongoDB {
       my Hash $doc = $database.run_command(@req);
 
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Connection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'build_info',
           oper-data => @req.perl,

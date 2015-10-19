@@ -26,10 +26,10 @@ subtest {
      "Connection isa {$connection.^name}";
 
   is $connection.status.^name,
-     'X::MongoDB::Connection',
+     'X::MongoDB',
      "1 Status isa {$connection.status.^name}";
 
-  ok $connection.status ~~ X::MongoDB::Connection,
+  ok $connection.status ~~ X::MongoDB,
      "2 Status isa {$connection.status.^name}";
 
   ok $connection.status ~~ Exception, "3 Status is also an Exception";
@@ -56,8 +56,8 @@ subtest {
   $connection = get-connection();
   is $connection.status.^name, 'Exception', '1 Status isa Exception';
   ok $connection.status ~~ Exception, '2 Status isa Exception';
-  ok $connection.status !~~ X::MongoDB::Connection,
-     '3 Status is not a !X::MongoDB::Connection';
+  ok $connection.status !~~ X::MongoDB,
+     '3 Status is not a !X::MongoDBn';
   ok ! ? $connection.status, "Status is not defined";
 
   my Hash $version = $connection.version;
