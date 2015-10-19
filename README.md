@@ -417,6 +417,9 @@ change at any time. The public API should not be considered stable.*
 * 0.*.0
   * Remove deprication messages of converted method names
 
+* 0.25.8
+  * Removed exception class from MongoDB/Connection.pm. Usage is replaced by
+    X::MongoDB from MongoDB.pm.
 * 0.25.7
   * Experiment converting OP_INSERT() to OP-INSERT() using deprication traits.
     Use of the method is modified in the package and users should not have

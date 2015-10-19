@@ -57,8 +57,8 @@ Usage:
   my MongoDB::Connection $c .= new( :host<example.com>, :port(1234));
 
 Creates a new C<Connection> object. When all is ok the connection status will
-be undefined (Exception). Otherwise it will hold the X::MongoDB
-exception which can be thrown when needed.
+be undefined. Otherwise it will hold the X::MongoDB exception which can be
+thrown when needed.
 
 Example:
 
