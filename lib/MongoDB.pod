@@ -236,7 +236,7 @@ Defined as
 
   submethod BUILD (
     Str:D :$error-text,
-    Str:D :$error-code,
+    Str :$error-code,
     Str:D :$oper-name,
     Str :$oper-data,
     Str :$database-name,
@@ -255,7 +255,7 @@ Usage as
 
 Creates an exception object C<X::MongoDB>. Most of the methods will return this
 object when an error occurred. In a few occations it is stored in a local
-$.status attribute. A part of the data in this object is often set from data
+C<$.status> attribute. A part of the data in this object is often set from data
 originating from the server after a request. However, it will be set by the
 method itself when the server did not play a role in the action.
 
@@ -267,27 +267,52 @@ yourself like so:
   my $collection = $database.collection('persons addresses');
   die $collection.status if ? $collection.status;
 
-or, when taking the examples above:
+or log and maybe die using the examples shown above:
 
   my $collection = $database.collection('persons addresses');
   my $l = MongoDB::Logging[$collection.status];
-  $l.test-severity;
+  $l.log.test-severity;
 
 =head3 error-text
 
-C<$error-text> is set from error message found in response data from server. One
-exception is when making a connection fails. Then the text is set by the method
-C<new>. Field will always be defined.
+C<$error-text> is set in the call to new(). This field will always be defined.
+It holds the 'why something failed'.
 
-    has Str $.error-text;       # Error text and error code are data mostly
-    has Str $.error-code;       # originated from the mongod server
-    has Str $.oper-name;        # Used operation or server request
-    has Str $.oper-data;        # Operation data are items sent to the server
-    has Str $.database-name;    # Database name involved
-    has Str $.collection-name;  # Collection name involved
-    has Str $.method;           # Method or routine name
-    has Str $.line;             # Line number where X::MongoDB is created
-    has Str $.file;             # File in which that happened
+=head3 error-code
+
+This code doesn't have to be defined. When the error is returned from the
+server there is also a code. This code will be used here.
+
+=head3 oper-name
+
+This is the name of the operation used in the request to the server or when the
+server is not used, the name of the method. This field will always be defined.
+
+=head3 oper-data
+
+This is the representation of the used data structure sent to the server if any.
+Mostly this is a serialized string using perl() on the object.
+
+=head3 database-name
+
+Database name involved
+
+=head3 collection-name
+
+Collection name involved
+
+=head3 method
+
+Method or routine name where the call to new() took place. Sometimes it is 
+within a block and no name is returned.
+
+=head3 line
+
+Line number where X::MongoDB is created
+
+=head3 file
+
+File wherein that happened
 
 
 
@@ -365,11 +390,11 @@ Change method names with an underscore into names with a dash. E.g. map_reduce
 will become then map-reduce. When it will be defined, the old names with an
 underscore will show deprecation warnings. Other names starting with an
 underscore has always been the perl5 notion of being a private variable or
-routine. In perl6 this a method can be initiated with an exclamation mark to
+routine. In perl6 these methods can be initiated with an exclamation mark to
 make it private.
 
 =for item1
-At the moment the packages is written to use the latest mongo version 3.* only.
+At the moment the package is written to use the latest mongo version 3.* only.
 Perhaps also the latest 2.* version should be supported too.
 
 
@@ -389,7 +414,7 @@ update users.
 =for item2
 Added document checks to inserts. No dollars on first char of keys and no
 dots in keys. This is checked on all levels. On top level the key C<_id>
-is checked if the value is unique in te collection.
+is checked if the value is unique in the collection.
 
 =for item2
 Changes in code caused by upgrading from MongoDB 2.4 to 3.0.5. Many of the
@@ -425,7 +450,7 @@ C<MongoDB::Collection>.
 
 =head1 AUTHORS
 
-  Paweł Pabian - Creator of the modules until january 2015
+  Paweł Pabian - Creator and maintainer of the modules until january 2015
   Marcel Timmerman - Maintainer since january 2015 (MARTIMM on github)
 
 =head1 LICENSE AND COPYRIGHT

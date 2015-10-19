@@ -2,7 +2,7 @@ use v6;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.25.6> {
+package MongoDB:ver<0.25.7> {
 
   #-----------------------------------------------------------------------------
   #
@@ -82,7 +82,7 @@ class X::MongoDB is Exception {
   #
   submethod BUILD (
     Str:D :$error-text,
-    Str:D :$error-code,
+    Str :$error-code,
     Str:D :$oper-name,
     Str :$oper-data,
     Str :$database-name,
@@ -123,7 +123,7 @@ class X::MongoDB is Exception {
     }
 
     $!error-text        = $error-text;
-    $!error-code        = $error-code;
+    $!error-code        = $error-code // '---';
     $!oper-name         = $oper-name;
     $!oper-data         = $oper-data;
     $!database-name     = $database-name;
@@ -135,6 +135,8 @@ class X::MongoDB is Exception {
   #
   method debug ( --> Str ) {
     return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
+               ? $!database-name ?? "\n  Database '$!database-name'" !! '',
+               ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
                " at $!file\:$!line\n"
                ;
   }
@@ -143,8 +145,6 @@ class X::MongoDB is Exception {
   #
   method info ( --> Str ) {
     return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
-               ? $!database-name ?? "\n  Database '$!database-name'" !! '',
-               ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
                " at $!file\:$!line\n"
                ;
   }
