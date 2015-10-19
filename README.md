@@ -405,7 +405,6 @@ are also items to be implemented in BSON. You need to look there for info
   of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
   authenticate with. 
 
-* modify 'if 1 { with CATCH }' in try {}. Prevent leakages.
 * modify file with extention .pm into .pm6
 * Moving out exception code in modules into MongoDB.pm.
 
@@ -415,6 +414,14 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.*.0
+  * Remove deprication messages of converted method names
+
+* 0.25.7
+  * Experiment converting OP_INSERT() to OP-INSERT() using deprication traits.
+    Use of the method is modified in the package and users should not have
+    problems seeing deprecation messages.
+  * modify 'if 1 { with CATCH }' in try {}.
 * 0.25.6
   * Module MongoDB::Protocol removed
   * Moving out exception code in modules into MongoDB.pm.
