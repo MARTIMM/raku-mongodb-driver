@@ -75,7 +75,7 @@ is $cursor.count, 0, 'Record d1 01234 gone (after remove)';
 
 # Remove one record. Use remove and return new throws an error
 #
-if 1 {
+try {
   $doc = $collection.find_and_modify(
     {code => BSON::Regex.new(:regex('^d1 .*454.*'))},
     :remove, :sort({code => -1}), :new

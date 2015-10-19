@@ -153,7 +153,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
   my Hash $d2;
-  if 1 {
+  try {
     $d2 = { '$abc' => 'pqr'};
     $collection.insert($d2);
     CATCH {
@@ -163,7 +163,7 @@ subtest {
     }
   }
 
-  if 1 {
+  try {
     $d2 = { 'abc.def' => 'pqr'};
     $collection.insert($d2);
     CATCH {
@@ -173,7 +173,7 @@ subtest {
     }
   }
 
-  if 1 {
+  try {
     $d2 = { x => {'abc.def' => 'pqr'}};
     $collection.insert($d2);
     CATCH {
@@ -183,7 +183,7 @@ subtest {
     }
   }
 
-  if 1 {
+  try {
     $d2 = { _id => BSON::ObjectId.encode('123456789012123456789012'),
             x => 'y',
             a => 'c'

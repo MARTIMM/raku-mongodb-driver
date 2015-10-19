@@ -93,7 +93,7 @@ subtest {
   $users .= new(:$database);
   $auth .= new(:$database);
 
-  if 1 {
+  try {
     $doc = $users.drop_all_users_from_database();
     ok $doc<ok>, 'All users dropped';
     
@@ -104,7 +104,7 @@ subtest {
     }
   }
 
-  if 1 {
+  try {
     $doc = $auth.authenticate( :user('mt'), :password('mt++'));
 
     CATCH {

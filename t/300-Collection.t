@@ -30,7 +30,7 @@ ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
 is $doc<ns>, 'test.cl1', 'Dropped collection';
 is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 
-if 1 {
+try {
   $doc = $collection.drop;
   CATCH {
     when X::MongoDB::Collection {
@@ -42,7 +42,7 @@ if 1 {
 #-------------------------------------------------------------------------------
 # Create using illegal collection name
 #
-if 1 {
+try {
   $database.create_collection('abc-def and a space');
   CATCH {
     when X::MongoDB::Database {
