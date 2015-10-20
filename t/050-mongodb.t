@@ -52,8 +52,7 @@ subtest {
           :error-code('X007-x'),
           :oper-name('test-x'),
           :oper-data({ ax => 11, bx => 22}.perl),
-          :database-name('test-x'),
-          :collection-name('coll-tests'),
+          :collection-ns('test-x.coll-tests'),
           :severity(MongoDB::Severity::Error)
         );
       }
@@ -67,7 +66,7 @@ subtest {
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
-  is $e.collection-name, 'coll-tests', 'Collection noted ok';
+  is $e.collection-ns, 'test-x.coll-tests', "Collection {$e.collection-ns}";
   is $e.method, 'set-x', 'Method set-x()';
 
   # Cannot handle myself so throw it

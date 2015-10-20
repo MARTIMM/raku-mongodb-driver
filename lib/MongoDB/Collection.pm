@@ -1,27 +1,9 @@
 use v6;
 
+use MongoDB;
 use MongoDB::Wire;
 use MongoDB::Cursor;
 use BSON::Javascript;
-
-#-------------------------------------------------------------------------------
-#
-class X::MongoDB::Collection is Exception {
-  has $.error-text;                     # Error text
-  has $.error-code;                     # Error code if from server
-  has $.oper-name;                      # Operation name
-  has $.oper-data;                      # Operation data
-  has $.full-collection-name;           # Collection name
-
-  method message () {
-    return [~] "\n$!oper-name\() error:\n",
-               "  $!error-text",
-               $.error-code.defined ?? "\($!error-code)" !! '',
-               $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-               "\n  Collection '$!full-collection-name'\n"
-               ;
-  }
-}
 
 #-------------------------------------------------------------------------------
 #
@@ -42,15 +24,15 @@ package MongoDB {
     submethod BUILD ( :$database, Str:D :$name ) {
       $!database = $database;
 
-      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/ {
+      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
         $!name = $name;
       }
 
       else {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => "Illegal collection name: '$name'",
           oper-name => 'MongoDB::Collection.new()',
-          full-collection-name => [~] $!database.name, '.-Ill-'
+          severity => MongoDB::Severity::Error
         );
       }
     }
@@ -74,21 +56,21 @@ package MongoDB {
         }
 
         else {
-          die X::MongoDB::Collection.new(
+          die X::MongoDB.new(
             error-text => "Error: Document type not handled by insert",
             oper-name => 'insert',
             oper-data => @docs.perl,
-            full-collection-name => [~] $!database.name, '.', $!name
+            collection-ns => $!database.name ~ '.' ~ $!name,
           )
         }
       }
 
       else {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => "Error: Document type not handled by insert",
           oper-name => 'insert',
           oper-data => @docs.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => $!database.name ~ '.' ~ $!name,
         )
       }
 
@@ -106,7 +88,7 @@ package MongoDB {
       for @docs -> $d {
         for $d.keys -> $k {
           if $k ~~ m/ (^ '$' | '.') / {
-            die X::MongoDB::Collection.new(
+            die X::MongoDB.new(
               error-text => qq:to/EODIE/,
                 $k is not properly defined.
                 Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
@@ -114,7 +96,7 @@ package MongoDB {
                 EODIE
               oper-name => 'insert',
               oper-data => @docs.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
+              collection-ns => [~] $!database.name, '.', $!name
             );
           }
 
@@ -125,11 +107,11 @@ package MongoDB {
             # If there are records(at most one!) this id is not unique
             #
             if $cursor.count {
-              die X::MongoDB::Collection.new(
+              die X::MongoDB.new(
                 error-text => "$k => $d{$k} value for id is not unique",
                 oper-name => 'insert',
                 oper-data => @docs.perl,
-                full-collection-name => [~] $!database.name, '.', $!name
+                collection-ns => [~] $!database.name, '.', $!name
               );
             }
           }
@@ -146,7 +128,7 @@ package MongoDB {
     method !cdk ( $sub-doc! ) {
       for $sub-doc.keys -> $k {
         if $k ~~ m/ (^ '$' | '.') / {
-          die X::MongoDB::Collection.new(
+          die X::MongoDB.new(
             error-text => qq:to/EODIE/,
               $k is not properly defined.
               Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
@@ -154,7 +136,7 @@ package MongoDB {
               EODIE
             oper-name => 'insert',
             oper-data => $sub-doc.perl,
-            full-collection-name => [~] $!database.name, '.', $!name
+            collection-ns => [~] $!database.name, '.', $!name
           );
         }
 
@@ -239,11 +221,11 @@ package MongoDB {
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'find_and_modify',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -278,11 +260,11 @@ package MongoDB {
       my Pair @req = drop => $!name;
       my $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -311,14 +293,14 @@ package MongoDB {
       my Pair @req = count => $!name, query => $criteria, fields => %();
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'count',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -338,14 +320,14 @@ package MongoDB {
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'distinct',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -395,14 +377,14 @@ package MongoDB {
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'group',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -456,14 +438,14 @@ package MongoDB {
 #say "MPR P: {@req.perl}";
       my Hash $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'map_reduce',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -522,16 +504,16 @@ package MongoDB {
 
         $system-indexes.insert(%doc);
 
-        # Check error and throw X::MongoDB::Collection if there is one
+        # Check error and throw X::MongoDB if there is one
         #
         my $error-doc = $!database.get_last_error;
         if $error-doc<err> {
-          die X::MongoDB::Collection.new(
+          die X::MongoDB.new(
             error-text => $error-doc<err>,
             error-code => $error-doc<code>,
             oper-name => 'ensure_index',
             oper-data => %doc.perl,
-            full-collection-name => [~] $!database.name, '.', $!name
+            collection-ns => [~] $!database.name, '.', $!name
           );
         }
       }
@@ -549,14 +531,14 @@ package MongoDB {
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop_index',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -597,14 +579,14 @@ package MongoDB {
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'stats',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 

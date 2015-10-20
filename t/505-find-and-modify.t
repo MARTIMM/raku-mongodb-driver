@@ -81,7 +81,7 @@ try {
     :remove, :sort({code => -1}), :new
   );
   CATCH {
-    when X::MongoDB::Collection {
+    when X::MongoDB {
       is .error-text ~~ m:s/remove and returnNew can\'t co\-exist/,
          .error-text;
     }

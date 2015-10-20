@@ -4,7 +4,7 @@
     database.create_collection()        Create collection explicitly
     collection.drop()                   Drop collection
 
-    X::MongoDB::Collection              Catch exceptions
+    X::MongoDB                          Catch exceptions
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -33,7 +33,7 @@ is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 try {
   $doc = $collection.drop;
   CATCH {
-    when X::MongoDB::Collection {
+    when X::MongoDB {
       ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
     }
   }

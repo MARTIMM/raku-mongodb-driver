@@ -434,6 +434,8 @@ are also items to be implemented in BSON. You need to look there for info
   of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
   authenticate with. 
 
+* Sharpening check on database-, collection- and document key names.
+
 * modify files with extention .pm into .pm6
 * Moving out exception code in modules into MongoDB.pm.
 
@@ -447,7 +449,7 @@ change at any time. The public API should not be considered stable.*
   * Remove deprication messages of converted method names
 
 * 0.25.8
-  * Removed exception class from MongoDB/Connection.pm. Usage is replaced by
+  * Removed exception class from Connection.pm, Collection.pm. Usage is replaced by
     X::MongoDB from MongoDB.pm.
 * 0.25.7
   * Experiment converting OP_INSERT() to OP-INSERT() using deprication traits.
@@ -457,6 +459,7 @@ change at any time. The public API should not be considered stable.*
 * 0.25.6
   * Module MongoDB::Protocol removed
   * Moving out exception code in modules into MongoDB.pm.
+  * Enum type Severity with values Trace Debug Info Warn Error Fatal
   * Logging role added to log exception information. This logging will throw
     when severity is above some level.
 * 0.25.5

@@ -76,8 +76,7 @@ class X::MongoDB is Exception {
   has Str $.error-code;         # originated from the mongod server
   has Str $.oper-name;          # Used operation or server request
   has Str $.oper-data;          # Operation data are items sent to the server
-  has Str $.database-name;      # Database name involved
-  has Str $.collection-name;    # Collection name involved
+  has Str $.collection-ns;      # Collection name space == dbname.clname
   has Str $.method;             # Method or routine name
   has Str $.line;               # Line number where X::MongoDB is created
   has Str $.file;               # File in which that happened
@@ -90,11 +89,10 @@ class X::MongoDB is Exception {
   #
   submethod BUILD (
     Str:D :$error-text,
-    Str :$error-code,
+    :$error-code where $_ ~~ any(Int|Str) = '',
     Str:D :$oper-name,
     Str :$oper-data,
-    Str :$database-name,
-    Str :$collection-name,
+    Str :$collection-ns,
     MongoDB::Severity :$severity = MongoDB::Severity::Warn
   ) {
 
@@ -131,11 +129,10 @@ class X::MongoDB is Exception {
     }
 
     $!error-text        = $error-text;
-    $!error-code        = $error-code // '---';
+    $!error-code        = ~($error-code // '---');
     $!oper-name         = $oper-name;
     $!oper-data         = $oper-data;
-    $!database-name     = $database-name;
-    $!collection-name   = $collection-name;
+    $!collection-ns     = $collection-ns;
     $!severity          = $severity;
   }
 
@@ -151,8 +148,7 @@ class X::MongoDB is Exception {
   #
   method debug ( --> Str ) {
     return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
-               ? $!database-name ?? "\n  Database '$!database-name'" !! '',
-               ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
+               ? $!collection-ns ?? "\n  Collection namespace $!collection-ns" !! '',
                " at $!file\:$!line\n"
                ;
   }
@@ -169,8 +165,7 @@ class X::MongoDB is Exception {
   #
   method warn ( --> Str ) {
     return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
-               ? $!database-name ?? "\n  Database '$!database-name'" !! '',
-               ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
+               ? $!collection-ns ?? "\n  Collection namespace $!collection-ns" !! '',
                ? $!method ?? "\n  In method $!method" !! '',
                " at $!file\:$!line\n"
                ;
@@ -193,8 +188,7 @@ class X::MongoDB is Exception {
   method message ( --> Str ) {
     return [~] "\n  $!oper-name\(): $!error-text\($!error-code)",
                ? $!oper-data ?? "\n  Request data $!oper-data" !! '',
-               ? $!database-name ?? "\n  Database '$!database-name'" !! '',
-               ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
+               ? $!collection-ns ?? "\n  Collection namespace $!collection-ns" !! '',
                ? $!method ?? "\n  In method $!method" !! '',
                " at $!file\:$!line\n"
                ;

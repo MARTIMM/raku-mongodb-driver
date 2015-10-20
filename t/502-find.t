@@ -7,7 +7,7 @@
     collection.drop_indexes()           Drop all indexes
     cursor.fetch()                      Fetch a document
     
-    X::MongoDB::Collection              Catch exceptions
+    X::MongoDB                          Catch exceptions
 
     collection.stats()                  Collection statistics
     collection.data_size()              $stats<size>
@@ -62,7 +62,7 @@ try {
   #
   $collection.ensure_index(%());
   CATCH {
-    when X::MongoDB::Collection {
+    when X::MongoDB {
        ok .message ~~ m:s/exception\: index names cannot be empty/, .error-text;
     }
   }
@@ -73,7 +73,7 @@ try {
   #
   $collection.ensure_index( %(), %(name => 'testindex'));
   CATCH {
-    when X::MongoDB::Collection {
+    when X::MongoDB {
        ok .message ~~ m:s/exception\: bad index key pattern '{}:' Index keys cannot be empty/, .error-text;
     }
   }
@@ -85,7 +85,7 @@ $doc = $collection.drop_index( %( code1 => 1));
 try {
   $doc = $collection.drop_index( %( code1 => 1));
   CATCH {
-    when X::MongoDB::Collection {
+    when X::MongoDB {
       ok .message ~~ m/can\'t \s+ find \s+ index \s+ with \s+ key/,
          .error-text;
     }

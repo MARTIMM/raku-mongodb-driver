@@ -69,46 +69,6 @@ Classes to help accessing and manipulating MongoDB collections. The class is
 loaded automatically with the MongoDB
 module.
 
-=head1 CLASSES
-
-=for head2
-class X::MongoDB::Collection is Exception {...}
-
-Some methods from the C<MongoDB::Collection> class will throw exceptions when
-things go wrong. E.g. deleting a non existent index will hickup.
-
-=begin nested
-=begin code
-
-if $cmd ~~ 'delete' {
-  $doc = $collection.drop_index( %( non_existent_index => 1));
-
-  CATCH {
-    when X::MongoDB::Collection {
-      say "Drop index error: $_";
-    }
-  }
-}
-
-=end code
-=end nested
-
-Instead of catching the thrown exception you can also try the call to see if
-it works or not.
-
-=begin nested
-=begin code
-
-if $cmd ~~ 'delete' {
-  try $doc = $collection.drop_index( %( code1 => 1));
-  if $! {
-    say "Drop index error: $!";
-}
-
-=end code
-=end nested
-
-
 =for head2
 class MongoDB::Collection does MongoDB::Protocol {...}
 
@@ -268,7 +228,7 @@ method drop ( --> Hash ) {...}
 
 Drop the current collection from the database.
 
-This method will throw a X::MongoDB::Collection exception on failures.
+This method will throw a X::MongoDB exception on failures.
 
 =for head2
 method explain ( %criteria = { } --> Hash ) {...}
@@ -342,7 +302,7 @@ L<text|http://docs.mongodb.org/manual/core/index-text/>, L<2dsphere|http://docs.
 L<ed|http://docs.mongodb.org/manual/core/2d/> and L<geoHaystack|http://docs.mongodb.org/manual/core/geohaystack/>
 indexes.
 
-This method will throw a X::MongoDB::Collection exception on failures.
+This method will throw a X::MongoDB exception on failures.
 
 =for head2
 method drop_index ( $key-spec! --> Hash ) {...}
@@ -362,7 +322,7 @@ $doc = $collection.drop_index('testindex');
 =end code
 =end nested
 
-This method will throw a X::MongoDB::Collection exception on failures.
+This method will throw a X::MongoDB exception on failures.
 
 =for head2
 method drop_indexes ( --> Hash ) {...}

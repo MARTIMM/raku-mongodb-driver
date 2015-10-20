@@ -157,7 +157,7 @@ subtest {
     $d2 = { '$abc' => 'pqr'};
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB::Collection {
+      when X::MongoDB {
         ok $_.message ~~ m:s/is not properly defined/, "Key '\$abc' not properly defined";
       }
     }
@@ -167,7 +167,7 @@ subtest {
     $d2 = { 'abc.def' => 'pqr'};
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB::Collection {
+      when X::MongoDB {
         ok .message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
       }
     }
@@ -177,7 +177,7 @@ subtest {
     $d2 = { x => {'abc.def' => 'pqr'}};
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB::Collection {
+      when X::MongoDB {
         ok .message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
       }
     }
@@ -194,7 +194,7 @@ subtest {
           };
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB::Collection {
+      when X::MongoDB {
         ok .message ~~ m:s/not unique/, .error-text;
       }
     }
