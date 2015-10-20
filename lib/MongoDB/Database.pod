@@ -47,14 +47,6 @@ $database.drop;
 
 Class to manipulate MongoDB databases.
 
-=head1 CLASSES
-
-=for head2
-class X::MongoDB::Database is Exception
-
-Some methods from the C<MongoDB::Database> class will throw exceptions when
-things go wrong. E.g. creating a database with faulty arguments..
-
 =head1 METHODS
 
 =for head2

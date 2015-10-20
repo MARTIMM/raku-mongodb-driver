@@ -2,7 +2,7 @@ use v6;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.25.7> {
+package MongoDB:ver<0.25.8> {
 
   #-----------------------------------------------------------------------------
   #
@@ -96,12 +96,12 @@ class X::MongoDB is Exception {
     MongoDB::Severity :$severity = MongoDB::Severity::Warn
   ) {
 
-    for 0..Inf -> $fn {
-      my $cf = callframe($fn);
+    my $fn = 0;
+    while my $cf = callframe($fn++) {
 
       # End loop with the program that starts on line 1
       #
-      last if $cf.file ~~ m/perl6/ and $cf.line == 1;
+      last if $cf.line == 1;
 
       # Skip all in between modules of perl
       # THIS DEPENDS ON MOARVM OR JVM INSTALLED IN 'gen/' !!
@@ -110,21 +110,22 @@ class X::MongoDB is Exception {
 
       # Skip this module too
       #
-      next if $cf.file ~~ m/ 'MongoDB.pm' $ /;
+      next if $cf.file ~~ m/ 'MongoDB.pm6' $ /;
 
       # Get info when we see a Sub, Method or Submethod. Other types are
       # skipped. This will get us to the calling function.
       #
       if $cf.code.^name ~~ m/ [ 'Sub' | 'Method' | 'Submethod' ] / {
-        $!line = $cf.line;
+        $!line = ~$cf.line;
         $!file = $cf.file;
 
-        $cf = callframe($fn + 1);
+#        $!method = $cf.callframe.code.name;
         $!method = $cf.code.name;
+#say "CName: $!file, $!line, $!method, ", $cf.code.name;
 
-        # We have our info so stop
+        # When we have our info then stop
         #
-        last;
+        last if ? $!method;
       }
     }
 

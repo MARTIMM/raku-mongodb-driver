@@ -45,7 +45,7 @@ try {
 try {
   $database.create_collection('abc-def and a space');
   CATCH {
-    when X::MongoDB::Database {
+    when X::MongoDB {
       ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
     }
   }
