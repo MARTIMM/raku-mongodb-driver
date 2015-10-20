@@ -4,22 +4,6 @@ use MongoDB::Collection;
 #-------------------------------------------------------------------------------
 #
 package MongoDB {
-  class X::MongoDB::Database is Exception {
-    has $.error-text;                     # Error text
-    has $.error-code;                     # Error code if from server
-    has $.oper-name;                      # Operation name
-    has $.oper-data;                      # Operation data
-    has $.database-name;                  # Database name
-
-    method message () {
-      return [~] "\n$!oper-name\() error:\n",
-                 "  $!error-text",
-                 $.error-code.defined ?? "\($!error-code)" !! '',
-                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-                 "\n  Database '$!database-name'\n"
-                 ;
-    }
-  }
 
   #-----------------------------------------------------------------------------
   #
@@ -49,11 +33,11 @@ package MongoDB {
       my $doc =  self.run_command(@req);
 
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop',
           oper-data => @req.perl,
-          database-name => $!name
+          collection-ns => $!name
         );
       }
 
@@ -67,10 +51,10 @@ package MongoDB {
     method collection ( Str:D $name --> MongoDB::Collection ) {
 
       if !($name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
             error-text => "Illegal collection name: '$name'",
             oper-name => 'collection()',
-            database-name => $!name
+            collection-ns => $!name
         );
       }
 
@@ -87,10 +71,10 @@ package MongoDB {
                              ) {
 
       if !($collection_name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
             error-text => "Illegal collection name: '$collection_name'",
             oper-name => 'create_collection()',
-            database-name => $!name
+            collection-ns => $!name
         );
       }
 
@@ -105,11 +89,11 @@ package MongoDB {
 
       my Hash $doc = self.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
             error-text => $doc<errmsg>,
             oper-name => 'create_collection',
             oper-data => @req.perl,
-            database-name => $!name
+            collection-ns => $!name
         );
       }
 
@@ -190,11 +174,11 @@ package MongoDB {
 
       my Hash $doc = self.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'get_last_error',
           oper-data => @req.perl,
-          database-name => $!name
+          collection-ns => $!name
         );
       }
 
@@ -210,11 +194,11 @@ package MongoDB {
       my Hash $doc =  self.run_command(@req);
 
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'get_prev_error',
           oper-data => @req.perl,
-          database-name => $!name
+          collection-ns => $!name
         );
       }
 
@@ -230,11 +214,11 @@ package MongoDB {
       my Hash $doc = self.run_command(@req);
 
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'reset_error',
           oper-data => @req.perl,
-          database-name => $!name
+          collection-ns => $!name
         );
       }
 

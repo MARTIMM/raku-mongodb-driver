@@ -449,7 +449,8 @@ change at any time. The public API should not be considered stable.*
   * Remove deprication messages of converted method names
 
 * 0.25.8
-  * Removed exception class from Connection.pm, Collection.pm. Usage is replaced by
+  * Removed exception class from Connection.pm, Collection.pm, Database.pm,
+    Users.pm, Authenticate.pm. Usage is replaced by
     X::MongoDB from MongoDB.pm.
 * 0.25.7
   * Experiment converting OP_INSERT() to OP-INSERT() using deprication traits.

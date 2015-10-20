@@ -21,6 +21,9 @@ package MongoDB {
     #
     submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
 
+      # Try block used because IO::Socket::INET throws an exception when things
+      # go wrong. This is not nessesary because there is no risc of data loss
+      #
       try {
         if ? $!sock {
           $!sock.close;
