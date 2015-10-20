@@ -394,8 +394,14 @@ are also items to be implemented in BSON. You need to look there for info
     depends on the code base of the programs. One thing I can do is remove all
     exception classes from the modules and replace them by only one class
     defined in MongoDB.pm.
+
+    Below is the output of a small benchmark test taken at 20th of October 2015.
+    With an extra perl6 option one can see what time is used at each stage.
+    The program loads the Bench and MongoDB::Connection. The last one triggers
+    the loading of several other MongoDB modules. This takes much processing
+    time.
 ```
-    perl6 --stagestats Tests/bench-connect.pl6
+    > perl6 --stagestats Tests/bench-connect.pl6
     Stage start      :   0.000
     Stage parse      :   8.462
     Stage syntaxcheck:   0.000
