@@ -29,7 +29,7 @@ subtest {
     :oper-data({ a => 1, b => 2}.perl),
     :severity(MongoDB::Severity::info)
   );
-  
+
   my $e = MongoDB::Logging[$e0].log;
 
   ok ? $e, 'Defined exception';
@@ -62,7 +62,7 @@ subtest {
 
   my TE_P::TE $te .= new;
   my $e = $te.set-x(11);
-  
+
   is $te.x, 11, 'X set to 11';
 
   ok ? $e, 'Defined exception';
@@ -74,7 +74,7 @@ subtest {
   #
   try {
     die $e;
-    
+
     CATCH {
       default {
         ok .message ~~ m:s/ 'foutje,' 'bedankt!' /, 'Died well';
@@ -100,7 +100,7 @@ subtest {
       }
     }
   }
-    
+
   set-exception-throw-level(MongoDB::Severity::fatal);
   my $l = MongoDB::Logging[Exception];
   $l.log;
