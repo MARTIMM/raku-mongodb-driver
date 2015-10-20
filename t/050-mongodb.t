@@ -27,14 +27,14 @@ subtest {
     :error-code('X007-a'),
     :oper-name('test-a'),
     :oper-data({ a => 1, b => 2}.perl),
-    :severity(MongoDB::Severity::info)
+    :severity(MongoDB::Severity::Info)
   );
 
   my $e = MongoDB::Logging[$e0].log;
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
-  is $e.severity, MongoDB::Severity::info, 'Severity still info';
+  is $e.severity, MongoDB::Severity::Info, 'Severity still info';
 
 }, "Exception block tests 1";
 
@@ -54,7 +54,7 @@ subtest {
           :oper-data({ ax => 11, bx => 22}.perl),
           :database-name('test-x'),
           :collection-name('coll-tests'),
-          :severity(MongoDB::Severity::error)
+          :severity(MongoDB::Severity::Error)
         );
       }
     }
@@ -90,7 +90,7 @@ subtest {
     $l.test-severity;
     ok ? $e, 'Still not dead';
 
-    set-exception-throw-level(MongoDB::Severity::warning);
+    set-exception-throw-level(MongoDB::Severity::Warn);
     $l.test-severity;
 
     CATCH {
@@ -101,7 +101,7 @@ subtest {
     }
   }
 
-  set-exception-throw-level(MongoDB::Severity::fatal);
+  set-exception-throw-level(MongoDB::Severity::Fatal);
   my $l = MongoDB::Logging[Exception];
   $l.log;
   $l.test-severity;

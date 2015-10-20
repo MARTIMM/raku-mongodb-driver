@@ -8,8 +8,9 @@ package MongoDB:ver<0.25.7> {
   #
   our $version = Nil;
 
-  enum Severity <debug info warning error fatal>;
-  our $severity-throw-level = fatal;
+  enum Severity <Trace Debug Info Warn Error Fatal>;
+  our $severity-throw-level = Fatal;
+  our $severity-process-level = Info;
   our $log-fn = 'MongoDB.log';
   our $log-fh;
 
@@ -17,6 +18,12 @@ package MongoDB:ver<0.25.7> {
   #
   sub set-exception-throw-level ( Severity:D $s ) is export {
     $severity-throw-level = $s;
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  sub set-exception-process-level ( Severity:D $s ) is export {
+    $severity-process-level = $s;
   }
 
   #-----------------------------------------------------------------------------
@@ -42,11 +49,12 @@ package MongoDB:ver<0.25.7> {
     #
     method log ( --> Exception ) {
       return $e unless ?$e;
+      return $e unless $e.severity >= $severity-process-level;
 
       open-logfile() unless ?$log-fh;
 
       my Str $etxt = [~] "\n", $e.date-time.Str, " [{uc $e.severity}]";
-      $etxt ~= $e."{$e.severity}"();
+      $etxt ~= $e."{lc($e.severity)}"();
       $log-fh.print($etxt);
       return $e;
     }
@@ -87,7 +95,7 @@ class X::MongoDB is Exception {
     Str :$oper-data,
     Str :$database-name,
     Str :$collection-name,
-    MongoDB::Severity :$severity = MongoDB::Severity::warning
+    MongoDB::Severity :$severity = MongoDB::Severity::Warn
   ) {
 
     for 0..Inf -> $fn {
@@ -95,7 +103,7 @@ class X::MongoDB is Exception {
 
       # End loop with the program that starts on line 1
       #
-      last if $cf.file ~~ m/perl6.moar/ and $cf.line == 1;
+      last if $cf.file ~~ m/perl6/ and $cf.line == 1;
 
       # Skip all in between modules of perl
       # THIS DEPENDS ON MOARVM OR JVM INSTALLED IN 'gen/' !!
@@ -133,6 +141,14 @@ class X::MongoDB is Exception {
 
   #-----------------------------------------------------------------------------
   #
+  method trace ( --> Str ) {
+    return [~] ? $!method ?? "Method $!method" !! '',
+               " at $!file\:$!line\n"
+               ;
+  }
+
+  #-----------------------------------------------------------------------------
+  #
   method debug ( --> Str ) {
     return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
                ? $!database-name ?? "\n  Database '$!database-name'" !! '',
@@ -151,7 +167,7 @@ class X::MongoDB is Exception {
 
   #-----------------------------------------------------------------------------
   #
-  method warning ( --> Str ) {
+  method warn ( --> Str ) {
     return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
                ? $!database-name ?? "\n  Database '$!database-name'" !! '',
                ? $!collection-name ?? "\n  Collection $!collection-name" !! '',
