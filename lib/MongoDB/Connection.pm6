@@ -37,6 +37,7 @@ package MongoDB {
             $!status = X::MongoDB.new(
               :error-text("Failed to connect to $host at $port"),
               :oper-name<connect>
+              :severity(MongoDB::Severity::Error)
             );
           }
         }
@@ -85,9 +86,11 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
+          error-code => $doc<code>,
           oper-name => 'list_databases',
           oper-data => @req.perl,
-          database-name => 'admin.$cmd'
+          collection-ns => 'admin.$cmd',
+          severity => MongoDB::Severity::Error
         );
       }
 
@@ -130,9 +133,11 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
+          error-code => $doc<code>,
           oper-name => 'build_info',
           oper-data => @req.perl,
-          collection-name => 'admin.$cmd'
+          collection-ns => 'admin.$cmd',
+          severity => MongoDB::Severity::Error
         );
       }
 

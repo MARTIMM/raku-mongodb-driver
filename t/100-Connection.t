@@ -34,6 +34,10 @@ subtest {
 
   ok $connection.status ~~ Exception, "3 Status is also an Exception";
   ok ? $connection.status, "Status is defined";
+  is $connection.status.severity,
+     MongoDB::Severity::Error,
+     "Status is {$connection.status}"
+     ;
 
   is $connection.status.error-text,
      "Failed to connect to localhost at 763245",
