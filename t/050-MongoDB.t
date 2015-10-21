@@ -35,6 +35,7 @@ subtest {
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
   is $e.severity, MongoDB::Severity::Info, 'Severity still info';
+  is $e.method, 'subtest', "Method {$e.method}";
 
 }, "Exception block tests 1";
 

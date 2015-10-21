@@ -78,7 +78,7 @@ class X::MongoDB is Exception {
   has Str $.oper-data;          # Operation data are items sent to the server
   has Str $.collection-ns;      # Collection name space == dbname.clname
   has Str $.method;             # Method or routine name
-  has Str $.line;               # Line number where X::MongoDB is created
+  has Int $.line;               # Line number where X::MongoDB is created
   has Str $.file;               # File in which that happened
   has MongoDB::Severity $.severity;
                                 # Severity level
@@ -98,6 +98,7 @@ class X::MongoDB is Exception {
 
     my $fn = 0;
     while my $cf = callframe($fn++) {
+#say "A F,l: {$cf.file}:{$cf.line} {$cf.code.^name} {$cf.code.name}";
 
       # End loop with the program that starts on line 1
       #
@@ -116,12 +117,35 @@ class X::MongoDB is Exception {
       # skipped. This will get us to the calling function.
       #
       if $cf.code.^name ~~ m/ [ 'Sub' | 'Method' | 'Submethod' ] / {
-        $!line = ~$cf.line;
+        $!line = +$cf.line;
         $!file = $cf.file;
 
-#        $!method = $cf.callframe.code.name;
-        $!method = $cf.code.name;
-#say "CName: $!file, $!line, $!method, ", $cf.code.name;
+        # Problem is that the callframe here is not the same as the callframe
+        # above because of adding new blocks (if, for, while etc) to the stack.
+        # It is however extended, so look first for the entry found above and
+        # then search for the method/sub/submethod below it.
+        #
+        # We can start at least at level $fn.
+        #
+        my Bool $found-entry = False;
+        while my $cfx = callframe($fn++) {
+#say "B F,l: [$found-entry]",
+#    " {$cfx.file}:{$cfx.line} {$cfx.code.^name} {$cfx.code.name}";
+
+          # If we find the entry then go to the next frame to check for the
+          # Routine we need to know.
+          #
+          if $!line == $cfx.line and $!file eq $cfx.file {
+            $found-entry = True;
+            next;
+          }
+
+          if $found-entry
+             and $cfx.code.^name ~~ m/ [ 'Sub' | 'Method' | 'Submethod' ] / {
+            $!method = $cfx.code.name;
+            last;
+          }
+        }
 
         # When we have our info then stop
         #
@@ -130,7 +154,7 @@ class X::MongoDB is Exception {
     }
 
     $!error-text        = $error-text;
-    $!error-code        = ~($error-code // '---');
+    $!error-code        = ~$error-code;
     $!oper-name         = $oper-name;
     $!oper-data         = $oper-data;
     $!collection-ns     = $collection-ns;
