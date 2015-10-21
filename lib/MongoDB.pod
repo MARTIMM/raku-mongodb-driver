@@ -281,8 +281,7 @@ Defined as
     Str :$error-code,
     Str:D :$oper-name,
     Str :$oper-data,
-    Str :$database-name,
-    Str :$collection-name,
+    Str :$collection-ns,
     MongoDB::Severity :$severity = MongoDB::Severity::Warn
   )
 
@@ -336,13 +335,10 @@ server is not used, the name of the method. This field will always be defined.
 This is the representation of the used data structure sent to the server if any.
 Mostly this is a serialized string using perl() on the object.
 
-=head3 database-name
+=head3 collection-ns
 
-Database name involved
-
-=head3 collection-name
-
-Collection name involved
+Database- and Collection name involved. Its a string where names are separated
+by a dot ('.').
 
 =head3 method
 
