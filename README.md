@@ -435,9 +435,10 @@ are also items to be implemented in BSON. You need to look there for info
   authenticate with. 
 
 * Sharpening check on database-, collection- and document key names.
-
-* modify files with extention .pm into .pm6
-* Moving out exception code in modules into MongoDB.pm.
+* other items to [check](https://docs.mongodb.org/manual/reference/limits/)
+* table to map mongo status codes to severity level. This will modify the
+  default severity when an error code from the server is received.
+  Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
 
 ## CHANGELOG
 
