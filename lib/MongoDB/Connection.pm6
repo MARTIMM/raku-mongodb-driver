@@ -84,7 +84,7 @@ package MongoDB {
       my Hash $doc = $database.run_command(@req);
 
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
+        $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,
           error-code => $doc<code>,
           oper-name => 'list_databases',
