@@ -22,15 +22,13 @@ my MongoDB::Database $database = $connection.database('test');
 
 #-------------------------------------------------------------------------------
 subtest {
-  my $e0 = X::MongoDB.new(
+  my $e = X::MongoDB.new(
     :error-text('Number of exceptions raised to Inf'),
     :error-code('X007-a'),
     :oper-name('test-a'),
     :oper-data({ a => 1, b => 2}.perl),
     :severity(MongoDB::Severity::Info)
   );
-
-  my $e = MongoDB::Logging[$e0].log;
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
@@ -53,7 +51,7 @@ subtest {
           :error-code('X007-x'),
           :oper-name('test-x'),
           :oper-data({ ax => 11, bx => 22}.perl),
-          :collection-ns('test-x.coll-tests'),
+          :collection-ns('test-db.coll-tests'),
           :severity(MongoDB::Severity::Error)
         );
       }
@@ -67,7 +65,7 @@ subtest {
 
   ok ? $e, 'Defined exception';
   ok $e ~~ X::MongoDB, 'Proper class name';
-  is $e.collection-ns, 'test-x.coll-tests', "Collection {$e.collection-ns}";
+  is $e.collection-ns, 'test-db.coll-tests', "Collection {$e.collection-ns}";
   is $e.method, 'set-x', 'Method set-x()';
 
   # Cannot handle myself so throw it
@@ -85,13 +83,12 @@ subtest {
   try {
     # No throwing yet
     #
-    my $l = MongoDB::Logging[$e];
-    $l.log;
-    $l.test-severity;
+    $e.log;
+    $e.test-severity;
     ok ? $e, 'Still not dead';
 
     set-exception-throw-level(MongoDB::Severity::Warn);
-    $l.test-severity;
+    $e.test-severity;
 
     CATCH {
       default {
@@ -102,11 +99,72 @@ subtest {
   }
 
   set-exception-throw-level(MongoDB::Severity::Fatal);
-  my $l = MongoDB::Logging[Exception];
-  $l.log;
-  $l.test-severity;
+  $e.log;
+  $e.test-severity;
 
+
+  # Cannot handle myself so throw it
+  #
+  try {
+    set-exception-throw-level(MongoDB::Severity::Warn);
+    my TE_P::TE $te .= new;
+    my $e = $te.set-x(11);
+
+    CATCH {
+      default {
+        ok .message ~~ m:s/ 'foutje,' 'bedankt!' /, 'Thrown while creating';
+      }
+    }
+  }
+
+  # Cannot handle myself so throw it
+  #
+  try {
+    # No need to call set-exception-throw-level(MongoDB::Severity::Warn);
+
+    set-exception-processing( :!logging, :!checking);
+    my TE_P::TE $te .= new;
+    my $e = $te.set-x(11);
+    ok 1, 'Still running, checking and logging = off';
+
+    CATCH {
+      default {
+        ok 0, 'Should not arrive here';
+      }
+    }
+  }
 }, "Exception block tests 2";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  set-exception-processing( :logging, :checking);
+  ok "MongoDB.log".IO ~~ :r, "Logfile MongoDB.log exists";
+  ok "MongoDB.log".IO.s > 1, "Logfile has data";
+
+  set-logfile('My-MongoDB.log');
+  open-logfile();
+  unlink "MongoDB.log";
+  my $e = X::MongoDB.new(
+    :error-text('Number of exceptions raised to Inf'),
+    :oper-name('test-x'),
+    :severity(MongoDB::Severity::Trace)
+  );
+
+  ok "My-MongoDB.log".IO ~~ :r, "Logfile My-MongoDB.log exists";
+  ok "My-MongoDB.log".IO.s == 0, "Logfile has no data";
+
+  set-exception-process-level(MongoDB::Severity::Trace);
+  $e = X::MongoDB.new(
+    :error-text('Number of exceptions raised to Inf'),
+    :oper-name('test-x'),
+    :severity(MongoDB::Severity::Trace)
+  );
+
+  ok "My-MongoDB.log".IO.s > 0, "Logfile has now data";
+  unlink "My-MongoDB.log";
+
+}, "Log output";
 
 #-------------------------------------------------------------------------------
 # Cleanup

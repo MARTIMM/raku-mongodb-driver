@@ -79,10 +79,12 @@ package MongoDB {
     # List databases using MongoDB db.runCommand({listDatabases: 1});
     #
     method list_databases ( --> Array ) {
+
+      $!status = Nil;
+
       my $database = self.database('admin');
       my Pair @req = listDatabases => 1;
       my Hash $doc = $database.run_command(@req);
-
       if $doc<ok>.Bool == False {
         $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,
