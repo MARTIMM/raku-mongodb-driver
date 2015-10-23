@@ -14,9 +14,11 @@ use Test-support;
 use v6;
 use Test;
 
+use MongoDB;
 use MongoDB::Connection;
 
 my MongoDB::Connection $connection;
+#set-logfile($*OUT);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -36,19 +38,19 @@ subtest {
   ok ? $connection.status, "Status is defined";
   is $connection.status.severity,
      MongoDB::Severity::Error,
-     "Status is {$connection.status}"
+     "Status is {$connection.status.^name}"
      ;
 
   is $connection.status.error-text,
-     "Failed to connect to localhost at 763245",
+     "Failed to connect to localhost at port 763245",
      '1 ' ~ $connection.status.error-text;
 
   try {
     die $connection.status;
     CATCH {
       default {
-        ok .message ~~ m:s/'connect' 'to' 'localhost' 'at' \d+/,
-        '2 ' ~ .error-text
+        ok .message ~~ m:s/'connect' 'to' 'localhost' 'at' 'port' \d+/,
+           '2 ' ~ .error-text
       }
     }
   }
@@ -65,7 +67,7 @@ subtest {
   ok ! ? $connection.status, "Status is not defined";
 
   my Hash $version = $connection.version;
-  #say "V: ", $version.perl;
+#say "V: ", $version.perl;
   ok $version<release1>:exists, "Version release $version<release1>";
   ok $version<release2>:exists, "Version major $version<release2>";
   ok $version<revision>:exists, "Version minor $version<revision>";

@@ -18,8 +18,8 @@ package MongoDB:ver<0.25.8> {
     my $severity-throw-level = Fatal;
     my $severity-process-level = Info;
 
-    my $do-log;
-    my $do-check;
+    my $do-log = True;
+    my $do-check = True;
 
     my $log-fh;
     my $log-fn = 'MongoDB.log';
@@ -27,8 +27,8 @@ package MongoDB:ver<0.25.8> {
     #---------------------------------------------------------------------------
     #
     method log (  ) {
-say "Spl l: $severity-process-level";
-      return unless self.severity >= $severity-process-level;
+#say "L: $do-log, self.severity, $severity-process-level";
+      return unless $do-log and self.severity >= $severity-process-level;
 
       # Check if file is open.
       open-logfile() unless ? $log-fh;
@@ -44,29 +44,22 @@ say "Spl l: $severity-process-level";
     #---------------------------------------------------------------------------
     #
     method test-severity (  ) {
-say "Stl t: $severity-throw-level";
-      die self if self.severity >= $severity-throw-level;
-    }
+#say "S: $do-check, self.severity, $severity-throw-level";
+      return unless $do-check and self.severity >= $severity-throw-level;
 
-    #-----------------------------------------------------------------------------
-    #
-    sub open-logfile (  ) is export {
-      $log-fh.close if ? $log-fh;
-      $log-fh = $log-fn.IO.open: :a;
+      die self;
     }
 
     #-----------------------------------------------------------------------------
     #
     sub set-exception-throw-level ( Severity:D $s ) is export {
       $severity-throw-level = $s;
-say "Stl: $severity-throw-level";
     }
 
     #-----------------------------------------------------------------------------
     #
     sub set-exception-process-level ( Severity:D $s ) is export {
       $severity-process-level = $s;
-say "Spl: $severity-process-level";
     }
 
     #-----------------------------------------------------------------------------
@@ -79,9 +72,6 @@ say "Spl: $severity-process-level";
       $do-check = $checking;
     }
 
-    method get-do-log ( --> Bool ) { $do-log //= True; }
-    method get-do-check ( --> Bool ) { $do-check //= True; }
-
     #-----------------------------------------------------------------------------
     #
     multi sub set-logfile ( Str:D $filename! ) is export {
@@ -92,6 +82,13 @@ say "Spl: $severity-process-level";
     #
     multi sub set-logfile ( IO::Handle:D $file-handle! ) is export {
       $log-fh = $file-handle;
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    sub open-logfile (  ) is export {
+      $log-fh.close if ? $log-fh;
+      $log-fh = $log-fn.IO.open: :a;
     }
 
     #-----------------------------------------------------------------------------
@@ -201,10 +198,8 @@ say "Spl: $severity-process-level";
       $!severity          = $severity;
       $!date-time         .= now;
 
-      my $l = self.get-do-log;
-      my $c = self.get-do-check;
-      self.log( ) if $l;
-      self.test-severity( ) if $c;
+      self.log( );
+      self.test-severity( );
     }
 
     #-----------------------------------------------------------------------------
@@ -218,7 +213,8 @@ say "Spl: $severity-process-level";
     #-----------------------------------------------------------------------------
     #
     method debug ( --> Str ) {
-      return [~] " {$!oper-name}\() {$!error-text}\({$!error-code})",
+      return [~] " {$!oper-name}\() $!error-text",
+                 ? $!error-code ?? " \({$!error-code})" !! '',
                  ? $!collection-ns ?? "c-ns=$!collection-ns" !! '',
                  " at $!file\:$!line\n"
                  ;
@@ -227,7 +223,8 @@ say "Spl: $severity-process-level";
     #-----------------------------------------------------------------------------
     #
     method info ( --> Str ) {
-      return [~] " {$!oper-name}\() {$!error-text}\({$!error-code})",
+      return [~] " {$!oper-name}\() $!error-text",
+                 ? $!error-code ?? " \({$!error-code})" !! '',
                  " at $!file\:$!line\n"
                  ;
     }
@@ -235,7 +232,8 @@ say "Spl: $severity-process-level";
     #-----------------------------------------------------------------------------
     #
     method warn ( --> Str ) {
-      return [~] "\n  {$!oper-name}\() {$!error-text}\({$!error-code})",
+      return [~] "\n  {$!oper-name}\() $!error-text",
+                 ? $!error-code ?? " \({$!error-code})" !! '',
                  ? $!collection-ns ?? "\n  Collection namespace $!collection-ns" !! '',
                  ? $!method ?? "\n  In method $!method" !! '',
                  " at $!file\:$!line\n"
@@ -257,7 +255,8 @@ say "Spl: $severity-process-level";
     #-----------------------------------------------------------------------------
     #
     method message ( --> Str ) {
-      return [~] "\n  $!oper-name\(): $!error-text\($!error-code)",
+      return [~] "\n  $!oper-name\(): $!error-text",
+                 ? $!error-code ?? " \({$!error-code})" !! '',
                  ? $!oper-data ?? "\n  Request data $!oper-data" !! '',
                  ? $!collection-ns ?? "\n  Collection namespace $!collection-ns" !! '',
                  ? $!method ?? "\n  In method $!method" !! '',

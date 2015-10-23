@@ -92,7 +92,12 @@ Used as
 
   use MongoDB;
 
-Base module to hold basic information
+or
+
+  use MongoDB:ver<0.0.1>
+
+Base module to hold basic information. Specify proper version if C<:ver> is
+used.
 
 
 =head1 TYPES
@@ -106,7 +111,7 @@ Defined as:
 Used as:
 
   use MongoDB;
-  my $sv = MongoDB::Severity::Warn
+  my $sv = MongoDB::Severity::Warn;
 
 An enumerated type holding names of severity levels. Usage can be like below
 See L<stackoverflow|http://stackoverflow.com/questions/2031163/when-to-use-log-level-warn-vs-error>
@@ -142,6 +147,75 @@ prevent data loss (or further data loss). I reserve these only for the most
 heinous errors and situations where there is guaranteed to have been data
 corruption or loss.
 
+
+=head1 ROLE Logging
+
+Defined as:
+
+  role Logging { ... }
+
+This role can be used by any Exception provided that it also delivers some
+attributes and methods to work with.
+This role needs the attributes C<date-time> and C<severity> which hold the date and
+time of object creation and severity saying something about how bad it is (all
+relative of course ;-). Furthermore for each severity level there must be a
+method. These methods must return a string with info about the exception. Sugested
+is that the methods C<trace>, C<debug> and C<info> return info as a oneliner.
+
+E.g.
+
+  method debug ( --> Str ) {
+    return "some debug text from fields within...";
+  }
+
+The levels are shown above with the definition of C<Severity>. It is not
+nessesary to add date,time and severity because that will be handled by the
+C<log> method described below.
+
+
+=head2 METHODS
+
+=head3 log
+
+Defined as:
+
+  method log (  )
+
+Log the error in the logfile using the message facilities in the exception. A
+file will be opened if it is not opened before. Logging occurs on the following
+conditions:
+
+=for item1
+There is no logging when logging is turned off. See also
+L<set-exception-processing|#set-exception-processing>.
+
+=for item1
+The severity in the exception is equal to or higher then the severity processing
+level. This is by default set to C<Info>. So a C<Trace> exception is not logged
+and a C<Warn> is. See also L<set-exception-process-level|#set-exception-process-level>.
+
+Examples of use are shown below when defining the L<X::MongoDB|#X::MongoDB> Exception. 
+
+=head3 test-severity
+
+Defined as:
+
+  method test-severity (  )
+
+Test severity of the exception and throw when level gets to high (above
+threshold set with L<set-exception-throw-level|#set-exception-throw-level>.
+Checking occurs on the following conditions:
+
+=for item1
+There is no checking when checking severity is turned off. See also
+L<set-exception-processing|#set-exception-processing>.
+
+=for item1
+The severity in the exception is equal to or higher then the severity throw
+level. This is by default set to C<Fatal>. So a C<Trace> exception is not thrown
+but a C<Fatal> is. See also L<set-exception-throw-level|#set-exception-throw-level>.
+
+
 =head1 EXPORTED SUBS
 
 =head2 set-exception-throw-level
@@ -154,9 +228,7 @@ use as:
 
   set-exception-throw-level(MongoDB::Severity::Warn);
 
-Exceptions are thrown by the C<test-severity> method in the C<Logging> role if
-the severity level in the exception object is higher then this threshold. The
-default is initialized to C<MongoDB::Severity::Fatal>.
+Set the exception throwing level done in C<test-severity>..
 
 =head2 set-exception-process-level
 
@@ -168,24 +240,48 @@ use as:
 
   set-exception-process-level(MongoDB::Severity::Trace);
 
-Exceptions are logged by C<log> method in the C<Logging> role if the severity
-level in the exception object is higher then this threshold. The default is
-initialized to C<MongoDB::Severity::Info>.
+Set the exception logging level done in L<log|#log>.
 
-=head2 set-logfile-name
+=head2 set-exception-processing
 
 Defined as:
 
-  sub set-logfile-name ( Str:D $filename ) is export
+  sub set-exception-processing (
+    Bool :$logging = True,
+    Bool :$checking = True
+  ) is export
+
+Use as
+
+  # Turn all processing off.
+  set-exception-processing( :!logging, :!checking);
+
+Turn logging and/or checking on or off. Turning checking of severity levels
+completely off is not advisable. When a high severity like C<Fatal> is not
+thrown and acted upon, the data may be compromised. Better is to raise the level
+to some point. The default is already at its highest
+
+=head2 set-logfile
+
+Defined as:
+
+  multi sub set-logfile ( Str:D $filename ) is export
+  multi sub set-logfile ( IO::Handle:D $file-handle! ) is export
 
 Use as:
 
-  set-logfile-name('My-logfile.log');
+  set-logfile('My-file.log');
+
+or
+
+  set-logfile($*err);
 
 Set the name of a logfile. Default set value is C<MongoDB.log>. When the first
 log is done, the file is automatically opened. After that the filename change
 will not have any effect. Call open-logfile explicitly to switch to the new
 logfile.
+
+If the argument is a file handle, the previous log file will be closed if any.
 
 =head2 open-logfile
 
@@ -198,74 +294,6 @@ Use as:
   open-logfile();
 
 Open the logfile. Any previously opened logfile is closed.
-
-
-=head1 ROLE Logging
-
-Defined as:
-
-  role Logging[Exception $e] { ... }
-
-Used as:
-
-  my $e = X::MongoDB.new(...);
-  my $l = MongoDB::Logging[$e];
-
-The role is parameterized to be used with an exception object. After
-instantiating all methods in the role work on the same exception object. This
-role looks for specific attributes and methods which must be defined there.
-These are the attributes C<date-time> and C<severity> which hold the date and
-time of object creation and severity saying something about how bad it is (all
-relative of course ;-). Furthermore for each severity level there must be a
-method. These methods must return a string with info about the exception.
-
-E.g.
-
-  method debug ( --> Str ) {
-    return "some error text from fields within...";
-  }
-
-The levels are shown above with the definition of C<Severity>. It is not
-nessesary to add date,time and severity because that will be handled by the
-C<log> method described below.
-
-The Exception does not have to be defined in which case all methods will act as
-a noop.
-
-=head2 METHODS
-
-=head3 log
-
-Defined as:
-
-  method log ( --> Exception )
-
-Use as
-
-  my $e = Logging[X::MongoDB.new(...)].log;
-
-or maybe as
-
-  my $e = X::MongoDB.new(...);
-  my $l = MongoDB::Logging[$e];
-  $l.log;
-
-Log the error in the logfile using the message facilities in the exception.. 
-
-=head3 test-severity
-
-Defined as:
-
-  method test-severity (  )
-
-Used as
-
-  my $e = X::MongoDB.new(...);
-  my $l = MongoDB::Logging[$e];
-  $l.test-severity;
-
-Test severity of the exception and throw when level gets to high (above
-threshold set with C<set-exception-throw-level>.
 
 
 =head1 EXCEPTION X::MongoDB

@@ -35,8 +35,8 @@ package MongoDB {
         CATCH {
           default {
             $!status = X::MongoDB.new(
-              :error-text("Failed to connect to $host at $port"),
-              :oper-name<connect>
+              :error-text("Failed to connect to $host at port $port"),
+              :oper-name<new>
               :severity(MongoDB::Severity::Error)
             );
           }

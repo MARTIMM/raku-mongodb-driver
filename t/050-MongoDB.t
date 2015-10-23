@@ -140,7 +140,7 @@ subtest {
 
   set-exception-processing( :logging, :checking);
   ok "MongoDB.log".IO ~~ :r, "Logfile MongoDB.log exists";
-  ok "MongoDB.log".IO.s > 1, "Logfile has data";
+  ok "MongoDB.log".IO.s > 0, "Logfile has data";
 
   set-logfile('My-MongoDB.log');
   open-logfile();
