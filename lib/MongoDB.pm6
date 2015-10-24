@@ -81,13 +81,16 @@ package MongoDB:ver<0.25.8> {
     #-----------------------------------------------------------------------------
     #
     multi sub set-logfile ( IO::Handle:D $file-handle! ) is export {
+      $log-fh.close if ? $log-fh and $log-fh !eqv $*in
+                    and $log-fh !eqv $*out and $log-fh !eqv $*err;
       $log-fh = $file-handle;
     }
 
     #-----------------------------------------------------------------------------
     #
     sub open-logfile (  ) is export {
-      $log-fh.close if ? $log-fh;
+      $log-fh.close if ? $log-fh and $log-fh !eqv $*in
+                    and $log-fh !eqv $*out and $log-fh !eqv $*err;
       $log-fh = $log-fn.IO.open: :a;
     }
 
