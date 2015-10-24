@@ -282,6 +282,7 @@ will not have any effect. Call open-logfile explicitly to switch to the new
 logfile.
 
 If the argument is a file handle, the previous log file will be closed if any.
+This handle will not be closed when it is C<$*err>, C<$*in> or C<$*out>.
 
 =head2 open-logfile
 
@@ -295,8 +296,28 @@ Use as:
 
 Open the logfile. Any previously opened logfile is closed.
 
+=head2 Absolute methods to be defined by child classes
+
+Defined as
+
+  method trace ( --> Str ) { ... }
+  method debug ( --> Str ) { ... }
+  method info ( --> Str ) { ... }
+  method warn ( --> Str ) { ... }
+  method error ( --> Str ) { ... }
+  method fatal ( --> Str ) { ... }
+
+  method message ( --> Str ) { ... }
+
+The first six methods are called for each specific sverity value. The last one
+is shown when exception is thrown and not caught.
+
 
 =head1 EXCEPTION X::MongoDB
+
+Defined as
+
+  class X::MongoDB is Exception does MongoDB::Logging {...}
 
 =head2 METHODS
 
@@ -306,7 +327,7 @@ Defined as
 
   submethod BUILD (
     Str:D :$error-text,
-    Str :$error-code,
+    $error-code where $_ ~~ any(Int|Str) = '',
     Str:D :$oper-name,
     Str :$oper-data,
     Str :$collection-ns,
@@ -322,26 +343,22 @@ Usage as
     :oper-data({ nooops => True}}.perl),
   );
 
-Creates an exception object C<X::MongoDB>. Most of the methods will return this
-object when an error occurred. In a few occations it is stored in a local
-C<$.status> attribute. A part of the data in this object is often set from data
-originating from the server after a request. However, it will be set by the
-method itself when the server did not play a role in the action.
+Creates an exception object C<X::MongoDB>. When an error occurrs most of the
+methods will store this object in a local C<$.status> attribute. When the
+severity is too high the exception will be thrown. A part of the data in this
+object is often set with data originating from the server after a request.
+However, it will be set by the method itself when the server did not play a role
+in the action.
 
-Some of the fields can be left undefined. E.g. when an error occurs while
-dropping a database, the collection name would not be set for that operation.
-When you think that you cannot handle the exception you can throw the exception
-yourself like so:
+Some of the fields can be left undefined. At least the error-text and error-name
+are set. When you think that you cannot handle the exception you can throw the
+exception yourself like so:
 
   my $collection = $database.collection('persons addresses');
   die $collection.status if ? $collection.status;
 
-or log and maybe die using the examples shown above:
-
-  my $collection = $database.collection('persons addresses');
-  my $l = MongoDB::Logging[$collection.status];
-  $l.log;
-  $l.test-severity;
+Logging and check of severity will take place automatically if the severity of
+the exception are above the specific treshold levels.
 
 =head3 error-text
 
@@ -351,7 +368,7 @@ It holds the 'why something failed'.
 =head3 error-code
 
 This code doesn't have to be defined. When the error is returned from the
-server there is also a code. This code will be used here.
+server there is also a code.
 
 =head3 oper-name
 
@@ -366,7 +383,7 @@ Mostly this is a serialized string using perl() on the object.
 =head3 collection-ns
 
 Database- and Collection name involved. Its a string where names are separated
-by a dot ('.').
+by a dot ('.'), the first name being the database name.
 
 =head3 method
 
@@ -382,7 +399,6 @@ Line number where X::MongoDB is created
 File wherein that happened
 
 
-
 =head1 DEPENDENCIES
 
 Module MongoDB depends on Module C<BSON> and C<Digest::MD5>.
@@ -390,7 +406,7 @@ Module MongoDB depends on Module C<BSON> and C<Digest::MD5>.
 
 =head1 SEE ALSO
 
-The MongoDB site at L<http://www.mongodb.org/>
+The documentation at the L<MongoDB site|http://www.mongodb.org/>
 
 
 =head1 BUGS and TODO
@@ -403,7 +419,7 @@ recomendations|http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-
 from the mongodb site about writing drivers.
 
 =for item1
-Speed, protocol correctness and clear code are priorities for now.
+Speed, protocol correctness and clear code.
 
 =for item2
 Speed can be influenced by specifying types on all variables. Also setting
@@ -440,21 +456,18 @@ Get info about multiple accounts instead of one at the time
 
 =for item1
 Need a change in throwing exceptions. Not all errors are unrecoverable. Return
-e.g. a failure instead of throwing an exception. C<MongoDB::Connect.new()> is
-the first method who saves an exception in its c<$.status> attribute.
-
-=for item1
-Modify Mongo.pm. Remove use statements and add variables for use by modules.
-This is done now.
+e.g. a failure instead of throwing an exception. C<MongoDB::Connect> is
+the first module which saves an exception in its c<$.status> attribute.
 
 =for item1
 While we can add users to the database we cannot authenticate due to the lack
 of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
-authenticate with. 
+authenticate with. There is a HMAC module so maybe I can plodder a bit with
+that following L<rfc5802|http://www.faqs.org/rfcs/rfc5802.html>.
 
 =for item1
 Change method names with an underscore into names with a dash. E.g. map_reduce
-will become then map-reduce. When it will be defined, the old names with an
+will become then map-reduce. When it will be changed, the old names with an
 underscore will show deprecation warnings. Other names starting with an
 underscore has always been the perl5 notion of being a private variable or
 routine. In perl6 these methods can be initiated with an exclamation mark to
