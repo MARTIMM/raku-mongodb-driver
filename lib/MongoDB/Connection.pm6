@@ -110,7 +110,9 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # Get mongodb version.
+    # Get mongodb version. When making a new connection the version is store
+    # at $MongoDB::version for later lookups by other code whithout the need
+    # of quering the server all the time. See BUILD above.
     #
     method version ( --> Hash ) {
       my Hash $doc = self.build_info;
@@ -128,12 +130,14 @@ package MongoDB {
     # Get mongodb server info.
     #
     method build_info ( --> Hash ) {
+
+      $!status = Nil;
+
       my $database = self.database('admin');
       my Pair @req = buildinfo => 1;
       my Hash $doc = $database.run_command(@req);
-
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
+        $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,
           error-code => $doc<code>,
           oper-name => 'build_info',

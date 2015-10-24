@@ -17,7 +17,9 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =SUBTITLE Mongod server connection and info
 
-  package MongoDB { class Connection { ... }
+Defined as
+
+  package MongoDB { class Connection { ... } }
 
 The class provides methods such as connecting to mongod server and ask
 information from the server.
@@ -46,7 +48,7 @@ my @db-names = $connection.list_databases();
 
 =head1 METHODS
 
-=head2 method new
+=head2 new
 
 Defined as:
 
@@ -73,7 +75,7 @@ Example:
   }
 
 
-=head2 method database
+=head2 database
 
 Defined as:
 
@@ -81,13 +83,21 @@ Defined as:
 
 Usage:
 
+  my MongoDB::Database = $connection.database('my-database');
 
-
-Get a database object named $name. When nonexistend, it will be created after
+Get a database object named $name. When nonexistent, it will be created after
 inserting documents in the databases collection.
 
-=for head2
-method list_databases ( --> Array ) {...}
+=head2 list_databases
+
+Defined as:
+
+  method list_databases ( --> Array ) {...}
+
+Usage:
+
+  my Array $db-list = $connection.list_databases;
+  for $db-list -> Hash $db { say $db<name sizeOnDisk>.fmt('%20s');}
 
 Get an array of documents each having keys C<name>, C<sizeOnDisk> and C<empty>. See
 L<http://docs.mongodb.org/manual/reference/command/listDatabases/#dbcmd.listDatabases>
