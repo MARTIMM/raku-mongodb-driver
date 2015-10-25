@@ -447,8 +447,11 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.*.0
-  * Remove deprication messages of converted method names
+  * Remove deprecation messages of converted method names
 
+* 0.25.9
+  * Deprecated underscore methods in favor of dashed ones:
+    MongoDB::Connection: list_database, database_names
 * 0.25.8
   * Removed exception class from Connection.pm, Collection.pm, Database.pm,
     Users.pm, Authenticate.pm and Cursor.pm. Usage is replaced by

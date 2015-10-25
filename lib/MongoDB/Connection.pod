@@ -13,7 +13,7 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=TITLE class Connection in package MongoDB
+=TITLE class MongoDB::Connection
 
 =SUBTITLE Mongod server connection and info
 
@@ -37,10 +37,10 @@ use MongoDB;
 my MongoDB::Connection $connection .= new();
 
 # Get an array of documents
-my @db-status-info = $connection.list_databases();
+my @db-status-info = $connection.list-databases();
 
 # Get an array of database names
-my @db-names = $connection.list_databases();
+my @db-names = $connection.list-databases();
 
 =end code
 
@@ -48,7 +48,7 @@ my @db-names = $connection.list_databases();
 
 =head1 METHODS
 
-=head2 new
+=head2 method new
 
 Defined as:
 
@@ -75,7 +75,7 @@ Example:
   }
 
 
-=head2 database
+=head2 method database
 
 Defined as:
 
@@ -88,22 +88,25 @@ Usage:
 Get a database object named $name. When nonexistent, it will be created after
 inserting documents in the databases collection.
 
-=head2 list_databases
+=head2 method list-databases
 
 Defined as:
 
-  method list_databases ( --> Array ) {...}
+  method list-databases ( --> Array )
 
 Usage:
 
-  my Array $db-list = $connection.list_databases;
+  my Array $db-list = $connection.list-databases;
   for $db-list -> Hash $db { say $db<name sizeOnDisk>.fmt('%20s');}
 
 Get an array of documents each having keys C<name>, C<sizeOnDisk> and C<empty>. See
 L<http://docs.mongodb.org/manual/reference/command/listDatabases/#dbcmd.listDatabases>
 
-=for head2
-method database_names ( --> Array ) {...}
+=head2 method database-names
+
+defined as
+
+  method database-names ( --> Array )
 
 Using above call the method returns an array of databases.
 

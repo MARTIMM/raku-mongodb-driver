@@ -2,8 +2,8 @@
   Testing;
     MongoDB::Connection.new()           Create connection to server
     connection.database                 Return database
-    connection.list_databases()         Get the statistics of the databases
-    connection.database_names()         Get the database names
+    connection.list-databases()         Get the statistics of the databases
+    connection.database-names()         Get the database names
     connection.version()                Version name
     connection.buildinfo()              Server info
 }}
@@ -96,7 +96,7 @@ subtest {
   #-------------------------------------------------------------------------------
   # Get the statistics of the databases
   #
-  my Array $db-docs = $connection.list_databases;
+  my Array $db-docs = $connection.list-databases;
 
   # Get the database name from the statistics and save the index into the array
   # with that name. Use the zip operator to pair the array entries %doc with
@@ -115,7 +115,7 @@ subtest {
   #-------------------------------------------------------------------------------
   # Get all database names
   #
-  my @dbns = $connection.database_names();
+  my @dbns = $connection.database-names();
 
   ok any(@dbns) ~~ 'test', 'test is found in database list';
 
@@ -124,7 +124,7 @@ subtest {
   #
   $database.drop;
 
-  @dbns = $connection.database_names();
+  @dbns = $connection.database-names();
   ok !(any(@dbns) ~~ 'test'), 'test not found in database list';
 }, "Create database, collection. Collect database info, drop data";
 

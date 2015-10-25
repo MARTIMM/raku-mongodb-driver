@@ -78,7 +78,11 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # List databases using MongoDB db.runCommand({listDatabases: 1});
     #
-    method list_databases ( --> Array ) {
+    method list_databases ( --> Array ) is DEPRECATED('list-databases') {
+      return self.list-databases();
+    }
+
+    method list-databases ( --> Array ) {
 
       $!status = Nil;
 
@@ -89,7 +93,7 @@ package MongoDB {
         $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,
           error-code => $doc<code>,
-          oper-name => 'list_databases',
+          oper-name => 'listDatabases',
           oper-data => @req.perl,
           collection-ns => 'admin.$cmd',
           severity => MongoDB::Severity::Error
@@ -102,8 +106,12 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Get database names.
     #
-    method database_names ( --> Array ) {
-      my @db_docs = self.list_databases();
+    method database_names ( --> Array ) is DEPRECATED('database-names') {
+      return self.database-names();
+    }
+
+    method database-names ( --> Array ) {
+      my @db_docs = self.list-databases();
       my @names = map {$_<name>}, @db_docs; # Need to do it like this otherwise
                                             # returns List instead of Array.
       return @names;
