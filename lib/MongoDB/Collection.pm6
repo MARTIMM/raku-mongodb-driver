@@ -46,6 +46,7 @@ package MongoDB {
     method insert ( **@documents, Bool :$continue-on-error = False --> Nil ) {
       my $flags = +$continue-on-error;
 
+#say "D: ", @documents.perl;
       my @docs;
 #say "DType: ", @documents.^name;
       if @documents.isa(Array) {

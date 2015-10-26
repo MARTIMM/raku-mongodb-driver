@@ -21,8 +21,32 @@ my MongoDB::Database $database = $connection.database('test');
 #
 my MongoDB::Collection $collection = $database.collection('cl1');
 isa-ok( $collection, 'MongoDB::Collection');
-$collection.insert( $%( 'name' => 'Jan Klaassen'));
 
+#-------------------------------------------------------------------------------
+subtest {
+  $collection.insert( $%( name => 'Jan Klaassen'));
+  $collection.insert( { name => 'Piet B'},{ name => 'Me T'});
+  $collection.insert( %( :name('Di D')));
+
+  my MongoDB::Cursor $cursor = $collection.find({name => 'Me T'});
+  is $cursor.count, 1, '1 record of "Me T"';
+
+  $cursor = $collection.find({name => 'Di D'});
+  is $cursor.count, 1, '1 record of "Di D"';
+
+  $cursor = $collection.find({name => 'Jan Klaassen'});
+  is $cursor.count, 1, '1 record of "Jan Klaassen"';
+
+  my %r1 = :name('n1'), :test(0);
+  my %r2 = :name('n2'), :test(0);
+  $collection.insert( %r1, %r2);
+
+  $cursor = $collection.find({:test(0)});
+  is $cursor.count, 2, '2 records of Test(0)';
+
+}, "Several inserts";
+
+#-------------------------------------------------------------------------------
 # Drop current collection twice
 #
 my $doc = $collection.drop;
