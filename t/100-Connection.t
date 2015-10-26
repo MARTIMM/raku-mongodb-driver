@@ -77,9 +77,11 @@ subtest {
      $version<release2> %% 2 ?? 'production' !! 'development',
      "Version type $version<release-type>";
 
-  my Hash $buildinfo = $connection.build_info;
+  my Hash $buildinfo = $connection.build-info;
   ok $buildinfo<version>:exists, "Version $buildinfo<version>";
-  ok $buildinfo<loaderFlags>:exists, "Loader flags $buildinfo<loaderFlags>";
+  ok $buildinfo<loaderFlags>:exists, "Loader flags '$buildinfo<loaderFlags>'";
+  ok $buildinfo<sysInfo>:exists, "Sys info '$buildinfo<sysInfo>'";
+  ok $buildinfo<versionArray>:exists, "Version array '$buildinfo<versionArray>'";
 }, "Test buildinfo and version";
 
 #-------------------------------------------------------------------------------

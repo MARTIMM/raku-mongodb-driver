@@ -153,7 +153,7 @@ package MongoDB {
 
       # Use it to do a find on it, get the doc and return it.
       #
-      my MongoDB::Cursor $cursor = $c.find( @command, :number_to_return(1));
+      my MongoDB::Cursor $cursor = $c.find( @command, :number-to-return(1));
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
     }

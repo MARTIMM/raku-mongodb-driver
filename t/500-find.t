@@ -105,7 +105,7 @@ subtest {
 
   # Now set an index on the field and the scan goes only through one document
   #
-  $collection.ensure_index(%(test_record => 1));
+  $collection.ensure-index(%(test_record => 1));
   $doc = $collection.explain({test_record => 'tr38'});
 #  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type';
   $s = $doc<executionStats>;

@@ -70,7 +70,7 @@ package MongoDB {
          hash( '$query' => %!criteria,
                '$explain' => True
              )
-             :number_to_return(1)
+             :number-to-return(1)
       );
 
       my $docs = $cursor.fetch();
@@ -86,7 +86,7 @@ package MongoDB {
       $req{'$explain'} = 1 if $explain;
 
       my MongoDB::Cursor $cursor = $!collection.find( $req,
-                                                      :number_to_return(1)
+                                                      :number-to-return(1)
                                                     );
       my $docs = $cursor.fetch;
       return $docs;

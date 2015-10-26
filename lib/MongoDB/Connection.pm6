@@ -123,7 +123,7 @@ package MongoDB {
     # of quering the server all the time. See BUILD above.
     #
     method version ( --> Hash ) {
-      my Hash $doc = self.build_info;
+      my Hash $doc = self.build-info;
       my Hash $version = hash( <release1 release2 revision>
                                Z=> (for $doc<version>.split('.') {Int($_)})
                              );
@@ -137,7 +137,11 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Get mongodb server info.
     #
-    method build_info ( --> Hash ) {
+    method build_info ( --> Hash ) is DEPRECATED('build-info') {
+      return self.build-info();
+    }
+
+    method build-info ( --> Hash ) {
 
       $!status = Nil;
 
@@ -148,7 +152,7 @@ package MongoDB {
         $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,
           error-code => $doc<code>,
-          oper-name => 'build_info',
+          oper-name => 'build-info',
           oper-data => @req.perl,
           collection-ns => 'admin.$cmd',
           severity => MongoDB::Severity::Error

@@ -1,7 +1,7 @@
 #`{{
   Testing;
     collection.group()                  Group records
-    collection.map_reduce()             Map reduce
+    collection.map-reduce()             Map reduce
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -120,7 +120,7 @@ $reduce-func = q:to/EOJS/;
    }
    EOJS
 
-$result = $collection.map_reduce(
+$result = $collection.map-reduce(
             $map-func, $reduce-func, 
             :criteria(%(name => %('$gt' => 'k0'))),
           );

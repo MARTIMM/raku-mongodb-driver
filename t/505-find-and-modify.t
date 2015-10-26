@@ -1,6 +1,6 @@
 #`{{
   Testing;
-    collection.find_and_modify()        Find and modify a record in the database
+    collection.find-and-modify()        Find and modify a record in the database
       sort                              Update first of same records dep on sort
       remove                            Remove found record
       update                            Update found record
@@ -39,7 +39,7 @@ is $cursor.count, 1, 'One of d1 012';
 
 # Modify one record
 #
-my $doc = $collection.find_and_modify(
+my $doc = $collection.find-and-modify(
   {code => 'd1 0123'}, 
   update => { '$set' => {code => 'd1 012'}}
 );
@@ -53,7 +53,7 @@ is $cursor.count, 2, 'Two records of d1 012 (after update)';
 
 # Find with new option
 #
-$doc = $collection.find_and_modify(
+$doc = $collection.find-and-modify(
   {code => 'd1 01234543'}, 
   update => { '$set' => {code => 'd1 012'}},
   :new
@@ -69,26 +69,27 @@ is $cursor.count, 3, '3 records of d1 012 (after update)';
 
 # Remove one record
 #
-$doc = $collection.find_and_modify( {code => 'd1 01234'}, :remove);
+$doc = $collection.find-and-modify( {code => 'd1 01234'}, :remove);
 $cursor = $collection.find({code => 'd1 01234'});
 is $cursor.count, 0, 'Record d1 01234 gone (after remove)';
 
 # Remove one record. Use remove and return new throws an error
 #
 try {
-  $doc = $collection.find_and_modify(
+  $doc = $collection.find-and-modify(
     {code => BSON::Regex.new(:regex('^d1 .*454.*'))},
     :remove, :sort({code => -1}), :new
   );
+
   CATCH {
     when X::MongoDB {
-      is .error-text ~~ m:s/remove and returnNew can\'t co\-exist/,
+      ok .error-text ~~ m:s/ 'remove' 'and' 'returnNew' "can't" "co-exist" /,
          .error-text;
     }
   }
 }
 
-$doc = $collection.find_and_modify(
+$doc = $collection.find-and-modify(
   {code => BSON::Regex.new(:regex('^d1 .*454.*'))},
   :remove, :sort({code => -1})
 );

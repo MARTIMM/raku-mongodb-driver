@@ -17,13 +17,15 @@ package MongoDB {
     has $.database;
     has Str $.name;
 
-    has BSON::Javascript $!default_js = BSON::Javascript.new();
+    has BSON::Javascript $!default-js = BSON::Javascript.new();
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( :$database, Str:D :$name ) {
+    submethod BUILD ( :$database!, Str:D :$name ) {
       $!database = $database;
 
+      # This should be possible: 'admin.$cmd' which is used by run_command
+      #
       if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
         $!name = $name;
       }
@@ -41,8 +43,8 @@ package MongoDB {
     # CRUD - Create(insert), Read(find*), Update, Delete
     #---------------------------------------------------------------------------
     #
-    method insert ( **@documents, Bool :$continue_on_error = False --> Nil ) {
-      my $flags = +$continue_on_error;
+    method insert ( **@documents, Bool :$continue-on-error = False --> Nil ) {
+      my $flags = +$continue-on-error;
 
       my @docs;
 #say "DType: ", @documents.^name;
@@ -150,14 +152,14 @@ package MongoDB {
     # Find record in a collection
     #
     multi method find ( %criteria = { }, %projection = { },
-                  Int :$number_to_skip = 0, Int :$number_to_return = 0,
-                  Bool :$no_cursor_timeout = False
+                  Int :$number-to-skip = 0, Int :$number-to-return = 0,
+                  Bool :$no-cursor-timeout = False
                   --> MongoDB::Cursor
                 ) {
-      my $flags = +$no_cursor_timeout +< 4;
+      my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
-                                        $number_to_return, %criteria,
+        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
+                                        $number-to-return, %criteria,
                                         %projection
                                       );
 
@@ -174,14 +176,14 @@ package MongoDB {
     # value pair.
     #
     multi method find ( Pair @criteria = [ ], %projection = { },
-                  Int :$number_to_skip = 0, Int :$number_to_return = 0,
-                  Bool :$no_cursor_timeout = False
+                  Int :$number-to-skip = 0, Int :$number-to-return = 0,
+                  Bool :$no-cursor-timeout = False
                   --> MongoDB::Cursor
                 ) {
-      my $flags = +$no_cursor_timeout +< 4;
+      my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
-                                        $number_to_return, @criteria,
+        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
+                                        $number-to-return, @criteria,
                                         %projection
                                       );
 
@@ -195,9 +197,17 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method find_one ( %criteria = { }, %projection = { } --> Hash ) {
+    method find_one (
+      %criteria = { },
+      %projection = { }
+      --> Hash ) is DEPRECATED('find-one') {
+
+      return self.find-one( %criteria, %projection);
+    }
+
+    method find-one ( %criteria = { }, %projection = { } --> Hash ) {
       my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
-                                              :number_to_return(1)
+                                              :number-to-return(1)
                                             );
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
@@ -205,25 +215,44 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method find_and_modify ( Hash $criteria = { }, %projection = { },
-                             :$remove = False, :%update = { }, :%sort = { },
-                             :$new = False, :$upsert = False
+    method find_and_modify ( Hash $criteria = { }, Hash $projection = { },
+                             Hash :$update = { }, Hash :$sort = { },
+                             Bool :$remove = False, Bool :$new = False,
+                             Bool :$upsert = False
+                             --> Hash
+                           ) is DEPRECATED('find-and-modify') {
+
+      my $h = self.find-and-modify(
+        $criteria, $projection, :$remove, :$update, :$sort, :$new, :$upsert
+      );
+
+      return $h;
+    }
+
+#    method find-and-modify ( Hash $criteria = { }, %projection = { },
+#                             :$remove = False, :%update = { }, :%sort = { },
+#                             :$new = False, :$upsert = False
+#                             --> Hash
+    method find-and-modify ( Hash $criteria = { }, Hash $projection = { },
+                             Hash :$update = { }, Hash :$sort = { },
+                             Bool :$remove = False, Bool :$new = False,
+                             Bool :$upsert = False
                              --> Hash
                            ) {
 
       my Pair @req = findAndModify => self.name, query => $criteria;
-      @req.push: (:%sort) if ?%sort;
+      @req.push: (:$sort) if ?$sort;
       @req.push: (:remove) if $remove;
-      @req.push: (:%update) if ?%update;
+      @req.push: (:$update) if ?$update;
       @req.push: (:new) if $new;
       @req.push: (:upsert) if $upsert;
-      @req.push: (:%projection) if ?%projection;
+      @req.push: (:$projection) if ?$projection;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
-          oper-name => 'find_and_modify',
+          oper-name => 'find-and-modify',
           oper-data => @req.perl,
           collection-ns => [~] $!database.name, '.', $!name
         );
@@ -237,20 +266,17 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method update ( %selector, %update!, Bool :$upsert = False,
-                    Bool :$multi_update = False
-                    --> Nil
+                    Bool :$multi-update = False
                   ) {
-      my $flags = +$upsert + +$multi_update +< 1;
-      self.wire.OP_UPDATE( self, $flags, %selector, %update );
-      return;
+      my $flags = +$upsert + +$multi-update +< 1;
+      self.wire.OP_UPDATE( self, $flags, %selector, %update);
     }
 
     #---------------------------------------------------------------------------
     #
-    method remove ( %selector = { }, Bool :$single_remove = False --> Nil ) {
-      my $flags = +$single_remove;
+    method remove ( %selector = { }, Bool :$single-remove = False ) {
+      my $flags = +$single-remove;
       self.wire.OP_DELETE( self, $flags, %selector );
-      return;
     }
 
     #---------------------------------------------------------------------------
@@ -278,7 +304,7 @@ package MongoDB {
     #
     method explain ( Hash $criteria = {} --> Hash ) {
       my Pair @req = '$query' => $criteria, '$explain' => 1;
-      my MongoDB::Cursor $cursor = self.find( @req, :number_to_return(1));
+      my MongoDB::Cursor $cursor = self.find( @req, :number-to-return(1));
       my $docs = $cursor.fetch();
       return $docs;
     }
@@ -340,22 +366,22 @@ package MongoDB {
     # Aggregate methods
     #---------------------------------------------------------------------------
     #
-    multi method group ( Str $reduce_js_func, Str :$key = '',
+    multi method group ( Str $reduce-js-func, Str :$key = '',
                          :%initial = {}, Str :$key_js_func = '',
                          :%condition = {}, Str :$finalize = ''
                          --> Hash ) {
 
       self.group(
-        BSON::Javascript.new(:javascript($reduce_js_func)),
+        BSON::Javascript.new(:javascript($reduce-js-func)),
         key_js_func => BSON::Javascript.new(:javascript($key_js_func)),
         finalize => BSON::Javascript.new(:javascript($finalize)),
         :$key, :%initial, :%condition
       );
     }
 
-    multi method group ( BSON::Javascript $reduce_js_func,
-                         BSON::Javascript :$key_js_func = $!default_js,
-                         BSON::Javascript :$finalize = $!default_js,
+    multi method group ( BSON::Javascript $reduce-js-func,
+                         BSON::Javascript :$key_js_func = $!default-js,
+                         BSON::Javascript :$finalize = $!default-js,
                          Str :$key = '',
                          Hash :$initial = {},
                          Hash :$condition = {}
@@ -364,7 +390,7 @@ package MongoDB {
       my Pair @req = group => {};
       @req[0]<group><ns> = $!name;
       @req[0]<group><initial> = $initial;
-      @req[0]<group>{'$reduce'} = $reduce_js_func;
+      @req[0]<group>{'$reduce'} = $reduce-js-func;
       @req[0]<group><key> = {$key => 1};
 
       if $key_js_func.has_javascript {
@@ -393,22 +419,52 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    multi method map_reduce ( Str:D $map_js_func, Str:D $reduce_js_func,
+    multi method map_reduce ( Str:D $map-js-func, Str:D $reduce-js-func,
+                              Hash :$out, Str :$finalize, Hash :$criteria,
+                              Hash :$sort, Hash :$scope, Int :$limit,
+                              Bool :$jsMode = False
+                              --> Hash ) is DEPRECATED('map-reduce') {
+
+      my $h = self.map-reduce(
+         $map-js-func, $reduce-js-func, :$out, :$finalize, :$criteria,
+         :$sort, :$scope, :$limit, :$jsMode
+      );
+
+      return $h;
+    }
+
+    multi method map-reduce ( Str:D $map-js-func, Str:D $reduce-js-func,
                               Hash :$out, Str :$finalize, Hash :$criteria,
                               Hash :$sort, Hash :$scope, Int :$limit,
                               Bool :$jsMode = False
                               --> Hash ) {
 
-      self.map_reduce( BSON::Javascript.new(:javascript($map_js_func)),
-                       BSON::Javascript.new(:javascript($reduce_js_func)),
+      self.map-reduce( BSON::Javascript.new(:javascript($map-js-func)),
+                       BSON::Javascript.new(:javascript($reduce-js-func)),
                        :finalize(BSON::Javascript.new(:javascript($finalize))),
                        :$out, :$criteria, :$sort, :$scope, :$limit, :$jsMode
                      );
     }
 
-    multi method map_reduce ( BSON::Javascript:D $map_js_func,
-                              BSON::Javascript:D $reduce_js_func,
-                              BSON::Javascript :$finalize = $!default_js,
+    multi method map_reduce ( BSON::Javascript:D $map-js-func,
+                              BSON::Javascript:D $reduce-js-func,
+                              BSON::Javascript :$finalize = $!default-js,
+                              Hash :$out, Hash :criteria($query), Hash :$sort,
+                              Hash :$scope, Int :$limit, Bool :$jsMode = False
+                              --> Hash
+                            ) is DEPRECATED('map-reduce') {
+
+      my $h = self.map-reduce(
+         $map-js-func, $reduce-js-func, :$out, :$finalize, :criteria($query),
+         :$sort, :$scope, :$limit, :$jsMode
+      );
+
+      return $h;
+    }
+
+    multi method map-reduce ( BSON::Javascript:D $map-js-func,
+                              BSON::Javascript:D $reduce-js-func,
+                              BSON::Javascript :$finalize = $!default-js,
                               Hash :$out, Hash :criteria($query), Hash :$sort,
                               Hash :$scope, Int :$limit, Bool :$jsMode = False
                               --> Hash
@@ -422,8 +478,8 @@ package MongoDB {
       @req.push: (:$scope) if $scope;
 
       @req.push: |(
-        :map($map_js_func),
-        :reduce($reduce_js_func),
+        :map($map-js-func),
+        :reduce($reduce-js-func),
         :$jsMode
       );
 
@@ -443,7 +499,7 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
-          oper-name => 'map_reduce',
+          oper-name => 'map-reduce',
           oper-data => @req.perl,
           collection-ns => [~] $!database.name, '.', $!name
         );
@@ -466,7 +522,14 @@ package MongoDB {
     #   deleted first. Therefore check first. drop index if exists then set new
     #   index.
     #
-    method ensure_index ( %key-spec!, %options = {} --> Nil ) {
+    method ensure_index (
+      %key-spec!, %options = {}
+    ) is DEPRECATED('ensure-index') {
+
+      self.ensure-index( %key-spec, %options);
+    }
+
+    method ensure-index ( %key-spec!, %options = {} ) {
 
       # Generate name of index if not given in options
       #
@@ -487,7 +550,7 @@ package MongoDB {
       # Check if index exists
       #
       my $system-indexes = $!database.collection('system.indexes');
-      my $doc = $system-indexes.find_one(%(key => %key-spec));
+      my $doc = $system-indexes.find-one(%(key => %key-spec));
 
       # If found do nothing for the moment
       #
@@ -511,20 +574,22 @@ package MongoDB {
           die X::MongoDB.new(
             error-text => $error-doc<err>,
             error-code => $error-doc<code>,
-            oper-name => 'ensure_index',
+            oper-name => 'ensure-index',
             oper-data => %doc.perl,
             collection-ns => [~] $!database.name, '.', $!name
           );
         }
       }
-
-      return;
     }
 
     #-----------------------------------------------------------------------------
     # Drop an index
     #
-    method drop_index ( $key-spec! --> Hash ) {
+    method drop_index ( $key-spec! --> Hash ) is DEPRECATED('drop-index') {
+      return self.drop-index($key-spec);
+    }
+
+    method drop-index ( $key-spec! --> Hash ) {
       my Pair @req = deleteIndexes => $!name,
                      index => $key-spec,
                      ;
@@ -536,7 +601,7 @@ package MongoDB {
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
-          oper-name => 'drop_index',
+          oper-name => 'drop-index',
           oper-data => @req.perl,
           collection-ns => [~] $!database.name, '.', $!name
         );
@@ -548,14 +613,22 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Drop all indexes
     #
-    method drop_indexes ( --> Hash ) {
-      return self.drop_index('*');
+    method drop_indexes ( --> Hash ) is DEPRECATED('drop-indexes') {
+      return self.drop-index('*');
+    }
+
+    method drop-indexes ( --> Hash ) {
+      return self.drop-index('*');
     }
 
     #-----------------------------------------------------------------------------
     # Get indexes for the current collection
     #
-    method get_indexes ( --> MongoDB::Cursor ) {
+    method get_indexes ( --> MongoDB::Cursor ) is DEPRECATED('get-indexes') {
+      return self.get-indexes;
+    }
+
+    method get-indexes ( --> MongoDB::Cursor ) {
       my $system-indexes = $!database.collection('system.indexes');
       return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
     }
@@ -565,9 +638,9 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Get collections statistics
     #
-    method stats ( Int :$scale = 1, Bool :$indexDetails = False,
-                   Hash :$indexDetailsField,
-                   Str :$indexDetailsName
+    method stats ( Int :$scale = 1, Bool :index-details($indexDetails) = False,
+                   Hash :index-details-field($indexDetailsField),
+                   Str :index-details-name($indexDetailsName)
                    --> Hash ) {
 
       my Pair @req = collstats => $!name, options => {:$scale};
@@ -596,7 +669,11 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Return size of collection in bytes
     #
-    method data_size ( --> Int ) {
+    method data_size ( --> Int ) is DEPRECATED('data-size') {
+      return self.data-size;
+    }
+
+    method data-size ( --> Int ) {
       my Hash $doc = self.stats();
       return $doc<size>;
     }

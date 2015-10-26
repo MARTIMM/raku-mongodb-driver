@@ -450,8 +450,13 @@ change at any time. The public API should not be considered stable.*
   * Remove deprecation messages of converted method names
 
 * 0.25.9
-  * Deprecated underscore methods in favor of dashed ones:
-    MongoDB::Connection: list_database, database_names
+  * Deprecated underscore methods modified in favor of dashed ones:
+      MongoDB::Connection: list_database, database_names, build_info.
+      MongoDB::Collection: find_one, find_and_modify, map_reduce, ensure_index,
+        drop_index, drop_indexes, get_indexes, data_size. Several parameters
+        and attributes are also changed.
+  * Change die X::MongoDB.new(...) into $!status = X::MongoDB.new(...)
+      MongoDB::Connection
 * 0.25.8
   * Removed exception class from Connection.pm, Collection.pm, Database.pm,
     Users.pm, Authenticate.pm and Cursor.pm. Usage is replaced by

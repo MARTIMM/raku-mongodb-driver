@@ -29,7 +29,7 @@ for ^10 -> $c {
                     );
 }
 
-my Hash $d1 = $collection.find_one({idx => 8});
+my Hash $d1 = $collection.find-one({idx => 8});
 say "D d1: $d1.perl";
 
 #-------------------------------------------------------------------------------

@@ -1,16 +1,16 @@
 #`{{
   Testing;
     collection.find()                   Query database
-    collection.ensure_index()           Create indexes
-    collection.get_indexes()            Get index info
-    collection.drop_index()             Drop an index
-    collection.drop_indexes()           Drop all indexes
+    collection.ensure-index()           Create indexes
+    collection.get-indexes()            Get index info
+    collection.drop-index()             Drop an index
+    collection.drop-indexes()           Drop all indexes
     cursor.fetch()                      Fetch a document
     
     X::MongoDB                          Catch exceptions
 
     collection.stats()                  Collection statistics
-    collection.data_size()              $stats<size>
+    collection.data-size()              $stats<size>
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -36,13 +36,13 @@ is $cursor.count, 1, 'There is one document';
 
 # This should go well
 #
-$collection.ensure_index( %( code1 => 1),
+$collection.ensure-index( %( code1 => 1),
                           %( name => 'testindex',
                              background => True
                            )
                         );
 
-$cursor = $collection.get_indexes();
+$cursor = $collection.get-indexes();
 is $cursor.count, 2, "Two indexes found";
 my $doc;
 my @index-names;
@@ -57,10 +57,10 @@ ok any(@index-names) ~~ 'testindex', 'Index name testindex found';
 #
 try {
   # Its an empty key specification, but will complain about 'no index
-  # name'. This is because of ensure_index() not being able to generate
+  # name'. This is because of ensure-index() not being able to generate
   # one from the key specification.
   #
-  $collection.ensure_index(%());
+  $collection.ensure-index(%());
   CATCH {
     when X::MongoDB {
        ok .message ~~ m:s/exception\: index names cannot be empty/, .error-text;
@@ -71,19 +71,20 @@ try {
 try {
   # Now the name is specified, We can get a 'bad add index' error.
   #
-  $collection.ensure_index( %(), %(name => 'testindex'));
+  $collection.ensure-index( %(), %(name => 'testindex'));
   CATCH {
     when X::MongoDB {
-       ok .message ~~ m:s/exception\: bad index key pattern '{}:' Index keys cannot be empty/, .error-text;
+       ok .message ~~ m:s/ 'exception:' 'bad' 'index' 'key' 'pattern'
+          '{}:' 'Index' 'keys' 'cannot' 'be' 'empty'/, .error-text;
     }
   }
 }
 
 # Drop the same index twice. We get a 'can't find index' error.
 #
-$doc = $collection.drop_index( %( code1 => 1));
+$doc = $collection.drop-index( %( code1 => 1));
 try {
-  $doc = $collection.drop_index( %( code1 => 1));
+  $doc = $collection.drop-index( %( code1 => 1));
   CATCH {
     when X::MongoDB {
       ok .message ~~ m/can\'t \s+ find \s+ index \s+ with \s+ key/,
@@ -94,18 +95,18 @@ try {
 
 # Create index again and delete using the index name
 #
-$collection.ensure_index( %( code1 => 1),
+$collection.ensure-index( %( code1 => 1),
                           %( name => 'testindex',
                              background => True
                            )
                         );
-$doc = $collection.drop_index('testindex');
+$doc = $collection.drop-index('testindex');
 is $doc<ok>.Bool, True, 'Drop index ok';
 
 #-------------------------------------------------------------------------------
 # Create index again and get some statistics for it
 #
-$collection.ensure_index( %( code1 => 1),
+$collection.ensure-index( %( code1 => 1),
                           %( name => 'testindex',
                              background => True
                            )
@@ -114,7 +115,7 @@ my $stats = $collection.stats(:scale(1));
 ok $stats<indexSizes><_id_>:exists, 'Found index stats info on _id_';
 ok $stats<indexSizes><testindex>:exists, 'Found index stats info on testindex';
 
-$collection.ensure_index( %( code1 => 1),
+$collection.ensure-index( %( code1 => 1),
                           %( name => 'testindex',
                              background => True
                            )
@@ -123,18 +124,18 @@ $collection.ensure_index( %( code1 => 1),
 #-------------------------------------------------------------------------------
 # Get statistics and read size
 #
-$stats = $collection.stats( :scale(1), :indexDetails,
-                            :indexDetailsFields({_id_ => 0})
+$stats = $collection.stats( :scale(1), :index-details,
+                            :index-details-fields({_id_ => 0})
                           );
 #say $stats.perl;
 
-my $size = $collection.data_size();
+my $size = $collection.data-size();
 is( $size, $stats<size>, "Size $size");
 
 #-------------------------------------------------------------------------------
 # Drop all indexes
 #
-$doc = $collection.drop_indexes;
+$doc = $collection.drop-indexes;
 ok $doc<msg> ~~ m/non\-_id \s+ indexes \s+ dropped \s+ for \s+ collection/,
    'All non-_id indexes dropped'
    ;
@@ -149,24 +150,24 @@ exit(0);
 
 #-------------------------------------------------------------------------------
 # Check one document for its fields. Something like {code => 1, nofield => 0}
-# use find_one()
+# use find-one()
 #
 sub check-document ( $criteria, %field-list, %projection = { })
 {
-  my %document = %($collection.find_one( $criteria, %projection));
+  my %document = %($collection.find-one( $criteria, %projection));
   if +%document {
     for %field-list.keys -> $k {
       if %field-list{$k} {
         is %document{$k}:exists,
            True,
-           "Key '$k' exists. Check using find_one()"
+           "Key '$k' exists. Check using find-one()"
            ;
       }
       
       else {
         is %document{$k}:exists,
            False,
-           "Key '$k' does not exist. Check using find_one()"
+           "Key '$k' does not exist. Check using find-one()"
            ;
       }
     }
