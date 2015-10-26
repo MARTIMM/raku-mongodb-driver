@@ -19,6 +19,8 @@ use MongoDB::Connection;
 
 my MongoDB::Connection $connection;
 #set-logfile($*OUT);
+#set-logfile($*ERR);
+#say "Test of stdout";
 
 #-------------------------------------------------------------------------------
 subtest {
