@@ -108,7 +108,11 @@ defined as
 
   method database-names ( --> Array )
 
-Using above call the method returns an array of databases.
+Usage
+
+  my Array $dbnames = $connection.database-names;
+
+Using C<list-databases> to return an array of database names.
 
 =for head2
 method version ( --> Hash ) {...}
