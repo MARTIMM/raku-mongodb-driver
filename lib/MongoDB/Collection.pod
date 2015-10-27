@@ -118,17 +118,16 @@ level keys are checked to see if C<_id> is used. When found, the collection
 is checked for the value of the key to see it has been used before. The value
 must be unique!
 
-The flag B<:continue-on-error> can be set to let the insert continue its job
+The flag C<:continue-on-error> can be set to let the insert continue its job
 when a document insertion fails. This will not prevent checking of key names
 mentioned above.
 
 =begin code
   my %d1 = k1 => 'v1', k2 => 'v2';
-  my $d2 = %(k1 => 'v1a');
-  $collection.insert( :continue-on-error, {%d1}, $d2);
-
+  my Hash $d2 = {k1 => 'v1a', :k2<appia>, :k3('d1 d2')};
   my @docs = $%( k2 => 'v2a', k5 => 'v5'), $%( k1 => 'v1b', k2 => 'v2b');
-  $collection.insert(@docs);
+  $collection.insert( :continue-on-error, %d1, $d2, |@docs);
+
 =end code
 
 =head2 method find
@@ -138,7 +137,7 @@ Defined as
   method find ( %criteria = { },, %projection = { },
                 Int :$number-to-skip = 0, Int :$number-to-return = 0,
                 Bool :$no-cursor-timeout = False
-              ) {...}
+              )
 
 Find documents in the database. When %criteria is empty all documents are
 returned, There are 2 options and a flag to control the search. %projection is
