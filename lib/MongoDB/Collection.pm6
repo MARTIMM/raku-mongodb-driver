@@ -43,44 +43,11 @@ package MongoDB {
     # CRUD - Create(insert), Read(find*), Update, Delete
     #---------------------------------------------------------------------------
     #
-    method insert ( **@documents, Bool :$continue-on-error = False --> Nil ) {
+    method insert ( **@documents, Bool :$continue-on-error = False ) {
+
+      self!check-doc-keys(@documents);
       my $flags = +$continue-on-error;
-
-#say "D: ", @documents.perl;
-      my @docs;
-#say "DType: ", @documents.^name;
-      if @documents.isa(Array) {
-        if @documents[0].isa(Array) and [&&] @documents[0].list>>.isa(Hash) {
-          @docs = @documents[0].list;
-        }
-
-        elsif @documents.list>>.isa(Hash) {
-          @docs = @documents.list;
-        }
-
-        else {
-          die X::MongoDB.new(
-            error-text => "Error: Document type not handled by insert",
-            oper-name => 'insert',
-            oper-data => @docs.perl,
-            collection-ns => $!database.name ~ '.' ~ $!name,
-          )
-        }
-      }
-
-      else {
-        die X::MongoDB.new(
-          error-text => "Error: Document type not handled by insert",
-          oper-name => 'insert',
-          oper-data => @docs.perl,
-          collection-ns => $!database.name ~ '.' ~ $!name,
-        )
-      }
-
-      self!check-doc-keys(@docs);
-      self.wire.OP-INSERT( self, $flags, @docs);
-
-      return;
+      self.wire.OP-INSERT( self, $flags, @documents);
     }
 
     #---------------------------------------------------------------------------
@@ -89,6 +56,15 @@ package MongoDB {
     #
     method !check-doc-keys ( @docs! ) {
       for @docs -> $d {
+        die X::MongoDB.new(
+          error-text => qq:to/EODIE/,
+            Document is not a hash.
+            EODIE
+          oper-name => 'insert',
+          oper-data => @docs.perl,
+          collection-ns => [~] $!database.name, '.', $!name
+        ) unless $d ~~ Hash;
+
         for $d.keys -> $k {
           if $k ~~ m/ (^ '$' | '.') / {
             die X::MongoDB.new(
@@ -119,6 +95,8 @@ package MongoDB {
             }
           }
 
+          # Recursively go through sub documents
+          #
           elsif $d{$k} ~~ Hash {
             self!cdk($d{$k});
           }
@@ -152,11 +130,12 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Find record in a collection
     #
-    multi method find ( %criteria = { }, %projection = { },
-                  Int :$number-to-skip = 0, Int :$number-to-return = 0,
-                  Bool :$no-cursor-timeout = False
-                  --> MongoDB::Cursor
-                ) {
+    multi method find (
+      %criteria = { }, %projection = { },
+      Int :$number-to-skip = 0, Int :$number-to-return = 0,
+      Bool :$no-cursor-timeout = False
+      --> MongoDB::Cursor
+    ) {
       my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
         $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
@@ -164,11 +143,7 @@ package MongoDB {
                                         %projection
                                       );
 
-      my $c = MongoDB::Cursor.new(
-        collection  => self,
-        OP_REPLY    => $OP_REPLY,
-        :%criteria
-      );
+      my $c = MongoDB::Cursor.new( :collection(self), :$OP_REPLY, :%criteria);
       return $c;
     }
 
@@ -176,11 +151,12 @@ package MongoDB {
     # was nessesary for run_command to keep the command on on the first key
     # value pair.
     #
-    multi method find ( Pair @criteria = [ ], %projection = { },
-                  Int :$number-to-skip = 0, Int :$number-to-return = 0,
-                  Bool :$no-cursor-timeout = False
-                  --> MongoDB::Cursor
-                ) {
+    multi method find (
+      Pair @criteria = [ ], %projection = { },
+      Int :$number-to-skip = 0, Int :$number-to-return = 0,
+      Bool :$no-cursor-timeout = False
+      --> MongoDB::Cursor
+    ) {
       my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
         $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
@@ -189,9 +165,8 @@ package MongoDB {
                                       );
 
       my $c = MongoDB::Cursor.new(
-        collection      => self,
-        OP_REPLY        => $OP_REPLY,
-        criteria        => %@criteria
+        :collection(self), :$OP_REPLY,
+        :criteria(%@criteria)
       );
       return $c;
     }
@@ -216,12 +191,13 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method find_and_modify ( Hash $criteria = { }, Hash $projection = { },
-                             Hash :$update = { }, Hash :$sort = { },
-                             Bool :$remove = False, Bool :$new = False,
-                             Bool :$upsert = False
-                             --> Hash
-                           ) is DEPRECATED('find-and-modify') {
+    method find_and_modify (
+      Hash $criteria = { }, Hash $projection = { },
+      Hash :$update = { }, Hash :$sort = { },
+      Bool :$remove = False, Bool :$new = False,
+      Bool :$upsert = False
+      --> Hash
+    ) is DEPRECATED('find-and-modify') {
 
       my $h = self.find-and-modify(
         $criteria, $projection, :$remove, :$update, :$sort, :$new, :$upsert
@@ -230,16 +206,13 @@ package MongoDB {
       return $h;
     }
 
-#    method find-and-modify ( Hash $criteria = { }, %projection = { },
-#                             :$remove = False, :%update = { }, :%sort = { },
-#                             :$new = False, :$upsert = False
-#                             --> Hash
-    method find-and-modify ( Hash $criteria = { }, Hash $projection = { },
-                             Hash :$update = { }, Hash :$sort = { },
-                             Bool :$remove = False, Bool :$new = False,
-                             Bool :$upsert = False
-                             --> Hash
-                           ) {
+    method find-and-modify (
+      Hash $criteria = { }, Hash $projection = { },
+      Hash :$update = { }, Hash :$sort = { },
+      Bool :$remove = False, Bool :$new = False,
+      Bool :$upsert = False
+      --> Hash
+    ) {
 
       my Pair @req = findAndModify => self.name, query => $criteria;
       @req.push: (:$sort) if ?$sort;
@@ -266,9 +239,10 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method update ( %selector, %update!, Bool :$upsert = False,
-                    Bool :$multi-update = False
-                  ) {
+    method update (
+      Hash %selector, %update!, Bool :$upsert = False,
+      Bool :$multi-update = False
+    ) {
       my $flags = +$upsert + +$multi-update +< 1;
       self.wire.OP_UPDATE( self, $flags, %selector, %update);
     }
@@ -313,7 +287,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Get count of documents depending on criteria
     #
-    method count( Hash $criteria = {} --> Int ) {
+    method count ( Hash $criteria = {} --> Int ) {
 
       # fields is seen with wireshark
       #
