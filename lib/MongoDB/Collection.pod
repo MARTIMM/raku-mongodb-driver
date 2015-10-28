@@ -13,125 +13,103 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=head1 NAME MongoDB::Collection - Operations on a MongoDB Collection
+=TITLE class MongoDB::Collection
 
-=head1 SYNOPSIS
+=SUBTITLE CRUD and other operations on collections in a MongoDB database
 
-=begin nested
-=begin code
+Defined as
 
-use MongoDB;
+  package MongoDB { class Collection { ... } }
 
-# Initialize
-#
-my $connection = MongoDB::Connection.new( );
-my $database = $connection.database( 'test' );
-my $collection = $database.collection( 'perl_users' );
+Use as
 
-# Insert documents
-#
-$collection.insert( %(name => 'Piet Hein', nick => 'ph', versions => [ 5, 6])
-                  , %(name => 'Pietje Bell', nick => 'pb')
-                  );
+  # Initialize
+  #
+  my $connection = MongoDB::Connection.new( );
+  my $database = $connection.database( 'contacts' );
+  my $collection = $database.collection( 'perl_users' );
 
-# Find everything
-#
-my $cursor = $collection.find( );
-while $cursor.fetch( ) -> %document { %document.perl.say; }
+  # Insert two documents into collection perl_users in database contacts
+  #
+  $collection.insert(
+    %( name => 'Piet Hein',
+       nick => 'ph',
+       versions => [ 5, 6]
+     ),
+    %( name => 'Pietje Bell',
+       nick => 'pb'
+     )
+  );
 
-# Or narrow down using condition.
-#
-$cursor = $collection.find( { nick => 'ph' } );
-$cursor.fetch( ).perl.say;
-
-# Update any document, watchout for the MongoDB commands which uses $'s
-#
-$collection.update( {}, {'$set' => {company => 'Dutch Corners'}});
-
-# Update a specific document
-#
-$collection.update( {nick => 'ph'}, {'$set' => { company => 'Dutch Corners'}});
-
-# Remove specific documents.
-#
-$collection.remove( { nick => 'ph' } );
-
-# Remove all documents.
-#
-$collection.remove( );
-
-=end code
-=end nested
-
-=head1 DESCRIPTION
-
-Classes to help accessing and manipulating MongoDB collections. The class is
-loaded automatically with the MongoDB
-module.
-
-=head1 CLASSES
-
-=for head2
-class X::MongoDB::Collection is Exception {...}
-
-Some methods from the C<MongoDB::Collection> class will throw exceptions when
-things go wrong. E.g. deleting a non existent index will hickup.
-
-=begin nested
-=begin code
-
-if $cmd ~~ 'delete' {
-  $doc = $collection.drop_index( %( non_existent_index => 1));
-
-  CATCH {
-    when X::MongoDB::Collection {
-      say "Drop index error: $_";
-    }
+  # Find everything
+  #
+  my $cursor = $collection.find;
+  while $cursor.fetch -> %document {
+    %document.perl.say;
   }
-}
 
-=end code
-=end nested
+  # Or narrow down using conditions.
+  #
+  $cursor = $collection.find({nick => 'ph'});
+  $cursor.fetch.perl.say;
 
-Instead of catching the thrown exception you can also try the call to see if
-it works or not.
+  # Update any document, watch out for the MongoDB commands which uses $'s
+  # These are tested by the way.
+  #
+  $collection.update( {}, {'$set' => {company => 'Dutch Corners'}});
 
-=begin nested
-=begin code
+  # Update a specific document
+  #
+  $collection.update( {nick => 'ph'}, {'$set' => { company => 'Dutch Corners'}});
 
-if $cmd ~~ 'delete' {
-  try $doc = $collection.drop_index( %( code1 => 1));
-  if $! {
-    say "Drop index error: $!";
-}
+  # Remove specific documents.
+  #
+  $collection.remove( { nick => 'ph' } );
 
-=end code
-=end nested
+  # Remove all documents.
+  #
+  $collection.remove( );
 
 
-=for head2
-class MongoDB::Collection does MongoDB::Protocol {...}
+Class to help accessing and manipulating collections in MongoDB databases.
 
-The class of which the methods are explaned below. The class has the following
-attributes;
+Defined as
 
-=for head3
-has $.database;
+  class MongoDB::Collection does MongoDB::Protocol {...}
 
-If attribute is defined it holds the current MongoDB::Database object.
+Use as
 
-=for head3
-has Str $.name;
+  use MongoDB;
+  use MongoDB::Connection;
 
-If attribute is defined it holds the name of the collection.
+Loading class is implicitly done while loading Connection.
+
 
 =head1 METHODS
 
-=for head2
- method insert (
-   **@documents,
-   Bool :$continue_on_error = False
- )
+=head2 method database;
+
+Defined as
+
+  has $.database;
+
+Get the name of the current database. It is set by MongoDB::Database when a
+collection object is created.
+
+=head2 method name
+
+Defined as
+
+  has Str $.name;
+
+Get the name of the current collection. It is set by MongoDB::Database when a
+collection object is created.
+
+=head2 method insert
+
+Defined as
+
+  method insert ( **@documents, Bool :$continue-on-error = False )
 
 Insert a document. You may specify more than one. These documents must all be
 hashes. Below are the possible ways to insert documents. Checks are made to see
@@ -140,197 +118,235 @@ level keys are checked to see if C<_id> is used. When found, the collection
 is checked for the value of the key to see it has been used before. The value
 must be unique!
 
-The flag B<:continue_on_error> can be set to let the insert continue its job
+The flag C<:continue-on-error> can be set to let the insert continue its job
 when a document insertion fails. This will not prevent checking of key names
 mentioned above.
 
-=begin nested
 =begin code
-
-my %d1 = k1 => 'v1', k2 => 'v2';
-my $d2 = %(k1 => 'v1a');
-$collection.insert( :continue_on_error, {%d1}, $d2);
-
-my @docs = $%( k2 => 'v2a', k5 => 'v5'), $%( k1 => 'v1b', k2 => 'v2b');
-$collection.insert(@docs);
-
+  my %d1 = k1 => 'v1', k2 => 'v2';
+  my Hash $d2 = {k1 => 'v1a', :k2<appia>, :k3('d1 d2')};
+  my @docs = $%( k2 => 'v2a', k5 => 'v5'), $%( k1 => 'v1b', k2 => 'v2b');
+  $collection.insert( :continue-on-error, %d1, $d2, |@docs);
 =end code
-=end nested
 
-=begin head2 
-method find ( %criteria = { },, %projection = { },
-              Int :$number_to_skip = 0, Int :$number_to_return = 0,
-              Bool :$no_cursor_timeout = False
-            ) {...}
-=end head2
+=head2 method find
+
+Defined as
+
+  multi method find ( %criteria = { }, %projection = { },
+                Int :$number-to-skip = 0, Int :$number-to-return = 0,
+                Bool :$no-cursor-timeout = False
+                --> MongoDB::Cursor
+              )
+  multi method find ( Pair @criteria = [ ], %projection = { },
+                Int :$number-to-skip = 0, Int :$number-to-return = 0,
+                Bool :$no-cursor-timeout = False
+                --> MongoDB::Cursor
+              )
 
 Find documents in the database. When %criteria is empty all documents are
 returned, There are 2 options and a flag to control the search. %projection is
 used to select the fields to be returned. It looks like {field => 1/0}. When 1
 it is included, when 0 it will be excluded. The _id field is always included
-unless explicitly excluded like {_id => 0}. The function returns a
+unless explicitly excluded like C<{_id => 0}>. The method returns a
 MongoDB::Cursor.
 
-B<:number_to_skip> is used to skip a number of documents.
+=for item1
+C<:number-to-skip> is used to skip a number of documents.
 
-B<:number_to_return> is used to ask for a specific number of documents.
+=for item1
+C<:number-to-return> is used to ask for a specific number of documents.
 
-B<:no_cursor_timeout> The server normally times out idle cursors after an
+=for item1
+C<:no-cursor-timeout> The server normally times out idle cursors after an
 inactivity period (10 minutes) to prevent excess memory use. Set this option to
-prevent that.
+prevent that. When C<True> the cursor must be removed explicitly using
+C<$cursor.kill()>.
 
-=begin nested
 =begin code
-$cursor = $collection.find({nick => 'pb'});
-$cursor.fetch( ).perl.say;
+  $cursor = $collection.find( {nick => 'pb'}, {:_id(0)}, :number-to-return(1));
+  $cursor.fetch( ).perl.say;
 =end code
-=end nested
 
-=for head2
-method find_one ( %criteria = { }, %projection = { } --> Hash ) {...}
+=head2 method find-one
 
-Same as for find() except it will only return one document.
-=for head2
-method find_and_modify ( Hash $criteria = { }, %projection = { },
-                         :$remove = False, :%update = { }, :%sort = { },
-                         :$new = False, :$upsert = False
-                         --> Hash ) {...}
+Defined as
+
+  method find-one ( %criteria = { }, %projection = { } --> Hash ) {...}
+
+Same as for find() except it will only return one document. It is as if
+C<:number-to-return(1)> is set implicitly.
+
+=head2 method find-and-modify
+
+Defined as
+
+  method find-and-modify (
+    Hash $criteria = { }, Hash $projection = { },
+    Hash :$update = { }, Hash :$sort = { },
+    Bool :$remove = False, Bool :$new = False,
+    Bool :$upsert = False
+    --> Hash
+  ) {
 
 Search record by the given criteria and sort order.
-=begin nested
+
 =begin code
-my @places = <amsterdam NY LA haarlem utrecht parijs oradour poitiers vienna>;
-my %d1 = code => 'd1 ';
+  my @places = <amsterdam NY LA haarlem utrecht parijs oradour poitiers vienna>;
+  my %d1 = code => 'd1 ';
 
-for ^5,(5...1) -> $code-postfix {               # Insert a number of documents
-  %d1<code> ~= $code-postfix;
-  %d1<city> = @places.roll;
-  $collection.insert(%d1);
-}
+  for ^5,(5...1) -> $code-postfix {               # Insert a number of documents
+    %d1<code> ~= $code-postfix;
+    %d1<city> = @places.roll;
+    $collection.insert(%d1);
+  }
 
-$doc = $collection.find_and_modify(
-  {code => 'd1 01234543'},                      # Find this code
-  update => { '$set' => {code => 'd1 012'}},    # Change into 'd1 012'
-  :new                                          # Return modified doc
-);
+  $doc = $collection.find-and-modify(
+    {code => 'd1 01234543'},                      # Find this code
+    update => { '$set' => {code => 'd1 012'}},    # Change into 'd1 012'
+    :new                                          # Return modified doc
+  );
 =end code
-=end nested
 
-=begin head2 
-method update ( %selector, %update,
-                Bool :$upsert = False, Bool :$multi_update = False
-              ) {...}
-=end head2 
+=head2 method update
+
+Defined as
+
+  method update (
+    Hash %selector, %update!, Bool :$upsert = False,
+    Bool :$multi-update = False
+  )
 
 Update documents in the database. There are 2 flags defined.
 
-B<:upsert> If set, the database will insert the supplied object into the
+=for item1
+C<:upsert> If set, the database will insert the supplied object into the
 collection if no matching document is found.
 
-B<:multi_update> If set, the database will update all matching objects in the
+=for item1
+C<:multi-update> If set, the database will update all matching objects in the
 collection. Otherwise only updates first matching doc.
 
-The commands used by MongoDB such as $set, $inc and $push can easily create
-unexpected errors in perl programs because scalars are written the same way.
-Make sure you escape the $ sign or enclose the commands in single quoted strings
-to prevent interpolation.
+The commands used by MongoDB such as C<$set>, C<$inc> and C<$push> can easily
+create unexpected errors in perl programs because scalars are written the same
+way. Make sure you escape the $ sign or enclose the commands in single quoted
+strings to prevent interpolation.
 
-=begin nested
 =begin code
-# Update all documents
-$collection.update({}, {'$set' => {company => 'Implix'}});
+  # Update all documents
+  $collection.update({}, {'$set' => {company => 'Implix'}});
 
-# Update documents for nick 'ph' or, when not existent, create a new document.
-$collection.update( :upsert, {nick => 'pb'}, {'$push' => {versions => 7}});
+  # Update documents for nick 'ph' or, when not existent, create a new document.
+  $collection.update( :upsert, {nick => 'pb'}, {'$push' => {versions => 7}});
 =end code
-=end nested
 
-=for head2 
-method remove ( %selector = {}, Bool :$single_remove = False ) {...}
+=head2 method remove
+
+Defined as
+
+  method remove ( %selector = {}, Bool :$single-remove = False )
 
 Remove the selected documents from the database.
 
-B<:single_remove> If set, the database will remove only the first matching
+=for item2
+C<:single-remove> If set, the database will remove only the first matching
 document in the collection. Otherwise all matching documents will be removed.
 
-=begin nested
 =begin code
-# Remove first document for nick 'ph'.
-$collection.remove( :single_remove, {nick => 'pb'});
+  # Remove first document for nick 'ph'.
+  $collection.remove( :single-remove, {nick => 'pb'});
 
-# Remove all documents
-$collection.remove();
+  # Remove all documents
+  $collection.remove();
 =end code
-=end nested
 
-=for head2
-method drop ( --> Hash ) {...}
+=head2 method drop
+
+Defined as
+
+  method drop ( --> Hash )
 
 Drop the current collection from the database.
+This method will throw a X::MongoDB exception on failures.
 
-This method will throw a X::MongoDB::Collection exception on failures.
+=head2 method explain
 
-=for head2
-method explain ( %criteria = { } --> Hash ) {...}
+Defined as
+
+  method explain ( %criteria = { } --> Hash )
 
 Return information on the query plan using the criteria. There are many fields
 in the document. The fields returned also depend on the type of queries. Look
 for this information on the L<MongoDB site|http://docs.mongodb.org/manual/reference/method/cursor.explain>.
 
-=for head2
-method count ( %criteria = { }, --> Int ) {...}
+=head2 method count
+
+Defined as
+
+  method count ( %criteria = { }, --> Int )
 
 Count documents using search criteria without using find and a cursor..
 
-=for head2
-method distinct ( $field-name!, %criteria = { }, --> Array ) {...}
+=head2 method distinct
+
+Defined as
+
+  method distinct ( $field-name!, %criteria = { }, --> Array )
 
 Find distinct values of a field depending on criteria.
 
-=for head2
-multi method group ( Str $js_reduce_func, Str :$key = '',
-                    :%initial = {}, Str :$key_js_func = '',
-                    :%condition = {}, Str :$finalize = ''
-                    --> Hash ) {...}
+=head2 method group
 
-=for head2
-multi method group ( BSON::Javascript $reduce_js_func, Str :$key = '',
-                     :%initial = {}, BSON::Javascript :$key_js_func = '',
-                     :%condition = {}, Str :$finalize = ''
-                     --> Hash ) {...}
+Defined as
+
+  multi method group ( Str $js_reduce_func, Str :$key = '',
+                      :%initial = {}, Str :$key_js_func = '',
+                      :%condition = {}, Str :$finalize = ''
+                      --> Hash )
+
+  multi method group ( BSON::Javascript $reduce-js-func, Str :$key = '',
+                       :%initial = {}, BSON::Javascript :$key_js_func = '',
+                       :%condition = {}, Str :$finalize = ''
+                       --> Hash )
 
 Groups documents in a collection by the specified keys and performs simple
 aggregation functions. See also L<this
 page|http://docs.mongodb.org/manual/reference/method/db.collection.group/>.
 
 First method will call second with the javascript texts converted to
-BSON::Javascript.
+C<BSON::Javascript>.
 
-The group() method does not work with sharded clusters. Use the
+The C<group> method does not work with sharded clusters. Use the
 aggregation framework or map-reduce in sharded environments.
 
-=for head2
-multi method map_reduce ( Str $map_js_func, Str $reduce_js_func, Hash :$out,
-                          Str :$finalize, Hash :$criteria, Hash :$sort,
-                          Hash :$scope, Int :$limit, Bool :$jsMode = False
-                          --> Hash ) {...}
-=for head2
-multi method map_reduce ( BSON::Javascript $map_js_func,
-                          BSON::Javascript $reduce_js_func,
-                          BSON::Javascript :$finalize,
-                          Hash :$out, Hash :$criteria, Hash :$sort,
-                          Hash :$scope, Int :$limit, Bool :$jsMode = False
-                          --> Hash ) {...}
+=head2 method map-reduce
 
-The mapReduce command allows you to run map-reduce aggregation operations over
-a collection. See also L<this
+Defined as
+
+  multi method map-reduce ( Str $map-js-func, Str $reduce-js-func, Hash :$out,
+                            Str :$finalize, Hash :$criteria, Hash :$sort,
+                            Hash :$scope, Int :$limit, Bool :$jsMode = False
+                            --> Hash )
+
+  multi method map-reduce ( BSON::Javascript $map-js-func,
+                            BSON::Javascript $reduce-js-func,
+                            BSON::Javascript :$finalize,
+                            Hash :$out, Hash :$criteria, Hash :$sort,
+                            Hash :$scope, Int :$limit, Bool :$jsMode = False
+                            --> Hash )
+
+The C<map-reduce> method allows you to run map-reduce aggregation operations
+over a collection. See also L<this
 page|http://docs.mongodb.org/manual/reference/command/mapReduce/>.
 
 First method will call second with the javascript texts converted to
-BSON::Javascript.
+C<BSON::Javascript>.
 
-=for head2
-method ensure_index ( %key-spec!, %options = {} --> Nil ) {...}
+=head2 method ensure-index
+
+Defined as
+
+  method ensure-index ( %key-spec!, %options = {} --> Nil )
 
 Create a new index on the current collection. The %key-spec document specify
 which indexes must be created and how. The %options is a document on how to
@@ -342,49 +358,56 @@ L<text|http://docs.mongodb.org/manual/core/index-text/>, L<2dsphere|http://docs.
 L<ed|http://docs.mongodb.org/manual/core/2d/> and L<geoHaystack|http://docs.mongodb.org/manual/core/geohaystack/>
 indexes.
 
-This method will throw a X::MongoDB::Collection exception on failures.
+This method will throw a X::MongoDB exception on failures.
 
-=for head2
-method drop_index ( $key-spec! --> Hash ) {...}
+=head2 method drop-index
+
+Defined as
+
+  method drop-index ( $key-spec! --> Hash )
 
 Drop an index. The %key-spec specifies the keys to be dropped. It has the
-same format as in ensure_index. When the %options<name> key is used when setting
+same format as in ensure-index. When the %options<name> key is used when setting
 an index, the name itself can be used to drop the index. Lastly, when the text
-is '*', all indexes except for _id will be deleted. This is what drop_indexes()
+is '*', all indexes except for _id will be deleted. This is what drop-indexes()
 will do for you.
 
-=begin nested
 =begin code
-
-$collection.ensure_index( %( code1 => 1), %( name => 'testindex'));
-$doc = $collection.drop_index('testindex');
-
+  $collection.ensure-index( %( code1 => 1), %( name => 'testindex'));
+  $doc = $collection.drop-index('testindex');
 =end code
-=end nested
 
-This method will throw a X::MongoDB::Collection exception on failures.
+This method will throw a X::MongoDB exception on failures.
 
-=for head2
-method drop_indexes ( --> Hash ) {...}
+=head2 method drop-indexes
+
+Defined as
+
+  method drop-indexes ( --> Hash )
 
 Drop all indexes for the collection except _id.
 
-=for head2
-method get_indexes ( --> MongoDB::Cursor ) {...}
+=head2 method get-indexes
+
+  method get-indexes ( --> MongoDB::Cursor )
 
 Get a cursor with which to retrieve documents with index information in
 the current collection. There is always one document of the _id_ index.
 
-=for head2
-method stats ( Int :$scale = 1, Bool :$indexDetails = False,
-               Hash :$indexDetailsField,
-               Str :$indexDetailsName
-               --> Hash ) {...}
+=head2 method stats
+
+  method stats ( Int :$scale = 1, Bool :$index-details = False,
+                 Hash :$index-details-field,
+                 Str :$index-details-name
+                 --> Hash ) {...}
 
 Get some statistics about indexes and other things.
 
-=for head2
-method data_size ( --> Int ) {...}
+=head2 method data-size
+
+Defined as
+
+  method data-size ( --> Int )
 
 Return size field of statistics. This is the total size of all records in a
 collection. This value does not include the record header, which is 16 bytes per

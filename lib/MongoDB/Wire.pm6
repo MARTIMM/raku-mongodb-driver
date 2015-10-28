@@ -118,10 +118,7 @@ package MongoDB {
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( join '.',
-                                $collection.database.name,
-                                $collection.name
-                           );
+        encode_cstring( [~] $collection.database.name, '.', $collection.name);
 
       # document* documents
       # one or more documents to insert into the collection
@@ -144,13 +141,13 @@ package MongoDB {
     # be given this way. See method below for that.
     #
     multi method OP_QUERY (
-      $collection, $flags, $number_to_skip, $number_to_return,
+      $collection, $flags, $number-to-skip, $number-to-return,
       %query, %return_field_selector
       --> Hash
     ) {
       self._init_index;
       return self.OP_QUERY(
-        $collection, $flags, $number_to_skip, $number_to_return,
+        $collection, $flags, $number-to-skip, $number-to-return,
         self.encode_document(%query), %return_field_selector
       );
     }
@@ -160,12 +157,12 @@ package MongoDB {
     # value pair.
     #
     multi method OP_QUERY (
-      $collection, $flags, $number_to_skip, $number_to_return,
+      $collection, $flags, $number-to-skip, $number-to-return,
       Pair @query, %return_field_selector
       --> Hash
     ) {
       return self.OP_QUERY(
-        $collection, $flags, $number_to_skip, $number_to_return,
+        $collection, $flags, $number-to-skip, $number-to-return,
         self.encode_document(@query), %return_field_selector
       );
     }
@@ -173,7 +170,7 @@ package MongoDB {
     # Mayor work horse with query already converted nito a BSON byte array
     #
     multi method OP_QUERY (
-      $collection, $flags, $number_to_skip, $number_to_return,
+      $collection, $flags, $number-to-skip, $number-to-return,
       Buf $query, %return_field_selector
       --> Hash
     ) {
@@ -197,13 +194,13 @@ package MongoDB {
         # int32 numberToSkip
         # number of documents to skip
         #
-        ~ encode_int32( $number_to_skip )
+        ~ encode_int32( $number-to-skip )
 
         # int32 numberToReturn
         # number of documents to return
         # in the first OP_REPLY batch
         #
-        ~ encode_int32( $number_to_return )
+        ~ encode_int32( $number-to-return )
 
         # document query
         # query object

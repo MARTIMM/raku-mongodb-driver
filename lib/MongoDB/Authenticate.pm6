@@ -25,11 +25,11 @@ package MongoDB {
       my Hash $doc = $!database.run_command(@req);
 say "N0: ", $doc.perl;
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'login',
           oper-data => @req.perl,
-          database-name => $!database.name
+          collection-ns => $!database.name
         );
       }
 
@@ -48,11 +48,11 @@ say "N0: ", $doc.perl;
       $doc = $!database.run_command(@req);
 say "N2: ", $doc.perl;
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'login',
           oper-data => @req.perl,
-          database-name => $!database.name
+          collection-ns => $!database.name
         );
       }
 
@@ -65,11 +65,11 @@ say "N2: ", $doc.perl;
       my Pair @req = (logout => 1);
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Database.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'logout',
           oper-data => @req.perl,
-          database-name => $!database.name
+          collection-ns => $!database.name
         );
       }
 

@@ -1,6 +1,6 @@
 #`{{
   Testing;
-    collection.find_one()               Query database returning one doc
+    collection.find-one()               Query database returning one doc
       implicit AND selection            Find with more fields
       projection                        Select fields to return
 }}
@@ -48,19 +48,19 @@ exit(0);
 
 #-------------------------------------------------------------------------------
 # Check one document for its fields. Something like {code => 1, nofield => 0}
-# use find_one()
+# use find-one()
 #
 sub check-document ( $criteria, %field-list, %projection = { })
 {
-  my %document = %($collection.find_one( $criteria, %projection));
+  my %document = %($collection.find-one( $criteria, %projection));
   if +%document {
     for %field-list.keys -> $k {
       if %field-list{$k} {
-        is( %document{$k}:exists, True, "Key '$k' exists. Check using find_one()");
+        is( %document{$k}:exists, True, "Key '$k' exists. Check using find-one()");
       }
       
       else {
-        is( %document{$k}:exists, False, "Key '$k' does not exist. Check using find_one()");
+        is( %document{$k}:exists, False, "Key '$k' does not exist. Check using find-one()");
       }
     }
   }

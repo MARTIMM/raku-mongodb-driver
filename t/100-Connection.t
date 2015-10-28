@@ -2,8 +2,8 @@
   Testing;
     MongoDB::Connection.new()           Create connection to server
     connection.database                 Return database
-    connection.list_databases()         Get the statistics of the databases
-    connection.database_names()         Get the database names
+    connection.list-databases()         Get the statistics of the databases
+    connection.database-names()         Get the database names
     connection.version()                Version name
     connection.buildinfo()              Server info
 }}
@@ -14,9 +14,13 @@ use Test-support;
 use v6;
 use Test;
 
+use MongoDB;
 use MongoDB::Connection;
 
 my MongoDB::Connection $connection;
+#set-logfile($*OUT);
+#set-logfile($*ERR);
+#say "Test of stdout";
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -26,25 +30,29 @@ subtest {
      "Connection isa {$connection.^name}";
 
   is $connection.status.^name,
-     'X::MongoDB::Connection',
+     'X::MongoDB',
      "1 Status isa {$connection.status.^name}";
 
-  ok $connection.status ~~ X::MongoDB::Connection,
+  ok $connection.status ~~ X::MongoDB,
      "2 Status isa {$connection.status.^name}";
 
   ok $connection.status ~~ Exception, "3 Status is also an Exception";
   ok ? $connection.status, "Status is defined";
+  is $connection.status.severity,
+     MongoDB::Severity::Error,
+     "Status is {$connection.status.^name}"
+     ;
 
   is $connection.status.error-text,
-     "Failed to connect to localhost at 763245",
+     "Failed to connect to localhost at port 763245",
      '1 ' ~ $connection.status.error-text;
 
   try {
     die $connection.status;
     CATCH {
       default {
-        ok .message ~~ m:s/'connect' 'to' 'localhost' 'at' \d+/,
-        '2 ' ~ .error-text
+        ok .message ~~ m:s/'connect' 'to' 'localhost' 'at' 'port' \d+/,
+           '2 ' ~ .error-text
       }
     }
   }
@@ -56,12 +64,12 @@ subtest {
   $connection = get-connection();
   is $connection.status.^name, 'Exception', '1 Status isa Exception';
   ok $connection.status ~~ Exception, '2 Status isa Exception';
-  ok $connection.status !~~ X::MongoDB::Connection,
-     '3 Status is not a !X::MongoDB::Connection';
+  ok $connection.status !~~ X::MongoDB,
+     '3 Status is not a !X::MongoDBn';
   ok ! ? $connection.status, "Status is not defined";
 
   my Hash $version = $connection.version;
-  #say "V: ", $version.perl;
+#say "V: ", $version.perl;
   ok $version<release1>:exists, "Version release $version<release1>";
   ok $version<release2>:exists, "Version major $version<release2>";
   ok $version<revision>:exists, "Version minor $version<revision>";
@@ -69,9 +77,11 @@ subtest {
      $version<release2> %% 2 ?? 'production' !! 'development',
      "Version type $version<release-type>";
 
-  my Hash $buildinfo = $connection.build_info;
+  my Hash $buildinfo = $connection.build-info;
   ok $buildinfo<version>:exists, "Version $buildinfo<version>";
-  ok $buildinfo<loaderFlags>:exists, "Loader flags $buildinfo<loaderFlags>";
+  ok $buildinfo<loaderFlags>:exists, "Loader flags '$buildinfo<loaderFlags>'";
+  ok $buildinfo<sysInfo>:exists, "Sys info '$buildinfo<sysInfo>'";
+  ok $buildinfo<versionArray>:exists, "Version array '$buildinfo<versionArray>'";
 }, "Test buildinfo and version";
 
 #-------------------------------------------------------------------------------
@@ -90,7 +100,7 @@ subtest {
   #-------------------------------------------------------------------------------
   # Get the statistics of the databases
   #
-  my Array $db-docs = $connection.list_databases;
+  my Array $db-docs = $connection.list-databases;
 
   # Get the database name from the statistics and save the index into the array
   # with that name. Use the zip operator to pair the array entries %doc with
@@ -109,7 +119,7 @@ subtest {
   #-------------------------------------------------------------------------------
   # Get all database names
   #
-  my @dbns = $connection.database_names();
+  my @dbns = $connection.database-names();
 
   ok any(@dbns) ~~ 'test', 'test is found in database list';
 
@@ -118,7 +128,7 @@ subtest {
   #
   $database.drop;
 
-  @dbns = $connection.database_names();
+  @dbns = $connection.database-names();
   ok !(any(@dbns) ~~ 'test'), 'test not found in database list';
 }, "Create database, collection. Collect database info, drop data";
 

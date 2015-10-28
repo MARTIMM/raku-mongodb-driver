@@ -145,7 +145,7 @@ my $config = qq:to/EOCNF/;
     pidFilePath:                $*CWD/Sandbox/m.pid
 
   net:
-    bindIp:                     localhost
+#    bindIp:                     localhost
     port:                       $port-number
     wireObjectCheck:            true
     http:

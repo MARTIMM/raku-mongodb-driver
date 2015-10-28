@@ -60,7 +60,7 @@ try {
     my $c = $cursor.count;
 
     CATCH {
-      when X::MongoDB::Cursor {
+      when X::MongoDB {
         ok .message ~~ ms/'exception:' 'invalid' 'operator:' '$eq'/,
            'exception: invalid operator: $eq';
       }
@@ -211,7 +211,7 @@ try {
   my $cc = $cursor.count;
 
   CATCH {
-    when X::MongoDB::Cursor {
+    when X::MongoDB {
       is .error-text ~~ m:s/divisor cannot be 0/, .error-text;
     }
   }
@@ -228,7 +228,7 @@ if $version<release1> == 2 and $version<release2> < 6 {
   $cursor = $collection.find( %(code3 => {'$mod' => [ ]}));
   is $cursor.count, 2, 'code3 => {$mod => [ ]}, 2 documents';
   CATCH {
-    when X::MongoDB::Cursor {
+    when X::MongoDB {
       ok .message ~~ ms/'mod' 'can\'t' 'be' '0'/,
          'exception: mod can\'t be 0 (code3 => {$mod => [ ]})';
     }
@@ -243,7 +243,7 @@ elsif $version<release1> == 2 and $version<release2> >= 6 {
   $cursor = $collection.find( %(code3 => {'$mod' => [ 3, 0, 1]}));
   is $cursor.count, 2, 'code3 => {$mod => [ ]}, 2 documents';
   CATCH {
-    when X::MongoDB::Cursor {
+    when X::MongoDB {
       ok .message ~~ m:s/mod can\'t be 0/,
          .error-text;
     }
@@ -349,7 +349,7 @@ if $version<release1> == 2 and $version<release2> < 6 {
   #
   is $cursor.count, 2, '$text => {$search => n9}, 2 documents';
   CATCH {
-    when X::MongoDB::Cursor {
+    when X::MongoDB {
       ok .message ~~ m/'invalid operator: ' ('$language'|'$search')/,
          'exception: invalid operator: $language/$search, $text => {$search => n9}';
     }

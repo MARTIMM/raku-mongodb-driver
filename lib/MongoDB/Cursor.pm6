@@ -7,25 +7,6 @@ package MongoDB {
 
   #-------------------------------------------------------------------------------
   #
-  class X::MongoDB::Cursor is Exception {
-    has $.error-text;                     # Error text
-    has $.error-code;                     # Error code if from server
-    has $.oper-name;                      # Operation name
-    has $.oper-data;                      # Operation data
-    has $.collection-name;                # Collection name
-
-    method message () {
-      return [~] "\n$!oper-name\() error:\n",
-                 "  $!error-text",
-                 $.error-code.defined ?? "\($!error-code)" !! '',
-                 $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-                 "\n  Database '$!collection-name'\n"
-                 ;
-    }
-  }
-
-  #-------------------------------------------------------------------------------
-  #
   class MongoDB::Cursor {
 
     state MongoDB::Wire:D $wp = MongoDB::Wire.new;
@@ -47,10 +28,10 @@ package MongoDB {
       %!criteria = %criteria;
 
       # assign cursorID
-      $!id = %OP_REPLY{ 'cursor_id' };
+      $!id = %OP_REPLY<cursor_id>;
 
       # assign documents
-      @!documents = %OP_REPLY{ 'documents' }.list;
+      @!documents = %OP_REPLY<documents>.list;
     }
 
     #-----------------------------------------------------------------------------
@@ -89,7 +70,7 @@ package MongoDB {
          hash( '$query' => %!criteria,
                '$explain' => True
              )
-             :number_to_return(1)
+             :number-to-return(1)
       );
 
       my $docs = $cursor.fetch();
@@ -105,7 +86,7 @@ package MongoDB {
       $req{'$explain'} = 1 if $explain;
 
       my MongoDB::Cursor $cursor = $!collection.find( $req,
-                                                      :number_to_return(1)
+                                                      :number-to-return(1)
                                                     );
       my $docs = $cursor.fetch;
       return $docs;
@@ -136,12 +117,12 @@ package MongoDB {
 
       my Hash $doc = $database.run_command(@req);
       if !?$doc<ok>.Bool {
-        die X::MongoDB::Cursor.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           error-code => $doc<code>,
           oper-name => 'count',
           oper-data => @req.perl,
-          collection-name => $!collection.name
+          collection-ns => $!collection.database.name, '.',  $!collection.name
         );
       }
 

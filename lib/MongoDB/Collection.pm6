@@ -1,27 +1,9 @@
 use v6;
 
+use MongoDB;
 use MongoDB::Wire;
 use MongoDB::Cursor;
 use BSON::Javascript;
-
-#-------------------------------------------------------------------------------
-#
-class X::MongoDB::Collection is Exception {
-  has $.error-text;                     # Error text
-  has $.error-code;                     # Error code if from server
-  has $.oper-name;                      # Operation name
-  has $.oper-data;                      # Operation data
-  has $.full-collection-name;           # Collection name
-
-  method message () {
-    return [~] "\n$!oper-name\() error:\n",
-               "  $!error-text",
-               $.error-code.defined ?? "\($!error-code)" !! '',
-               $!oper-data.defined ?? "\n  Data $!oper-data" !! '',
-               "\n  Collection '$!full-collection-name'\n"
-               ;
-  }
-}
 
 #-------------------------------------------------------------------------------
 #
@@ -35,22 +17,24 @@ package MongoDB {
     has $.database;
     has Str $.name;
 
-    has BSON::Javascript $!default_js = BSON::Javascript.new();
+    has BSON::Javascript $!default-js = BSON::Javascript.new();
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( :$database, Str:D :$name ) {
+    submethod BUILD ( :$database!, Str:D :$name ) {
       $!database = $database;
 
-      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[.\w _]>+ $/ {
+      # This should be possible: 'admin.$cmd' which is used by run_command
+      #
+      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
         $!name = $name;
       }
 
       else {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => "Illegal collection name: '$name'",
           oper-name => 'MongoDB::Collection.new()',
-          full-collection-name => [~] $!database.name, '.-Ill-'
+          severity => MongoDB::Severity::Error
         );
       }
     }
@@ -59,43 +43,11 @@ package MongoDB {
     # CRUD - Create(insert), Read(find*), Update, Delete
     #---------------------------------------------------------------------------
     #
-    method insert ( **@documents, Bool :$continue_on_error = False --> Nil ) {
-      my $flags = +$continue_on_error;
+    method insert ( **@documents, Bool :$continue-on-error = False ) {
 
-      my @docs;
-#say "DType: ", @documents.^name;
-      if @documents.isa(Array) {
-        if @documents[0].isa(Array) and [&&] @documents[0].list>>.isa(Hash) {
-          @docs = @documents[0].list;
-        }
-
-        elsif @documents.list>>.isa(Hash) {
-          @docs = @documents.list;
-        }
-
-        else {
-          die X::MongoDB::Collection.new(
-            error-text => "Error: Document type not handled by insert",
-            oper-name => 'insert',
-            oper-data => @docs.perl,
-            full-collection-name => [~] $!database.name, '.', $!name
-          )
-        }
-      }
-
-      else {
-        die X::MongoDB::Collection.new(
-          error-text => "Error: Document type not handled by insert",
-          oper-name => 'insert',
-          oper-data => @docs.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
-        )
-      }
-
-      self!check-doc-keys(@docs);
-      self.wire.OP-INSERT( self, $flags, @docs);
-
-      return;
+      self!check-doc-keys(@documents);
+      my $flags = +$continue-on-error;
+      self.wire.OP-INSERT( self, $flags, @documents);
     }
 
     #---------------------------------------------------------------------------
@@ -104,9 +56,18 @@ package MongoDB {
     #
     method !check-doc-keys ( @docs! ) {
       for @docs -> $d {
+        die X::MongoDB.new(
+          error-text => qq:to/EODIE/,
+            Document is not a hash.
+            EODIE
+          oper-name => 'insert',
+          oper-data => @docs.perl,
+          collection-ns => [~] $!database.name, '.', $!name
+        ) unless $d ~~ Hash;
+
         for $d.keys -> $k {
           if $k ~~ m/ (^ '$' | '.') / {
-            die X::MongoDB::Collection.new(
+            die X::MongoDB.new(
               error-text => qq:to/EODIE/,
                 $k is not properly defined.
                 Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
@@ -114,7 +75,7 @@ package MongoDB {
                 EODIE
               oper-name => 'insert',
               oper-data => @docs.perl,
-              full-collection-name => [~] $!database.name, '.', $!name
+              collection-ns => [~] $!database.name, '.', $!name
             );
           }
 
@@ -125,15 +86,17 @@ package MongoDB {
             # If there are records(at most one!) this id is not unique
             #
             if $cursor.count {
-              die X::MongoDB::Collection.new(
+              die X::MongoDB.new(
                 error-text => "$k => $d{$k} value for id is not unique",
                 oper-name => 'insert',
                 oper-data => @docs.perl,
-                full-collection-name => [~] $!database.name, '.', $!name
+                collection-ns => [~] $!database.name, '.', $!name
               );
             }
           }
 
+          # Recursively go through sub documents
+          #
           elsif $d{$k} ~~ Hash {
             self!cdk($d{$k});
           }
@@ -146,7 +109,7 @@ package MongoDB {
     method !cdk ( $sub-doc! ) {
       for $sub-doc.keys -> $k {
         if $k ~~ m/ (^ '$' | '.') / {
-          die X::MongoDB::Collection.new(
+          die X::MongoDB.new(
             error-text => qq:to/EODIE/,
               $k is not properly defined.
               Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
@@ -154,7 +117,7 @@ package MongoDB {
               EODIE
             oper-name => 'insert',
             oper-data => $sub-doc.perl,
-            full-collection-name => [~] $!database.name, '.', $!name
+            collection-ns => [~] $!database.name, '.', $!name
           );
         }
 
@@ -167,23 +130,20 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Find record in a collection
     #
-    multi method find ( %criteria = { }, %projection = { },
-                  Int :$number_to_skip = 0, Int :$number_to_return = 0,
-                  Bool :$no_cursor_timeout = False
-                  --> MongoDB::Cursor
-                ) {
-      my $flags = +$no_cursor_timeout +< 4;
+    multi method find (
+      %criteria = { }, %projection = { },
+      Int :$number-to-skip = 0, Int :$number-to-return = 0,
+      Bool :$no-cursor-timeout = False
+      --> MongoDB::Cursor
+    ) {
+      my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
-                                        $number_to_return, %criteria,
+        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
+                                        $number-to-return, %criteria,
                                         %projection
                                       );
 
-      my $c = MongoDB::Cursor.new(
-        collection  => self,
-        OP_REPLY    => $OP_REPLY,
-        :%criteria
-      );
+      my $c = MongoDB::Cursor.new( :collection(self), :$OP_REPLY, :%criteria);
       return $c;
     }
 
@@ -191,31 +151,39 @@ package MongoDB {
     # was nessesary for run_command to keep the command on on the first key
     # value pair.
     #
-    multi method find ( Pair @criteria = [ ], %projection = { },
-                  Int :$number_to_skip = 0, Int :$number_to_return = 0,
-                  Bool :$no_cursor_timeout = False
-                  --> MongoDB::Cursor
-                ) {
-      my $flags = +$no_cursor_timeout +< 4;
+    multi method find (
+      Pair @criteria = [ ], %projection = { },
+      Int :$number-to-skip = 0, Int :$number-to-return = 0,
+      Bool :$no-cursor-timeout = False
+      --> MongoDB::Cursor
+    ) {
+      my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number_to_skip,
-                                        $number_to_return, @criteria,
+        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
+                                        $number-to-return, @criteria,
                                         %projection
                                       );
 
       my $c = MongoDB::Cursor.new(
-        collection      => self,
-        OP_REPLY        => $OP_REPLY,
-        criteria        => %@criteria
+        :collection(self), :$OP_REPLY,
+        :criteria(%@criteria)
       );
       return $c;
     }
 
     #---------------------------------------------------------------------------
     #
-    method find_one ( %criteria = { }, %projection = { } --> Hash ) {
+    method find_one (
+      %criteria = { },
+      %projection = { }
+      --> Hash ) is DEPRECATED('find-one') {
+
+      return self.find-one( %criteria, %projection);
+    }
+
+    method find-one ( %criteria = { }, %projection = { } --> Hash ) {
       my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
-                                              :number_to_return(1)
+                                              :number-to-return(1)
                                             );
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
@@ -223,27 +191,44 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method find_and_modify ( Hash $criteria = { }, %projection = { },
-                             :$remove = False, :%update = { }, :%sort = { },
-                             :$new = False, :$upsert = False
-                             --> Hash
-                           ) {
+    method find_and_modify (
+      Hash $criteria = { }, Hash $projection = { },
+      Hash :$update = { }, Hash :$sort = { },
+      Bool :$remove = False, Bool :$new = False,
+      Bool :$upsert = False
+      --> Hash
+    ) is DEPRECATED('find-and-modify') {
+
+      my $h = self.find-and-modify(
+        $criteria, $projection, :$remove, :$update, :$sort, :$new, :$upsert
+      );
+
+      return $h;
+    }
+
+    method find-and-modify (
+      Hash $criteria = { }, Hash $projection = { },
+      Hash :$update = { }, Hash :$sort = { },
+      Bool :$remove = False, Bool :$new = False,
+      Bool :$upsert = False
+      --> Hash
+    ) {
 
       my Pair @req = findAndModify => self.name, query => $criteria;
-      @req.push: (:%sort) if ?%sort;
+      @req.push: (:$sort) if ?$sort;
       @req.push: (:remove) if $remove;
-      @req.push: (:%update) if ?%update;
+      @req.push: (:$update) if ?$update;
       @req.push: (:new) if $new;
       @req.push: (:upsert) if $upsert;
-      @req.push: (:%projection) if ?%projection;
+      @req.push: (:$projection) if ?$projection;
 
       my Hash $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
-          oper-name => 'find_and_modify',
+          oper-name => 'find-and-modify',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -254,21 +239,19 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method update ( %selector, %update!, Bool :$upsert = False,
-                    Bool :$multi_update = False
-                    --> Nil
-                  ) {
-      my $flags = +$upsert + +$multi_update +< 1;
-      self.wire.OP_UPDATE( self, $flags, %selector, %update );
-      return;
+    method update (
+      Hash %selector, %update!, Bool :$upsert = False,
+      Bool :$multi-update = False
+    ) {
+      my $flags = +$upsert + +$multi-update +< 1;
+      self.wire.OP_UPDATE( self, $flags, %selector, %update);
     }
 
     #---------------------------------------------------------------------------
     #
-    method remove ( %selector = { }, Bool :$single_remove = False --> Nil ) {
-      my $flags = +$single_remove;
+    method remove ( %selector = { }, Bool :$single-remove = False ) {
+      my $flags = +$single-remove;
       self.wire.OP_DELETE( self, $flags, %selector );
-      return;
     }
 
     #---------------------------------------------------------------------------
@@ -278,11 +261,11 @@ package MongoDB {
       my Pair @req = drop => $!name;
       my $doc = $!database.run_command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'drop',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -296,7 +279,7 @@ package MongoDB {
     #
     method explain ( Hash $criteria = {} --> Hash ) {
       my Pair @req = '$query' => $criteria, '$explain' => 1;
-      my MongoDB::Cursor $cursor = self.find( @req, :number_to_return(1));
+      my MongoDB::Cursor $cursor = self.find( @req, :number-to-return(1));
       my $docs = $cursor.fetch();
       return $docs;
     }
@@ -304,21 +287,21 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Get count of documents depending on criteria
     #
-    method count( Hash $criteria = {} --> Int ) {
+    method count ( Hash $criteria = {} --> Int ) {
 
       # fields is seen with wireshark
       #
       my Pair @req = count => $!name, query => $criteria, fields => %();
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'count',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -338,14 +321,14 @@ package MongoDB {
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'distinct',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -358,22 +341,22 @@ package MongoDB {
     # Aggregate methods
     #---------------------------------------------------------------------------
     #
-    multi method group ( Str $reduce_js_func, Str :$key = '',
+    multi method group ( Str $reduce-js-func, Str :$key = '',
                          :%initial = {}, Str :$key_js_func = '',
                          :%condition = {}, Str :$finalize = ''
                          --> Hash ) {
 
       self.group(
-        BSON::Javascript.new(:javascript($reduce_js_func)),
+        BSON::Javascript.new(:javascript($reduce-js-func)),
         key_js_func => BSON::Javascript.new(:javascript($key_js_func)),
         finalize => BSON::Javascript.new(:javascript($finalize)),
         :$key, :%initial, :%condition
       );
     }
 
-    multi method group ( BSON::Javascript $reduce_js_func,
-                         BSON::Javascript :$key_js_func = $!default_js,
-                         BSON::Javascript :$finalize = $!default_js,
+    multi method group ( BSON::Javascript $reduce-js-func,
+                         BSON::Javascript :$key_js_func = $!default-js,
+                         BSON::Javascript :$finalize = $!default-js,
                          Str :$key = '',
                          Hash :$initial = {},
                          Hash :$condition = {}
@@ -382,7 +365,7 @@ package MongoDB {
       my Pair @req = group => {};
       @req[0]<group><ns> = $!name;
       @req[0]<group><initial> = $initial;
-      @req[0]<group>{'$reduce'} = $reduce_js_func;
+      @req[0]<group>{'$reduce'} = $reduce-js-func;
       @req[0]<group><key> = {$key => 1};
 
       if $key_js_func.has_javascript {
@@ -395,14 +378,14 @@ package MongoDB {
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'group',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -411,22 +394,52 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    multi method map_reduce ( Str:D $map_js_func, Str:D $reduce_js_func,
+    multi method map_reduce ( Str:D $map-js-func, Str:D $reduce-js-func,
+                              Hash :$out, Str :$finalize, Hash :$criteria,
+                              Hash :$sort, Hash :$scope, Int :$limit,
+                              Bool :$jsMode = False
+                              --> Hash ) is DEPRECATED('map-reduce') {
+
+      my $h = self.map-reduce(
+         $map-js-func, $reduce-js-func, :$out, :$finalize, :$criteria,
+         :$sort, :$scope, :$limit, :$jsMode
+      );
+
+      return $h;
+    }
+
+    multi method map-reduce ( Str:D $map-js-func, Str:D $reduce-js-func,
                               Hash :$out, Str :$finalize, Hash :$criteria,
                               Hash :$sort, Hash :$scope, Int :$limit,
                               Bool :$jsMode = False
                               --> Hash ) {
 
-      self.map_reduce( BSON::Javascript.new(:javascript($map_js_func)),
-                       BSON::Javascript.new(:javascript($reduce_js_func)),
+      self.map-reduce( BSON::Javascript.new(:javascript($map-js-func)),
+                       BSON::Javascript.new(:javascript($reduce-js-func)),
                        :finalize(BSON::Javascript.new(:javascript($finalize))),
                        :$out, :$criteria, :$sort, :$scope, :$limit, :$jsMode
                      );
     }
 
-    multi method map_reduce ( BSON::Javascript:D $map_js_func,
-                              BSON::Javascript:D $reduce_js_func,
-                              BSON::Javascript :$finalize = $!default_js,
+    multi method map_reduce ( BSON::Javascript:D $map-js-func,
+                              BSON::Javascript:D $reduce-js-func,
+                              BSON::Javascript :$finalize = $!default-js,
+                              Hash :$out, Hash :criteria($query), Hash :$sort,
+                              Hash :$scope, Int :$limit, Bool :$jsMode = False
+                              --> Hash
+                            ) is DEPRECATED('map-reduce') {
+
+      my $h = self.map-reduce(
+         $map-js-func, $reduce-js-func, :$out, :$finalize, :criteria($query),
+         :$sort, :$scope, :$limit, :$jsMode
+      );
+
+      return $h;
+    }
+
+    multi method map-reduce ( BSON::Javascript:D $map-js-func,
+                              BSON::Javascript:D $reduce-js-func,
+                              BSON::Javascript :$finalize = $!default-js,
                               Hash :$out, Hash :criteria($query), Hash :$sort,
                               Hash :$scope, Int :$limit, Bool :$jsMode = False
                               --> Hash
@@ -440,8 +453,8 @@ package MongoDB {
       @req.push: (:$scope) if $scope;
 
       @req.push: |(
-        :map($map_js_func),
-        :reduce($reduce_js_func),
+        :map($map-js-func),
+        :reduce($reduce-js-func),
         :$jsMode
       );
 
@@ -456,14 +469,14 @@ package MongoDB {
 #say "MPR P: {@req.perl}";
       my Hash $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
-          oper-name => 'map_reduce',
+          oper-name => 'map-reduce',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -484,7 +497,14 @@ package MongoDB {
     #   deleted first. Therefore check first. drop index if exists then set new
     #   index.
     #
-    method ensure_index ( %key-spec!, %options = {} --> Nil ) {
+    method ensure_index (
+      %key-spec!, %options = {}
+    ) is DEPRECATED('ensure-index') {
+
+      self.ensure-index( %key-spec, %options);
+    }
+
+    method ensure-index ( %key-spec!, %options = {} ) {
 
       # Generate name of index if not given in options
       #
@@ -505,7 +525,7 @@ package MongoDB {
       # Check if index exists
       #
       my $system-indexes = $!database.collection('system.indexes');
-      my $doc = $system-indexes.find_one(%(key => %key-spec));
+      my $doc = $system-indexes.find-one(%(key => %key-spec));
 
       # If found do nothing for the moment
       #
@@ -522,41 +542,43 @@ package MongoDB {
 
         $system-indexes.insert(%doc);
 
-        # Check error and throw X::MongoDB::Collection if there is one
+        # Check error and throw X::MongoDB if there is one
         #
         my $error-doc = $!database.get_last_error;
         if $error-doc<err> {
-          die X::MongoDB::Collection.new(
+          die X::MongoDB.new(
             error-text => $error-doc<err>,
             error-code => $error-doc<code>,
-            oper-name => 'ensure_index',
+            oper-name => 'ensure-index',
             oper-data => %doc.perl,
-            full-collection-name => [~] $!database.name, '.', $!name
+            collection-ns => [~] $!database.name, '.', $!name
           );
         }
       }
-
-      return;
     }
 
     #-----------------------------------------------------------------------------
     # Drop an index
     #
-    method drop_index ( $key-spec! --> Hash ) {
+    method drop_index ( $key-spec! --> Hash ) is DEPRECATED('drop-index') {
+      return self.drop-index($key-spec);
+    }
+
+    method drop-index ( $key-spec! --> Hash ) {
       my Pair @req = deleteIndexes => $!name,
                      index => $key-spec,
                      ;
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
-          oper-name => 'drop_index',
+          oper-name => 'drop-index',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -566,14 +588,22 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Drop all indexes
     #
-    method drop_indexes ( --> Hash ) {
-      return self.drop_index('*');
+    method drop_indexes ( --> Hash ) is DEPRECATED('drop-indexes') {
+      return self.drop-index('*');
+    }
+
+    method drop-indexes ( --> Hash ) {
+      return self.drop-index('*');
     }
 
     #-----------------------------------------------------------------------------
     # Get indexes for the current collection
     #
-    method get_indexes ( --> MongoDB::Cursor ) {
+    method get_indexes ( --> MongoDB::Cursor ) is DEPRECATED('get-indexes') {
+      return self.get-indexes;
+    }
+
+    method get-indexes ( --> MongoDB::Cursor ) {
       my $system-indexes = $!database.collection('system.indexes');
       return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
     }
@@ -583,9 +613,9 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Get collections statistics
     #
-    method stats ( Int :$scale = 1, Bool :$indexDetails = False,
-                   Hash :$indexDetailsField,
-                   Str :$indexDetailsName
+    method stats ( Int :$scale = 1, Bool :index-details($indexDetails) = False,
+                   Hash :index-details-field($indexDetailsField),
+                   Str :index-details-name($indexDetailsName)
                    --> Hash ) {
 
       my Pair @req = collstats => $!name, options => {:$scale};
@@ -597,14 +627,14 @@ package MongoDB {
 
       my $doc = $!database.run_command(@req);
 
-      # Check error and throw X::MongoDB::Collection if there is one
+      # Check error and throw X::MongoDB if there is one
       #
       if $doc<ok>.Bool == False {
-        die X::MongoDB::Collection.new(
+        die X::MongoDB.new(
           error-text => $doc<errmsg>,
           oper-name => 'stats',
           oper-data => @req.perl,
-          full-collection-name => [~] $!database.name, '.', $!name
+          collection-ns => [~] $!database.name, '.', $!name
         );
       }
 
@@ -614,7 +644,11 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Return size of collection in bytes
     #
-    method data_size ( --> Int ) {
+    method data_size ( --> Int ) is DEPRECATED('data-size') {
+      return self.data-size;
+    }
+
+    method data-size ( --> Int ) {
       my Hash $doc = self.stats();
       return $doc<size>;
     }

@@ -47,14 +47,6 @@ $database.drop;
 
 Class to manipulate MongoDB databases.
 
-=head1 CLASSES
-
-=for head2
-class X::MongoDB::Database is Exception
-
-Some methods from the C<MongoDB::Database> class will throw exceptions when
-things go wrong. E.g. creating a database with faulty arguments..
-
 =head1 METHODS
 
 =for head2
@@ -139,7 +131,7 @@ optional and e.g. depending on what your method is given;
 my Hash $h;
 $h<sort> = %sort if ?%sort;
 ...
-my Pair @req = findAndModify => $collection-name,
+my Pair @req = findAndModify => $collection.name,
                query => $criteria, @$h;
 my Hash $doc = $database.run_command(@req);
 if $doc<ok>.Bool == False {
@@ -152,7 +144,7 @@ if $doc<ok>.Bool == False {
 my Hash $h;
 $h<sort> = %sort if ?%sort;
 ...
-my Pair @req = findAndModify => $collection-name,
+my Pair @req = findAndModify => $collection.name,
                query => $criteria, @$h;
 @req.push((sort => %sort)) if ?%sort;
 ...

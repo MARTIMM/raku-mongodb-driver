@@ -13,11 +13,13 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=TITLE class Connection in package MongoDB
+=TITLE class MongoDB::Connection
 
 =SUBTITLE Mongod server connection and info
 
-  package MongoDB { class Connection { ... }
+Defined as
+
+  package MongoDB { class Connection { ... } }
 
 The class provides methods such as connecting to mongod server and ask
 information from the server.
@@ -29,16 +31,16 @@ module.
 =begin code
 
 use v6;
-use MongoDB;
+use MongoDB::Connection;
 
 # Connect to MongoDB server at localhost port 27017
 my MongoDB::Connection $connection .= new();
 
 # Get an array of documents
-my @db-status-info = $connection.list_databases();
+my @db-status-info = $connection.list-databases();
 
 # Get an array of database names
-my @db-names = $connection.list_databases();
+my @db-names = $connection.list-databases();
 
 =end code
 
@@ -57,8 +59,8 @@ Usage:
   my MongoDB::Connection $c .= new( :host<example.com>, :port(1234));
 
 Creates a new C<Connection> object. When all is ok the connection status will
-be undefined (Exception). Otherwise it will hold the X::MongoDB::Connection
-exception which can be thrown when needed.
+be undefined. Otherwise it will hold the X::MongoDB exception which can be
+thrown when needed.
 
 Example:
 
@@ -81,50 +83,107 @@ Defined as:
 
 Usage:
 
+  my MongoDB::Database = $connection.database('my-database');
 
-
-Get a database object named $name. When nonexistend, it will be created after
+Get a database object named $name. When nonexistent, it will be created after
 inserting documents in the databases collection.
 
-=for head2
-method list_databases ( --> Array ) {...}
+=head2 method list-databases
+
+Defined as:
+
+  method list-databases ( --> Array )
+
+Usage:
+
+  my Array $db-list = $connection.list-databases;
+  for $db-list -> Hash $db { say $db<name sizeOnDisk>.fmt('%20s');}
 
 Get an array of documents each having keys C<name>, C<sizeOnDisk> and C<empty>. See
 L<http://docs.mongodb.org/manual/reference/command/listDatabases/#dbcmd.listDatabases>
 
-=for head2
-method database_names ( --> Array ) {...}
+=head2 method database-names
 
-Using above call the method returns an array of databases.
+defined as
 
-=for head2
-method version ( --> Hash ) {...}
+  method database-names ( --> Array )
 
-This method uses build_info (see below) to get version information. The returned
+Usage
+
+  my Array $dbnames = $connection.database-names;
+
+Using C<list-databases> to return an array of database names.
+
+=head2 method version
+
+Defined as
+
+  method version ( --> Hash )
+
+Usage
+
+  my Hash $v = $connection.version;
+  say $v<release1 release2 revision>.join('.'), ", $v<release-type>";
+
+This method uses build-info (see below) to get version information. The returned
 hash will have the following fields;
 
 =item B<release1>: First number of release.
+
 =item B<release2>: Second number or release. When odd it a development version.
+
 =item B<revision>: Release bug fixes and backwards-compatible changes.
+
 =item B<release-type>: Type can be one of 'production' or 'development'.
 
-=for head2
-method build_info ( --> Hash ) {...}
+When a connection is made this version is stored in the MongoDB package for
+tests by other methods in this or other modules. It saves al lot of
+communication when it is retrieved from the package because it will not change
+overnight.
+
+=head2 method build-info
+
+Defined as
+
+  method build-info ( --> Hash )
+
+Used as
+
+  my Hash $si = $connection.build-info;
+  say "Release is {$si<versionArray>[0,1].join('.')}";
 
 Method to get server information. The following fields are defined in the
 returned hash;
 
 =item B<version>: Version string, see version().
-=item B<gitVersion>: The commit identifier that identifies the state of the code used to build the mongod
-=item B<sysInfo>: A string that holds information about the operating system, hostname, kernel, date, and Boost version used to compile the mongod
+
+=item B<gitVersion>: The commit identifier that identifies the state of the code
+used to build the mongod.
+
+=item B<sysInfo>: A string that holds information about the operating system,
+hostname, kernel, date, and Boost version used to compile the mongod.
+
 =item B<loaderFlags>: The flags passed to the loader that loads the mongod.
-=item B<compilerFlags>: The flags passed to the compiler that builds the mongod binary.
-=item B<allocator>: The memory allocator that mongod uses. By default this is tcmalloc after version 2.2, and system before 2.2.
-=item B<versionArray>: An array that conveys version information about the mongod instance. See version for a more readable version of this string.
-=item B<javascriptEngine>: A string that reports the JavaScript engine used in the mongod instance. By default, this is V8 after version 2.4, and SpiderMonkey before 2.4.
-=item B<bits>: A number that reflects the target processor architecture of the mongod binary.
+=item B<compilerFlags>: The flags passed to the compiler that builds the mongod
+binary.
+
+=item B<allocator>: The memory allocator that mongod uses. By default this is
+tcmalloc after version 2.2, and system before 2.2.
+
+=item B<versionArray>: An array that conveys version information about the
+mongod instance. See version for a more readable version of this string.
+
+=item B<javascriptEngine>: A string that reports the JavaScript engine used in
+the mongod instance. By default, this is V8 after version 2.4, and SpiderMonkey
+before 2.4.
+
+=item B<bits>: A number that reflects the target processor architecture of the
+mongod binary.
+
 =item B<debug>: A boolean. true when built with debugging options.
-=item B<maxBsonObjectSize>: A number that reports the Maximum BSON Document Size.
+
+=item B<maxBsonObjectSize>: A number that reports the Maximum BSON Document
+Size.
 
 
 =end pod

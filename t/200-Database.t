@@ -32,7 +32,7 @@ $database.create_collection('cl1');
 try {
   $database.create_collection('cl1');
   CATCH {
-    when X::MongoDB::Database {
+    when X::MongoDB {
       ok .message ~~ ms/collection already exists/, 'Collection cl1 exists';
     }
 

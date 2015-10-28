@@ -98,7 +98,7 @@ subtest {
     ok $doc<ok>, 'All users dropped';
     
     CATCH {
-      when X::MongoDB::Database {
+      when X::MongoDB {
         ok .message ~~ m:s/not authorized on test to execute/, .error-text;
       }
     }
@@ -108,7 +108,7 @@ subtest {
     $doc = $auth.authenticate( :user('mt'), :password('mt++'));
 
     CATCH {
-      when X::MongoDB::Database {
+      when X::MongoDB {
         ok .message ~~ m:s/\w/, .error-text;
       }
     }

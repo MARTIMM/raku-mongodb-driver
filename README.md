@@ -390,6 +390,35 @@ are also items to be implemented in BSON. You need to look there for info
   * Furthermore the speedup of the language perl6 itself would have more impact
     than the programming of a several month student(me) can accomplish ;-).
     As of september 2015 a great improvement is made.
+  * The compile step of perl6 takes some time before running. This obviously
+    depends on the code base of the programs. One thing I can do is remove all
+    exception classes from the modules and replace them by only one class
+    defined in MongoDB.pm.
+
+    Below is the output of a small benchmark test taken at 20th of October 2015.
+    With an extra perl6 option one can see what time is used at each stage.
+    The program loads the Bench and MongoDB::Connection. The last one triggers
+    the loading of several other MongoDB modules. This takes much processing
+    time.
+```
+    > perl6 --stagestats Tests/bench-connect.pl6
+    Stage start      :   0.000
+    Stage parse      :   8.462
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.003
+    Stage mast       :   0.010
+    Stage mbc        :   0.000
+    Stage moar       :   0.000
+    INIT Time: 8
+    RUN 1 Time: 8
+    RUN 2 Time: 8
+    Benchmark: 
+    Timing 50 iterations of connect...
+       connect: 1.0916 wallclock secs @ 45.8058/s (n=50)
+    RUN 3 Time: 9
+    END Time: 9
+```
 * Keys must be checked for illegal characters when inserting documents.
 * Test to compare documents
 * Test group aggregation keyf field and finalize
@@ -405,8 +434,11 @@ are also items to be implemented in BSON. You need to look there for info
   of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
   authenticate with. 
 
-* modify file with extention .pm into .pm6
-* Moving out exception code in modules into MongoDB.pm.
+* Sharpening check on database-, collection- and document key names.
+* other items to [check](https://docs.mongodb.org/manual/reference/limits/)
+* table to map mongo status codes to severity level. This will modify the
+  default severity when an error code from the server is received.
+  Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
 
 ## CHANGELOG
 
@@ -415,8 +447,23 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.*.0
-  * Remove deprication messages of converted method names
+  * Remove deprecation messages of converted method names
 
+* 0.25.9
+  * Deprecated underscore methods modified in favor of dashed ones:
+      MongoDB::Connection: list_database, database_names, build_info.
+      MongoDB::Collection: find_one, find_and_modify, map_reduce, ensure_index,
+        drop_index, drop_indexes, get_indexes, data_size. Several parameters
+        and attributes are also changed.
+  * Change die X::MongoDB.new(...) into $!status = X::MongoDB.new(...)
+      MongoDB::Connection
+* 0.25.8
+  * Removed exception class from Connection.pm, Collection.pm, Database.pm,
+    Users.pm, Authenticate.pm and Cursor.pm. Usage is replaced by
+    X::MongoDB from MongoDB.pm.
+  * Renamed some test files.
+  * Renamed some module files.
+  * Bugfixes in callframe processing in MongoDB
 * 0.25.7
   * Experiment converting OP_INSERT() to OP-INSERT() using deprication traits.
     Use of the method is modified in the package and users should not have
@@ -425,6 +472,7 @@ change at any time. The public API should not be considered stable.*
 * 0.25.6
   * Module MongoDB::Protocol removed
   * Moving out exception code in modules into MongoDB.pm.
+  * Enum type Severity with values Trace Debug Info Warn Error Fatal
   * Logging role added to log exception information. This logging will throw
     when severity is above some level.
 * 0.25.5
