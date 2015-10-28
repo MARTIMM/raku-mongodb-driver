@@ -28,10 +28,10 @@ package MongoDB {
       %!criteria = %criteria;
 
       # assign cursorID
-      $!id = %OP_REPLY{ 'cursor_id' };
+      $!id = %OP_REPLY<cursor_id>;
 
       # assign documents
-      @!documents = %OP_REPLY{ 'documents' }.list;
+      @!documents = %OP_REPLY<documents>.list;
     }
 
     #-----------------------------------------------------------------------------
