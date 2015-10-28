@@ -127,14 +127,13 @@ mentioned above.
   my Hash $d2 = {k1 => 'v1a', :k2<appia>, :k3('d1 d2')};
   my @docs = $%( k2 => 'v2a', k5 => 'v5'), $%( k1 => 'v1b', k2 => 'v2b');
   $collection.insert( :continue-on-error, %d1, $d2, |@docs);
-
 =end code
 
 =head2 method find
 
 Defined as
 
-  method find ( %criteria = { },, %projection = { },
+  method find ( %criteria = { }, %projection = { },
                 Int :$number-to-skip = 0, Int :$number-to-return = 0,
                 Bool :$no-cursor-timeout = False
               )
@@ -143,7 +142,7 @@ Find documents in the database. When %criteria is empty all documents are
 returned, There are 2 options and a flag to control the search. %projection is
 used to select the fields to be returned. It looks like {field => 1/0}. When 1
 it is included, when 0 it will be excluded. The _id field is always included
-unless explicitly excluded like {_id => 0}. The function returns a
+unless explicitly excluded like {_id => 0}. The method returns a
 MongoDB::Cursor.
 
 B<:number-to-skip> is used to skip a number of documents.
@@ -154,12 +153,10 @@ B<:no-cursor-timeout> The server normally times out idle cursors after an
 inactivity period (10 minutes) to prevent excess memory use. Set this option to
 prevent that.
 
-=begin nested
 =begin code
-$cursor = $collection.find({nick => 'pb'});
-$cursor.fetch( ).perl.say;
+  $cursor = $collection.find({nick => 'pb'});
+  $cursor.fetch( ).perl.say;
 =end code
-=end nested
 
 =for head2
 method find-one ( %criteria = { }, %projection = { } --> Hash ) {...}
