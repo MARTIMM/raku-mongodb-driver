@@ -118,10 +118,7 @@ package MongoDB {
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( join '.',
-                                $collection.database.name,
-                                $collection.name
-                           );
+        encode_cstring( [~] $collection.database.name, '.', $collection.name);
 
       # document* documents
       # one or more documents to insert into the collection
