@@ -142,7 +142,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
   $cursor.kill;
-  my $error-doc = $collection.database.get_last_error;
+  my $error-doc = $collection.database.get-last-error;
   ok $error-doc<ok>.Bool, 'No error after kill cursor';
 
   # Is this ok (No fifty because of test with explain on cursor????

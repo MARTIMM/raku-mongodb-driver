@@ -1,7 +1,7 @@
 #`{{
   Testing;
     database.collection()               Create collection
-    database.create_collection()        Create collection explicitly
+    database.create-collection()        Create collection explicitly
     collection.drop()                   Drop collection
 
     X::MongoDB                          Catch exceptions
@@ -71,7 +71,7 @@ try {
 # Create using illegal collection name
 #
 try {
-  $database.create_collection('abc-def and a space');
+  $database.create-collection('abc-def and a space');
   CATCH {
     when X::MongoDB {
       ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
@@ -83,7 +83,7 @@ try {
 # Drop collection and create one explicitly with some parameters
 #
 #$collection.drop;
-$database.create_collection( 'cl1', :capped, :size(1000));
+$database.create-collection( 'cl1', :capped, :size(1000));
 
 # Fill collection with 100 records. Should be too much.
 #
@@ -101,7 +101,7 @@ isnt $cursor.count, 100, 'Less than 100 records in collection';
 # Drop collection and create one explicitly with other parameters
 #
 $collection.drop;
-$database.create_collection( 'cl1', :capped, :size(1000), :max(10));
+$database.create-collection( 'cl1', :capped, :size(1000), :max(10));
 
 # Fill collection with 100 records. Should be too much.
 #

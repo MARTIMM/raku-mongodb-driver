@@ -3,7 +3,7 @@
     collection.count()                  Count documents whithout using find.
     collection.distinct()               Find distinct values
     list_collections()                  Return collection info in database
-    collection_names()                  Return collectionnames in database
+    collection-names()                  Return collectionnames in database
 }}
 
 BEGIN { @*INC.unshift( './t' ) }
@@ -42,10 +42,10 @@ is-deeply $code-list, [20], 'Code found is 20';
 $collection = $database.collection('cl2');
 $collection.insert( $%(code => 15));
 
-my $docs = $database.list_collections;
+my $docs = $database.list-collections;
 is $docs.elems, 5, 'Number of docs: 5 = system table and 2 for each collection';
 
-$docs = $database.collection_names;
+$docs = $database.collection-names;
 is-deeply $docs.sort, <cl1 cl2>, 'Test collection names';
 
 #-------------------------------------------------------------------------------

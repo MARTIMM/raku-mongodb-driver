@@ -145,7 +145,7 @@ package MongoDB {
       @req.push: (:customData($custom_data)) if ?$custom_data;
       @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -168,7 +168,7 @@ package MongoDB {
       @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -190,7 +190,7 @@ package MongoDB {
       my Pair @req = dropAllUsersFromDatabase => 1;
       @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -216,7 +216,7 @@ package MongoDB {
       @req.push: (:$roles) if ?$roles;
       @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -242,7 +242,7 @@ package MongoDB {
       @req.push: (:$roles) if ?$roles;
       @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -327,7 +327,7 @@ package MongoDB {
       @req.push: (:$roles) if ?$roles;
       @req.push: (:$customData) if ?$customData;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -356,7 +356,7 @@ package MongoDB {
       @req.push: (:showCredentials) if ?$show_credentials;
       @req.push: (:showPrivileges) if ?$show_privileges;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -377,7 +377,7 @@ package MongoDB {
 
       my Pair @req = usersInfo => 1;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,

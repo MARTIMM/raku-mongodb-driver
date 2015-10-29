@@ -13,154 +13,168 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=head1 NAME MongoDB::Database - Operations on a MongoDB database
+=TITLE class MongoDB::Database
 
-=head1 SYNOPSIS
+=SUBTITLE Operations on a MongoDB database
 
-=begin nested
-=begin code
+Defined as
 
-use MongoDB;
+  package MongoDB { class Database { ... } }
 
-# Initialize
-#
-my $connection = MongoDB::Connection.new;
-my $database = $connection.database('test');
-my $collection = $database.collection('coll');
+Use as
 
-# Or explicit create. Collection holding at most 30 documents.
-#
-create_collection( 'new_coll', :capped, :max(30));
+  use MongoDB;
 
-# Get collection names
-#
-say "Collections: ", $database.collection_names();
+  # Initialize
+  #
+  my $connection = MongoDB::Connection.new;
+  my $database = $connection.database('test');
+  my $collection = $database.collection('coll');
 
-# Drop whole database
-#
-$database.drop;
+  # Or explicit create. Collection holding at most 30 documents.
+  #
+  create-collection( 'new_coll', :capped, :max(30));
 
-=end code
-=end nested
+  # Get collection names
+  #
+  say "Collections: ", $database.collection-names();
 
-=head1 DESCRIPTION
+  # Drop whole database
+  #
+  $database.drop;
 
-Class to manipulate MongoDB databases.
 
 =head1 METHODS
 
-=for head2
-method drop ( --> Hash )
+=head2 method drop
+
+Defined as
+
+  method drop ( --> Hash )
 
 Drop the database. All indexes and other stuff involved are removed.
 
-=for head2
-method collection ( Str $name --> MongoDB::Collection )
+=head2 method collection
+
+Defined as
+
+  method collection ( Str $name --> MongoDB::Collection )
 
 Select collection and return a collection object. When the collection is new it
 will only be created when data is inserted.
 
-=for head2
-method create_collection ( Str $collection_name, Bool :$capped,
-                           Bool :$autoIndexId, Int :$size,
-                           Int :$max, Int :$flags
-                           --> MongoDB::Collection
-                         )
+=head2 method create-collection
+
+Defined as
+
+  method create-collection(
+    Str $collection-name, Bool :$capped,
+    Bool :$autoIndexId, Int :$size,
+    Int :$max, Int :$flags
+    --> MongoDB::Collection
+  )
 
 Create a collection explicitly and return a collection object. The arguments
 are (See also L<here|http://docs.mongodb.org/manual/reference/command/create/>);.
 
-=head3 $collection_name
+=for item1
+C<$collection-name>: Name of the new collection.
 
-Name of the new collection.
+=for item1
+C<$capped>: Optional. To create a capped collection. specify true. If you
+specify true, you must also set a maximum size in the size field.
 
-=head3 $capped
+=for item1
+C<$autoIndexId>: Optional. Specify false to disable the automatic creation of an
+index on the C<_id> field. Before 2.2, the default value for autoIndexId was
+False.
 
-Optional. To create a capped collection. specify true. If you specify true, you
-must also set a maximum size in the size field.
+=for item1
+C<$size>: Optional. The maximum size for the capped collection. Once a capped
+collection reaches its maximum size, MongoDB overwrites older old documents with
+new documents. The size field is required for capped collections.
 
-=head3 $autoIndexId
+=for item1
+C<$max>: Optional. The maximum number of documents to keep in the capped
+collection. The size limit takes precedence over this limit. If a capped
+collection reaches its maximum size before it reaches the maximum number of
+documents, MongoDB removes old documents. If you use this limit, ensure that the
+size limit is sufficient to contain the documents limit.
 
-Optional. Specify false to disable the automatic creation of an index on the
-_id field. Before 2.2, the default value for autoIndexId was false.
 
-=head3 $size
+=head2 method list-collections
 
-Optional. The maximum size for the capped collection. Once a capped collection
-reaches its maximum size, MongoDB overwrites older old documents with new
-documents. The size field is required for capped collections.
+Defined as
 
-=head3 $max
-
-Optional. The maximum number of documents to keep in the capped collection. The
-size limit takes precedence over this limit. If a capped collection reaches its
-maximum size before it reaches the maximum number of documents, MongoDB removes
-old documents. If you use this limit, ensure that the size limit is sufficient
-to contain the documents limit.
-
-=for head2
-method list_collections ( --> Array )
+  method list-collections ( --> Array )
 
 Return an array of docs with all types of collections in the database. To get
 the names of the users collection it is better to use the colection_names()
 method explained below.
 
-=for head2
-method collection_names ( --> Array )
+=head2 method collection-names
+
+Defined as
+
+  method collection-names ( --> Array )
 
 Return an array of the users collectionnames.
 
-=for head2
-method run_command ( Pair @command --> Hash )
+=head2 method run-command
+
+Defined as
+
+  method run-command ( Pair @command --> Hash )
 
 Run a command against the preselected collection and database. For proper
 handling of this command it is nesseary to study the MongoDB site and perhaps
 this perl6 driver code (there are many examples) will it be of any use.
 
 The command argument is special that it is not a hash but an array of pairs.
-Run_command must have the command at the first key value pair. Hashes cannot be
+run-command must have the command at the first key value pair. Hashes cannot be
 used because it will not keep the same order for keys as they will be entered.
 
 There are two ways to prepare the Pair array when some items of the request are
 optional and e.g. depending on what your method is given;
-=begin nested
-=begin code
 
-# Method 1
-#
-my Hash $h;
-$h<sort> = %sort if ?%sort;
-...
-my Pair @req = findAndModify => $collection.name,
-               query => $criteria, @$h;
-my Hash $doc = $database.run_command(@req);
-if $doc<ok>.Bool == False {
-...
-}
-# Method 2, Mind the extra brackets around the pairs list when pushing!
-# Otherwise it will be recognized as named arguments which push does not
-# recognize.
-#
-my Hash $h;
-$h<sort> = %sort if ?%sort;
-...
-my Pair @req = findAndModify => $collection.name,
-               query => $criteria, @$h;
-@req.push((sort => %sort)) if ?%sort;
-...
-my Hash $doc = $database.run_command(@req);
-if $doc<ok>.Bool == False {
-...
-}
 
-=end code
-=end nested
+  # Method 1
+  #
+  my Hash $h;
+  $h<sort> = %sort if ?%sort;
+  ...
+  my Pair @req = findAndModify => $collection.name,
+                 query => $criteria, @$h;
+  my Hash $doc = $database.run-command(@req);
+  if $doc<ok>.Bool == False {
+  ...
+  }
+  # Method 2, Mind the extra brackets around the pairs list when pushing!
+  # Otherwise it will be recognized as named arguments which push does not
+  # recognize.
+  #
+  my Hash $h;
+  $h<sort> = %sort if ?%sort;
+  ...
+  my Pair @req = findAndModify => $collection.name,
+                 query => $criteria, @$h;
+  @req.push((sort => %sort)) if ?%sort;
+  ...
+  my Hash $doc = $database.run-command(@req);
+  if $doc<ok>.Bool == False {
+  ...
+  }
 
-=for head2
-method get_last_error ( Bool :$j = True, Int :$w = 0,
-                        Int :$wtimeout = 1000, Bool :$fsync = False
-                        --> Hash
-                      )
+
+=head2 method get-last-error
+
+Defined as
+
+  method get-last-error (
+    Bool :$j = True, Int :$w = 0,
+    Int :$wtimeout = 1000, Bool :$fsync = False
+    --> Hash
+  )
 
 Returns the error status of the preceding write operation on the current
 connection. There are methods in classes which use this call implicitly to
@@ -168,49 +182,52 @@ see if all went well.
 
 The arguments are (See also L<here|http://docs.mongodb.org/manual/reference/command/getLastError>);
 
-=head3 j
+=for item1
+C<j>: If true, wait for the next journal commit before returning, rather than
+waiting for a full disk flush. If mongod does not have journaling enabled, this
+option has no effect. If this option is enabled for a write operation, mongod
+will wait no more than 1/3 of the current commitIntervalMs before writing data
+to the journal.
 
-If true, wait for the next journal commit before returning, rather than waiting
-for a full disk flush. If mongod does not have journaling enabled, this option
-has no effect. If this option is enabled for a write operation, mongod will
-wait no more than 1/3 of the current commitIntervalMs before writing data to
-the journal.
-
-=head3 w
-
-When running with replication, this is the number of servers to replicate to
-before returning. A w value of 1 indicates the primary only. A w value of 2
+=for item1
+C<w>: When running with replication, this is the number of servers to replicate
+to before returning. A w value of 1 indicates the primary only. A w value of 2
 includes the primary and at least one secondary, etc. In place of a number, you
 may also set w to majority to indicate that the command should wait until the
 latest write propagates to a majority of replica set members. If using w, you
 should also use wtimeout. Specifying a value for w without also providing a
 wtimeout may cause getLastError to block indefinitely.
 
-=head3 fsync
+=for item1
+C<fsync>: If true, wait for mongod to write this data to disk before returning.
+Defaults to false. In most cases, use the j option to ensure durability and
+consistency of the data set.
 
-If true, wait for mongod to write this data to disk before returning. Defaults
-to false. In most cases, use the j option to ensure durability and consistency
-of the data set.
+=for item1
+C<wtimeout>: Optional. Milliseconds. Specify a value in milliseconds to control
+how long to wait for write propagation to complete. If replication does not
+complete in the given timeframe, the getLastError command will return with an
+error status.
 
-=head3 wtimeout
+=for item1
+C<Return document>: There are many fields in the returned document of which
+C<ok>, C<lastOp> and  C<err> are the most obvious. Read the information on the
+MongoDB site to find out more.
 
-Optional. Milliseconds. Specify a value in milliseconds to control how long to
-wait for write propagation to complete. If replication does not complete in the
-given timeframe, the getLastError command will return with an error status.
 
-=head3 Return document
+=head2 method get-prev-error
 
-There are many fields in the returned document of which C<ok>, C<lastOp> and 
-C<err> are the most obvious. Read the information on the MongoDB site to find
-out more.
+Defined as
 
-=for head2
-method get_prev_error ( --> Hash )
+  method get-prev-error ( --> Hash )
 
 Returns all error documents since last reset.
 
-=for head2
-method reset_error ( --> Hash )
+=head2 method reset-error
+
+Defined as
+
+  method reset-error ( --> Hash )
 
 Reset all errors.
 

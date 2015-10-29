@@ -115,7 +115,7 @@ package MongoDB {
       @req.push: (:$skip) if $skip;
       @req.push: (:$limit) if $limit;
 
-      my Hash $doc = $database.run_command(@req);
+      my Hash $doc = $database.run-command(@req);
       if !?$doc<ok>.Bool {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,

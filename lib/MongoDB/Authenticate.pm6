@@ -22,7 +22,7 @@ package MongoDB {
     #
     method authenticate ( Str:D :$user, Str :$password --> Hash ) {
       my Pair @req = (getnonce => 1);
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
 say "N0: ", $doc.perl;
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
@@ -45,7 +45,7 @@ say "N0: ", $doc.perl;
                )
       );
 
-      $doc = $!database.run_command(@req);
+      $doc = $!database.run-command(@req);
 say "N2: ", $doc.perl;
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
@@ -63,7 +63,7 @@ say "N2: ", $doc.perl;
     #
     method logout ( Str:D :$user --> Hash ) {
       my Pair @req = (logout => 1);
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
