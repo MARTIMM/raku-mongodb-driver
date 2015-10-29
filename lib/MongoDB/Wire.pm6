@@ -26,7 +26,8 @@ package MongoDB {
     my Bool $debug = False;
     my Int $request_id = 0;
 
-    # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
+    # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
+    #
     constant C-OP-REPLY        = 1;    # Reply to a client request.responseTo is set
     constant C-OP-MSG          = 1000; # generic msg command followed by a string. deprecated
     constant C-OP-UPDATE       = 2001; # update document
@@ -36,22 +37,9 @@ package MongoDB {
     constant C-OP-GET-MORE     = 2005; # Get more data from a query. See Cursors
     constant C-OP-DELETE       = 2006; # Delete documents
     constant C-OP-KILL-CURSORS = 2007; # Tell database client is done with a cursor
-#`{{
-    has %.op_codes = (
-      'OP_REPLY'          => 1,       # Reply to a client request. responseTo is set
-      'OP_MSG'            => 1000,    # generic msg command followed by a string. deprecated
-      'OP_UPDATE'         => 2001,    # update document
-      'OP_INSERT'         => 2002,    # insert new document
-      'RESERVED'          => 2003,    # formerly used for OP_GET_BY_OID
-      'OP_QUERY'          => 2004,    # query a collection
-      'OP_GET_MORE'       => 2005,    # Get more data from a query. See Cursors
-      'OP_DELETE'         => 2006,    # Delete documents
-      'OP_KILL_CURSORS'   => 2007,    # Tell database client is done with a cursor
-    );
-}}
+
     #---------------------------------------------------------------------------
     #
-#    method !enc-msg-header ( Int $length, Str $op-code --> Buf ) {
     method !enc-msg-header ( Int $length, Int $op-code --> Buf ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
@@ -79,7 +67,6 @@ package MongoDB {
         # request type
         #
         encode_int32($op-code);
-#        encode_int32(%.op_codes{$op-code});
 
       return $msg-header;
     }
@@ -119,7 +106,6 @@ package MongoDB {
       #
       die [~] 'Unexpected OP_code (', $msg-header<op_code>, ')'
          unless $msg-header<op_code> ~~ C-OP-REPLY;
-#         unless $msg-header<op_code> ~~ %.op_codes<OP_REPLY>;
 
       return $msg-header;
     }
@@ -239,10 +225,7 @@ package MongoDB {
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        ~ encode_cstring( join '.',
-                               $collection.database.name,
-                               $collection.name
-                        )
+        ~ encode_cstring( [~] $collection.database.name, '.', $collection.name)
 
         # int32 numberToSkip
         # number of documents to skip
@@ -276,11 +259,13 @@ package MongoDB {
 
       # send message and wait for response
       #
-      my Buf $B-OP-REPLY = $collection.database.connection._send( $msg-header ~ $B-OP-QUERY, True);
+      my Buf $B-OP-REPLY = $collection.database.connection._send(
+        $msg-header ~ $B-OP-QUERY, True
+      );
 
       # parse response
       #
-      my Hash $H-OP-REPLY = self.OP_REPLY($B-OP-REPLY);
+      my Hash $H-OP-REPLY = self.OP-REPLY($B-OP-REPLY);
 
       if $debug {
         say 'OP-QUERY:', $H-OP-REPLY.perl;
@@ -295,9 +280,14 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method OP_GETMORE ( $cursor --> Hash ) {
+    method OP_GETMORE ( $cursor --> Hash ) is DEPRECATED('OP-GETMORE') {
+      return self.OP-GETMORE($cursor);
+    }
+
+    method OP-GETMORE ( $cursor --> Hash ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPGETMORE
 
+      my $coll = $cursor.collection;
       my Buf $B-OP-GETMORE = [~]
 
         # int32 ZERO
@@ -308,10 +298,7 @@ package MongoDB {
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( join '.',
-                                $cursor.collection.database.name,
-                                $cursor.collection.name
-                         ),
+        encode_cstring( [~] $coll.database.name, '.', $coll.name),
 
         # int32 numberToReturn
         # number of documents to return
@@ -327,18 +314,22 @@ package MongoDB {
       # standard message header
       # (watch out for inconsistent OP_code and messsage name)
       #
-      my Buf $msg-header = self!enc-msg-header( $B-OP-GETMORE.elems, C-OP-GET-MORE);
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-GETMORE.elems, C-OP-GET-MORE
+      );
 
       # send message and wait for response
       #
-      my Buf $B-OP-REPLY = $cursor.collection.database.connection._send( $msg-header ~ $B-OP-GETMORE, True);
+      my Buf $B-OP-REPLY = $cursor.collection.database.connection._send(
+        $msg-header ~ $B-OP-GETMORE, True
+      );
 
       # parse response
       #
-      my Hash $H-OP-REPLY = self.OP_REPLY($B-OP-REPLY);
+      my Hash $H-OP-REPLY = self.OP-REPLY($B-OP-REPLY);
 
       if $debug {
-        say 'OP_GETMORE:', $H-OP-REPLY.perl;
+        say 'OP-GETMORE:', $H-OP-REPLY.perl;
       }
 
       # TODO check if requestID matches responseTo
@@ -352,7 +343,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method OP_KILL_CURSORS ( *@cursors --> Nil ) {
+    method OP_KILL_CURSORS ( *@cursors --> Nil ) is DEPRECATED('OP-KILL-CURSORS') {
+      self.OP-KILL-CURSORS(@cursors);
+    }
+
+    method OP-KILL-CURSORS ( *@cursors --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPKILLCURSORS
 
       my Buf $B-OP-KILL_CURSORS = [~]
@@ -389,7 +384,15 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method OP_UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
+    method OP_UPDATE (
+      $collection, Int $flags, %selector, %update
+      --> Nil
+    ) is DEPRECATED('OP-UPDATE') {
+
+      self.OP-UPDATE( $collection, $flags, %selector, %update);
+    }
+    
+    method OP-UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPUPDATE
 
       my Buf $B-OP-UPDATE = [~]
@@ -425,7 +428,9 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg-header = self!enc-msg-header( $B-OP-UPDATE.elems, C-OP-UPDATE);
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-UPDATE.elems, C-OP-UPDATE
+      );
 
       # send message without waiting for response
       #
@@ -434,7 +439,15 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method OP_DELETE ( $collection, Int $flags, %selector --> Nil ) {
+    method OP_DELETE (
+      $collection, Int $flags, %selector
+      --> Nil
+    ) is DEPRECATED('OP-DELETE') {
+
+      self.OP-DELETE( $collection, $flags, %selector);
+    }
+    
+    method OP-DELETE ( $collection, Int $flags, %selector --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
 
       my Buf $B-OP-DELETE = [~]
@@ -465,7 +478,9 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg-header = self!enc-msg-header( $B-OP-DELETE.elems, C-OP-DELETE);
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-DELETE.elems, C-OP-DELETE
+      );
 
       # send message without waiting for response
       #
@@ -474,7 +489,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method OP_REPLY ( Buf $b --> Hash ) {
+    method OP_REPLY ( Buf $b --> Hash ) is DEPRECATED('OP-REPLY') {
+      return self.OP-REPLY($b);
+    }
+    
+    method OP-REPLY ( Buf $b --> Hash ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
 
       # Get an array

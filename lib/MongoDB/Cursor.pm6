@@ -42,7 +42,7 @@ package MongoDB {
       if not @!documents and [+]($!id.list) {
 
         # request next batch of documents
-        my Hash $OP_REPLY = self.wire.OP_GETMORE(self);
+        my Hash $OP_REPLY = self.wire.OP-GETMORE(self);
 
         # assign cursorID,
         # it may change to "0" if there are no more documents to fetch
@@ -59,6 +59,7 @@ package MongoDB {
 
     #-----------------------------------------------------------------------------
     # Add support for next() as in the mongo shell
+    #
     method next ( --> Any ) { return self.fetch }
 
     #-----------------------------------------------------------------------------
@@ -96,7 +97,7 @@ package MongoDB {
     method kill ( --> Nil ) {
 
       # invalidate cursor on database
-      self.wire.OP_KILL_CURSORS( self );
+      self.wire.OP-KILL-CURSORS( self );
 
       # invalidate cursor id
       $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 );
