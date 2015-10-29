@@ -8,6 +8,14 @@ use BSON;
 use BSON::EDCTools;
 
 package MongoDB {
+
+  # Changed some naming conventions because all looked too much the same
+  # So;
+  #   C-OP-*    Mongo code constants, not from hash anymore
+  #   $B-OP-*   Variables of type Buf
+  #   $H-OP-*   Variables of type Hash
+  #   OP-*      Methods
+  #
   class Wire is BSON::Bson {
 
     # Implements Mongo Wire Protocol
@@ -18,25 +26,26 @@ package MongoDB {
     my Bool $debug = False;
     my Int $request_id = 0;
 
-    # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
-    has %.op_codes = (
-      'OP_REPLY'          => 1,       # Reply to a client request. responseTo is set
-      'OP_MSG'            => 1000,    # generic msg command followed by a string. depricated
-      'OP_UPDATE'         => 2001,    # update document
-      'OP_INSERT'         => 2002,    # insert new document
-      'RESERVED'          => 2003,    # formerly used for OP_GET_BY_OID
-      'OP_QUERY'          => 2004,    # query a collection
-      'OP_GET_MORE'       => 2005,    # Get more data from a query. See Cursors
-      'OP_DELETE'         => 2006,    # Delete documents
-      'OP_KILL_CURSORS'   => 2007,    # Tell database client is done with a cursor
-    );
+    # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
+    #
+    constant C-OP-REPLY        = 1;    # Reply to a client request.responseTo is set
+    constant C-OP-MSG          = 1000; # generic msg command followed by a string. deprecated
+    constant C-OP-UPDATE       = 2001; # update document
+    constant C-OP-INSERT       = 2002; # insert new document
+    constant C-RESERVED        = 2003; # formerly used for OP_GET_BY_OID
+    constant C-OP-QUERY        = 2004; # query a collection
+    constant C-OP-GET-MORE     = 2005; # Get more data from a query. See Cursors
+    constant C-OP-DELETE       = 2006; # Delete documents
+    constant C-OP-KILL-CURSORS = 2007; # Tell database client is done with a cursor
 
-    method !enc_msg_header ( Int $length, Str $op_code --> Buf ) {
+    #---------------------------------------------------------------------------
+    #
+    method !enc-msg-header ( Int $length, Int $op-code --> Buf ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
       # struct MsgHeader
       #
-      my Buf $msg_header = [~]
+      my Buf $msg-header = [~]
 
         # int32 messageLength
         # total message size, including this
@@ -57,17 +66,19 @@ package MongoDB {
         # int32 opCode
         # request type
         #
-        encode_int32(%.op_codes{$op_code});
+        encode_int32($op-code);
 
-      return $msg_header;
+      return $msg-header;
     }
 
-    method !dec_msg_header ( Array $a, $index is rw --> Hash ) {
+    #---------------------------------------------------------------------------
+    #
+    method !dec-msg-header ( Array $a, $index is rw --> Hash ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
 
       # struct MsgHeader
       #
-      my Hash $msg_header = hash(
+      my Hash $msg-header = hash(
 
         # int32 messageLength
         # total message size, including this
@@ -91,24 +102,27 @@ package MongoDB {
         'op_code'           => decode_int32( $a, $index)
       );
 
-      # the only allowed message returned from database is OP_REPLY
+      # the only allowed message returned from database is C-OP-REPLY
       #
-      die [~] 'Unexpected OP_code (', $msg_header<op_code>, ')'
-         unless $msg_header<op_code> ~~ %.op_codes<OP_REPLY>;
+      die [~] 'Unexpected OP_code (', $msg-header<op_code>, ')'
+         unless $msg-header<op_code> ~~ C-OP-REPLY;
 
-      return $msg_header;
+      return $msg-header;
     }
 
+    #---------------------------------------------------------------------------
+    #
     method OP_INSERT (
       $collection, Int $flags, *@documents --> Nil
     ) is DEPRECATED('OP-INSERT') {
+
       self.OP-INSERT( $collection, $flags, @documents);
     }
 
     method OP-INSERT ( $collection, Int $flags, *@documents --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
 
-      my Buf $OP_INSERT = [~]
+      my Buf $B-OP-INSERT = [~]
 
         # int32 flags
         # bit vector
@@ -124,59 +138,84 @@ package MongoDB {
       # one or more documents to insert into the collection
       #
       for @documents -> $document {
-        $OP_INSERT ~= self.encode_document($document);
+        $B-OP-INSERT ~= self.encode_document($document);
       }
 
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self!enc_msg_header( $OP_INSERT.elems, 'OP_INSERT');
+      my Buf $msg-header = self!enc-msg-header( $B-OP-INSERT.elems, C-OP-INSERT);
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg_header ~ $OP_INSERT, False);
+      $collection.database.connection._send( $msg-header ~ $B-OP-INSERT, False);
     }
 
+    #---------------------------------------------------------------------------
     # OP_QUERY on a collection. Query is in the form of a hash. Commands cannot
     # be given this way. See method below for that.
     #
     multi method OP_QUERY (
       $collection, $flags, $number-to-skip, $number-to-return,
-      %query, %return_field_selector
+      %query, %return-field-selector
       --> Hash
-    ) {
+    ) is DEPRECATED('OP-QUERY') {
+    
       self._init_index;
-      return self.OP_QUERY(
+      return self.OP-QUERY(
         $collection, $flags, $number-to-skip, $number-to-return,
-        self.encode_document(%query), %return_field_selector
+        self.encode_document(%query), %return-field-selector
       );
     }
 
-    # OP_QUERY on a collection. Now the query is an array of Pair. This
-    # was nessesary for run_command to keep the command on on the first key
+    multi method OP-QUERY (
+      $collection, $flags, $number-to-skip, $number-to-return,
+      %query, %return-field-selector
+      --> Hash
+    ) {
+      self._init_index;
+      return self.OP-QUERY(
+        $collection, $flags, $number-to-skip, $number-to-return,
+        self.encode_document(%query), %return-field-selector
+      );
+    }
+
+    # OP-QUERY on a collection. Now the query is an array of Pair. This
+    # was nessesary for run-command to keep the command in the first key
     # value pair.
     #
     multi method OP_QUERY (
       $collection, $flags, $number-to-skip, $number-to-return,
-      Pair @query, %return_field_selector
+      Pair @query, %return-field-selector
+      --> Hash
+    ) is DEPRECATED('OP-QUERY') {
+      return self.OP-QUERY(
+        $collection, $flags, $number-to-skip, $number-to-return,
+        self.encode_document(@query), %return-field-selector
+      );
+    }
+
+    multi method OP-QUERY (
+      $collection, $flags, $number-to-skip, $number-to-return,
+      Pair @query, %return-field-selector
       --> Hash
     ) {
-      return self.OP_QUERY(
+      return self.OP-QUERY(
         $collection, $flags, $number-to-skip, $number-to-return,
-        self.encode_document(@query), %return_field_selector
+        self.encode_document(@query), %return-field-selector
       );
     }
 
     # Mayor work horse with query already converted nito a BSON byte array
     #
-    multi method OP_QUERY (
+    multi method OP-QUERY (
       $collection, $flags, $number-to-skip, $number-to-return,
-      Buf $query, %return_field_selector
+      Buf $query, %return-field-selector
       --> Hash
     ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
-      my Buf $OP_QUERY =
+      my Buf $B-OP-QUERY =
 
         # int32 flags
         # bit vector of query options
@@ -186,10 +225,7 @@ package MongoDB {
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        ~ encode_cstring( join '.',
-                               $collection.database.name,
-                               $collection.name
-                        )
+        ~ encode_cstring( [~] $collection.database.name, '.', $collection.name)
 
         # int32 numberToSkip
         # number of documents to skip
@@ -198,7 +234,7 @@ package MongoDB {
 
         # int32 numberToReturn
         # number of documents to return
-        # in the first OP_REPLY batch
+        # in the first C-OP-REPLY batch
         #
         ~ encode_int32( $number-to-return )
 
@@ -211,39 +247,48 @@ package MongoDB {
       # [ document  returnFieldSelector; ]
       # Optional. Selector indicating the fields to return
       #
-      if +%return_field_selector {
-        $OP_QUERY ~= self.encode_document(%return_field_selector);
+      if +%return-field-selector {
+        $B-OP-QUERY ~= self.encode_document(%return-field-selector);
       }
 
 
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self!enc_msg_header( $OP_QUERY.elems, 'OP_QUERY');
+      my Buf $msg-header = self!enc-msg-header( $B-OP-QUERY.elems, C-OP-QUERY);
 
       # send message and wait for response
       #
-      my Buf $OP_REPLY = $collection.database.connection._send( $msg_header ~ $OP_QUERY, True);
+      my Buf $B-OP-REPLY = $collection.database.connection._send(
+        $msg-header ~ $B-OP-QUERY, True
+      );
 
       # parse response
       #
-      my Hash $H_OP_REPLY = self.OP_REPLY($OP_REPLY);
+      my Hash $H-OP-REPLY = self.OP-REPLY($B-OP-REPLY);
 
       if $debug {
-        say 'OP_QUERY:', $H_OP_REPLY.perl;
+        say 'OP-QUERY:', $H-OP-REPLY.perl;
       }
 
       # TODO check if requestID matches responseTo
 
       # return response back to cursor
       #
-      return $H_OP_REPLY;
+      return $H-OP-REPLY;
     }
 
-    method OP_GETMORE ( $cursor --> Hash ) {
+    #---------------------------------------------------------------------------
+    #
+    method OP_GETMORE ( $cursor --> Hash ) is DEPRECATED('OP-GETMORE') {
+      return self.OP-GETMORE($cursor);
+    }
+
+    method OP-GETMORE ( $cursor --> Hash ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPGETMORE
 
-      my Buf $OP_GETMORE = [~]
+      my $coll = $cursor.collection;
+      my Buf $B-OP-GETMORE = [~]
 
         # int32 ZERO
         # 0 - reserved for future use
@@ -253,10 +298,7 @@ package MongoDB {
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( join '.',
-                                $cursor.collection.database.name,
-                                $cursor.collection.name
-                         ),
+        encode_cstring( [~] $coll.database.name, '.', $coll.name),
 
         # int32 numberToReturn
         # number of documents to return
@@ -264,7 +306,7 @@ package MongoDB {
         encode_int32(0),
 
         # int64 cursorID
-        # cursorID from the OP_REPLY
+        # cursorID from the C-OP-REPLY
         #
         $cursor.id;
 
@@ -272,18 +314,22 @@ package MongoDB {
       # standard message header
       # (watch out for inconsistent OP_code and messsage name)
       #
-      my Buf $msg_header = self!enc_msg_header( $OP_GETMORE.elems, 'OP_GET_MORE');
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-GETMORE.elems, C-OP-GET-MORE
+      );
 
       # send message and wait for response
       #
-      my Buf $OP_REPLY = $cursor.collection.database.connection._send( $msg_header ~ $OP_GETMORE, True);
+      my Buf $B-OP-REPLY = $cursor.collection.database.connection._send(
+        $msg-header ~ $B-OP-GETMORE, True
+      );
 
       # parse response
       #
-      my Hash $H_OP_REPLY = self.OP_REPLY($OP_REPLY);
+      my Hash $H-OP-REPLY = self.OP-REPLY($B-OP-REPLY);
 
       if $debug {
-        say 'OP_GETMORE:', $H_OP_REPLY.perl;
+        say 'OP-GETMORE:', $H-OP-REPLY.perl;
       }
 
       # TODO check if requestID matches responseTo
@@ -292,13 +338,19 @@ package MongoDB {
 
       # return response back to cursor
       #
-      return $H_OP_REPLY;
+      return $H-OP-REPLY;
     }
 
-    method OP_KILL_CURSORS ( *@cursors --> Nil ) {
+    #---------------------------------------------------------------------------
+    #
+    method OP_KILL_CURSORS ( *@cursors --> Nil ) is DEPRECATED('OP-KILL-CURSORS') {
+      self.OP-KILL-CURSORS(@cursors);
+    }
+
+    method OP-KILL-CURSORS ( *@cursors --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPKILLCURSORS
 
-      my Buf $OP_KILL_CURSORS = [~]
+      my Buf $B-OP-KILL_CURSORS = [~]
 
         # int32 ZERO
         # 0 - reserved for future use
@@ -308,31 +360,42 @@ package MongoDB {
         # int32 numberOfCursorIDs
         # number of cursorIDs in message
         #
-        encode_int32( +@cursors );
+        encode_int32(+@cursors);
 
       # int64* cursorIDs
       # sequence of cursorIDs to close
       #
       for @cursors -> $cursor {
-        $OP_KILL_CURSORS ~= $cursor.id;
+        $B-OP-KILL_CURSORS ~= $cursor.id;
       }
 
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self!enc_msg_header( $OP_KILL_CURSORS.elems,
-                                                 'OP_KILL_CURSORS'
-                                               );
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-KILL_CURSORS.elems,
+        C-OP-KILL-CURSORS
+      );
 
       # send message without waiting for response
       #
-      @cursors[0].collection.database.connection._send( $msg_header ~ $OP_KILL_CURSORS, False);
+      @cursors[0].collection.database.connection._send( $msg-header ~ $B-OP-KILL_CURSORS, False);
     }
 
-    method OP_UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
+    #---------------------------------------------------------------------------
+    #
+    method OP_UPDATE (
+      $collection, Int $flags, %selector, %update
+      --> Nil
+    ) is DEPRECATED('OP-UPDATE') {
+
+      self.OP-UPDATE( $collection, $flags, %selector, %update);
+    }
+    
+    method OP-UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPUPDATE
 
-      my Buf $OP_UPDATE = [~]
+      my Buf $B-OP-UPDATE = [~]
 
         # int32 ZERO
         # 0 - reserved for future use
@@ -365,17 +428,29 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self!enc_msg_header( $OP_UPDATE.elems, 'OP_UPDATE');
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-UPDATE.elems, C-OP-UPDATE
+      );
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg_header ~ $OP_UPDATE, False);
+      $collection.database.connection._send( $msg-header ~ $B-OP-UPDATE, False);
     }
 
-    method OP_DELETE ( $collection, Int $flags, %selector --> Nil ) {
+    #---------------------------------------------------------------------------
+    #
+    method OP_DELETE (
+      $collection, Int $flags, %selector
+      --> Nil
+    ) is DEPRECATED('OP-DELETE') {
+
+      self.OP-DELETE( $collection, $flags, %selector);
+    }
+    
+    method OP-DELETE ( $collection, Int $flags, %selector --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
 
-      my Buf $OP_DELETE = [~]
+      my Buf $B-OP-DELETE = [~]
 
         # int32 ZERO
         # 0 - reserved for future use
@@ -403,14 +478,22 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg_header = self!enc_msg_header( $OP_DELETE.elems, 'OP_DELETE');
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-DELETE.elems, C-OP-DELETE
+      );
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg_header ~ $OP_DELETE, False);
+      $collection.database.connection._send( $msg-header ~ $B-OP-DELETE, False);
     }
 
-    method OP_REPLY ( Buf $b --> Hash ) {
+    #---------------------------------------------------------------------------
+    #
+    method OP_REPLY ( Buf $b --> Hash ) is DEPRECATED('OP-REPLY') {
+      return self.OP-REPLY($b);
+    }
+    
+    method OP-REPLY ( Buf $b --> Hash ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
 
       # Get an array
@@ -424,12 +507,12 @@ package MongoDB {
       self._init_index;
       my $index = 0;
 
-      my Hash $OP_REPLY = hash(
+      my Hash $H-OP-REPLY = hash(
 
         # MsgHeader header
         # standard message header
         #
-        'msg_header' => self!dec_msg_header( $a, $index),
+        'msg_header' => self!dec-msg-header( $a, $index),
 
         # int32 responseFlags
         # bit vector
@@ -441,7 +524,7 @@ package MongoDB {
         # TODO big integers are not yet implemented in Rakudo
         # so cursor is build using raw Buf
         #
-        'cursor_id' => self!dec_nyi( $a, 8, $index),
+        'cursor_id' => self!dec-nyi( $a, 8, $index),
 
         # int32 startingFrom
         # where in the cursor this reply is starting
@@ -461,19 +544,21 @@ package MongoDB {
 
       # Extract documents from message.
       #
-      for ^$OP_REPLY<number_returned> {
+      for ^$H-OP-REPLY<number_returned> {
         my Hash $document = self.decode_document( $a, $index);
-        $OP_REPLY<documents>.push($document);
+        $H-OP-REPLY<documents>.push($document);
       }
 
       # Every response byte must be consumed
       #
       die 'Unexpected bytes at the end of response' if $index < $a.elems;
 
-      return $OP_REPLY;
+      return $H-OP-REPLY;
     }
 
-    method !dec_nyi ( Array $a, Int $length, $index is rw --> Buf ) {
+    #---------------------------------------------------------------------------
+    #
+    method !dec-nyi ( Array $a, Int $length, $index is rw --> Buf ) {
       # fetch given amount of bytes from Array and return as Buffer
       # mostly used to jump over not yet implemented decoding
 

@@ -88,7 +88,7 @@ package MongoDB {
 
       my $database = self.database('admin');
       my Pair @req = listDatabases => 1;
-      my Hash $doc = $database.run_command(@req);
+      my Hash $doc = $database.run-command(@req);
       if $doc<ok>.Bool == False {
         $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -147,7 +147,7 @@ package MongoDB {
 
       my $database = self.database('admin');
       my Pair @req = buildinfo => 1;
-      my Hash $doc = $database.run_command(@req);
+      my Hash $doc = $database.run-command(@req);
       if $doc<ok>.Bool == False {
         $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,

@@ -24,7 +24,7 @@ package MongoDB {
     submethod BUILD ( :$database!, Str:D :$name ) {
       $!database = $database;
 
-      # This should be possible: 'admin.$cmd' which is used by run_command
+      # This should be possible: 'admin.$cmd' which is used by run-command
       #
       if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
         $!name = $name;
@@ -138,7 +138,7 @@ package MongoDB {
     ) {
       my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
+        $OP_REPLY = self.wire.OP-QUERY( self, $flags, $number-to-skip,
                                         $number-to-return, %criteria,
                                         %projection
                                       );
@@ -148,7 +148,7 @@ package MongoDB {
     }
 
     # Find record in a collection. Now the criteria is an array of Pair. This
-    # was nessesary for run_command to keep the command on on the first key
+    # was nessesary for run-command to keep the command on on the first key
     # value pair.
     #
     multi method find (
@@ -159,7 +159,7 @@ package MongoDB {
     ) {
       my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP_QUERY( self, $flags, $number-to-skip,
+        $OP_REPLY = self.wire.OP-QUERY( self, $flags, $number-to-skip,
                                         $number-to-return, @criteria,
                                         %projection
                                       );
@@ -222,7 +222,7 @@ package MongoDB {
       @req.push: (:upsert) if $upsert;
       @req.push: (:$projection) if ?$projection;
 
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -259,7 +259,7 @@ package MongoDB {
     #
     method drop ( --> Hash ) {
       my Pair @req = drop => $!name;
-      my $doc = $!database.run_command(@req);
+      my $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
@@ -292,7 +292,7 @@ package MongoDB {
       # fields is seen with wireshark
       #
       my Pair @req = count => $!name, query => $criteria, fields => %();
-      my $doc = $!database.run_command(@req);
+      my $doc = $!database.run-command(@req);
 
       # Check error and throw X::MongoDB if there is one
       #
@@ -319,7 +319,7 @@ package MongoDB {
                      query => %criteria
                      ;
 
-      my $doc = $!database.run_command(@req);
+      my $doc = $!database.run-command(@req);
 
       # Check error and throw X::MongoDB if there is one
       #
@@ -376,7 +376,7 @@ package MongoDB {
       @req[0]<group><condition> = $condition if ?$condition;
       @req[0]<group><finalize> = $finalize if $finalize.has_javascript;
 
-      my $doc = $!database.run_command(@req);
+      my $doc = $!database.run-command(@req);
 
       # Check error and throw X::MongoDB if there is one
       #
@@ -467,7 +467,7 @@ package MongoDB {
       }
 
 #say "MPR P: {@req.perl}";
-      my Hash $doc = $!database.run_command(@req);
+      my Hash $doc = $!database.run-command(@req);
 
       # Check error and throw X::MongoDB if there is one
       #
@@ -491,7 +491,7 @@ package MongoDB {
     # Steps done by the mongo shell
     #
     # * Insert a document into a system table <dbname>.system.indexes
-    # * Run get_last_error to see result
+    # * Run get-last-error to see result
     #
     # * According to documentation indexes cannot be changed. They must be
     #   deleted first. Therefore check first. drop index if exists then set new
@@ -544,7 +544,7 @@ package MongoDB {
 
         # Check error and throw X::MongoDB if there is one
         #
-        my $error-doc = $!database.get_last_error;
+        my $error-doc = $!database.get-last-error;
         if $error-doc<err> {
           die X::MongoDB.new(
             error-text => $error-doc<err>,
@@ -569,7 +569,7 @@ package MongoDB {
                      index => $key-spec,
                      ;
 
-      my $doc = $!database.run_command(@req);
+      my $doc = $!database.run-command(@req);
 
       # Check error and throw X::MongoDB if there is one
       #
@@ -625,7 +625,7 @@ package MongoDB {
       @req[1]<options><indexDetailsField> = $indexDetailsField
         if ?$indexDetailsField and !?$indexDetailsName; # One or the other
 
-      my $doc = $!database.run_command(@req);
+      my $doc = $!database.run-command(@req);
 
       # Check error and throw X::MongoDB if there is one
       #

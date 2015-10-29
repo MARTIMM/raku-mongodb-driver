@@ -37,25 +37,25 @@ subtest {
   $doc = $users.drop_all_users_from_database();
   ok $doc<ok>, 'All users dropped';
 
-  $users.set_pw_security(
-    :min_un_length(10), 
-    :min_pw_length(8),
+  $users.set-pw-security(
+    :min-un-length(10), 
+    :min-pw-length(8),
     :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
   );
 
-  $doc = $users.create_user(
+  $doc = $users.create-user(
     :user('site-admin'),
     :password('B3n@Hurry'),
-    :custom_data({user-type => 'site-admin'}),
+    :custom-data({user-type => 'site-admin'}),
     :roles([{role => 'userAdminAnyDatabase', db => 'admin'}])
   );
 
   ok $doc<ok>, 'User site-admin created';
 
-  $doc = $users.create_user(
+  $doc = $users.create-user(
     :user('Dondersteen'),
     :password('w@tD8jeDan'),
-    :custom_data(
+    :custom-data(
       { license => 'to_kill',
         user-type => 'database-test-admin'
       }
@@ -65,7 +65,7 @@ subtest {
 
   ok $doc<ok>, 'User Dondersteen created';
 
-  $doc = $users.get_users;
+  $doc = $users.get-users;
 #say "Users: ", $doc.perl;
   is $doc<users>.elems, 2, '2 users defined';
   is $doc<users>[0]<user>, 'site-admin', 'User site-admin';
