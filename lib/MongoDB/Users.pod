@@ -13,84 +13,84 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
-=head1 NAME MongoDB::Users - User administration
+=TITLE class MongoDB::Users
 
-=head1 SYNOPSIS
+=SUBTITLE Administration of accounts used for authentication.
 
-=begin nested
-=begin code
+Defined as
 
-use MongoDB::Connection;
-use MongoDB::Users;
+  package MongoDB { class Users { ... } }
 
-# Initialize
-#
-my $connection = MongoDB::Connection.new;
-my $database = $connection.database('test');
+Use as
 
-my MongoDB::Database $database = $connection.database('test1');
-my MongoDB::Users $users .= new(:$database);
+  use MongoDB::Connection;
+  use MongoDB::Users;
 
-my Hash $doc = $users.create_user(
-  :user('John'),
-  :password('simple'),
-  :custom_data({license => 'to_kill'}),
-  :roles(['readWrite'])
-);
+  # Initialize
+  #
+  my $connection = MongoDB::Connection.new;
+  my $database = $connection.database('test');
 
-$users.set_pw_security(
-  :min_un_length(5),
-  :min_pw_length(8),
-  :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
-);
+  my MongoDB::Database $database = $connection.database('test1');
+  my MongoDB::Users $users .= new(:$database);
 
-my Hash $doc = $users.create_user(
-  :user('Long-John'),
-  :password('N0t-s0-S!mPl3'),
-  :custom_data({license => 'to_kill'}),
-  :roles([${role => 'readWrite', db => 'test3'}])
-);
+  my Hash $doc = $users.create-user(
+    :user('John'),
+    :password('simple'),
+    :custom-data({license => 'to_kill'}),
+    :roles(['readWrite'])
+  );
 
-$doc = $users.update_user(
-  :user('John'),
-  :password('mt+++'),
-  :custom_data({license => 'to_heal'}),
-  :roles([{role => 'readWrite', db => 'test1'},
-          {role => 'dbAdmin', db => 'test2'}
-         ]
-        )
-);
+  $users.set-pw-security(
+    :min-un-length(5),
+    :min-pw-length(8),
+    :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
+  );
 
-$doc = $users.drop_user(:user('John'));
+  my Hash $doc = $users.create-user(
+    :user('Long-John'),
+    :password('N0t-s0-S!mPl3'),
+    :custom-data({license => 'to_kill'}),
+    :roles([${role => 'readWrite', db => 'test3'}])
+  );
 
-$doc = $users.grant_roles_to_user( :user('Long-John'), :roles(['dbOwner']));
+  $doc = $users.update-user(
+    :user('John'),
+    :password('mt+++'),
+    :custom-data({license => 'to_heal'}),
+    :roles([{role => 'readWrite', db => 'test1'},
+            {role => 'dbAdmin', db => 'test2'}
+           ]
+          )
+  );
 
-$doc = $users.revoke_roles_from_user(
-  :user('Long-John'),
-  :roles([${role => 'readWrite', db => 'test1'}])
-);
+  $doc = $users.drop-user(:user('John'));
 
-$doc = $users.users_info(:user('Long-John'));
+  $doc = $users.grant-roles-to-user( :user('Long-John'), :roles(['dbOwner']));
 
-$doc = $users.drop_all_users_from_database();
+  $doc = $users.revoke-roles-from-user(
+    :user('Long-John'),
+    :roles([${role => 'readWrite', db => 'test1'}])
+  );
 
-=end code
-=end nested
+  $doc = $users.users-info(:user('Long-John'));
 
-=head1 DESCRIPTION
+  $doc = $users.drop_all_users_from_database();
 
-Class to manipulate accounts used for authentication.
 
 Some methods from the C<MongoDB::Users> class will throw
 C<X::MongoDB> exceptions when things go wrong. E.g. creating a user
 which already exists with faulty arguments.
 
-=head2 METHODS
+=head1 METHODS
 
-=for head3
-  method set_pw_security (
-    Int :$min_un_length where $min_un_length >= 2,
-    Int :$min_pw_length where $min_pw_length >= 2,
+=head2 method set-pw-security
+
+Defined as
+
+  method set-pw-security (
+    Int :$min-un-length where $min-un-length >= 2,
+    Int :$min-pw-length where $min-pw-length >= 2,
     Int :$pw-attribs = $PW-LOWERCASE
   )
 
@@ -99,27 +99,30 @@ the username minimal length is 2. For passwords idem depending on the password
 attribute code. $pw-attribs specifies how passwords are to be checked. There are
 4 codes recognized.
 
-=item $PW-LOWERCASE. All is accepted but lowercase characters must at least be
-used. When $min_pw_length is not set it will be set to 2.
+=item C<$PW-LOWERCASE>: All is accepted but lowercase characters must at least be
+used. When $min-pw-length is not set it will be set to 2.
 
-=item $PW-UPPERCASE. All is accepted but lowercase and uppercase characters must
-at least be used. When $min_pw_length is not set it will be set to 2.
+=item C<$PW-UPPERCASE>: All is accepted but lowercase and uppercase characters must
+at least be used. When $min-pw-length is not set it will be set to 2.
 
-=item $PW-NUMBERS. All is accepted but lowercase, uppercase characters and
-numbers must at least be used. When $min_pw_length is not set it will be set to
+=item C<$PW-NUMBERS>: All is accepted but lowercase, uppercase characters and
+numbers must at least be used. When $min-pw-length is not set it will be set to
 3.
 
-=item $PW-OTHER-CHARS. All is accepted but lowercase, uppercase characters,
+=item C<$PW-OTHER-CHARS>: All is accepted but lowercase, uppercase characters,
 numbers and special characters like @ ! $ etcetera, must at least be used. When
-$min_pw_length is not set it will be set to 4.
+$min-pw-length is not set it will be set to 4.
 
-If e.g. $PW-OTHER-CHARS and $min_pw_length is set to 2 then when using a
+If e.g. C<$PW-OTHER-CHARS> and C<$min-pw-length> is set to 2 then when using a
 password of less the 4 characters is bound to fail.
 
-=for head3
-  method create_user (
+=head2 method create-user
+
+Defined as
+
+  method create-user (
     Str :$user, Str :$password,
-    :$custom_data, Array :$roles, Int :$timeout
+    :$custom-data, Array :$roles, Int :$timeout
     --> Hash
   )
 
@@ -130,75 +133,94 @@ C<role> and the other is C<db>. In this case the role is assigned to the user
 but only for a specific daabase.
 
 Important note; When one hash is used it is important to itemize the hash
-because otherwise the hash will be flattened into a list of pairs which will
+because otherwise the hash will be flattened into a list of pairs which is
 probably not what you mean.
 
 Some examples of the roles option;
-=begin nested
-=begin code
-:roles(['readWrite'])
 
-:roles([{role => 'readWrite', db => 'test1'},
-        {role => 'dbAdmin', db => 'test2'}
-       ]
-      )
+  :roles(['readWrite'])
 
-:roles([${role => 'dbAdmin', db => 'test2'}])
+  :roles([{role => 'readWrite', db => 'test1'},
+          {role => 'dbAdmin', db => 'test2'}
+         ]
+        )
 
-:roles([{role => 'dbAdmin', db => 'test2'},])
-=end code
-=end nested
+  :roles([${role => 'dbAdmin', db => 'test2'}])
+
+  :roles([{role => 'dbAdmin', db => 'test2'},])
+
 Notice the $ in the 3rd and the comma in the last example.
 
 
-=for head3
-  method drop_user ( Str :$user, Int :$timeout --> Hash )
+=head2 method drop-user
+
+Defined as
+
+  method drop-user ( Str :$user, Int :$timeout --> Hash )
 
 Delete user from the database.
 
-=for head3
+=head2 method drop_all_users_from_database
+
+Defined as
+
   method drop_all_users_from_database ( Int :$timeout --> Hash )
 
 Drop all users from the database
 
-=for head3
-  method grant_roles_to_user (
+=head2 method grant-roles-to-user
+
+Defined as
+
+  method grant-roles-to-user (
     Str :$user, Array :$roles, Int :$timeout
     --> Hash
   )
 
 Grant roles to user.
 
-=for head3
-  method revoke_roles_from_user (
+=head2 method revoke-roles-from-user
+
+Defined as
+
+  method revoke-roles-from-user (
     Str :$user, Array :$roles, Int :$timeout
     --> Hash
   )
 
 Revoke roles from user
 
-=for head3
-  method update_user (
+=head2 method update-user
+
+Defined as
+
+  method update-user (
     Str :$user, Str :$password,
-    :$custom_data, Array :$roles, Int :$timeout
+    :$custom-data, Array :$roles, Int :$timeout
     --> Hash
   )
 
 Update user accont data
 
-=for head3
-  method users_info (
+=head2 method users-info
+
+Defined as
+
+  method users-info (
     Str :$user,
-    Bool :$show_credentials,
-    Bool :$show_privileges,
+    Bool :$show-credentials,
+    Bool :$show-privileges,
     Str :$database
     --> Hash
   )
 
 Get information about a user
 
-=for head3
-  method get_users ( --> Hash )
+=head2 method get-users
+
+Defined as
+
+  method get-users ( --> Hash )
 
 Get information about all users
 
