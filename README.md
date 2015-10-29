@@ -18,6 +18,12 @@ administration tasks, authentication and multi server setup.
 
 See also the license link below
 
+## API CHANGES
+
+There has bee a lot of changes in the API. All methods which had underscores ('_')
+are converted to dashed ones ('-'). The old ones will show deprecation info.
+However, it is importend to know that also named parameters are changed in the
+same way but these cannot be warned for.
 
 ## DOCUMENTATION
 
@@ -87,7 +93,7 @@ and act on it but it is not on all methods nessesary.
 
 There are lists on the MongoDB site see references above. Items from the list
 below will be worked on. There are many items shown here, it might be impossible
-to implement it all. By using run_command(), much can be accomplished. A lot of the
+to implement it all. By using run-command(), much can be accomplished. A lot of the
 items are using that call to get the information for you. Also quite a few items
 are shown in in more than one place place. Removed all internal commands.
 
@@ -146,20 +152,20 @@ Legend;
 
 * [C] Set database is done with database(). Database is created implicitly after
       inserting data into a collection.
-* [D] list_databases(). Returns database statistics.
-* [D] database_names(). Returns a list of database names.
-* [D] run_command(), Many helper methods are using this command.
-* [D] get_last_error(). Get error status from last operation
-* [D] get_prev_error().
-* [D] reset_error().
+* [D] list-databases(). Returns database statistics.
+* [D] database-names(). Returns a list of database names.
+* [D] run-command(), Many helper methods are using this command.
+* [D] get-last-error(). Get error status from last operation
+* [D] get-prev-error().
+* [D] reset-error().
 
 ### Collection Methods
 
 * [D] collection(). Set collection. Collection is created implicitly after
       inserting data into a collection.
-* [D] create_collection(). Create collection explicitly and sets collection parameters.
-* [D] list_collections().
-* [D] collection_names().
+* [D] create-collection(). Create collection explicitly and sets collection parameters.
+* [D] list-collections().
+* [D] collection-names().
 
 ### Data serialization
 
@@ -188,16 +194,16 @@ Legend;
 
 ### User Management Commands
 
-* [DU] create_user. Creates a new user.
-* [DU] drop_all_users_from_database. Deletes all users associated with a
+* [DU] create-user. Creates a new user.
+* [DU] drop-all-users-from-database. Deletes all users associated with a
        database.
-* [DU] drop_user. Removes a single user.
-* [DU] grant_roles_to_user. Grants a role and its privileges to a user.
-* [DU] revoke_roles_from_user. Removes a role from a user.
-* [DU] update_user. Updates a user's data.
-* [DU] users_info. Returns information about the specified users.
-* [DU] set_pw_security, Specify restrictions on username and password.
-* [DU] get_users, Get info about all users
+* [DU] drop-user. Removes a single user.
+* [DU] grant-roles-to-user. Grants a role and its privileges to a user.
+* [DU] revoke-roles-from-user. Removes a role from a user.
+* [DU] update-user. Updates a user's data.
+* [DU] users-info. Returns information about the specified users.
+* [DU] set-pw-security, Specify restrictions on username and password.
+* [DU] get-users, Get info about all users
 
 
 
@@ -275,11 +281,11 @@ Legend;
       instance. Deprecated since version MongoDB 3.0.
 * [O] count(). Wraps count to return a count of the number of documents in a
       collection or matching a query.
-* [-] create_index(). Builds an index on a collection. Use ensure_index().
+* [-] create-index(). Builds an index on a collection. Use ensure-index().
       Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
-* [-] create_indexes(), see ensure_index(). Builds one or more indexes for a
+* [-] create-indexes(), see ensure-index(). Builds one or more indexes for a
       collection.
-* [O] data_size(). Returns the size of the collection. Wraps the size field in
+* [O] data-size(). Returns the size of the collection. Wraps the size field in
       the output of the collStats.
 * [O] explain(). Done also in collection! Reports on the query execution plan,
       including index use, for a cursor.
@@ -287,19 +293,19 @@ Legend;
       the specified field. Displays the distinct values found for a specified
       key in a collection.
 * [O] drop(). Removes the specified collection from the database.
-* [O] drop_index(). Removes a specified index on a collection.
-* [O] drop_indexes(). Removes all indexes on a collection.
-* [O] ensure_index(). Creates an index if it does not currently exist. If the
-      index exists ensure_index() does nothing. Ensure_index commands should be
+* [O] drop-index(). Removes a specified index on a collection.
+* [O] drop-indexes(). Removes all indexes on a collection.
+* [O] ensure-index(). Creates an index if it does not currently exist. If the
+      index exists ensure-index() does nothing. Ensure-index commands should be
       cached to prevent excessive communication with the database. Or, the
       driver user should be informed that ensureIndex is not a lightweight
       operation for the particular driver.
 * [O] find(). Performs a query on a collection and returns a cursor object.
     * [x] %criteria (Search criteria)
     * [x] %projection (Field selection)
-    * [x] Int :$number_to_skip = 0
-    * [x] Int :$number_to_return = 0
-    * [x] Bool :$no_cursor_timeout = False
+    * [x] Int :$number-to-skip = 0
+    * [x] Int :$number-to-return = 0
+    * [x] Bool :$no-cursor-timeout = False
   * Testing find(). Not all is tested because e.g. $eq is not yet supported in
     my version of Mongod.
     * [x] exact matching, implicit AND.
@@ -312,15 +318,15 @@ Legend;
     * [ ] embedded docs, $elemMatch
     * [ ] null
 
-* [O] find_and_modify(). Atomically modifies and returns a single document.
-* [O] find_one(). Performs a query and returns a single document.
+* [O] find-and-modify(). Atomically modifies and returns a single document.
+* [O] find-one(). Performs a query and returns a single document.
     * [x] %criteria (Search criteria)
     * [x] %projection (Field selection)
 * [-] getIndexStats(). Renders a human-readable view of the data collected by
       indexStats which reflects B-tree utilization. The function/command can be
       run only on a mongod instance that uses the
       --enableExperimentalIndexStatsCmd option.
-* [O] get_indexes(). Returns an array of documents that describe the existing
+* [O] get-indexes(). Returns an array of documents that describe the existing
       indexes on a collection.
 * [ ] getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
 * [O] group(). Provides simple data aggregation function. Groups documents in a
@@ -331,7 +337,7 @@ Legend;
       indexStats which reflects B-tree utilization. See getIndexStats().
 * [O] insert(). Creates a new document in a collection.
 * [ ] isCapped(). Reports if a collection is a capped collection.
-* [O] map_reduce(). Performs map-reduce style data aggregation for large data
+* [O] map-reduce(). Performs map-reduce style data aggregation for large data
       sets.
 * [ ] reIndex(). Rebuilds all existing indexes on a collection.
 * [O] remove(). Deletes documents from a collection.
@@ -423,7 +429,7 @@ are also items to be implemented in BSON. You need to look there for info
 * Test to compare documents
 * Test group aggregation keyf field and finalize
 * Test map reduce aggregation more thoroughly.
-* Map_reduce, look into scope. argument is not used.
+* Map-reduce, look into scope. argument is not used.
 * Explain changed after mongodb 3.0
 * Testing $mod in queries seems to have problems in version 3.0.5
 * Get info about multiple accounts instead of one at the time
