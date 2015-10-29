@@ -449,6 +449,16 @@ change at any time. The public API should not be considered stable.*
 * 0.*.0
   * Remove deprecation messages of converted method names
 
+* 0.25.10
+  * Deprecated underscore methods modified in favor of dashed ones:
+      MongoDB::Database: create_collection, list_collections, collection_names,
+        run_command, get_last_error, get_prev_error, reset_error
+      MongoDB::Wire: OP_INSERT, OP_QUERY, OP_GETMORE, OP_KILL_CURSORS,
+        OP_UPDATE, OP_DELETE, OP_REPLY
+      MongoDB::Users: set_pw_security, create_user, drop_user,
+        drop_all_users_from_database, grant_roles_to_user,
+        revoke_roles_from_user, update_user, users_info, get_users
+  * Naming of variables and routines made clearer in MongoDB::Wire.
 * 0.25.9
   * Deprecated underscore methods modified in favor of dashed ones:
       MongoDB::Connection: list_database, database_names, build_info.
