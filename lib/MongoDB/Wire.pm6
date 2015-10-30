@@ -498,7 +498,7 @@ package MongoDB {
 
       # Get an array
       #
-      my Array $a = $b.list;
+      my Array $a = $b.Array;
 
       # Because the decoding is not started via self.decode() $!index in BSON must
       # be initialized explicitly. There may not be another decode() started in the
