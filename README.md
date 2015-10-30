@@ -20,7 +20,7 @@ See also the license link below
 
 ## API CHANGES
 
-There has bee a lot of changes in the API. All methods which had underscores ('_')
+There has been a lot of changes in the API. All methods which had underscores ('_')
 are converted to dashed ones ('-'). The old ones will show deprecation info.
 However, it is importend to know that also named parameters are changed in the
 same way but these cannot be warned for.
