@@ -59,7 +59,7 @@ package MongoDB {
       #
       my $index = 0;
       my Buf $l = $!sock.read(4);
-      my Int $w = decode_int32( $l.list, $index) - 4;
+      my Int $w = decode-int32( $l.list, $index) - 4;
 
       # receive remaining response bytes from socket
       #

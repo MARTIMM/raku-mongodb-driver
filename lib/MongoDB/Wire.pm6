@@ -50,23 +50,23 @@ package MongoDB {
         # int32 messageLength
         # total message size, including this
         #
-        encode_int32($length + 4 * 4),
+        encode-int32($length + 4 * 4),
 
         # int32 requestID
         # identifier for this message
         #
-        encode_int32($request_id++),
+        encode-int32($request_id++),
 
         # int32 responseTo
         # requestID from the original request
         # (used in reponses from db)
         #
-        encode_int32(0),
+        encode-int32(0),
 
         # int32 opCode
         # request type
         #
-        encode_int32($op-code);
+        encode-int32($op-code);
 
       return $msg-header;
     }
@@ -83,23 +83,23 @@ package MongoDB {
         # int32 messageLength
         # total message size, including this
         #
-        'message_length'    => decode_int32( $a, $index),
+        'message_length'    => decode-int32( $a, $index),
 
         # int32 requestID
         # identifier for this message
         #
-        'request_id'        => decode_int32( $a, $index),
+        'request_id'        => decode-int32( $a, $index),
 
         # int32 responseTo
         # requestID from the original request
         # (used in reponses from db)
         #
-        'response_to'       => decode_int32( $a, $index),
+        'response_to'       => decode-int32( $a, $index),
 
         # int32 opCode
         # request type
         #
-        'op_code'           => decode_int32( $a, $index)
+        'op_code'           => decode-int32( $a, $index)
       );
 
       # the only allowed message returned from database is C-OP-REPLY
@@ -127,18 +127,18 @@ package MongoDB {
         # int32 flags
         # bit vector
         #
-        encode_int32($flags),
+        encode-int32($flags),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( [~] $collection.database.name, '.', $collection.name);
+        encode-cstring( [~] $collection.database.name, '.', $collection.name);
 
       # document* documents
       # one or more documents to insert into the collection
       #
       for @documents -> $document {
-        $B-OP-INSERT ~= self.encode_document($document);
+        $B-OP-INSERT ~= self.encode-document($document);
       }
 
       # MsgHeader header
@@ -161,10 +161,10 @@ package MongoDB {
       --> Hash
     ) is DEPRECATED('OP-QUERY') {
     
-      self._init_index;
+      self.init-index;
       return self.OP-QUERY(
         $collection, $flags, $number-to-skip, $number-to-return,
-        self.encode_document(%query), %return-field-selector
+        self.encode-document(%query), %return-field-selector
       );
     }
 
@@ -173,10 +173,10 @@ package MongoDB {
       %query, %return-field-selector
       --> Hash
     ) {
-      self._init_index;
+      self.init-index;
       return self.OP-QUERY(
         $collection, $flags, $number-to-skip, $number-to-return,
-        self.encode_document(%query), %return-field-selector
+        self.encode-document(%query), %return-field-selector
       );
     }
 
@@ -191,7 +191,7 @@ package MongoDB {
     ) is DEPRECATED('OP-QUERY') {
       return self.OP-QUERY(
         $collection, $flags, $number-to-skip, $number-to-return,
-        self.encode_document(@query), %return-field-selector
+        self.encode-document(@query), %return-field-selector
       );
     }
 
@@ -202,7 +202,7 @@ package MongoDB {
     ) {
       return self.OP-QUERY(
         $collection, $flags, $number-to-skip, $number-to-return,
-        self.encode_document(@query), %return-field-selector
+        self.encode-document(@query), %return-field-selector
       );
     }
 
@@ -220,23 +220,23 @@ package MongoDB {
         # int32 flags
         # bit vector of query options
         #
-        encode_int32( $flags )
+        encode-int32( $flags )
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        ~ encode_cstring( [~] $collection.database.name, '.', $collection.name)
+        ~ encode-cstring( [~] $collection.database.name, '.', $collection.name)
 
         # int32 numberToSkip
         # number of documents to skip
         #
-        ~ encode_int32( $number-to-skip )
+        ~ encode-int32( $number-to-skip )
 
         # int32 numberToReturn
         # number of documents to return
         # in the first C-OP-REPLY batch
         #
-        ~ encode_int32( $number-to-return )
+        ~ encode-int32( $number-to-return )
 
         # document query
         # query object
@@ -248,7 +248,7 @@ package MongoDB {
       # Optional. Selector indicating the fields to return
       #
       if +%return-field-selector {
-        $B-OP-QUERY ~= self.encode_document(%return-field-selector);
+        $B-OP-QUERY ~= self.encode-document(%return-field-selector);
       }
 
 
@@ -293,17 +293,17 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        encode_int32(0),
+        encode-int32(0),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( [~] $coll.database.name, '.', $coll.name),
+        encode-cstring( [~] $coll.database.name, '.', $coll.name),
 
         # int32 numberToReturn
         # number of documents to return
         #
-        encode_int32(0),
+        encode-int32(0),
 
         # int64 cursorID
         # cursorID from the C-OP-REPLY
@@ -355,12 +355,12 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        encode_int32(0),
+        encode-int32(0),
 
         # int32 numberOfCursorIDs
         # number of cursorIDs in message
         #
-        encode_int32(+@cursors);
+        encode-int32(+@cursors);
 
       # int64* cursorIDs
       # sequence of cursorIDs to close
@@ -400,12 +400,12 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        encode_int32(0),
+        encode-int32(0),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( join '.',
+        encode-cstring( join '.',
                           $collection.database.name,
                           $collection.name
                       ),
@@ -413,17 +413,17 @@ package MongoDB {
         # int32 flags
         # bit vector
         #
-        encode_int32($flags),
+        encode-int32($flags),
 
         # document selector
         # query object
         #
-        self.encode_document(%selector),
+        self.encode-document(%selector),
 
         # document update
         # specification of the update to perform
         #
-        self.encode_document(%update);
+        self.encode-document(%update);
 
       # MsgHeader header
       # standard message header
@@ -455,12 +455,12 @@ package MongoDB {
         # int32 ZERO
         # 0 - reserved for future use
         #
-        encode_int32(0),
+        encode-int32(0),
 
         # cstring fullCollectionName
         # "dbname.collectionname"
         #
-        encode_cstring( join '.',
+        encode-cstring( join '.',
                           $collection.database.name,
                           $collection.name
                       ),
@@ -468,12 +468,12 @@ package MongoDB {
         # int32 flags
         # bit vector
         #
-        encode_int32($flags),
+        encode-int32($flags),
 
         # document selector
         # query object
         #
-        self.encode_document(%selector);
+        self.encode-document(%selector);
 
       # MsgHeader header
       # standard message header
@@ -504,7 +504,7 @@ package MongoDB {
       # be initialized explicitly. There may not be another decode() started in the
       # mean time using this object because this attribute will be disturbed.
       #
-      self._init_index;
+      self.init-index;
       my $index = 0;
 
       my Hash $H-OP-REPLY = hash(
@@ -517,7 +517,7 @@ package MongoDB {
         # int32 responseFlags
         # bit vector
         #
-        'response_flags' => decode_int32( $a, $index),
+        'response_flags' => decode-int32( $a, $index),
 
         # int64 cursorID
         # cursor id if client needs to do get more's
@@ -529,12 +529,12 @@ package MongoDB {
         # int32 startingFrom
         # where in the cursor this reply is starting
         #
-        'starting_from' => decode_int32( $a, $index),
+        'starting_from' => decode-int32( $a, $index),
 
         # int32 numberReturned
         # number of documents in the reply
         #
-        'number_returned' => decode_int32( $a, $index),
+        'number_returned' => decode-int32( $a, $index),
 
         # document* documents
         # documents
@@ -545,7 +545,7 @@ package MongoDB {
       # Extract documents from message.
       #
       for ^$H-OP-REPLY<number_returned> {
-        my Hash $document = self.decode_document( $a, $index);
+        my Hash $document = self.decode-document( $a, $index);
         $H-OP-REPLY<documents>.push($document);
       }
 
