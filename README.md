@@ -455,6 +455,8 @@ change at any time. The public API should not be considered stable.*
 * 0.*.0
   * Remove deprecation messages of converted method names
 
+* 0.25.11
+  * Changes caused by changes in BSON
 * 0.25.10
   * Deprecated underscore methods modified in favor of dashed ones:
       MongoDB::Database: create_collection, list_collections, collection_names,
