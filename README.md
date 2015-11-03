@@ -9,12 +9,21 @@ sand-boxing. This can be used to speedup testing. The default port number of
 27017 is used to get to the mongod server.
 
 *IT IS IMPORTANT TO KNOW THAT ANYTHING MAY HAPPEN DURING TESTS INCLUDING
-ACCIDENTAL DELETION OF ANY DATABASES AND COLLECTIONS ON YOUR SERVER! ALSO
-TESTING ADMINISTRATION TASKS MAY CREATE PROBLEMS FOR EXISTING ACCOUNTS! THIS
-WILL BE TOTALLY AT YOUR OWN RISK.*
+DELETION OF ANY EXISTING DATABASES (SUCH AS THE TEST DATABASE) AND COLLECTIONS
+ON YOUR SERVER WHEN NOT IN SANDBOX MODE! ALSO TESTING ADMINISTRATION TASKS MAY
+CREATE PROBLEMS FOR EXISTING ACCOUNTS! THIS WILL BE TOTALLY AT YOUR OWN RISK.*
 
-Also when sandboxing is turned on, the testing programs are free to test
-administration tasks, authentication and multi server setup.
+To be save enaugh some tests are turned off when not in sandbox mode.
+
+When sandboxing is turned on, the testing programs are able to test
+administration tasks, authentication, sharding and master/slave server setup.
+This testing might put some presure on your system and the default situation
+will then be that some of those elaborate tests are skipped and you are given
+some opportunities in the form of environment variables to turn it on when you
+are installing this package. We're not yet there so watch this space to see
+when it comes to that. Btw, on Travis-ci this package is tested so you can also
+study the test results there. Just click on the link (green hopefully) above at
+the top of this page.
 
 See also the license link below
 
@@ -80,7 +89,7 @@ $ panda install MongoDB
 
 ## Versions of PERL, MOARVM and MongoDB
 perl6 version 2015.10-70-gba70274 built on MoarVM version 2015.10-14-g5ff3001
-* Perl6 version ```2015.10-70-gba70274```
+* Perl6 version ```2015.10-90-g40de1a0```
 * MoarVM version ```2015.10-14-g5ff3001```
 * MongoDB version ```3.0.5```
 

@@ -8,7 +8,7 @@
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Skip sandbox setup if requested
 #
 if %*ENV<NOSANDBOX> {
@@ -17,16 +17,45 @@ if %*ENV<NOSANDBOX> {
   exit(0);
 }
 
-#-----------------------------------------------------------------------------
-# Download mongodb binaries before testing on TRAVIS-CI. Version is still from
-# the middle ages (2.4.12)
+#-------------------------------------------------------------------------------
+# Download mongodb binaries before testing on TRAVIS-CI. Version of mongo on
+# Travis is still from the middle ages (2.4.12).
+#
+# Assume at first that mongod is in the users path, then we try to find a path
+# to it depending on OS. If it can be found, use the precise path.
 #
 my $mongodb-server-path = 'mongod';
+
+# On Travis-ci the path is known because I've put it there using the script
+# install-mongodb.sh.
+#
 if ? %*ENV<TRAVIS> {
   $mongodb-server-path = "$*CWD/Travis-ci/MongoDB/mongod";
 }
 
-#-----------------------------------------------------------------------------
+# On linuxes it should be in /usr/bin
+#
+elsif $*KERNEL.name eq 'linux' {
+  if '/usr/bin/mongod'.IO ~~ :x {
+    $mongodb-server-path = '/usr/bin/mongod';
+  }
+}
+
+# On windows it should be in C:/Program Files/MongoDB/Server/*/bin if the
+# user keeps the default installation directory.
+#
+elsif $*KERNEL.name eq 'win32' {
+  for 'C:/Program Files/MongoDB/Server/3.0/bin/mongod.exe',
+      'C:/Program Files/MongoDB/Server/3.2/bin/mongod.exe'
+      -> $path {
+    if $path.IO ~~ :e {
+      $mongodb-server-path = $path;
+      last;
+    }
+  }
+}
+
+#-------------------------------------------------------------------------------
 #
 use v6;
 use MongoDB::Connection;
@@ -34,7 +63,7 @@ use Test;
 
 note "\n\nSetting up involves initializing mongodb data files which takes time";
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Check directory Sandbox
 #
 mkdir( 'Sandbox', 0o700) unless 'Sandbox'.IO ~~ :d;
@@ -70,31 +99,22 @@ mkdir( 'Sandbox/m.data', 0o700) unless 'Sandbox/m.data'.IO ~~ :d;
   have the option of specifying a custom range anywhere within 1025-365535.
 }}
 
+# Search from port 65000 until the last of possible port numbers for a free
+# port. this will be configured in the mongodb config file. At least one
+# should be found here.
+#
 my $port-number;
+for 65000 ..^ 2**16 -> $p {
+  my $s = IO::Socket::INET.new( :host('localhost'), :port($p));
+  $s.close;
 
-#given $*KERNEL.name {
-#  when /'win'\d\d/ {
-
-#  }
-
-  # Search from port 65000 until the last of possible port numbers for a free
-  # port. this will be configured in the mongodb config file. At least one
-  # should be found here.
-  #
-#  when /'linux' | 'darwin'/ {
-    for 65000 ..^ 2**16 -> $p {
-      my $s = IO::Socket::INET.new( :host('localhost'), :port($p));
-      $s.close;
-
-      CATCH {
-        default {
-          $port-number = $p;
-          last;
-        }
-      }
+  CATCH {
+    default {
+      $port-number = $p;
+      last;
     }
-#  }
-#}
+  }
+}
 
 # Save portnumber for later tests
 #
@@ -145,7 +165,7 @@ my $config = qq:to/EOCNF/;
     pidFilePath:                $*CWD/Sandbox/m.pid
 
   net:
-#    bindIp:                     localhost
+  #  bindIp:                     localhost
     port:                       $port-number
     wireObjectCheck:            true
     http:
@@ -234,7 +254,7 @@ my MongoDB::Connection $connection = get-connection-try10();
 my $version = $connection.version;
 ok $version<release1> >= 3, "MongoDB release >= 3";
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Cleanup and close
 #
 

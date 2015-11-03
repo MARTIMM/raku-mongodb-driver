@@ -15,7 +15,7 @@ use BSON::Binary;
 
 #-------------------------------------------------------------------------------
 my MongoDB::Connection $connection = get-connection();
-my MongoDB::Database $database = $connection.database('bson_types');
+my MongoDB::Database $database = $connection.database('test');
 $database.drop;
 
 # Create collection and insert data in it!
