@@ -18,6 +18,17 @@ use MongoDB::Users;
 BEGIN { @*INC.unshift( './t' ) }
 use Test-support;
 
+#-------------------------------------------------------------------------------
+# No sandboxing therefore administration will not be tested as a precaution.
+#
+if %*ENV<NOSANDBOX> {
+  plan 1;
+  skip-rest('No sand-boxing requested, so administration tests are skipped');
+  exit(0);
+}
+
+#-------------------------------------------------------------------------------
+#
 my MongoDB::Connection $connection = get-connection();
 
 # Drop database first then create new databases
