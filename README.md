@@ -89,8 +89,8 @@ $ panda install MongoDB
 
 ## Versions of PERL, MOARVM and MongoDB
 perl6 version 2015.10-70-gba70274 built on MoarVM version 2015.10-14-g5ff3001
-* Perl6 version ```2015.10-90-g40de1a0```
-* MoarVM version ```2015.10-14-g5ff3001```
+* Perl6 version ```2015.10-206-gca7ed86```
+* MoarVM version ```2015.10-56-g9fd3005```
 * MongoDB version ```3.0.5```
 
 Maybe we also need to test other versions of mongodb such as 2.6.* and provide
