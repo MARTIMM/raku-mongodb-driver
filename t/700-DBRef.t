@@ -30,11 +30,11 @@ for ^10 -> $c {
 }
 
 my Hash $d1 = $collection.find-one({idx => 8});
-say "D d1: $d1.perl";
+show-document($d1);
 
 #-------------------------------------------------------------------------------
 #
-my MongoDB::DBRef $dbr .= new(:id($d1<_id>));
+my MongoDB::DBRef $dbr .= new( :id($d1<_id>, :$collection));
 isa-ok $dbr, 'MongoDB::DBRef';
 
 my BSON::ObjectId $i = $dbr.doc();
