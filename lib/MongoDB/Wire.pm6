@@ -48,23 +48,23 @@ package MongoDB {
       my Buf $msg-header = [~]
 
         # int32 messageLength
-        # total message size, including this
+        # total message size, including this, 4 * 4 are 4 int32's
         #
         encode-int32($length + 4 * 4),
 
         # int32 requestID
-        # identifier for this message
+        # identifier for this message, at start 0, visible across wire ojects
         #
         encode-int32($request_id++),
 
         # int32 responseTo
-        # requestID from the original request
+        # requestID from the original request, no response so 0
         # (used in reponses from db)
         #
         encode-int32(0),
 
         # int32 opCode
-        # request type
+        # request type, code from caller is a choice from constants
         #
         encode-int32($op-code);
 
