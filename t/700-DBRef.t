@@ -12,6 +12,10 @@ use Test;
 use MongoDB::Connection;
 use MongoDB::DBRef;
 
+plan 1;
+skip-rest('No DBRef tests yet');
+exit(0);
+
 #-------------------------------------------------------------------------------
 #
 my MongoDB::Connection $connection = get-connection();
