@@ -1,11 +1,8 @@
 use v6;
 
-#BEGIN {
-#  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
-#}
-
 use MongoDB::Connection;
 use BSON::ObjectId;
+use BSON::EDCTools;
 
 #-------------------------------------------------------------------------------
 #
@@ -17,12 +14,11 @@ package MongoDB {
     has BSON::ObjectId $.id;
     has Hash $.searched;
 
-    my Any $dbref;
+    my Pair @dbref;
 
     #-----------------------------------------------------------------------------
     # my MongoDB::DBRef $dbref .= new( :id($id), :collection($cl),
-    #                                  :database($db), :search($sdoc),
-    #                                  :connection($cnn)
+    #                                  :database($db)
     #                                );
     # $collection.insert({ doc => $dbref });
     #
@@ -33,30 +29,38 @@ package MongoDB {
     # 3) + database
     #    { doc => { '$ref' => $cl, '$id' => $id, '$db' => $db}
     #
-    multi submethod BUILD ( Str :$database, Str :$collection,
+    multi submethod BUILD ( Str :$database, Str:D :$collection,
                             BSON::ObjectId:D :$id
-#                            Hash :$search,
-#                            MongoDB::Connection :$connection
                           ) {
 
-      $!database = $database;
+      $!database = $database // $collection.database.name;
       $!collection = $collection;
       $!id = $id;
-
-      $dbref = {};
-      if ?$!collection {
-        $dbref = { '$id' => $!id, '$ref' => $!collection };
-        if ?$!database {
-          $dbref{'$db'} = $database;
-        }
-      }
-
-      else {
-        $dbref = $!id;
-      }
     }
 
-  #`{{
+    #-----------------------------------------------------------------------------
+    #
+    method encode-dbref ( Str $key-name, $bson-obj --> Buf ) {
+
+      @dbref = Nil;
+      @dbref.push: ( '$ref' => $!collection, '$id' => $!id);
+      @dbref.push: ('$db' => $!database);
+
+      
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method decode-dbref ( Array $a, $index is rw --> Pair ) {
+
+      my Str $key-name = decode-e-name( $a, $index);
+
+#      return $key-name => MongoDB::DBRef.new( ... );
+    }
+
+#`{{
+    #-----------------------------------------------------------------------------
+    #
     multi method infix:<=>( Hash $doc is rw, MongoDB::DBRef $dbr ) {
      $dbref = {};
      if ?$!collection {
@@ -69,12 +73,14 @@ package MongoDB {
     multi method infix:<=>( BSON::ObjectId $id is rw, MongoDB::DBRef $dbr ) {
       $id = $!id;
     }
-  }}
+}}
 
-    method doc ( --> Any ) {
+    #-----------------------------------------------------------------------------
+    #
+    method doc ( --> Pair ) {
 
-  #say "DBR: {$dbref.perl}";
-      return $dbref;
+  #say "DBR: {@dbref.perl}";
+      return @dbref;
     }
   }
 }

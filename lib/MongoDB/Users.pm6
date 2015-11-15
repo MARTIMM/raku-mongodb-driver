@@ -376,7 +376,7 @@ package MongoDB {
         }
 
         if $pw-ok {
-          @req.push: (:pwd(Digest::MD5.md5_hex("$user:mongo:$password")));
+          @req.push: (:pwd(Digest::MD5.md5_hex([~] $user, ':mongo:', $password)));
         }
 
         else {

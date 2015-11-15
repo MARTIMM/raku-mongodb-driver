@@ -12,6 +12,10 @@ use Test;
 use MongoDB::Connection;
 use MongoDB::DBRef;
 
+plan 1;
+skip-rest('No DBRef tests yet');
+exit(0);
+
 #-------------------------------------------------------------------------------
 #
 my MongoDB::Connection $connection = get-connection();
@@ -30,11 +34,11 @@ for ^10 -> $c {
 }
 
 my Hash $d1 = $collection.find-one({idx => 8});
-say "D d1: $d1.perl";
+show-document($d1);
 
 #-------------------------------------------------------------------------------
 #
-my MongoDB::DBRef $dbr .= new(:id($d1<_id>));
+my MongoDB::DBRef $dbr .= new( :id($d1<_id>, :$collection));
 isa-ok $dbr, 'MongoDB::DBRef';
 
 my BSON::ObjectId $i = $dbr.doc();

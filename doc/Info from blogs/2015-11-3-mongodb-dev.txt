@@ -1,0 +1,358 @@
+From mongodb-dev group on google
+found on 2015-11-3
+
+ 	Dorn 	
+Aug 5
+I'm developing a mondodb driver in a program-g language in which it's not
+implemented yet. In the documentation
+http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-wire-protocol/  it
+says
+
+struct MsgHeader {
+    int32   messageLength; // total message size, including this
+    int32   requestID;     // identifier for this message
+    int32   responseTo;    // requestID from the original request
+                           //   (used in reponses from db)
+    int32   opCode;        // request type - see table below
+}
+
+The category where it documentation location is titled "Legacy Driver
+Implementation Documentation". Is it really legacy? Is there a new one?
+ 
+Hi Dorn,
+
+That documentation is not incorrect, but it is missing a lot of details about
+how modern MongoDB drivers work. 
+
+In older versions of MongoDB, all database operations (insert/delete/update/etc)
+were transmitted using the associated opcodes (OP_INSERT, OP_DELETE, etc) from
+that page. However, this protocol had the limitation that the server did not
+return a response. Finding out if a write/delete/insert succeeded required
+following said operation with a 'getLastError' command.
+
+That brings us to the topic of commands. Originally, executing a command such as
+'ping' was done through a query on the '$cmd' collection. If you have a MongoDB
+3.0 shell, you can try typing:
+
+> db.$cmd.findOne({ping: 1});
+{"ok": 1}
+
+Over time, we have replaced most uses of the original opcodes with commands. For
+example, instead of using 'OP_INSERT', modern MongoDB drivers will use the
+'insert' command, which returns a WriteResult that indicates if the write
+succeeded. MongoDB 3.2 will feature command replacements for OP_QUERY and
+OP_GET_MORE, named find and getMore, respectively. 
+
+Ironically if you think about how a 'find' command is transmitted over the wire,
+it is an OP_QUERY message, containing a query on the db.$cmd namespace, with a
+query document of {find: '....}. So basically, a query is a command is a query.
+
+There is also some work in progress to replace the old wire protocol entirely.
+MongoDB 3.2 will include an experimental opcode specifically for commands.
+However, don't expect drivers to use it yet - it will only be used for internal
+system communication within a MongoDB replica set or sharded cluster.
+
+Let me know if you have any further questions about the wire protocol.
+
+Adam
+- show quoted text -
+	Dorn 	
+Aug 6
+Thanks, but all the details I need can't be explained in a few sentences.
+Again, my question is: where is the new documentation of how to create a driver for MongoDb?  Not why do I need it, not do I really need it.
+- show quoted text -
+	Dorn 	
+Aug 6
+I mean, the documentation of creating a driver for MongoDb version 3.x
+	adam.m...@10gen.com 	
+Aug 6
+Dorn,
+
+We have a number of specifications that MongoDB driver authors should implement.
+You may also benefit from looking at the source code of an existing driver. I
+have found the Python driver, in particular, to be very readable.
+
+Out of curiosity, in which language are you writing a driver? A complete MongoDB
+driver is quite complicated in practice - if your language provides a FFI
+interface it may be simpler to just wrap an existing implementation. 
+
+Adam
+	Dorn 	
+Aug 7
+Thanks. In Nim. I know it might be easier to use C driver but I won't use it.
+
+
+>>We have a number of specifications that MongoDB driver authors should
+implement Those look like the interface that a driver has to have.
+
+
+The question is: how can I actually write/read data to/from MongoDb 3.x? That
+is, how can I communicate with it on a low level?
+- show quoted text -
+	adam.m...@10gen.com 	
+Aug 7
+Dorn, those driver specifications include both the external interface of the
+driver, as well as implementation concerns. For your question, I hope this
+example will be helpful.
+
+Assume we are talking to a MongoDB 3.0.x server.
+
+To write the document {x: 1} to the "apple" collection of database "pear":
+
+1) Construct an OP_QUERY message representing an insert command:
+
+MessageHeader = {omitted}
+flags = 0
+fullCollectionName = "pear.$cmd"
+nToSkip = 0
+nToReturn = 1
+query = {"insert": "apple", documents: [ { x: 1 }]}
+
+2) The response from the server will be an OP_REPLY that should look like this:
+
+MessageHeader = {omitted, but responseTo will be messageId of previous OP_QUERY containing the write command}
+responseFlags = 0
+cursorId = 0
+startingFrom = 0
+nReturned = 1
+document = {"ok: 1", "n": 1}
+
+To read data, use OP_QUERY as detailed by the "legacy" wire protocol. For
+example, to transmit the query db.apple.find({x: 1}) (assuming we are on the
+"pear" DB again) we would do an OP_QUERY like this:
+
+MessageHeader = {omitted}
+flags = 0
+fullCollectionName = "pear.apple"
+nToSkip = 0
+nToReturn = 0
+query = {"x": 1}
+
+This will return an OP_REPLY with a cursorId that can be used as a parameter to
+a subsequent OP_GET_MORE.
+
+If you build MongoDB from HEAD, you can use the find command instead of raw
+OP_QUERY, but it won't be supported until MongoDB 3.2. I won't describe the find
+command in detail as it is not documented or released yet, but you are welcome
+to look at the code for generating it in the shell:
+https://github.com/mongodb/mongo/blob/master/src/mongo/shell/query.js#L119
+
+Adam
+- show quoted text -
+	Dorn 	
+Aug 7
+I'm confused.
+1) Can I use the documentation at http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-wire-protocol/  to build a driver for Mongo 3.x?
+If yes, why is it called legacy? Is WireProtocol still around in the version 3.x?
+If not, where did you get your information from?
+
+2) Can Java and Python driver work with Mongo 3x? Are they using the old or new
+(3.x) API of MongoDb (I believe MongoDb does have the new API)?
+	Andy Schwerin 	
+Aug 7
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+
+
+On Fri, Aug 7, 2015 at 12:15 PM Dorn <alex.masla...@gmail.com> wrote:
+
+    I'm confused.
+    1) Can I use the documentation at http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-wire-protocol/  to build a driver for Mongo 3.x?
+
+
+Yes.
+ 
+
+    If yes, why is it called legacy? Is WireProtocol still around in the version
+3.x?
+
+
+It is called "legacy" because parts of it have been superseded by new
+specifications. Most of the new specifications are about how drivers should
+behave, to give a unified look and feel to developers across languages. The
+basics of the wire protocol are the same in MongoDB 3.x and 2.x.
+ 
+
+    If not, where did you get your information from?
+
+
+See link to new specifications, above. 
+
+ 
+
+
+    2) Can Java and Python driver work with Mongo 3x? Are they using the old or
+new (3.x) API of MongoDb (I believe MongoDb does have the new API)?
+
+
+MongoDB drivers fall into two categories, whose names I do not recall. The first
+category is basically "old drivers" that do not implement the unified look and
+feel specifications I mentioned above. The second category are "new drivers"
+that do implement the specifications.
+
+Both "old drivers" and "new drivers" should be able to communicate with MongoDB
+3.x, though the older ones may not take advantage of new features added to
+MongoDB 3.x. New drivers work as far back as MongoDB 2.4, I believe, and maybe
+further.
+
+I think your confusion arises because a MongoDB driver is much more than just a library to read and write MongoDB messages to a socket. It provides an API to the client programmer that is semantically more meaningful, and insulates the programmer from minor changes in MongoDB functionality from release to release. The newer specifications I have referenced above are generally about this functionality, as the details of writing messages that MongoDB can read haven't changed appreciably in several years.
+
+    -- 
+    You received this message because you are subscribed to the Google Groups "mongodb-dev" group.
+    To unsubscribe from this group and stop receiving emails from it, send an email to mongodb-dev...@googlegroups.com.
+    To post to this group, send email to mongo...@googlegroups.com.
+    Visit this group at http://groups.google.com/group/mongodb-dev.
+    For more options, visit https://groups.google.com/d/optout.
+
+	Dorn 	
+Aug 7
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+Okay, thanks.
+Which drivers (in which programming languages should I say) are the "new" ones?
+- show quoted text -
+	Andy Schwerin 	
+Aug 7
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one? For Java, the mongo-java-driver github repository has both the old and
+new drivers. I believe that the 3.x branch and the master branch contain the
+"new" drivers, and the 2.x branches contain the old ones. I'm not certain,
+though.
+- show quoted text -
+	Dorn 	
+Aug 8
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+How can I find that out for sure?
+- show quoted text -
+	Andy Schwerin 	
+Aug 8
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+
+Contact the maintainers. The readme file should list contact information.
+- show quoted text -
+	Jesús Navarrete 	
+Oct 22
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+Hi Adam,
+
+Do you know what I can do see what Mongo is receiving? 
+
+I am trying to send a BSON message with a simple OP_QUERY and I am always
+getting the same error in the logs:  "AssertionException handling request,
+closing client connection: 17133 SSL handshake requested, SSL feature not
+available in this build."
+
+And the answer is always null/empty.
+
+Best,
+
+- show quoted text -
+-- 
+Jesús Navarrete
+
+Blog: http://jenaiz.com
+Twitter: http://twitter.com/jenaiz
+	adam.m...@10gen.com 	
+Oct 23
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+Hi Jesus,
+
+My guess is that you are not zero-ing out the responseTo field of the message
+header of your OP_QUERY message. See these lines of the server codebase:
+https://github.com/mongodb/mongo/blob/a8242b99c2455d2c95ae529d8717b268d1fbf024/src/mongo/util/net/message_port.cpp#L161-L163
+
+I would recommend trying the 'mongosniff' tool for debugging. It is a wire
+protocol sniffer that can be built from the MongoDB source code. To build it you
+can just build the 'mongosniff' target with scons (e.g. 'scons mongosniff' on
+the command line). 
+
+Adam
+- show quoted text -
+	Jesús Navarrete 	
+Oct 23
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+Hi Adam,
+
+Thanks for the answer. I used the tool that you was mention, mongosniff and I
+got the next error:
+
+"Invalid message start, skipping packet."
+
+Maybe it is better if I show you part of the code that I am using to build a
+simple Bson in java:
+
+final Map<String, Object> map = BsonDocuments.builder()
+        .put("messageLength", 200)
+        .put("opCode", OpCode.OP_QUERY.value())
+        .put("requestId", -1)
+        .put("responseTo", 0)
+        .build();
+final BsonDocument header = BsonDocuments.copyOf(map);
+
+final BsonDocument query = BsonDocuments.of("query", "{}");
+
+final Map<String, Object> map2 = BsonDocuments.builder()
+        .put("header", header)
+        .put("flags", 0)
+        .put("fullCollectionName", "jesus.log")
+        .put("nToReturn", 10)
+        .put("nToSkip", 0)
+        .put("query", query)
+        .build();
+final BsonDocument document = BsonDocuments.copyOf(map2);
+
+// grab a little-endian byte buffer
+ByteBuffer buffer = ByteBuffer.allocate(200).order(ByteOrder.LITTLE_ENDIAN);
+
+// use the documents utility class to write the document into the buffer
+BsonDocuments.writeTo(buffer, document);
+
+Do you see something wrong in the document? I have a database "jesus" and a
+collection "log" to test this operation.
+
+Best,
+
+- show quoted text -
+
+    - show quoted text -
+    -- 
+    You received this message because you are subscribed to the Google Groups
+    "mongodb-dev" group. To unsubscribe from this group and stop receiving
+    emails from it, send an email to mongodb-dev...@googlegroups.com. To post to
+    this group, send email to mongo...@googlegroups.com. Visit this group at
+    http://groups.google.com/group/mongodb-dev. For more options, visit
+    https://groups.google.com/d/optout.
+
+
+
+
+-- 
+Jesús Navarrete
+
+Blog: http://jenaiz.com
+Twitter: http://twitter.com/jenaiz
+	adam.m...@10gen.com 	
+Oct 23
+Re: [mongodb-dev] Re: Legacy Driver Implementation Documentation - is there a
+new one?
+Hi Jesus,
+
+I think you are misunderstanding the format of the protocol. The message  is not
+itself a BSON document - it's a binary structure.
+
+I think in java, building the message header would look something like this:
+
+ByteBuffer buffer = ByteBuffer.allocate(200).order(ByteOrder.LITTLE_ENDIAN);
+buffer.putInt(200); // length
+buffer.putInt(OpCode.OP_QUERY,value()); // opCode
+buffer.putInt(4); // requestId (some arbitrary numberO
+buffer.putInt(0); // responseto
+
+The logic is similar for the OP_QUERY fields. The only BSON document you would
+write would be the query object.
+- show quoted text -

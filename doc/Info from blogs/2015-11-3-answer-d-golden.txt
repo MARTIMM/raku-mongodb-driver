@@ -1,0 +1,50 @@
+My question;
+
+ I am writing a mongodb driver for the perl6 language. The modules were created
+by Pawel Pabian and beginning this year I've taken them under my wings. The
+software has been split into two packages, one for BSON and one for MongoDB and
+I want to merge these packages in one package. Before I do this I want to know
+if there is any use of standalone BSON. If so, I might leave them alone.
+
+But. when I look into the driver sources written in other languages, many of
+them are combined into one package. For me it would be a lot easier especially
+when testing the lot. Also going back and forth from one package to the other is
+a bit tiring.
+
+Could anyone shed some light on this?
+
+Marcel
+
+
+
+ 	David Golden 	
+4:13 PM (1 hour ago)
+Hi, Marcel.
+
+I'm the senior engineer responsible for the Perl 5 driver (and I'm DAGOLDEN on
+CPAN).  I have heard of anecdotal usage (or desired usage - see "Serialise to
+binary" on Perlmonks == http://www.perlmonks.org/index.pl?node_id=1145896) of
+BSON, but I don't think there is currently widespread usage.
+
+That said, for the Perl 5 driver, we are in the process of splitting out BSON
+from the driver. The plan is to provide both "BSON" and "BSON::XS" on CPAN
+(where BSON transparently uses BSON::XS for speed if installed).  This mirrors
+how the CPAN modules JSON && JSON::XS work.  That would let the driver itself be
+pure-Perl.  This allows a pure-Perl MongoDB option for those who wish to use it
+in a restricted (no compiler) environment or want to fatpack it.
+
+That said, there are a number of reasons why tight integration is convenient --
+or at least there are design considerations involved in how it gets split out so
+that it can still provide MongoDB-specific behaviors on demand.
+
+Does that help clarify the situation?
+
+Regards,
+David
+- show quoted text -
+
+
+Perlmonks referring to use of BSON
+
+http://www.perlmonks.org/index.pl?node_id=1145896
+

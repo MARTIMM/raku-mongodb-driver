@@ -61,7 +61,7 @@ my $docs = $database.run-command(@req);
 ok !$docs<ok>.Bool, 'Run command ran not ok';
 is $docs<errmsg>,
    'listDatabases may only be run against the admin database.',
-   'listDatabases may only be run against the admin database';
+   $docs<errmsg>;
 
 #-------------------------------------------------------------------------------
 # Use run-command to get database statistics
