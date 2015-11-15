@@ -27,11 +27,41 @@ the top of this page.
 
 See also the license link below
 
+## IMPLEMENTATION TRACK
+
+After some discussion with developers from MongoDB and the perl5 driver
+developer David Golden I decided to change my ideas about the driver
+implementation. The following things became an issue
+
+* Implementation of helper methods. [The blog 'Why Command Helpers
+Suck'](http://www.kchodorow.com/blog/2011/01/25/why-command-helpers-suck/) of
+Kristina Chodorow told me to be careful implementing all kinds of helper methods
+and perhaps even to slim down the current set of methods and to document the use
+of the run-command so that the user of this package can, after reading the
+mongodb documents, use the run-command method to get the work done themselves.
+
+* The use of hashes to send and receive mongodb documents is wrong. It is
+wrong because the key-value pairs in the hash are getting a different order then
+is entered in the hash. Mongodb needs the command at the front of the document
+for example. Another place that order matters are sub document queries.  A
+subdocument is matched as encoded documents.  So if the server has ```{ a: {b:1,
+c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since
+Perl 6 randomizes key order you never know what the order is.
+
+* Experiments are done using arrays of pairs to keep the order the same as
+entered. This works but it is cumbersome. In the mean time thoughts about how to
+implement parallel encoding to and decoding from BSON byte strings have been
+past my mind. These thoughts are crystalized into a Document module in the BSON
+package which a) keeps the order, 2) have the same capabilities as Hashes, 3)
+can do encoding and decoding in parallel. This BSON::Document will probably be
+implemented in the coming (sub)versions of this package after complete testing
+of the module in BSON.
+
 ## API CHANGES
 
 There has been a lot of changes in the API. All methods which had underscores ('_')
 are converted to dashed ones ('-'). The old ones will show deprecation info.
-However, it is importend to know that also named parameters are changed in the
+However, it is important to know that also named parameters are changed in the
 same way but these cannot be warned for.
 
 ## DOCUMENTATION
@@ -105,6 +135,10 @@ below will be worked on. There are many items shown here, it might be impossible
 to implement it all. By using run-command(), much can be accomplished. A lot of the
 items are using that call to get the information for you. Also quite a few items
 are shown in in more than one place place. Removed all internal commands.
+
+As explained above a lot of helper functions will not be implemented. Thorough
+documentation must be written to help the user to write their own code using the
+documentation of mongodb.
 
 Legend;
 
