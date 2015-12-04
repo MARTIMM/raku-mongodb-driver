@@ -9,7 +9,7 @@ use Test;
 use MongoDB;
 use MongoDB::Connection;
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 
 my MongoDB::Connection $connection = get-connection();

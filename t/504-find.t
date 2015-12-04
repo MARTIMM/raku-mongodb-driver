@@ -4,7 +4,7 @@
     collection.map-reduce()             Map reduce
 }}
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 
 use v6;

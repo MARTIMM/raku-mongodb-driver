@@ -13,7 +13,7 @@
     collection.data-size()              $stats<size>
 }}
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 
 use v6;

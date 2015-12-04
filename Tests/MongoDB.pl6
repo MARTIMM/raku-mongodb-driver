@@ -6,7 +6,7 @@
 # bypass the panda install directory with moarvm code.
 #
 #use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib';
-#say @*INC.join("\n");
+# $*REPO.repo-chain.join("\n").say
 #
 # Some timing info with or without compiled code from moarvm
 #
