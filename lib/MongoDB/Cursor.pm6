@@ -7,7 +7,7 @@ package MongoDB {
 
   #-------------------------------------------------------------------------------
   #
-  class MongoDB::Cursor {
+  class Cursor {
 
     state MongoDB::Wire:D $wp = MongoDB::Wire.new;
     has MongoDB::Wire:D $.wire = $wp;
