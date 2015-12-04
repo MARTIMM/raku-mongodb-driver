@@ -1,7 +1,7 @@
 use v6;
 
 use MongoDB::Connection;
-use BSON::ObjectId;
+use BSON::ObjectId-old;
 use BSON::EDCTools;
 
 #-------------------------------------------------------------------------------
