@@ -7,7 +7,7 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class MongoDB::Database {
+  class Database {
 
     has $.connection;
     has Str $.name;
@@ -18,7 +18,6 @@ package MongoDB {
       :$connection where $connection.isa('MongoDB::Connection'),
       Str :$name
     ) {
-
       $!connection = $connection;
 
       # TODO validate name

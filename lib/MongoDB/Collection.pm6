@@ -3,13 +3,13 @@ use v6;
 use MongoDB;
 use MongoDB::Wire;
 use MongoDB::Cursor;
-use BSON::Javascript;
+use BSON::Javascript-old;
 
 #-------------------------------------------------------------------------------
 #
 package MongoDB {
 
-  class MongoDB::Collection {
+  class Collection {
 
     state MongoDB::Wire:D $wp = MongoDB::Wire.new;
     has MongoDB::Wire:D $.wire = $wp;

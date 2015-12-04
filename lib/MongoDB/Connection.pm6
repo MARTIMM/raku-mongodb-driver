@@ -12,7 +12,7 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class MongoDB::Connection {
+  class Connection {
 
     has IO::Socket::INET $!sock;
     has Exception $.status = Nil;

@@ -18,7 +18,7 @@ use Test-support;
 use v6;
 use Test;
 use MongoDB::Collection;
-use BSON::ObjectId;
+use BSON::ObjectId-old;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 $collection.database.drop;

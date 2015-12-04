@@ -22,7 +22,7 @@ use v6;
 use Test;
 use MongoDB::Collection;
 use BSON::Regex;
-use BSON::Javascript;
+use BSON::Javascript-old;
 
 my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
 $collection.database.drop;
