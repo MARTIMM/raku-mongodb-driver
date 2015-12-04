@@ -18,7 +18,6 @@ package MongoDB {
       :$connection where $connection.isa('MongoDB::Connection'),
       Str :$name
     ) {
-say "Conn: ", $connection.WHAT, ', ', $connection.^name;
       $!connection = $connection;
 
       # TODO validate name
