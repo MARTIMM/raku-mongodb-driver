@@ -4,7 +4,8 @@ use v6;
 
 use MongoDB;
 use MongoDB::Database;
-use BSON::EDCTools;
+#use BSON::EDCTools;
+use BSON::Document;
 
 package MongoDB {
 
@@ -46,7 +47,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method _send ( Buf:D $b, Bool $has_response --> Any ) {
+    method _send ( Buf:D $b, Bool $has_response --> Buf ) {
       $!sock.write($b);
 
       # some calls do not expect response
@@ -57,7 +58,7 @@ package MongoDB {
       #
       my $index = 0;
       my Buf $l = $!sock.read(4);
-      my Int $w = decode-int32( $l.list, $index) - 4;
+      my Int $w = BSON::Document::decode-int32( $l.list, $index) - 4;
 
       # receive remaining response bytes from socket
       #
@@ -121,7 +122,7 @@ package MongoDB {
     # of quering the server all the time. See BUILD above.
     #
     method version ( --> Hash ) {
-      my Hash $doc = self.build-info;
+      my BSON::Document $doc = self.build-info;
       my Hash $version = hash( <release1 release2 revision>
                                Z=> (for $doc<version>.split('.') {Int($_)})
                              );
@@ -135,29 +136,19 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Get mongodb server info.
     #
+#`{{
     method build_info ( --> Hash ) is DEPRECATED('build-info') {
       return self.build-info();
     }
+}}
 
-    method build-info ( --> Hash ) {
+    method build-info ( --> BSON::Document ) {
 
       $!status = Nil;
 
       my $database = self.database('admin');
-      my Pair @req = buildinfo => 1;
-      my Hash $doc = $database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        $!status = X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          error-code => $doc<code>,
-          oper-name => 'build-info',
-          oper-data => @req.perl,
-          collection-ns => 'admin.$cmd',
-          severity => MongoDB::Severity::Error
-        );
-      }
-
-      return $doc;
+      my BSON::Document $req .= new: (buildinfo => 1);
+      return $database.run-command($req);
     }
   }
 }

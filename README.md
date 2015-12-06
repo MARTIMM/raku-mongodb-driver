@@ -515,6 +515,10 @@ change at any time. The public API should not be considered stable.*
 * 0.*.0
   * Remove deprecation messages of converted method names
 
+* 0.25.12
+  * ```@*INC``` is gone, ```use lib``` is the way. A lot of changes done by
+    zoffixznet.
+
 * 0.25.11
   * Changes caused by changes in BSON
 * 0.25.10

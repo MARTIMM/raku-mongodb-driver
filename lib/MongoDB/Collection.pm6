@@ -17,13 +17,15 @@ package MongoDB {
 
     has $.database;
     has Str $.name;
+    has Str $.full-collection-name;
 
-    has BSON::Javascript $!default-js = BSON::Javascript.new();
+    has BSON::Javascript $!default-js = BSON::Javascript.new(:javascript(''));
 
     #---------------------------------------------------------------------------
     #
     submethod BUILD ( :$database!, Str:D :$name ) {
       $!database = $database;
+      $!full-collection-name = $!database.name, '.', $!name;
 
       # This should be possible: 'admin.$cmd' which is used by run-command
       #
@@ -38,17 +40,6 @@ package MongoDB {
           severity => MongoDB::Severity::Error
         );
       }
-    }
-
-    #---------------------------------------------------------------------------
-    # CRUD - Create(insert), Read(find*), Update, Delete
-    #---------------------------------------------------------------------------
-    #
-    method insert ( **@documents, Bool :$continue-on-error = False ) {
-
-      self!check-doc-keys(@documents);
-      my $flags = +$continue-on-error;
-      self.wire.OP-INSERT( self, $flags, @documents);
     }
 
     #---------------------------------------------------------------------------
@@ -129,8 +120,12 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # Find record in a collection
+    # CRUD - Create(insert), Read(find*), Update, Delete
+    #---------------------------------------------------------------------------
+    # Find record in a collection. Legacy wire protocol method. Later versiona
+    # possible to use run-command()
     #
+#`{{
     multi method find (
       %criteria = { }, %projection = { },
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
@@ -171,12 +166,13 @@ package MongoDB {
       );
       return $c;
     }
-
+}}
 
     # Find record in a collection using a BSON::Document
     #
-    multi method find (
-      BSON::Document $criteria, BSON::Document $projection,
+    method find (
+      BSON::Document $criteria = BSON::Document.new,
+      BSON::Document $projection = BSON::Document.new,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Bool :$no-cursor-timeout = False
       --> MongoDB::Cursor
@@ -191,6 +187,7 @@ package MongoDB {
       my $c = MongoDB::Cursor.new( :collection(self), :$OP_REPLY, :$criteria);
       return $c;
     }
+
     #---------------------------------------------------------------------------
     #
     method find_one (
@@ -259,19 +256,38 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method update (
-      Hash %selector, %update!, Bool :$upsert = False,
-      Bool :$multi-update = False
-    ) {
-      my $flags = +$upsert + +$multi-update +< 1;
-      self.wire.OP_UPDATE( self, $flags, %selector, %update);
+    method insert ( **@documents, Bool :$continue-on-error = False
+    ) is DEPRECATED("run-command\(BSON::Document.new: insert => 'collection`,...")
+    {
+#`{{
+      self!check-doc-keys(@documents);
+      my $flags = +$continue-on-error;
+      self.wire.OP-INSERT( self, $flags, @documents);
+}}
     }
 
     #---------------------------------------------------------------------------
     #
-    method remove ( %selector = { }, Bool :$single-remove = False ) {
+    method update (
+      Hash %selector, %update!, Bool :$upsert = False,
+      Bool :$multi-update = False
+    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    {
+#`{{
+      my $flags = +$upsert + +$multi-update +< 1;
+      self.wire.OP_UPDATE( self, $flags, %selector, %update);
+}}
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method remove ( %selector = { }, Bool :$single-remove = False
+    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    {
+#`{{
       my $flags = +$single-remove;
       self.wire.OP_DELETE( self, $flags, %selector );
+}}
     }
 
     #---------------------------------------------------------------------------

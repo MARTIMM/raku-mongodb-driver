@@ -158,11 +158,14 @@ package MongoDB {
     # %("ok" => 0e0, "errmsg" => <Some error string>)
     # %("ok" => 1e0, ...);
     #
+#`{{
     method run_command ( Pair:D @command --> Hash ) is DEPRECATED('run-command') {
       return self.run-command(@command);
     }
 
-    method run-command ( Pair:D @command --> Hash ) {
+    # Run command using an array of Pair
+    #
+    multi method run-command ( Pair:D @command --> Hash ) {
 
       # Create a local collection structure here
       #
@@ -177,8 +180,10 @@ package MongoDB {
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
     }
-
-    method run-command ( BSON::Document:D $command --> Hash ) {
+}}
+    # Run command using the BSON::Document.
+    #
+    multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
 
       # Create a local collection structure here
       #
@@ -189,7 +194,7 @@ package MongoDB {
 
       # And use it to do a find on it, get the doc and return it.
       #
-      my MongoDB::Cursor $cursor = $c.find( @command, :number-to-return(1));
+      my MongoDB::Cursor $cursor = $c.find( $command, :number-to-return(1));
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
     }
