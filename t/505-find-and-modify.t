@@ -9,7 +9,7 @@
       projection                        Select fields to return
 }}
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 
 use v6;

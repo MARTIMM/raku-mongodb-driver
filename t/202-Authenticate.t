@@ -9,7 +9,7 @@ use MongoDB::Connection;
 use MongoDB::Users;
 use MongoDB::Authenticate;
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 
 #-------------------------------------------------------------------------------

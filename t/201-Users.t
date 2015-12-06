@@ -15,7 +15,7 @@ use Test;
 use MongoDB::Connection;
 use MongoDB::Users;
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 
 #-------------------------------------------------------------------------------

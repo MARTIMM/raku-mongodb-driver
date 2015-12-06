@@ -5,7 +5,7 @@
   Test connection
 }}
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 use MongoDB::Connection;
 
