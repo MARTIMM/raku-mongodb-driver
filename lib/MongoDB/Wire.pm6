@@ -1,8 +1,6 @@
 use v6;
 
-#BEGIN {
-#  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
-#}
+# use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 
 use BSON;
 use BSON::EDCTools;

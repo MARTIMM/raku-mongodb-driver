@@ -4,7 +4,7 @@
 
 use v6;
 
-BEGIN { @*INC.unshift( './t' ); }
+use lib 't';
 use Test-support;
 
 use Test;
