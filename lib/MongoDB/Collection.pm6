@@ -3,7 +3,8 @@ use v6;
 use MongoDB;
 use MongoDB::Wire;
 use MongoDB::Cursor;
-use BSON::Javascript-old;
+#use BSON::Javascript-old;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
 #
@@ -171,6 +172,25 @@ package MongoDB {
       return $c;
     }
 
+
+    # Find record in a collection using a BSON::Document
+    #
+    multi method find (
+      BSON::Document $criteria, BSON::Document $projection,
+      Int :$number-to-skip = 0, Int :$number-to-return = 0,
+      Bool :$no-cursor-timeout = False
+      --> MongoDB::Cursor
+    ) {
+      my $flags = +$no-cursor-timeout +< 4;
+      my $OP_REPLY;
+        $OP_REPLY = self.wire.OP-QUERY( self, $flags, $number-to-skip,
+                                        $number-to-return, $criteria,
+                                        $projection
+                                      );
+
+      my $c = MongoDB::Cursor.new( :collection(self), :$OP_REPLY, :$criteria);
+      return $c;
+    }
     #---------------------------------------------------------------------------
     #
     method find_one (

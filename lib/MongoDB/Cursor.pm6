@@ -1,4 +1,5 @@
 use v6;
+use BSON::Document;
 use MongoDB::Wire;
 
 #-------------------------------------------------------------------------------
@@ -14,6 +15,8 @@ package MongoDB {
 
     has $.collection;
     has %.criteria;
+    
+    has BSON::Document $!criteria;
 
     # int64 (8 byte buffer)
     has Buf $.id;
@@ -22,7 +25,25 @@ package MongoDB {
     has @.documents;
 
     #-----------------------------------------------------------------------------
-    submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
+    # Support for the newer BSON::Document
+    #
+    multi submethod BUILD (
+      :$collection!,
+      BSON::Document :$criteria!,
+      :%OP_REPLY
+    ) {
+
+      $!collection = $collection;
+      $!criteria = $criteria;
+
+      # assign cursorID
+      $!id = %OP_REPLY<cursor_id>;
+
+      # assign documents
+      @!documents = %OP_REPLY<documents>.list;
+    }
+
+    multi submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
 
       $!collection = $collection;
       %!criteria = %criteria;

@@ -4,8 +4,9 @@ use v6;
 #  @*INC.unshift('/home/marcel/Languages/Perl6/Projects/BSON/lib');
 #}
 
-use BSON;
+#use BSON;
 use BSON::EDCTools;
+use BSON::Document;
 
 package MongoDB {
 
@@ -16,7 +17,7 @@ package MongoDB {
   #   $H-OP-*   Variables of type Hash
   #   OP-*      Methods
   #
-  class Wire is BSON::Bson {
+  class Wire { # is BSON::Bson {
 
     # Implements Mongo Wire Protocol
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol

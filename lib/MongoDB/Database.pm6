@@ -1,5 +1,6 @@
 use v6;
 use MongoDB::Collection;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
 #
@@ -171,6 +172,22 @@ package MongoDB {
       );
 
       # Use it to do a find on it, get the doc and return it.
+      #
+      my MongoDB::Cursor $cursor = $c.find( @command, :number-to-return(1));
+      my $doc = $cursor.fetch();
+      return $doc.defined ?? $doc !! %();
+    }
+
+    method run-command ( BSON::Document:D $command --> Hash ) {
+
+      # Create a local collection structure here
+      #
+      my MongoDB::Collection $c .= new(
+        database    => self,
+        name        => '$cmd',
+      );
+
+      # And use it to do a find on it, get the doc and return it.
       #
       my MongoDB::Cursor $cursor = $c.find( @command, :number-to-return(1));
       my $doc = $cursor.fetch();
