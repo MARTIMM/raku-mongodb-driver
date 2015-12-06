@@ -15,7 +15,7 @@
       $where                            serverside javascript testing
 }}
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 
 use v6;

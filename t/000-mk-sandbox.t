@@ -7,7 +7,7 @@ use v6;
   Test connection
 }}
 
-BEGIN { @*INC.unshift( './t' ) }
+use lib 't';
 use Test-support;
 use MongoDB::Connection;
 use Test;
