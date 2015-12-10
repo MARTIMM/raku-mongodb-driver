@@ -1,6 +1,6 @@
 use v6;
 
-# use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+#use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 
 #use BSON;
 #use BSON::EDCTools;
@@ -39,13 +39,39 @@ package MongoDB {
     constant C-OP-DELETE       = 2006; # Delete documents
     constant C-OP-KILL-CURSORS = 2007; # Tell database client is done with a cursor
 }}
+    my Bool $debug = False;
+
     #---------------------------------------------------------------------------
-    #
-    method wire-encode (
-      BSON::Document:D $d, Int :$op-code = BSON::C-OP-QUERY
-      --> Buf
+    # 
+    method query (
+      $collection, BSON::Document:D $d is copy,
+      $projection?, :$flags, :$number-to-skip, :$number-to-return
+      --> BSON::Document
     ) {
-      
+      $d does BSON::Header;
+
+      my $database = $collection.database;
+      my $connection = $database.connection;
+      my $full-collection-name = [~] $database.name, '.', $collection.name;
+
+      my Buf $encoded-query = $d.encode-query(
+        $full-collection-name, $projection,
+        :$flags, :$number-to-skip, :$number-to-return
+      );
+
+      $connection.send($encoded-query);
+
+      # Read 4 bytes for int32 response size
+      #
+      my Buf $size-bytes = $connection.receive(4);
+      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+
+      # Receive remaining response bytes from socket. Prefix it with the already
+      # read bytes and decode. Return the resulting document.
+      #
+      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
+say "SR: ", $server-reply;
+      return $d.decode-reply($server-reply);
     }
 
     #---------------------------------------------------------------------------
@@ -160,7 +186,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg-header ~ $B-OP-INSERT, False);
+      $collection.database.connection.send( $msg-header ~ $B-OP-INSERT, False);
     }
 }}
     #---------------------------------------------------------------------------
@@ -269,11 +295,11 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg-header = self!enc-msg-header( $B-OP-QUERY.elems, C-OP-QUERY);
+      my Buf $msg-header = self!enc-msg-header( $B-OP-QUERY.elems, BSON::C-OP-QUERY);
 
       # send message and wait for response
       #
-      my Buf $B-OP-REPLY = $collection.database.connection._send(
+      my Buf $B-OP-REPLY = $collection.database.connection.send(
         $msg-header ~ $B-OP-QUERY, True
       );
 
@@ -292,8 +318,8 @@ package MongoDB {
       return $H-OP-REPLY;
     }
 }}
-
-    # Mayor work horse with query already converted nito a BSON byte array
+#`{{
+    # Major work horse with query already converted nito a BSON byte array
     #
     multi method OP-QUERY (
       $collection, $flags, $number-to-skip, $number-to-return,
@@ -340,11 +366,13 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg-header = self!enc-msg-header( $B-OP-QUERY.elems, C-OP-QUERY);
+      my Buf $msg-header = self!enc-msg-header(
+        $B-OP-QUERY.elems, BSON::C-OP-QUERY
+      );
 
       # send message and wait for response
       #
-      my Buf $B-OP-REPLY = $collection.database.connection._send(
+      my Buf $B-OP-REPLY = $collection.database.connection.send(
         $msg-header ~ $B-OP-QUERY, True
       );
 
@@ -362,7 +390,8 @@ package MongoDB {
       #
       return $DOC-OP-REPLY;
     }
-
+}}
+#`{{
     #---------------------------------------------------------------------------
     #
     method OP-GETMORE ( $cursor --> Hash ) {
@@ -396,12 +425,12 @@ package MongoDB {
       # (watch out for inconsistent OP_code and messsage name)
       #
       my Buf $msg-header = self!enc-msg-header(
-        $B-OP-GETMORE.elems, C-OP-GET-MORE
+        $B-OP-GETMORE.elems, BSON::C-OP-GET-MORE
       );
 
       # send message and wait for response
       #
-      my Buf $B-OP-REPLY = $cursor.collection.database.connection._send(
+      my Buf $B-OP-REPLY = $cursor.collection.database.connection.send(
         $msg-header ~ $B-OP-GETMORE, True
       );
 
@@ -421,7 +450,7 @@ package MongoDB {
       #
       return $H-OP-REPLY;
     }
-
+}}
     #---------------------------------------------------------------------------
     #
 #`{{
@@ -429,7 +458,7 @@ package MongoDB {
       self.OP-KILL-CURSORS(@cursors);
     }
 }}
-
+#`{{
     method OP-KILL-CURSORS ( *@cursors --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPKILLCURSORS
 
@@ -457,14 +486,14 @@ package MongoDB {
       #
       my Buf $msg-header = self!enc-msg-header(
         $B-OP-KILL_CURSORS.elems,
-        C-OP-KILL-CURSORS
+        BSON::C-OP-KILL-CURSORS
       );
 
       # send message without waiting for response
       #
-      @cursors[0].collection.database.connection._send( $msg-header ~ $B-OP-KILL_CURSORS, False);
+      @cursors[0].collection.database.connection.send( $msg-header ~ $B-OP-KILL_CURSORS, False);
     }
-
+}}
 #`{{
     #---------------------------------------------------------------------------
     #
@@ -515,7 +544,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg-header ~ $B-OP-UPDATE, False);
+      $collection.database.connection.send( $msg-header ~ $B-OP-UPDATE, False);
     }
 }}
 #`{{
@@ -563,7 +592,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection._send( $msg-header ~ $B-OP-DELETE, False);
+      $collection.database.connection.send( $msg-header ~ $B-OP-DELETE, False);
     }
 }}
     #---------------------------------------------------------------------------
@@ -632,6 +661,7 @@ package MongoDB {
       return $H-OP-REPLY;
     }
 }}
+#`{{
     #---------------------------------------------------------------------------
     #
     method !OP-REPLY ( Buf $b --> BSON::Document ) {
@@ -693,7 +723,8 @@ package MongoDB {
 
       return $DOC-OP-REPLY;
     }
-
+}}
+#`{{
     #---------------------------------------------------------------------------
     #
     method !dec-nyi ( Buf $b, $index --> Buf ) {
@@ -706,5 +737,6 @@ package MongoDB {
 
       return Buf.new(@a);
     }
+}}
   }
 }

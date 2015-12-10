@@ -172,19 +172,21 @@ package MongoDB {
     #
     method find (
       BSON::Document $criteria = BSON::Document.new,
-      BSON::Document $projection = BSON::Document.new,
+      BSON::Document $projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Bool :$no-cursor-timeout = False
+#      Bool :$no-cursor-timeout = False
+      Int :$flags = 0
       --> MongoDB::Cursor
     ) {
-      my $flags = +$no-cursor-timeout +< 4;
-      my $OP_REPLY;
-        $OP_REPLY = self.wire.OP-QUERY( self, $flags, $number-to-skip,
-                                        $number-to-return, $criteria,
-                                        $projection
-                                      );
+#      my $flags = +$no-cursor-timeout +< 4;
+      my BSON::Document $server-reply = self.wire.query(
+        self, $criteria, $projection, :$flags, :$number-to-skip,
+        :$number-to-return
+      );
 
-      my $c = MongoDB::Cursor.new( :collection(self), :$OP_REPLY, :$criteria);
+      my $c = MongoDB::Cursor.new(
+        :collection(self), :$server-reply, :$criteria
+      );
       return $c;
     }
 

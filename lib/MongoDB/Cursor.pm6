@@ -30,17 +30,20 @@ package MongoDB {
     multi submethod BUILD (
       :$collection!,
       BSON::Document :$criteria!,
-      :%OP_REPLY
+      BSON::Document :$server-reply
     ) {
+
+say "CR: ", $server-reply.perl, ', ', $server-reply<cursor-id>, ', ', $server-reply<cursor-id>.WHAT;
+
 
       $!collection = $collection;
       $!criteria = $criteria;
 
       # assign cursorID
-      $!id = %OP_REPLY<cursor_id>;
+      $!id = $server-reply<cursor-id>;
 
       # assign documents
-      @!documents = %OP_REPLY<documents>.list;
+      @!documents = $server-reply<documents>.list;
     }
 
     multi submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {

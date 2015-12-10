@@ -19,18 +19,19 @@ my MongoDB::Database $database;
 subtest {
 
   $connection = get-connection();
+  say "Version: ", $MongoDB::version;
 
   # Drop database first then create new databases
   #
-  $connection.database('test').drop;
+#  $connection.database('test').drop;
 
-  $database = $connection.database('test');
+#  $database = $connection.database('test');
 }
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$connection.database('test').drop;
+#$connection.database('test').drop;
 
 done-testing();
 exit(0);
