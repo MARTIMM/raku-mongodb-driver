@@ -27,14 +27,13 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Support for the newer BSON::Document
     #
-    multi submethod BUILD (
+    submethod BUILD (
       :$collection!,
       BSON::Document :$criteria!,
       BSON::Document :$server-reply
     ) {
 
-say "CR: ", $server-reply.perl, ', ', $server-reply<cursor-id>, ', ', $server-reply<cursor-id>.WHAT;
-
+#say "CR: ", $server-reply.perl, ', ', $server-reply<cursor-id>, ', ', $server-reply<cursor-id>.WHAT;
 
       $!collection = $collection;
       $!criteria = $criteria;
@@ -45,8 +44,8 @@ say "CR: ", $server-reply.perl, ', ', $server-reply<cursor-id>, ', ', $server-re
       # assign documents
       @!documents = $server-reply<documents>.list;
     }
-
-    multi submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
+#`{{
+    submethod BUILD ( :$collection!, :%criteria!, :%OP_REPLY ) {
 
       $!collection = $collection;
       %!criteria = %criteria;
@@ -57,8 +56,32 @@ say "CR: ", $server-reply.perl, ', ', $server-reply<cursor-id>, ', ', $server-re
       # assign documents
       @!documents = %OP_REPLY<documents>.list;
     }
-
+}}
     #-----------------------------------------------------------------------------
+    method fetch ( --> Any ) {
+
+####!!! to be continued
+
+      # there are no more documents in last response batch
+      # but there is next batch to fetch from database
+      if not @!documents and [+]($!id.list) {
+
+        # request next batch of documents
+        my Hash $OP_REPLY = self.wire.OP-GETMORE(self);
+
+        # assign cursorID,
+        # it may change to "0" if there are no more documents to fetch
+        $!id = $OP_REPLY<cursor_id>;
+
+        # assign documents
+        @!documents = $OP_REPLY<documents>.list;
+      }
+
+      # Return a document when there is one. If none left, return Nil
+      #
+      return +@!documents ?? @!documents.shift !! Nil;
+    }
+#`{{
     method fetch ( --> Any ) {
 
       # there are no more documents in last response batch
@@ -80,7 +103,7 @@ say "CR: ", $server-reply.perl, ', ', $server-reply<cursor-id>, ', ', $server-re
       #
       return +@!documents ?? @!documents.shift !! Nil;
     }
-
+}}
     #-----------------------------------------------------------------------------
     # Add support for next() as in the mongo shell
     #

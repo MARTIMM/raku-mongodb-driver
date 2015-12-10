@@ -70,8 +70,12 @@ package MongoDB {
       # read bytes and decode. Return the resulting document.
       #
       my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
-say "SR: ", $server-reply;
+#say "SR: ", $server-reply;
       return $d.decode-reply($server-reply);
+    }
+
+    #---------------------------------------------------------------------------
+    method get-more () {
     }
 
     #---------------------------------------------------------------------------
