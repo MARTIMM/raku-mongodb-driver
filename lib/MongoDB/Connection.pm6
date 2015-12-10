@@ -47,9 +47,10 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method _send ( Buf:D $b, Bool $has_response --> Buf ) {
+#    method send ( Buf:D $b, Bool $has_response --> Nil ) {
+    method send ( Buf:D $b --> Nil ) {
       $!sock.write($b);
-
+#`{{
       # some calls do not expect response
       #
       return unless $has_response;
@@ -63,6 +64,13 @@ package MongoDB {
       # receive remaining response bytes from socket
       #
       return $l ~ $!sock.read($w);
+}}
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method receive ( Int $nbr-bytes --> Buf ) {
+      return $!sock.read($nbr-bytes);
     }
 
     #---------------------------------------------------------------------------
