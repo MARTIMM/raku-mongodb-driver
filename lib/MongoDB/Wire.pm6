@@ -75,7 +75,17 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    method get-more () {
+    method get-more (...) {
+    
+      $d does BSON::Header;
+
+      my $database = $collection.database;
+      my $connection = $database.connection;
+      my $full-collection-name = [~] $database.name, '.', $collection.name;
+
+      my Buf $encoded-get-more = $d.encode-get-more(
+        $full-collection-name, $cursor-id
+      );
     }
 
     #---------------------------------------------------------------------------
