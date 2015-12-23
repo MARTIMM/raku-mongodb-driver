@@ -9,5 +9,5 @@ Sandbox/*
 Travis-ci/M*
 Travis-ci/m*
 *.log
-.precomp/*
-*/.precomp/*
+.precomp
+*/.procomp

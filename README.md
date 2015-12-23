@@ -51,7 +51,7 @@ Perl 6 randomizes key order you never know what the order is.
 * Experiments are done using arrays of pairs to keep the order the same as
 entered. This works but it is cumbersome. In the mean time thoughts about how to
 implement parallel encoding to and decoding from BSON byte strings have been
-past my mind. These thoughts are crystalized into a Document module in the BSON
+past my mind. These thoughts are crystalized into a Document class in the BSON
 package which a) keeps the order, 2) have the same capabilities as Hashes, 3)
 can do encoding and decoding in parallel. This BSON::Document will probably be
 implemented in the coming (sub)versions of this package after complete testing
@@ -518,7 +518,9 @@ change at any time. The public API should not be considered stable.*
 * 0.25.12
   * ```@*INC``` is gone, ```use lib``` is the way. A lot of changes done by
     zoffixznet.
-
+  * Changes in Wire.pm6 using lower case method names. I find the use of
+    uppercase method names only when called by perl6 (e.g. FALLBACK, BUILD).
+    Other use of uppercase words only with constants.
 * 0.25.11
   * Changes caused by changes in BSON
 * 0.25.10
