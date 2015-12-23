@@ -5,7 +5,7 @@ use v6;
 #use BSON;
 #use BSON::EDCTools;
 use BSON::Document;
-use BSON::Header;
+use MongoDB::Header;
 
 package MongoDB {
 
@@ -48,7 +48,7 @@ package MongoDB {
       $projection?, :$flags, :$number-to-skip, :$number-to-return
       --> BSON::Document
     ) {
-      $d does BSON::Header;
+      $d does MongoDB::Header;
 
       my $database = $collection.database;
       my $connection = $database.connection;
@@ -77,7 +77,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     method get-more (...) {
     
-      $d does BSON::Header;
+      $d does MongoDB::Header;
 
       my $database = $collection.database;
       my $connection = $database.connection;
