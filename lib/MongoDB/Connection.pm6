@@ -88,25 +88,28 @@ package MongoDB {
       return self.list-databases();
     }
 
-    method list-databases ( --> Array ) {
+    method list-databases ( --> Array ) is DEPRECATED('run-command(...)') {
 
+      return [];
+#`{{
       $!status = Nil;
 
       my $database = self.database('admin');
-      my Pair @req = listDatabases => 1;
-      my Hash $doc = $database.run-command(@req);
+      my BSON::Document $req .= new: (listDatabases => 1);
+      my BSON::Document $doc = $database.run-command($req);
       if $doc<ok>.Bool == False {
         $!status = X::MongoDB.new(
           error-text => $doc<errmsg>,
           error-code => $doc<code>,
           oper-name => 'listDatabases',
-          oper-data => @req.perl,
+          oper-data => $req.perl,
           collection-ns => 'admin.$cmd',
           severity => MongoDB::Severity::Error
         );
       }
 
       return @($doc<databases>);
+}}
     }
 
     #---------------------------------------------------------------------------
@@ -116,11 +119,15 @@ package MongoDB {
       return self.database-names();
     }
 
-    method database-names ( --> Array ) {
+    method database-names ( --> Array ) is DEPRECATED('run-command(...)') {
+    
+      return [];
+#`{{
       my @db_docs = self.list-databases();
       my @names = map {$_<name>}, @db_docs; # Need to do it like this otherwise
                                             # returns List instead of Array.
       return @names;
+}}
     }
 
     #---------------------------------------------------------------------------

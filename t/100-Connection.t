@@ -1,3 +1,10 @@
+use lib 't';
+use Test-support;
+use v6;
+use Test;
+use MongoDB;
+use MongoDB::Connection;
+
 #`{{
   Testing;
     MongoDB::Connection.new()           Create connection to server
@@ -7,15 +14,6 @@
     connection.version()                Version name
     connection.buildinfo()              Server info
 }}
-
-use lib 't';
-use Test-support;
-
-use v6;
-use Test;
-
-use MongoDB;
-use MongoDB::Connection;
 
 my MongoDB::Connection $connection;
 #set-logfile($*OUT);
@@ -77,7 +75,7 @@ subtest {
      $version<release2> %% 2 ?? 'production' !! 'development',
      "Version type $version<release-type>";
 
-  my Hash $buildinfo = $connection.build-info;
+  my BSON::Document $buildinfo = $connection.build-info;
   ok $buildinfo<version>:exists, "Version $buildinfo<version>";
   ok $buildinfo<loaderFlags>:exists, "Loader flags '$buildinfo<loaderFlags>'";
   ok $buildinfo<sysInfo>:exists, "Sys info '$buildinfo<sysInfo>'";
@@ -98,9 +96,15 @@ subtest {
   $collection.insert( $%( 'name' => 'Jan Klaassen'));
 
   #-------------------------------------------------------------------------------
-  # Get the statistics of the databases
+  # Get databases statistics
   #
-  my Array $db-docs = $connection.list-databases;
+  my MongoDB::Database $admin-db = $connection.database('admin');
+  my BSON::Document $doc = $admin-db.run-command(
+    BSON::Document.new: (listDatabases => 1)
+  );
+  is $doc<ok>, 1, 'List databases response ok';
+
+  my Array $db-docs = @($doc<databases>);
 
   # Get the database name from the statistics and save the index into the array
   # with that name. Use the zip operator to pair the array entries %doc with
@@ -119,16 +123,21 @@ subtest {
   #-------------------------------------------------------------------------------
   # Get all database names
   #
+#`{{
   my @dbns = $connection.database-names();
-
   ok any(@dbns) ~~ 'test', 'test is found in database list';
-
+}}
   #-------------------------------------------------------------------------------
   # Drop database db2
   #
   $database.drop;
 
-  @dbns = $connection.database-names();
+  $doc = $admin-db.run-command(
+    BSON::Document.new: (listDatabases => 1)
+  );
+  my @dbns = map {$_<name>}, $doc<databases>;
+say @dbns;
+
   ok !(any(@dbns) ~~ 'test'), 'test not found in database list';
 }, "Create database, collection. Collect database info, drop data";
 
