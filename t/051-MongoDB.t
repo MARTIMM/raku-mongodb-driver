@@ -5,7 +5,7 @@
 
 use v6;
 use Test;
-
+use BSON::Document;
 use MongoDB;
 use MongoDB::Connection;
 
@@ -23,10 +23,13 @@ subtest {
 
   # Drop database first then create new databases
   #
-#  $connection.database('test').drop;
+  my BSON::Document $doc = $connection.database('test').run-command(
+    BSON::Document.new: (dropDatabase => 1)
+  );
 
-#  $database = $connection.database('test');
-}
+  is $doc<ok>, 1, "Result is ok";
+
+}, "Run command, single handed";
 
 #-------------------------------------------------------------------------------
 # Cleanup

@@ -1,10 +1,13 @@
 use v6;
+use BSON::Document;
 use MongoDB;
 use MongoDB::Connection;
 use Test;
 
 package Test-support
 {
+  state $empty-document = BSON::Document.new();
+
   #-----------------------------------------------------------------------------
   # Get selected port number. When file is not there the process fails.
   #
@@ -113,21 +116,22 @@ package Test-support
   # Search and show content of documents
   #
   sub show-documents ( MongoDB::Collection $collection,
-                       Hash $criteria, Hash $projection = { }
+                       BSON::Document $criteria,
+                       BSON::Document $projection = $empty-document
                      ) is export {
 
     say '-' x 80;
 
     my MongoDB::Cursor $cursor = $collection.find( $criteria, $projection);
-    while $cursor.fetch() -> %document {
-      show-document(%document);
+    while $cursor.fetch() -> BSON::Document $document {
+      show-document($document);
     }
   }
 
   #-----------------------------------------------------------------------------
   # Display a document
   #
-  sub show-document ( Hash $document ) is export {
+  sub show-document ( BSON::Document $document ) is export {
 
     print "Document: ";
     my $indent = '';
@@ -136,6 +140,17 @@ package Test-support
       $indent = ' ' x 10 unless $indent;
     }
     say "";
+  }
+
+  #-----------------------------------------------------------------------------
+  # Drop database
+  #
+  sub drop-database (
+    MongoDB::Database $database
+    --> BSON::Document
+  ) is export {
+
+    return $database.run-command(BSON::Document.new: (dropDatabase => 1));
   }
 }
 

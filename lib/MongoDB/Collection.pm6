@@ -12,8 +12,7 @@ package MongoDB {
 
   class Collection {
 
-    state MongoDB::Wire:D $wp = MongoDB::Wire.new;
-    has MongoDB::Wire:D $.wire = $wp;
+    state MongoDB::Wire $wire = MongoDB::Wire.new;
 
     has $.database;
     has Str $.name;
@@ -134,7 +133,7 @@ package MongoDB {
     ) {
       my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP-QUERY( self, $flags, $number-to-skip,
+        $OP_REPLY = $wire.OP-QUERY( self, $flags, $number-to-skip,
                                         $number-to-return, %criteria,
                                         %projection
                                       );
@@ -155,7 +154,7 @@ package MongoDB {
     ) {
       my $flags = +$no-cursor-timeout +< 4;
       my $OP_REPLY;
-        $OP_REPLY = self.wire.OP-QUERY( self, $flags, $number-to-skip,
+        $OP_REPLY = $wire.OP-QUERY( self, $flags, $number-to-skip,
                                         $number-to-return, @criteria,
                                         %projection
                                       );
@@ -179,7 +178,7 @@ package MongoDB {
       --> MongoDB::Cursor
     ) {
 #      my $flags = +$no-cursor-timeout +< 4;
-      my BSON::Document $server-reply = self.wire.query(
+      my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return
       );
@@ -187,6 +186,7 @@ package MongoDB {
       my $c = MongoDB::Cursor.new(
         :collection(self), :$server-reply, :$criteria
       );
+
       return $c;
     }
 
@@ -259,13 +259,11 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method insert ( **@documents, Bool :$continue-on-error = False
-    ) is DEPRECATED("run-command\(BSON::Document.new: insert => 'collection`,...")
+    ) #is DEPRECATED("run-command\(BSON::Document.new: insert => 'collection`,...")
     {
-#`{{
       self!check-doc-keys(@documents);
       my $flags = +$continue-on-error;
-      self.wire.OP-INSERT( self, $flags, @documents);
-}}
+      $wire.OP-INSERT( self, $flags, @documents);
     }
 
     #---------------------------------------------------------------------------
@@ -273,23 +271,19 @@ package MongoDB {
     method update (
       Hash %selector, %update!, Bool :$upsert = False,
       Bool :$multi-update = False
-    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    ) #is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
     {
-#`{{
       my $flags = +$upsert + +$multi-update +< 1;
-      self.wire.OP_UPDATE( self, $flags, %selector, %update);
-}}
+      $wire.OP_UPDATE( self, $flags, %selector, %update);
     }
 
     #---------------------------------------------------------------------------
     #
     method remove ( %selector = { }, Bool :$single-remove = False
-    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    ) #is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
     {
-#`{{
       my $flags = +$single-remove;
-      self.wire.OP_DELETE( self, $flags, %selector );
-}}
+      $wire.OP_DELETE( self, $flags, %selector );
     }
 
     #---------------------------------------------------------------------------

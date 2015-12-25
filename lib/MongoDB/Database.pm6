@@ -195,8 +195,9 @@ package MongoDB {
       # And use it to do a find on it, get the doc and return it.
       #
       my MongoDB::Cursor $cursor = $c.find( $command, :number-to-return(1));
-      my $doc = $cursor.fetch();
-      return $doc.defined ?? $doc !! %();
+      my $doc = $cursor.fetch;
+# throw exception when undefined!!!
+      return $doc.defined ?? $doc !! BSON::Document.new;
     }
 
     #---------------------------------------------------------------------------
