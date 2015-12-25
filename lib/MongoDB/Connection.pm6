@@ -4,7 +4,6 @@ use v6;
 
 use MongoDB;
 use MongoDB::Database;
-#use BSON::EDCTools;
 use BSON::Document;
 
 package MongoDB {
@@ -132,7 +131,7 @@ package MongoDB {
     method version ( --> Hash ) {
       my BSON::Document $doc = self.build-info;
       my Hash $version = hash( <release1 release2 revision>
-                               Z=> (for $doc<version>.split('.') {Int($_)})
+                               Z=> (for $doc<version>.split('.') {.Int})
                              );
       $version<release-type> = $version<release2> %% 2
                                ?? 'production'
