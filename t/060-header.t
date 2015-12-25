@@ -40,7 +40,7 @@ subtest {
 
   my Buf $hand-made-buf .= new(
     0x29, 0x00, 0x00, 0x00,             # size 41 bytes
-    0x01, 0x00, 0x00, 0x00,             # Req id = 1
+    0x01, 0x00, 0x00, 0x00,             # Req id = 1 (1st request in this test)
     0x0A, 0x00, 0x00, 0x00,             # resp to 10
     0x01, 0x00, 0x00, 0x00,             # C-OP-REPLY
 
@@ -60,6 +60,36 @@ subtest {
 
 #  my BSON::Document $d
 }, "query/reply";
+
+#-------------------------------------------------------------------------------
+subtest {
+  my BSON::Document $d .= new;
+  $d does MongoDB::Header;
+  
+  my Buf $encoded-get-more = $d.encode-get-more(
+    'testdb.testcoll',
+    Buf.new( 0x02, 0x01, 0x03, 0x04, 0x03, 0x0f, 0x0e, 0x0a)
+  );
+
+  my Buf $hand-made-buf .= new(
+    0x30, 0x00, 0x00, 0x00,             # size 48 bytes
+    0x02, 0x00, 0x00, 0x00,             # Req id = 2 (2nd request in this test)
+    0x00, 0x00, 0x00, 0x00,             # resp to 0
+    0xd5, 0x07, 0x00, 0x00,             # C-OP-GET-MORE
+
+    0x00, 0x00, 0x00, 0x00,             # 0, reserved
+    0x74, 0x65, 0x73, 0x74, 0x64, 0x62, # 'testdb.testcoll'
+    0x2e, 0x74, 0x65, 0x73, 0x74, 0x63,
+    0x6f, 0x6c, 0x6c, 0x00,
+    0x00, 0x00, 0x00, 0x00,             # 0, number to return
+    0x02, 0x01, 0x03, 0x04,
+    0x03, 0x0f, 0x0e, 0x0a              # cursor id
+  );
+
+  is-deeply $encoded-get-more, $hand-made-buf, 'Encoded get more request';
+
+#  my BSON::Document $d
+}, "encoding get more";
 
 #-------------------------------------------------------------------------------
 # Cleanup

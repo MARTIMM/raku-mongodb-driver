@@ -221,33 +221,6 @@ package MongoDB {
       return self.encode-message-header(
         $get-more-buffer.elems, MongoDB::C-OP-GET-MORE
       ) ~ $get-more-buffer;
-#`{{
-      my Buf $msg-header = self!enc-msg-header(
-        $B-OP-GETMORE.elems, MongoDB::C-OP-GET-MORE
-      );
-
-      # send message and wait for response
-      #
-      my Buf $B-OP-REPLY = $cursor.collection.database.connection.send(
-        $msg-header ~ $B-OP-GETMORE, True
-      );
-
-      # parse response
-      #
-      my Hash $H-OP-REPLY = self!OP-REPLY($B-OP-REPLY);
-
-      if $debug {
-        say 'OP-GETMORE:', $H-OP-REPLY.perl;
-      }
-
-      # TODO check if requestID matches responseTo
-
-      # TODO check if cursorID matches (if present)
-
-      # return response back to cursor
-      #
-      return $H-OP-REPLY;
-}}      
     }
 
     #---------------------------------------------------------------------------

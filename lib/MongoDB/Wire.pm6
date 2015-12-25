@@ -71,21 +71,39 @@ package MongoDB {
       #
       my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
 #say "SR: ", $server-reply;
+# TODO check if requestID matches responseTo
       return $d.decode-reply($server-reply);
     }
 
     #---------------------------------------------------------------------------
-    method get-more (...) {
-    
+    method get-more ( $cursor --> BSON::Document ) {
+      my BSON::Document $d .= new;
       $d does MongoDB::Header;
 
+      my $collection = $cursor.collection;
       my $database = $collection.database;
       my $connection = $database.connection;
       my $full-collection-name = [~] $database.name, '.', $collection.name;
 
       my Buf $encoded-get-more = $d.encode-get-more(
-        $full-collection-name, $cursor-id
+        $full-collection-name, $cursor.id
       );
+      
+      $connection.send($encoded-get-more);
+
+      # Read 4 bytes for int32 response size
+      #
+      my Buf $size-bytes = $connection.receive(4);
+      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+
+      # Receive remaining response bytes from socket. Prefix it with the already
+      # read bytes and decode. Return the resulting document.
+      #
+      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
+# TODO check if requestID matches responseTo
+# TODO check if cursorID matches (if present)
+say "SR: ", $server-reply;
+      return $d.decode-reply($server-reply);
     }
 
     #---------------------------------------------------------------------------
