@@ -7,18 +7,6 @@ use v6;
 use Test;
 
 use MongoDB;
-use MongoDB::Connection;
-
-use lib 't';
-use Test-support;
-
-my MongoDB::Connection $connection = get-connection();
-
-# Drop database first then create new databases
-#
-$connection.database('test').drop;
-
-my MongoDB::Database $database = $connection.database('test');
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -155,6 +143,7 @@ subtest {
   ok "My-MongoDB.log".IO.s == 0, "Logfile has no data";
 
   set-exception-process-level(MongoDB::Severity::Trace);
+
   $e = X::MongoDB.new(
     :error-text('Number of exceptions raised to Inf'),
     :oper-name('test-x'),
@@ -169,7 +158,5 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$connection.database('test').drop;
-
 done-testing();
 exit(0);
