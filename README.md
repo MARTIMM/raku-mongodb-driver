@@ -62,6 +62,11 @@ can do encoding and decoding in parallel. This BSON::Document will probably be
 implemented in the coming (sub)versions of this package after complete testing
 of the module in BSON.
 
+* At the moment a connection is made using a server-name or ip address with or
+without a port number. In the future it must also or even replaced by using a
+URL in fortmat ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```.
+See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/).
+
 ## API CHANGES
 
 There has been a lot of changes in the API. All methods which had underscores ('_')
