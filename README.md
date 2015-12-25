@@ -40,6 +40,11 @@ and perhaps even to slim down the current set of methods and to document the use
 of the run-command so that the user of this package can, after reading the
 mongodb documents, use the run-command method to get the work done themselves.
 
+* There is another thing to mention about the helper functions. Providing them
+will always have a parsing impact while many of them are not always needed.
+Examples are list-databases(), get-prev-error() etc. Removing the helper
+functions will reduce the parsing time.
+
 * The use of hashes to send and receive mongodb documents is wrong. It is
 wrong because the key-value pairs in the hash are getting a different order then
 is entered in the hash. Mongodb needs the command at the front of the document
@@ -515,6 +520,14 @@ change at any time. The public API should not be considered stable.*
 * 0.*.0
   * Remove deprecation messages of converted method names
 
+* 0.25.13
+  * All encoding and decoding done in Wire.pm6 is moved out to Header.pm6
+  * Wire.pm6 has now query() using Header.pm6 to encode the request and decode
+    the server results. find() in Collection.pm6 uses query() to set the cursor
+    object from Cursor.pm6 after which the reseived documents can be processed
+    with fetch(). It replaces OP-QUERY().
+  * get-more() is added also to help the Cursor object getting more documents if
+    there are any. It replaces OP-GETMORE().
 * 0.25.12
   * ```@*INC``` is gone, ```use lib``` is the way. A lot of changes done by
     zoffixznet.
