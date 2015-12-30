@@ -36,3 +36,4 @@ OP_KILL_CURSORS                 1.0
 * resetError
 * eval                          Deprecated since 3.0
 * parallelCollectionScan
+
