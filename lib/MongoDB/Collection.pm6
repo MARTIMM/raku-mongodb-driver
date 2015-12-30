@@ -259,11 +259,11 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method insert ( **@documents, Bool :$continue-on-error = False
-    ) #is DEPRECATED("run-command\(BSON::Document.new: insert => 'collection`,...")
+    ) is DEPRECATED("run-command\(BSON::Document.new: insert => 'collection`,...")
     {
-      self!check-doc-keys(@documents);
-      my $flags = +$continue-on-error;
-      $wire.OP-INSERT( self, $flags, @documents);
+#      self!check-doc-keys(@documents);
+#      my $flags = +$continue-on-error;
+#      $wire.OP-INSERT( self, $flags, @documents);
     }
 
     #---------------------------------------------------------------------------
@@ -271,19 +271,19 @@ package MongoDB {
     method update (
       Hash %selector, %update!, Bool :$upsert = False,
       Bool :$multi-update = False
-    ) #is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
     {
-      my $flags = +$upsert + +$multi-update +< 1;
-      $wire.OP_UPDATE( self, $flags, %selector, %update);
+#      my $flags = +$upsert + +$multi-update +< 1;
+#      $wire.OP_UPDATE( self, $flags, %selector, %update);
     }
 
     #---------------------------------------------------------------------------
     #
     method remove ( %selector = { }, Bool :$single-remove = False
-    ) #is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
     {
-      my $flags = +$single-remove;
-      $wire.OP_DELETE( self, $flags, %selector );
+#      my $flags = +$single-remove;
+#      $wire.OP_DELETE( self, $flags, %selector );
     }
 
     #---------------------------------------------------------------------------

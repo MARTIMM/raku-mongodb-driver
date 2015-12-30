@@ -4,7 +4,6 @@ use BSON::Document;
 
 package MongoDB {
 
-
   #-----------------------------------------------------------------------------
   # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
   #

@@ -13,6 +13,21 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
+=begin Xhtml
+<style>
+  pre {
+/**/
+    border-width:       2px;
+    border-style:       solid;
+    border-color:       #060;
+    padding:            10px 0 3px 10px;
+    color:              #060;
+    background-color:   #eaefea;
+    font-family:        FreeMono;
+  }
+</style>
+=end Xhtml
+
 =TITLE class MongoDB::Connection
 
 =SUBTITLE Mongod server connection and info
@@ -35,12 +50,7 @@ use MongoDB::Connection;
 
 # Connect to MongoDB server at localhost port 27017
 my MongoDB::Connection $connection .= new();
-
-# Get an array of documents
-my @db-status-info = $connection.list-databases();
-
-# Get an array of database names
-my @db-names = $connection.list-databases();
+my MongoDB::Database $database = $connection.database('my_database');
 
 =end code
 
@@ -75,6 +85,28 @@ Example:
   }
 
 
+=head2 method send
+
+Defined as
+
+  method send ( Buf:D $b --> Nil )
+
+Send encoded data to the mongo server. DO NOT ATTEMPT TO USE IT YOURSELF. Let
+instead the several modules do the sending because they know what to send.
+Besides this, it is subject to change when connection pooling comes into play.
+
+=head2 method receive
+
+Defined as
+
+  method receive ( Int $nbr-bytes --> Buf )
+
+Receive the number of bytes from the server. Again: DO NOT ATTEMPT TO USE IT
+YOURSELF. Let instead the several modules do the receiving because they know
+what to expect.Besides this, it is subject to change when connection pooling
+comes into play.
+
+
 =head2 method database
 
 Defined as:
@@ -87,32 +119,6 @@ Usage:
 
 Get a database object named $name. When nonexistent, it will be created after
 inserting documents in the databases collection.
-
-=head2 method list-databases
-
-Defined as:
-
-  method list-databases ( --> Array )
-
-Usage:
-
-  my Array $db-list = $connection.list-databases;
-  for $db-list -> Hash $db { say $db<name sizeOnDisk>.fmt('%20s');}
-
-Get an array of documents each having keys C<name>, C<sizeOnDisk> and C<empty>. See
-L<http://docs.mongodb.org/manual/reference/command/listDatabases/#dbcmd.listDatabases>
-
-=head2 method database-names
-
-defined as
-
-  method database-names ( --> Array )
-
-Usage
-
-  my Array $dbnames = $connection.database-names;
-
-Using C<list-databases> to return an array of database names.
 
 =head2 method version
 
@@ -187,4 +193,3 @@ Size.
 
 
 =end pod
-

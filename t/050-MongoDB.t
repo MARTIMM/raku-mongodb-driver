@@ -1,12 +1,11 @@
+use v6;
+use Test;
+use MongoDB;
+
 #`{{
   Testing;
     exception block
 }}
-
-use v6;
-use Test;
-
-use MongoDB;
 
 #-------------------------------------------------------------------------------
 subtest {

@@ -13,6 +13,21 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
+=begin Xhtml
+<style>
+  pre {
+/**/
+    border-width:       2px;
+    border-style:       solid;
+    border-color:       #060;
+    padding:            10px 0 3px 10px;
+    color:              #060;
+    background-color:   #eaefea;
+    font-family:        FreeMono;
+  }
+</style>
+=end Xhtml
+
 =TITLE class MongoDB::Collection
 
 =SUBTITLE CRUD and other operations on collections in a MongoDB database

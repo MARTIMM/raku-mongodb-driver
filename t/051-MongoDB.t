@@ -4,13 +4,11 @@
 }}
 
 use v6;
-use Test;
-use BSON::Document;
-use MongoDB;
-use MongoDB::Connection;
-
 use lib 't';
 use Test-support;
+use Test;
+use MongoDB::Connection;
+
 
 my MongoDB::Connection $connection;
 my MongoDB::Database $database;

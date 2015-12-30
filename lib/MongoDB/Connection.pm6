@@ -46,24 +46,8 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-#    method send ( Buf:D $b, Bool $has_response --> Nil ) {
     method send ( Buf:D $b --> Nil ) {
       $!sock.write($b);
-#`{{
-      # some calls do not expect response
-      #
-      return unless $has_response;
-
-      # check response size
-      #
-      my $index = 0;
-      my Buf $l = $!sock.read(4);
-      my Int $w = BSON::Document::decode-int32( $l.list, $index) - 4;
-
-      # receive remaining response bytes from socket
-      #
-      return $l ~ $!sock.read($w);
-}}
     }
 
     #---------------------------------------------------------------------------
@@ -73,61 +57,13 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    # Get a database object
     #
     method database ( Str:D $name --> MongoDB::Database ) {
       return MongoDB::Database.new(
         :connection(self),
         :name($name)
       );
-    }
-
-    #---------------------------------------------------------------------------
-    # List databases using MongoDB db.runCommand({listDatabases: 1});
-    #
-    method list_databases ( --> Array ) is DEPRECATED('list-databases') {
-      return self.list-databases();
-    }
-
-    method list-databases ( --> Array ) is DEPRECATED('run-command(...)') {
-
-      return [];
-#`{{
-      $!status = Nil;
-
-      my $database = self.database('admin');
-      my BSON::Document $req .= new: (listDatabases => 1);
-      my BSON::Document $doc = $database.run-command($req);
-      if $doc<ok>.Bool == False {
-        $!status = X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          error-code => $doc<code>,
-          oper-name => 'listDatabases',
-          oper-data => $req.perl,
-          collection-ns => 'admin.$cmd',
-          severity => MongoDB::Severity::Error
-        );
-      }
-
-      return @($doc<databases>);
-}}
-    }
-
-    #---------------------------------------------------------------------------
-    # Get database names.
-    #
-    method database_names ( --> Array ) is DEPRECATED('database-names') {
-      return self.database-names();
-    }
-
-    method database-names ( --> Array ) is DEPRECATED('run-command(...)') {
-    
-      return [];
-#`{{
-      my @db_docs = self.list-databases();
-      my @names = map {$_<name>}, @db_docs; # Need to do it like this otherwise
-                                            # returns List instead of Array.
-      return @names;
-}}
     }
 
     #---------------------------------------------------------------------------
@@ -150,12 +86,6 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Get mongodb server info.
     #
-#`{{
-    method build_info ( --> Hash ) is DEPRECATED('build-info') {
-      return self.build-info();
-    }
-}}
-
     method build-info ( --> BSON::Document ) {
 
       $!status = Nil;
@@ -166,4 +96,3 @@ package MongoDB {
     }
   }
 }
-

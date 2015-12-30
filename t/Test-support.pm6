@@ -1,8 +1,6 @@
 use v6;
-use BSON::Document;
-use MongoDB;
-use MongoDB::Connection;
 use Test;
+use MongoDB::Connection;
 
 package Test-support
 {

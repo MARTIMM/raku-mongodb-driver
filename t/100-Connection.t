@@ -1,8 +1,7 @@
+use v6;
 use lib 't';
 use Test-support;
-use v6;
 use Test;
-use MongoDB;
 use MongoDB::Connection;
 
 #`{{
@@ -76,7 +75,10 @@ subtest {
      "Version type $version<release-type>";
 
   my BSON::Document $buildinfo = $connection.build-info;
-  ok $buildinfo<version>:exists, "Version $buildinfo<version>";
+say "V: $buildinfo<version>";
+say "B: ";
+show-document($buildinfo);
+  ok $buildinfo<version>:exists, "Version $buildinfo<version> exists";
   ok $buildinfo<loaderFlags>:exists, "Loader flags '$buildinfo<loaderFlags>'";
   ok $buildinfo<sysInfo>:exists, "Sys info '$buildinfo<sysInfo>'";
   ok $buildinfo<versionArray>:exists, "Version array '$buildinfo<versionArray>'";
@@ -92,53 +94,9 @@ subtest {
   my MongoDB::Database $database = $connection.database('test');
   isa-ok( $database, 'MongoDB::Database');
 
-  my MongoDB::Collection $collection = $database.collection('perl6_driver1');
-  $collection.insert( $%( 'name' => 'Jan Klaassen'));
-
-  #-------------------------------------------------------------------------------
-  # Get databases statistics
-  #
-  my MongoDB::Database $admin-db = $connection.database('admin');
-  my BSON::Document $doc = $admin-db.run-command(
-    BSON::Document.new: (listDatabases => 1)
-  );
-  is $doc<ok>, 1, 'List databases response ok';
-
-  my Array $db-docs = @($doc<databases>);
-
-  # Get the database name from the statistics and save the index into the array
-  # with that name. Use the zip operator to pair the array entries %doc with
-  # their index number $idx.
-  #
-  my %db-names;
-  my $idx = 0;
-  for $db-docs[*] -> $doc {
-    %db-names{$doc<name>} = $idx++;
-  }
-
-  ok %db-names<test>:exists, 'database test found';
-
-  ok !$db-docs[%db-names<test>]<empty>, 'Database test is not empty';
-
-  #-------------------------------------------------------------------------------
-  # Get all database names
-  #
-#`{{
-  my @dbns = $connection.database-names();
-  ok any(@dbns) ~~ 'test', 'test is found in database list';
-}}
-  #-------------------------------------------------------------------------------
   # Drop database db2
   #
   $database.drop;
-
-  $doc = $admin-db.run-command(
-    BSON::Document.new: (listDatabases => 1)
-  );
-  my @dbns = map {$_<name>}, $doc<databases>;
-say @dbns;
-
-  ok !(any(@dbns) ~~ 'test'), 'test not found in database list';
 }, "Create database, collection. Collect database info, drop data";
 
 #-------------------------------------------------------------------------------
