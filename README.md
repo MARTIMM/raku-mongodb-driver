@@ -128,9 +128,10 @@ $ panda install MongoDB
 ```
 
 ## Versions of PERL, MOARVM and MongoDB
-perl6 version 2015.10-70-gba70274 built on MoarVM version 2015.10-14-g5ff3001
-* Perl6 version ```2015.11-143-g7046681```
-* MoarVM version ```2015.11-19-g623eadf```
+
+* Perl6 version ```2015.12-1-g6452f8d``` implementing ```Perl 6.c```
+* MoarVM version ```2015.12```
+
 * MongoDB version ```3.0.5```
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
@@ -200,8 +201,8 @@ Legend;
 
 * [C] Set database is done with database(). Database is created implicitly after
       inserting data into a collection.
-* [D] list-databases(). Returns database statistics.
-* [D] database-names(). Returns a list of database names.
+* [-] list-databases(). Returns database statistics.
+* [-] database-names(). Returns a list of database names.
 * [D] run-command(), Many helper methods are using this command.
 * [D] get-last-error(). Get error status from last operation
 * [D] get-prev-error().
@@ -524,6 +525,13 @@ change at any time. The public API should not be considered stable.*
 
 * 0.*.0
   * Remove deprecation messages of converted method names
+
+* 0.25.14
+  * Many methods are removed from modules because they can be done by using
+    run-command(). Many commands are tested in ```t/400-run-command.t``` and
+    therefore becomes a good example file. Next a list of methods removed.
+    * Connection.pm6: list-databases, database-names.
+
 
 * 0.25.13
   * All encoding and decoding done in Wire.pm6 is moved out to Header.pm6
