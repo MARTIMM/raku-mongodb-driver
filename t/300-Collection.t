@@ -52,7 +52,6 @@ subtest {
 
   # Add next few records
   #
-  $req = Nil;
   $req .= new: (
     insert => $collection.name,
     documents => [
@@ -73,26 +72,30 @@ subtest {
 
 }, "Several inserts";
 
-done-testing();
-exit(0);
-=finish
-
 #-------------------------------------------------------------------------------
 # Drop current collection twice
 #
-my $doc = $collection.drop;
+$req .= new: (drop => $collection.name);
+$doc = $database.run-command($req);
+
 ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
 is $doc<ns>, 'test.cl1', 'Dropped collection';
 is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 
+# Do it a second time
+#
 try {
-  $doc = $collection.drop;
+  $doc = $database.run-command($req);
   CATCH {
     when X::MongoDB {
       ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
     }
   }
 }
+
+done-testing();
+exit(0);
+=finish
 
 #-------------------------------------------------------------------------------
 # Create using illegal collection name

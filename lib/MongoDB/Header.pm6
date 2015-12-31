@@ -284,7 +284,10 @@ package MongoDB {
         # so cursor is build using raw Buf
         #
         cursor-id       => Buf.new(
-          $b[($index + BSON::C-INT32-SIZE) .. ($index + BSON::C-INT32-SIZE + 7)]
+          $b.subbuf(
+            $index + BSON::C-INT32-SIZE,
+            $index + BSON::C-INT32-SIZE + 8
+          )
         ),
 
         # int32 startingFrom
@@ -305,17 +308,22 @@ package MongoDB {
 
       $index += 3 * BSON::C-INT32-SIZE + 8;
 
-#say "Repl doc: ", $reply-document<number-returned>;
+say "MH length: ", $reply-document<message-header><message-length>;
+say "MH rid: ", $reply-document<message-header><request-id>;
+say "MH opc: ", $reply-document<message-header><op-code>;
+say "MH nret: ", $reply-document<number-returned>;
 
+#say "Buf: ", $b;
+say "Subbuf: ", $b.subbuf( $index, 30);
       # Extract documents from message.
       #
       for ^$reply-document<number-returned> {
         my $doc-size = decode-int32( $b, $index);
-#say "I: $index, $doc-size";
-#        $index += 4;
+say "I: $index, $doc-size";
         my BSON::Document $document .= new(
-          Buf.new($b[$index ..^ ($index + $doc-size)])
+          Buf.new($b.subbuf( $index, $doc-size))
         );
+#        $index += BSON::C-INT32-SIZE;
         $index += $doc-size;
         $reply-document<documents>.push($document);
       }

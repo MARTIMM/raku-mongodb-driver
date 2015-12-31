@@ -9,15 +9,17 @@ package MongoDB {
 
   class Wire {
 
-#    my Bool $debug = False;
-
     #---------------------------------------------------------------------------
     # 
     method query (
-      $collection, BSON::Document:D $d is copy,
+      $collection, BSON::Document:D $qdoc,
       $projection?, :$flags, :$number-to-skip, :$number-to-return
       --> BSON::Document
     ) {
+      # Must clone the document otherwise the MongoDB::Header will be added
+      # to the $qdoc even when is copy trait is used.
+      #
+      my BSON::Document $d = $qdoc.clone;
       $d does MongoDB::Header;
 
       my $database = $collection.database;
