@@ -121,63 +121,40 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # CRUD - Create(insert), Read(find*), Update, Delete
     #---------------------------------------------------------------------------
-    # Find record in a collection. Legacy wire protocol method. Later versiona
-    # possible to use run-command()
+    # Find record in a collection. One of the few left to use the wire protocol.
     #
-#`{{
-    multi method find (
-      %criteria = { }, %projection = { },
-      Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Bool :$no-cursor-timeout = False
-      --> MongoDB::Cursor
-    ) {
-      my $flags = +$no-cursor-timeout +< 4;
-      my $OP_REPLY;
-        $OP_REPLY = $wire.OP-QUERY( self, $flags, $number-to-skip,
-                                        $number-to-return, %criteria,
-                                        %projection
-                                      );
-
-      my $c = MongoDB::Cursor.new( :collection(self), :$OP_REPLY, :%criteria);
-      return $c;
-    }
-
-    # Find record in a collection. Now the criteria is an array of Pair. This
-    # was nessesary for run-command to keep the command on on the first key
-    # value pair.
+    # Method using Pair.
     #
     multi method find (
-      Pair @criteria = [ ], %projection = { },
+      List $criteria = (), List $projection = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Bool :$no-cursor-timeout = False
-      --> MongoDB::Cursor
-    ) {
-      my $flags = +$no-cursor-timeout +< 4;
-      my $OP_REPLY;
-        $OP_REPLY = $wire.OP-QUERY( self, $flags, $number-to-skip,
-                                        $number-to-return, @criteria,
-                                        %projection
-                                      );
-
-      my $c = MongoDB::Cursor.new(
-        :collection(self), :$OP_REPLY,
-        :criteria(%@criteria)
-      );
-      return $c;
-    }
-}}
-
-    # Find record in a collection using a BSON::Document
-    #
-    method find (
-      BSON::Document $criteria = BSON::Document.new,
-      BSON::Document $projection?,
-      Int :$number-to-skip = 0, Int :$number-to-return = 0,
-#      Bool :$no-cursor-timeout = False
       Int :$flags = 0
       --> MongoDB::Cursor
     ) {
-#      my $flags = +$no-cursor-timeout +< 4;
+      my BSON::Document $cr .= new: $criteria;
+      my BSON::Document $pr .= new: $projection;
+say "CR: $criteria, ", $cr.perl;
+      my BSON::Document $server-reply = $wire.query(
+        self, $cr, $pr, :$flags, :$number-to-skip,
+        :$number-to-return
+      );
+
+      my $c = MongoDB::Cursor.new(
+        :collection(self), :$server-reply, :criteria($cr)
+      );
+
+      return $c;
+    }
+
+    # Find record in a collection using a BSON::Document
+    #
+    multi method find (
+      BSON::Document $criteria = BSON::Document.new,
+      BSON::Document $projection?,
+      Int :$number-to-skip = 0, Int :$number-to-return = 0,
+      Int :$flags = 0
+      --> MongoDB::Cursor
+    ) {
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return
@@ -192,6 +169,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
+#`{{
     method find_one (
       %criteria = { },
       %projection = { }
@@ -207,7 +185,7 @@ package MongoDB {
       my $doc = $cursor.fetch();
       return $doc.defined ?? $doc !! %();
     }
-
+}}
     #---------------------------------------------------------------------------
     #
     method find_and_modify (

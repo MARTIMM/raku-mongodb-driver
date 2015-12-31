@@ -1,3 +1,9 @@
+use lib 't';
+use Test-support;
+use v6;
+use Test;
+use MongoDB::Connection;
+
 #`{{
   Testing;
     database.collection()               Create collection
@@ -7,13 +13,6 @@
     X::MongoDB                          Catch exceptions
 }}
 
-use lib 't';
-use Test-support;
-
-use v6;
-use Test;
-use MongoDB::Connection;
-
 my MongoDB::Connection $connection = get-connection();
 my MongoDB::Database $database = $connection.database('test');
 
@@ -22,33 +21,61 @@ my MongoDB::Database $database = $connection.database('test');
 my MongoDB::Collection $collection = $database.collection('cl1');
 isa-ok( $collection, 'MongoDB::Collection');
 
+my BSON::Document $req;
+my BSON::Document $doc;
+
 #-------------------------------------------------------------------------------
 subtest {
-  $collection.insert( $%( name => 'Jan Klaassen'));
-  $collection.insert( { name => 'Piet B'},{ name => 'Me T'});
-  $collection.insert( %( :name('Di D')));
 
-  my MongoDB::Cursor $cursor = $collection.find({name => 'Me T'});
+  # Add records
+  #
+  $req .= new: (
+    insert => $collection.name,
+    documents => [
+      ( name => 'Jan Klaassen'),        ( name => 'Piet B'),
+      ( name => 'Me T'),                ( :name('Di D'))
+    ]
+  );
+
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, "Result is ok";
+  is $doc<n>, 4, "Inserted 4 documents";
+
+  my MongoDB::Cursor $cursor = $collection.find: (name => 'Me T',);
   is $cursor.count, 1, '1 record of "Me T"';
 
-  $cursor = $collection.find({name => 'Di D'});
+  $cursor = $collection.find: (name => 'Di D',);
   is $cursor.count, 1, '1 record of "Di D"';
 
-  $cursor = $collection.find({name => 'Jan Klaassen'});
+  $cursor = $collection.find: (name => 'Jan Klaassen',);
   is $cursor.count, 1, '1 record of "Jan Klaassen"';
 
-  my %r1 = :name('n1'), :test(0);
-  my Hash $r2 = {:name('n2'), :test(0)};
-  my @r3 = ( %(:name('n3'), :test(0)), %(:name('n4'), :test(0)));
-  my Array $r4 = [ %(:name('n5'), :test(0)), %(:name('n6'), :test(0))];
-  $collection.insert( %r1, $r2, |@r3, |$r4);
+  # Add next few records
+  #
+  $req = Nil;
+  $req .= new: (
+    insert => $collection.name,
+    documents => [
+      (:name('n1'), :test(0)),  (:name('n2'), :test(0)),
+      (:name('n3'), :test(0)),  (:name('n4'), :test(0)),
+      (:name('n5'), :test(0)),  (:name('n6'), :test(0))
+    ]
+  );
 
-  $cursor = $collection.find({:test(0)});
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, "Result is ok";
+  is $doc<n>, 6, "Inserted 6 documents";
+
+  $cursor = $collection.find: (:test(0),);
   is $cursor.count, 6, '6 records of Test(0)';
 
 #show-documents( $collection, {:test(0)}, {:_id(0)});
 
 }, "Several inserts";
+
+done-testing();
+exit(0);
+=finish
 
 #-------------------------------------------------------------------------------
 # Drop current collection twice

@@ -165,7 +165,8 @@ package MongoDB {
         # document query
         # query object
         #
-        self.encode;
+        self.encode
+      ;
 
 
       # [ document  returnFieldSelector; ]
@@ -220,6 +221,38 @@ package MongoDB {
       return self.encode-message-header(
         $get-more-buffer.elems, MongoDB::C-OP-GET-MORE
       ) ~ $get-more-buffer;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    multi method encode-kill-cursor ( Buf:D @cursor-ids --> Buf ) {
+
+      my Buf $kill-cursors-buffer = [~]
+
+        # int32 ZERO
+        # 0 - reserved for future use
+        #
+        encode-int32(0),
+
+        # int32 numberOfCursorIDs
+        # number of cursorIDs in message
+        #
+        encode-int32(+@cursor-ids)
+      ;
+
+      # int64* cursorIDs
+      # sequence of cursorIDs to close
+      #
+      for @cursor-ids -> $cursor-id {
+        $kill-cursors-buffer ~= $cursor-id;
+      }
+
+      # MsgHeader header
+      # standard message header
+      #
+      self!enc-msg-header(
+        $kill-cursors-buffer.elems, BSON::C-OP-KILL-CURSORS
+      ) ~ $kill-cursors-buffer;
     }
 
     #---------------------------------------------------------------------------

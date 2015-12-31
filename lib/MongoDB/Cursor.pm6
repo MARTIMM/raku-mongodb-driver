@@ -14,8 +14,6 @@ package MongoDB {
 
     has $.collection;
     has $.full-collection-name;
-    has %.criteria;
-
     has BSON::Document $!criteria;
 
     # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
@@ -116,7 +114,7 @@ say "N docs: {@!documents.elems}, id {$!id.list}";
     method explain ( --> Hash ) {
 
       my MongoDB::Cursor $cursor = $!collection.find(
-         hash( '$query' => %!criteria,
+         hash( '$query' => $!criteria,
                '$explain' => True
              )
              :number-to-return(1)
@@ -131,12 +129,13 @@ say "N docs: {@!documents.elems}, id {$!id.list}";
     #
     method hint ( $index-spec, :$explain = False --> Hash ) {
 
-      my $req = %( '$query' => %!criteria, '$hint' => $index-spec);
+      my $req = %( '$query' => $!criteria, '$hint' => $index-spec);
       $req{'$explain'} = 1 if $explain;
 
-      my MongoDB::Cursor $cursor = $!collection.find( $req,
-                                                      :number-to-return(1)
-                                                    );
+      my MongoDB::Cursor $cursor = $!collection.find(
+        $req,
+        :number-to-return(1)
+      );
       my $docs = $cursor.fetch;
       return $docs;
     }
@@ -160,17 +159,20 @@ say "N docs: {@!documents.elems}, id {$!id.list}";
 
       my $database = $!collection.database;
 
-      my Pair @req = count => $!collection.name, query => %!criteria;
-      @req.push: (:$skip) if $skip;
-      @req.push: (:$limit) if $limit;
+      my BSON::Document $req .= new: (
+        count => $!collection.name,
+        query => $!criteria
+      );
+      $req<$skip> = $skip if $skip;
+      $req<limit> = $limit if $limit;
 
-      my Hash $doc = $database.run-command(@req);
+      my BSON::Document $doc = $database.run-command($req);
       if !?$doc<ok>.Bool {
         die X::MongoDB.new(
           error-text => $doc<errmsg>,
           error-code => $doc<code>,
           oper-name => 'count',
-          oper-data => @req.perl,
+          oper-data => $req.perl,
           collection-ns => $!collection.database.name, '.',  $!collection.name
         );
       }

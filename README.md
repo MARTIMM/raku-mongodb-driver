@@ -368,9 +368,7 @@ Legend;
     * [ ] null
 
 * [O] find-and-modify(). Atomically modifies and returns a single document.
-* [O] find-one(). Performs a query and returns a single document.
-    * [x] %criteria (Search criteria)
-    * [x] %projection (Field selection)
+* [-] find-one(). Performs a query and returns a single document.
 * [-] getIndexStats(). Renders a human-readable view of the data collected by
       indexStats which reflects B-tree utilization. The function/command can be
       run only on a mongod instance that uses the
@@ -531,7 +529,7 @@ change at any time. The public API should not be considered stable.*
     run-command(). Many commands are tested in ```t/400-run-command.t``` and
     therefore becomes a good example file. Next a list of methods removed.
     * Connection.pm6: list-databases, database-names.
-
+    * Collection.pm6: find-one
 
 * 0.25.13
   * All encoding and decoding done in Wire.pm6 is moved out to Header.pm6

@@ -46,6 +46,7 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    #
     method get-more ( $cursor --> BSON::Document ) {
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
@@ -58,7 +59,7 @@ package MongoDB {
       my Buf $encoded-get-more = $d.encode-get-more(
         $full-collection-name, $cursor.id
       );
-      
+
       $connection.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -74,6 +75,32 @@ package MongoDB {
 # TODO check if cursorID matches (if present)
 say "SR: ", $server-reply;
       return $d.decode-reply($server-reply);
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method kill-cursors ( @cursors where $_.elems > 0 ) {
+
+      my BSON::Document $d .= new;
+      $d does MongoDB::Header;
+
+      my $collection = @cursors[0].collection;
+      my $database = $collection.database;
+      my $connection = $database.connection;
+
+      # Gather the ids only when they are non-zero.i.e. still active.
+      #
+      my @cursor-ids;
+      for @cursors -> $cursor {
+        @cursor-ids.push($cursor.id) if [+] $cursor.id.list;
+      }
+
+      # Kill the cursors if found any
+      #
+      if +@cursor-ids {
+        my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
+        $connection.send($encoded-kill-cursors);
+      }
     }
   }
 }
@@ -230,7 +257,7 @@ say "SR: ", $server-reply;
 
       self.OP-DELETE( $collection, $flags, %selector);
     }
-    
+
     method OP-DELETE ( $collection, Int $flags, %selector --> Nil ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
 
