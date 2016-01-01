@@ -320,9 +320,7 @@ say "Subbuf: ", $b.subbuf( $index, 30);
       for ^$reply-document<number-returned> {
         my $doc-size = decode-int32( $b, $index);
 say "I: $index, $doc-size";
-        my BSON::Document $document .= new(
-          Buf.new($b.subbuf( $index, $doc-size))
-        );
+        my BSON::Document $document .= new($b.subbuf( $index, $doc-size));
 #        $index += BSON::C-INT32-SIZE;
         $index += $doc-size;
         $reply-document<documents>.push($document);

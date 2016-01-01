@@ -25,26 +25,6 @@ package MongoDB {
       $!name = $name;
     }
 
-#`{{
-    #---------------------------------------------------------------------------
-    # Drop the database
-    #
-    method drop ( --> Hash ) {
-      my Pair @req = dropDatabase => 1;
-      my $doc =  self.run-command(@req);
-
-      if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'drop',
-          oper-data => @req.perl,
-          collection-ns => $!name
-        );
-      }
-
-      return $doc;
-    }
-}}
     #---------------------------------------------------------------------------
     # Select a collection. When it is new it comes into existence only
     # after inserting data
@@ -60,56 +40,6 @@ package MongoDB {
       }
 
       return MongoDB::Collection.new: :database(self), :name($name);
-    }
-
-    #---------------------------------------------------------------------------
-    # Create collection explicitly with control parameters
-    #
-    method create_collection ( Str:D $collection-name, Bool :$capped,
-                               Bool :$autoIndexId, Int :$size,
-                               Int :$max, Int :$flags
-                               --> MongoDB::Collection
-                             ) is DEPRECATED('create-collection') {
-      my $c = self.create-collection(
-        $collection-name, :$capped, :$autoIndexId, :$size, :$max, :$flags
-      );
-      return $c;
-    }
-
-    method create-collection ( Str:D $collection-name, Bool :$capped,
-                               Bool :$autoIndexId, Int :$size,
-                               Int :$max, Int :$flags
-                               --> MongoDB::Collection
-                             ) {
-
-      if !($collection-name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
-        die X::MongoDB.new(
-            error-text => "Illegal collection name: '$collection-name'",
-            oper-name => 'create-collection()',
-            collection-ns => $!name
-        );
-      }
-
-      # Setup the collection create command
-      #
-      my Pair @req = create => $collection-name;
-      @req.push: (:$capped) if $capped;
-      @req.push: (:$autoIndexId) if $autoIndexId;
-      @req.push: (:$size) if $size;
-      @req.push: (:$max) if $max;
-      @req.push: (:$flags) if $flags;
-
-      my Hash $doc = self.run-command(@req);
-      if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-            error-text => $doc<errmsg>,
-            oper-name => 'create-collection',
-            oper-data => @req.perl,
-            collection-ns => $!name
-        );
-      }
-
-      return MongoDB::Collection.new: :database(self), :name($collection-name);
     }
 
     #---------------------------------------------------------------------------
@@ -159,29 +89,6 @@ package MongoDB {
     # %("ok" => 0e0, "errmsg" => <Some error string>)
     # %("ok" => 1e0, ...);
     #
-#`{{
-    method run_command ( Pair:D @command --> Hash ) is DEPRECATED('run-command') {
-      return self.run-command(@command);
-    }
-
-    # Run command using an array of Pair
-    #
-    multi method run-command ( Pair:D @command --> Hash ) {
-
-      # Create a local collection structure here
-      #
-      my MongoDB::Collection $c .= new(
-        database    => self,
-        name        => '$cmd',
-      );
-
-      # Use it to do a find on it, get the doc and return it.
-      #
-      my MongoDB::Cursor $cursor = $c.find( @command, :number-to-return(1));
-      my $doc = $cursor.fetch();
-      return $doc.defined ?? $doc !! %();
-    }
-}}
     # Run command using the BSON::Document.
     #
     multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
@@ -201,6 +108,108 @@ package MongoDB {
       return $doc.defined ?? $doc !! BSON::Document.new;
     }
 
+    # Run command using List of Pair.
+    #
+    multi method run-command ( |c --> BSON::Document ) {
+#TODO check on arguments
+#say "RC 0: ", c.list;
+
+      my BSON::Document $command .= new: c.list;
+#say "RC 1: ", $command.perl;
+
+      # Create a local collection structure here. $cmd is not a perl variable
+      # but virt mongo collection.
+      #
+      my MongoDB::Collection $c .= new(
+        database    => self,
+        name        => '$cmd',
+      );
+
+      # And use it to do a find on it, get the doc and return it.
+      #
+      my MongoDB::Cursor $cursor = $c.find( $command, :number-to-return(1));
+      my $doc = $cursor.fetch;
+# throw exception when undefined!!!
+      return $doc.defined ?? $doc !! BSON::Document.new;
+    }
+
+  }
+}
+
+
+=finish
+#`{{
+    #---------------------------------------------------------------------------
+    # Drop the database
+    #
+    method drop ( --> Hash ) {
+      my Pair @req = dropDatabase => 1;
+      my $doc =  self.run-command(@req);
+
+      if $doc<ok>.Bool == False {
+        die X::MongoDB.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop',
+          oper-data => @req.perl,
+          collection-ns => $!name
+        );
+      }
+
+      return $doc;
+    }
+}}
+#`{{
+    #---------------------------------------------------------------------------
+    # Create collection explicitly with control parameters
+    #
+    method create_collection ( Str:D $collection-name, Bool :$capped,
+                               Bool :$autoIndexId, Int :$size,
+                               Int :$max, Int :$flags
+                               --> MongoDB::Collection
+                             ) is DEPRECATED('create-collection') {
+      my $c = self.create-collection(
+        $collection-name, :$capped, :$autoIndexId, :$size, :$max, :$flags
+      );
+      return $c;
+    }
+
+    method create-collection ( Str:D $collection-name, Bool :$capped,
+                               Bool :$autoIndexId, Int :$size,
+                               Int :$max, Int :$flags
+                               --> MongoDB::Collection
+                             ) {
+
+      if !($collection-name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
+        die X::MongoDB.new(
+            error-text => "Illegal collection name: '$collection-name'",
+            oper-name => 'create-collection()',
+            collection-ns => $!name
+        );
+      }
+
+      # Setup the collection create command
+      #
+      my Pair @req = create => $collection-name;
+      @req.push: (:$capped) if $capped;
+      @req.push: (:$autoIndexId) if $autoIndexId;
+      @req.push: (:$size) if $size;
+      @req.push: (:$max) if $max;
+      @req.push: (:$flags) if $flags;
+
+      my Hash $doc = self.run-command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB.new(
+            error-text => $doc<errmsg>,
+            oper-name => 'create-collection',
+            oper-data => @req.perl,
+            collection-ns => $!name
+        );
+      }
+
+      return MongoDB::Collection.new: :database(self), :name($collection-name);
+    }
+}}
+#`{{
     #---------------------------------------------------------------------------
     # Get the last error. Returns one or more of the following keys: ok, err,
     # code, connectionId, lastOp, n, shards, singleShard, updatedExisting,
@@ -235,7 +244,8 @@ package MongoDB {
 
       return $doc;
     }
-
+}}
+#`{{
     #---------------------------------------------------------------------------
     # Get errors since last reset error command
     #
@@ -258,7 +268,8 @@ package MongoDB {
 
       return $doc;
     }
-
+}}
+#`{{
     #---------------------------------------------------------------------------
     # Reset error command
     #
@@ -282,5 +293,4 @@ package MongoDB {
 
       return $doc;
     }
-  }
-}
+}}

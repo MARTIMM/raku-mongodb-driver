@@ -117,8 +117,9 @@ subtest {
 
   # Drop database
   #
-#  $doc = $database.run-command(BSON::Document.new: (dropDatabase => 1));
-#  is $doc<ok>, 1, "Drop database test ok";
+  $req .= new: ( dropDatabase => 1 );
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, "Drop database test ok";
 
 }, "Diagnostic Commands";
 

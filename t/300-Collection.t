@@ -1,4 +1,4 @@
-use lib 't';
+use lib 't', '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use v6;
 use Test;
@@ -148,7 +148,8 @@ is $cursor.count, 10, 'Only 10 records in collection';
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$database.drop;
+$req .= new: ( dropDatabase => 1 );
+$doc = $database.run-command($req);
 
 done-testing();
 exit(0);

@@ -15,12 +15,13 @@ use MongoDB::Connection;
 }}
 
 my MongoDB::Connection $connection;
+my BSON::Document $req;
+my BSON::Document $doc;
+
 #set-logfile($*OUT);
 #set-logfile($*ERR);
 #say "Test of stdout";
 
-my BSON::Document $req;
-my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 subtest {
   $connection .= new( :host<localhost>, :port(763245));

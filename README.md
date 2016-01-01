@@ -205,15 +205,15 @@ Legend;
 * [-] database-names(). Returns a list of database names.
 * [-] drop() Drop database.
 * [D] run-command(), Many helper methods are using this command.
-* [D] get-last-error(). Get error status from last operation
-* [D] get-prev-error().
-* [D] reset-error().
+* [-] get-last-error(). Get error status from last operation
+* [-] get-prev-error().
+* [-] reset-error().
 
 ### Collection Methods
 
 * [D] collection(). Set collection. Collection is created implicitly after
       inserting data into a collection.
-* [D] create-collection(). Create collection explicitly and sets collection parameters.
+* [-] create-collection(). Create collection explicitly and sets collection parameters.
 * [D] list-collections().
 * [D] collection-names().
 
@@ -530,8 +530,13 @@ change at any time. The public API should not be considered stable.*
     run-command(). Many commands are tested in ```t/400-run-command.t``` and
     therefore becomes a good example file. Next a list of methods removed.
     * Connection.pm6: list-databases, database-names.
-    * Database.pm6: drop
+    * Database.pm6: drop, create-collection, get-last-error, get-prev-error,
+      reset-error
     * Collection.pm6: find-one, drop
+
+  * Some extra multi's are created to set arguments more convenient. Fin(),
+    and run-command() now have also List of Pair atrributes instead of
+    BSON::Document.
 
 * 0.25.13
   * All encoding and decoding done in Wire.pm6 is moved out to Header.pm6
