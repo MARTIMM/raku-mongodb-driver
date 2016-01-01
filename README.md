@@ -203,6 +203,7 @@ Legend;
       inserting data into a collection.
 * [-] list-databases(). Returns database statistics.
 * [-] database-names(). Returns a list of database names.
+* [-] drop() Drop database.
 * [D] run-command(), Many helper methods are using this command.
 * [D] get-last-error(). Get error status from last operation
 * [D] get-prev-error().
@@ -341,7 +342,7 @@ Legend;
 * [O] distinct(). Returns an array of documents that have distinct values for
       the specified field. Displays the distinct values found for a specified
       key in a collection.
-* [O] drop(). Removes the specified collection from the database.
+* [-] drop(). Removes the specified collection from the database.
 * [O] drop-index(). Removes a specified index on a collection.
 * [O] drop-indexes(). Removes all indexes on a collection.
 * [O] ensure-index(). Creates an index if it does not currently exist. If the
@@ -529,6 +530,7 @@ change at any time. The public API should not be considered stable.*
     run-command(). Many commands are tested in ```t/400-run-command.t``` and
     therefore becomes a good example file. Next a list of methods removed.
     * Connection.pm6: list-databases, database-names.
+    * Database.pm6: drop
     * Collection.pm6: find-one, drop
 
 * 0.25.13

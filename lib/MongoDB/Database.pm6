@@ -25,6 +25,7 @@ package MongoDB {
       $!name = $name;
     }
 
+#`{{
     #---------------------------------------------------------------------------
     # Drop the database
     #
@@ -43,7 +44,7 @@ package MongoDB {
 
       return $doc;
     }
-
+}}
     #---------------------------------------------------------------------------
     # Select a collection. When it is new it comes into existence only
     # after inserting data

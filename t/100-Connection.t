@@ -19,6 +19,8 @@ my MongoDB::Connection $connection;
 #set-logfile($*ERR);
 #say "Test of stdout";
 
+my BSON::Document $req;
+my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 subtest {
   $connection .= new( :host<localhost>, :port(763245));
@@ -58,6 +60,7 @@ subtest {
 
 #-------------------------------------------------------------------------------
 subtest {
+
   $connection = get-connection();
   is $connection.status.^name, 'Exception', '1 Status isa Exception';
   ok $connection.status ~~ Exception, '2 Status isa Exception';
@@ -65,8 +68,7 @@ subtest {
      '3 Status is not a !X::MongoDBn';
   ok ! ? $connection.status, "Status is not defined";
 
-  my Hash $version = $connection.version;
-#say "V: ", $version.perl;
+  my BSON::Document $version = $connection.version;
   ok $version<release1>:exists, "Version release $version<release1>";
   ok $version<release2>:exists, "Version major $version<release2>";
   ok $version<revision>:exists, "Version minor $version<revision>";
@@ -75,19 +77,11 @@ subtest {
      "Version type $version<release-type>";
 
   my BSON::Document $buildinfo = $connection.build-info;
-say "V: $buildinfo<version>";
-say "B: ";
-show-document($buildinfo);
   ok $buildinfo<version>:exists, "Version $buildinfo<version> exists";
   ok $buildinfo<loaderFlags>:exists, "Loader flags '$buildinfo<loaderFlags>'";
   ok $buildinfo<sysInfo>:exists, "Sys info '$buildinfo<sysInfo>'";
   ok $buildinfo<versionArray>:exists, "Version array '$buildinfo<versionArray>'";
-}, "Test buildinfo and version";
 
-#-------------------------------------------------------------------------------
-subtest {
-
-  #-------------------------------------------------------------------------------
   # Create databases with a collection and data to make sure the databases are
   # there
   #
@@ -96,7 +90,10 @@ subtest {
 
   # Drop database db2
   #
-  $database.drop;
+  $req .= new: ( dropDatabase => 1 );
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, 'Drop request ok';
+
 }, "Create database, collection. Collect database info, drop data";
 
 #-------------------------------------------------------------------------------

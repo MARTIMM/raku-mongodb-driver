@@ -71,11 +71,12 @@ package MongoDB {
     # at $MongoDB::version for later lookups by other code whithout the need
     # of quering the server all the time. See BUILD above.
     #
-    method version ( --> Hash ) {
+    method version ( --> BSON::Document ) {
       my BSON::Document $doc = self.build-info;
-      my Hash $version = hash( <release1 release2 revision>
-                               Z=> (for $doc<version>.split('.') {.Int})
-                             );
+      my BSON::Document $version .= new: (
+        <release1 release2 revision> Z=> (for $doc<version>.split('.') {.Int})
+      );
+
       $version<release-type> = $version<release2> %% 2
                                ?? 'production'
                                !! 'development'
