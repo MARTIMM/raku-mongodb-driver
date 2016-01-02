@@ -28,7 +28,7 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Support for the newer BSON::Document
     #
-    submethod BUILD (
+    multi submethod BUILD (
       :$collection!,
       BSON::Document:D :$criteria,
       BSON::Document:D :$server-reply
@@ -46,17 +46,42 @@ package MongoDB {
       # this reply.
       #
       $!id = $server-reply<cursor-id>;
+#say "Id: ", $!id;
 
       # Get documents from the reply.
       #
-say "DT: {$server-reply<documents>}";
+#say "D: {$server-reply<documents>}";
       @!documents = $server-reply<documents>.list;
+    }
+
+    # This can be set with data from e.g. list documents
+    #
+    multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
+
+      $!collection = $$cursor-doc<ns>;
+      $!criteria .= new;
+      $!full-collection-name = $cursor-doc<ns>;
+
+      # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
+      # batches left on the server to retrieve. Documents may be present in
+      # this reply.
+      #
+      my BSON::Document $d .= new; 
+      $d does MongoDB::Header;
+      $!id = $d.encode-cursor-id($cursor-doc<id>);
+#say "B2 Id: ", $!id;
+
+      # Get documents from the reply.
+      #
+#say "B2 D: {$cursor-doc<firstBatch>}";
+      @!documents = @($cursor-doc<firstBatch>);
+#say "B2 docs: {@!documents.elems}";
     }
 
     #-----------------------------------------------------------------------------
     method fetch ( --> Any ) {
 
-say "N docs: {@!documents.elems}, id {$!id.list}";
+#say "N docs: {@!documents.elems}, id {$!id.list}";
       # If there are no more documents in last response batch but there is
       # still a next batch(sum of id bytes not 0) to fetch from database.
       #
@@ -80,33 +105,6 @@ say "N docs: {@!documents.elems}, id {$!id.list}";
       #
       return +@!documents ?? @!documents.shift !! Nil;
     }
-#`{{
-    method fetch ( --> Any ) {
-
-      # there are no more documents in last response batch
-      # but there is next batch to fetch from database
-      if not @!documents and [+]($!id.list) {
-
-        # request next batch of documents
-        my Hash $OP_REPLY = $wire.OP-GETMORE(self);
-
-        # assign cursorID,
-        # it may change to "0" if there are no more documents to fetch
-        $!id = $OP_REPLY<cursor_id>;
-
-        # assign documents
-        @!documents = $OP_REPLY<documents>.list;
-      }
-
-      # Return a document when there is one. If none left, return Nil
-      #
-      return +@!documents ?? @!documents.shift !! Nil;
-    }
-}}
-    #-----------------------------------------------------------------------------
-    # Add support for next() as in the mongo shell
-    #
-    method next ( --> Any ) { return self.fetch }
 
     #-----------------------------------------------------------------------------
     # Get explanation about given search criteria
