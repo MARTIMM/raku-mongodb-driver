@@ -3,6 +3,7 @@ use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
 use MongoDB::Connection;
+use MongoDB::Cursor;
 
 #`{{
   Testing;
@@ -71,13 +72,18 @@ subtest {
   $doc = $database.run-command: (listCollections => 1);
   is $doc<ok>, 1, 'list collections request ok';
 
-say "LD: ", $doc<cursor>.perl;
+  my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
+  my Bool $f-cl1 = False;
+  my Bool $f-cl2 = False;
+  while $c.fetch -> $d {
+#say "N & O: ", $d<name>, $d<options>;
+    $f-cl1 = True if $d<name> eq 'cl1';
+    $f-cl2 = True if $d<name> eq 'cl2';
+  }
 
-#  my $docs = $database.list-collections;
-#  is $docs.elems, 5, 'Number of docs: 5 = system table and 2 for each collection';
+  ok $f-cl1, 'Collection cl1 listed';
+  ok $f-cl2, 'Collection cl2 listed';
 
-#  $docs = $database.collection-names;
-#  is-deeply $docs.sort, <cl1 cl2>, 'Test collection names';
 }, "simple collection operations";
 
 #-------------------------------------------------------------------------------
