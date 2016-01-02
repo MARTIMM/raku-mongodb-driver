@@ -112,9 +112,9 @@ package MongoDB {
     #
     multi method run-command ( |c --> BSON::Document ) {
 #TODO check on arguments
-#say "RC 0: ", c.list;
+#say "RC 0: ", c;
 
-      my BSON::Document $command .= new: c.list;
+      my BSON::Document $command .= new: c[0];
 #say "RC 1: ", $command.perl;
 
       # Create a local collection structure here. $cmd is not a perl variable
