@@ -169,25 +169,6 @@ say "CR: $criteria, ", $cr.perl;
 
     #---------------------------------------------------------------------------
     #
-#`{{
-    method find_one (
-      %criteria = { },
-      %projection = { }
-      --> Hash ) is DEPRECATED('find-one') {
-
-      return self.find-one( %criteria, %projection);
-    }
-
-    method find-one ( %criteria = { }, %projection = { } --> Hash ) {
-      my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
-                                              :number-to-return(1)
-                                            );
-      my $doc = $cursor.fetch();
-      return $doc.defined ?? $doc !! %();
-    }
-}}
-    #---------------------------------------------------------------------------
-    #
     method find_and_modify (
       Hash $criteria = { }, Hash $projection = { },
       Hash :$update = { }, Hash :$sort = { },
@@ -235,55 +216,6 @@ say "CR: $criteria, ", $cr.perl;
     }
 
     #---------------------------------------------------------------------------
-    #
-    method insert ( **@documents, Bool :$continue-on-error = False
-    ) is DEPRECATED("run-command\(BSON::Document.new: insert => 'collection`,...")
-    {
-#      self!check-doc-keys(@documents);
-#      my $flags = +$continue-on-error;
-#      $wire.OP-INSERT( self, $flags, @documents);
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method update (
-      Hash %selector, %update!, Bool :$upsert = False,
-      Bool :$multi-update = False
-    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
-    {
-#      my $flags = +$upsert + +$multi-update +< 1;
-#      $wire.OP_UPDATE( self, $flags, %selector, %update);
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method remove ( %selector = { }, Bool :$single-remove = False
-    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
-    {
-#      my $flags = +$single-remove;
-#      $wire.OP_DELETE( self, $flags, %selector );
-    }
-
-#`{{
-    #---------------------------------------------------------------------------
-    # Drop collection
-    #
-    method drop ( --> Hash ) {
-      my Pair @req = drop => $!name;
-      my $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'drop',
-          oper-data => @req.perl,
-          collection-ns => [~] $!database.name, '.', $!name
-        );
-      }
-
-      return $doc;
-    }
-}}
-    #---------------------------------------------------------------------------
     # Some methods also created in Cursor.pm
     #---------------------------------------------------------------------------
     # Get explanation about given search criteria
@@ -293,59 +225,6 @@ say "CR: $criteria, ", $cr.perl;
       my MongoDB::Cursor $cursor = self.find( @req, :number-to-return(1));
       my $docs = $cursor.fetch();
       return $docs;
-    }
-
-    #---------------------------------------------------------------------------
-    # Get count of documents depending on criteria
-    #
-    method count ( Hash $criteria = {} --> Int ) {
-
-      # fields is seen with wireshark
-      #
-      my Pair @req = count => $!name, query => $criteria, fields => %();
-      my $doc = $!database.run-command(@req);
-
-      # Check error and throw X::MongoDB if there is one
-      #
-      if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'count',
-          oper-data => @req.perl,
-          collection-ns => [~] $!database.name, '.', $!name
-        );
-      }
-
-      return Int($doc<n>);
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    #---------------------------------------------------------------------------
-    # Find distinct values of a field depending on criteria
-    #
-    method distinct( Str:D $field-name, %criteria = {} --> Array ) {
-      my Pair @req = distinct => $!name,
-                     key => $field-name,
-                     query => %criteria
-                     ;
-
-      my $doc = $!database.run-command(@req);
-
-      # Check error and throw X::MongoDB if there is one
-      #
-      if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'distinct',
-          oper-data => @req.perl,
-          collection-ns => [~] $!database.name, '.', $!name
-        );
-      }
-
-      # What do we do with $doc<stats> ?
-      #
-      return $doc<values>.list;
     }
 
     #---------------------------------------------------------------------------
@@ -665,3 +544,131 @@ say "CR: $criteria, ", $cr.perl;
     }
   }
 }
+
+
+
+
+
+=finish
+
+#`{{
+    #---------------------------------------------------------------------------
+    #
+    method find_one (
+      %criteria = { },
+      %projection = { }
+      --> Hash ) is DEPRECATED('find-one') {
+
+      return self.find-one( %criteria, %projection);
+    }
+
+    method find-one ( %criteria = { }, %projection = { } --> Hash ) {
+      my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
+                                              :number-to-return(1)
+                                            );
+      my $doc = $cursor.fetch();
+      return $doc.defined ?? $doc !! %();
+    }
+
+    #---------------------------------------------------------------------------
+    # Drop collection
+    #
+    method drop ( --> Hash ) {
+      my Pair @req = drop => $!name;
+      my $doc = $!database.run-command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'drop',
+          oper-data => @req.perl,
+          collection-ns => [~] $!database.name, '.', $!name
+        );
+      }
+
+      return $doc;
+    }
+
+    #---------------------------------------------------------------------------
+    # Get count of documents depending on criteria
+    #
+    method count ( Hash $criteria = {} --> Int ) {
+
+      # fields is seen with wireshark
+      #
+      my Pair @req = count => $!name, query => $criteria, fields => %();
+      my $doc = $!database.run-command(@req);
+
+      # Check error and throw X::MongoDB if there is one
+      #
+      if $doc<ok>.Bool == False {
+        die X::MongoDB.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'count',
+          oper-data => @req.perl,
+          collection-ns => [~] $!database.name, '.', $!name
+        );
+      }
+
+      return Int($doc<n>);
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    #---------------------------------------------------------------------------
+    # Find distinct values of a field depending on criteria
+    #
+    method distinct( Str:D $field-name, %criteria = {} --> Array ) {
+      my Pair @req = distinct => $!name,
+                     key => $field-name,
+                     query => %criteria
+                     ;
+
+      my $doc = $!database.run-command(@req);
+
+      # Check error and throw X::MongoDB if there is one
+      #
+      if $doc<ok>.Bool == False {
+        die X::MongoDB.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'distinct',
+          oper-data => @req.perl,
+          collection-ns => [~] $!database.name, '.', $!name
+        );
+      }
+
+      # What do we do with $doc<stats> ?
+      #
+      return $doc<values>.list;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method insert ( **@documents, Bool :$continue-on-error = False
+    ) is DEPRECATED("run-command\(BSON::Document.new: insert => 'collection`,...")
+    {
+#      self!check-doc-keys(@documents);
+#      my $flags = +$continue-on-error;
+#      $wire.OP-INSERT( self, $flags, @documents);
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method update (
+      Hash %selector, %update!, Bool :$upsert = False,
+      Bool :$multi-update = False
+    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    {
+#      my $flags = +$upsert + +$multi-update +< 1;
+#      $wire.OP_UPDATE( self, $flags, %selector, %update);
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method remove ( %selector = { }, Bool :$single-remove = False
+    ) is DEPRECATED("run-command\(BSON::Document.new: update => 'collection`,...")
+    {
+#      my $flags = +$single-remove;
+#      $wire.OP_DELETE( self, $flags, %selector );
+    }
+
+}}

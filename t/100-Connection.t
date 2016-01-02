@@ -10,7 +10,6 @@ use MongoDB::Connection;
     connection.database                 Return database
     connection.list-databases()         Get the statistics of the databases
     connection.database-names()         Get the database names
-    connection.version()                Version name
     connection.buildinfo()              Server info
 }}
 
@@ -69,7 +68,7 @@ subtest {
      '3 Status is not a !X::MongoDBn';
   ok ! ? $connection.status, "Status is not defined";
 
-  my BSON::Document $version = $connection.version;
+  my BSON::Document $version = $MongoDB::version;
   ok $version<release1>:exists, "Version release $version<release1>";
   ok $version<release2>:exists, "Version major $version<release2>";
   ok $version<revision>:exists, "Version minor $version<revision>";
@@ -77,7 +76,7 @@ subtest {
      $version<release2> %% 2 ?? 'production' !! 'development',
      "Version type $version<release-type>";
 
-  my BSON::Document $buildinfo = $connection.build-info;
+  my BSON::Document $buildinfo = $MongoDB::build-info;
   ok $buildinfo<version>:exists, "Version $buildinfo<version> exists";
   ok $buildinfo<loaderFlags>:exists, "Loader flags '$buildinfo<loaderFlags>'";
   ok $buildinfo<sysInfo>:exists, "Sys info '$buildinfo<sysInfo>'";

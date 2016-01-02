@@ -41,7 +41,26 @@ package MongoDB {
         }
       }
 
-      $MongoDB::version = self.version unless ? $!status;
+      unless ? $!status {
+        # Get build information and store it
+        #
+        $MongoDB::build-info =
+          self.database('admin').run-command: (buildinfo => 1);
+
+        # Extract version from build-info
+        #
+        my BSON::Document $version .= new: (
+          <release1 release2 revision> Z=> (
+            for $MongoDB::build-info<version>.split('.') {.Int}
+          )
+        );
+
+        $version<release-type> = $version<release2> %% 2
+                                 ?? 'production'
+                                 !! 'development'
+                                 ;
+        $MongoDB::version = $version;
+      }
     }
 
     #---------------------------------------------------------------------------
@@ -65,35 +84,6 @@ package MongoDB {
         :name($name)
       );
     }
-
-    #---------------------------------------------------------------------------
-    # Get mongodb version. When making a new connection the version is store
-    # at $MongoDB::version for later lookups by other code whithout the need
-    # of quering the server all the time. See BUILD above.
-    #
-    method version ( --> BSON::Document ) {
-      my BSON::Document $doc = self.build-info;
-      my BSON::Document $version .= new: (
-        <release1 release2 revision> Z=> (for $doc<version>.split('.') {.Int})
-      );
-
-      $version<release-type> = $version<release2> %% 2
-                               ?? 'production'
-                               !! 'development'
-                               ;
-      return $version;
-    }
-
-    #---------------------------------------------------------------------------
-    # Get mongodb server info.
-    #
-    method build-info ( --> BSON::Document ) {
-
-      $!status = Nil;
-
-      my $database = self.database('admin');
-      my BSON::Document $req .= new: (buildinfo => 1);
-      return $database.run-command($req);
-    }
   }
 }
+

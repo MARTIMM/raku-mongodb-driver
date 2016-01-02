@@ -7,6 +7,7 @@ package MongoDB:ver<0.25.14> {
   #-----------------------------------------------------------------------------
   # Server version on current connection
   #
+  our $build-info = Nil;
   our $version = Nil;
 
   # Definition of all severity types

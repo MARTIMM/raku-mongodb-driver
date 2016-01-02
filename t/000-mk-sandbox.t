@@ -251,7 +251,7 @@ my MongoDB::Connection $connection = get-connection-try10();
 
 # Test version
 #
-my $version = $connection.version;
+my $version = $MongoDB::version;
 ok $version<release1> >= 3, "MongoDB release >= 3";
 
 #-------------------------------------------------------------------------------

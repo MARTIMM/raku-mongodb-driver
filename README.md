@@ -329,7 +329,7 @@ Legend;
       aggregation tasks such as group using the aggregation framework.
 * [-] copyTo(). Wraps eval to copy data between collections in a single MongoDB
       instance. Deprecated since version MongoDB 3.0.
-* [O] count(). Wraps count to return a count of the number of documents in a
+* [-] count(). Wraps count to return a count of the number of documents in a
       collection or matching a query.
 * [-] create-index(). Builds an index on a collection. Use ensure-index().
       Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
@@ -339,7 +339,7 @@ Legend;
       the output of the collStats.
 * [O] explain(). Done also in collection! Reports on the query execution plan,
       including index use, for a cursor.
-* [O] distinct(). Returns an array of documents that have distinct values for
+* [-] distinct(). Returns an array of documents that have distinct values for
       the specified field. Displays the distinct values found for a specified
       key in a collection.
 * [-] drop(). Removes the specified collection from the database.
@@ -522,21 +522,22 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
-* 0.*.0
-  * Remove deprecation messages of converted method names
-
-* 0.25.14
+* 0.26.0
+  * Remove deprecation messages of converted method names. A lot of them were
+    helper methods and are removed anyway.
   * Many methods are removed from modules because they can be done by using
     run-command(). Many commands are tested in ```t/400-run-command.t``` and
     therefore becomes a good example file. Next a list of methods removed.
-    * Connection.pm6: list-databases, database-names.
+    * Connection.pm6: list-databases, database-names, version, build-info
     * Database.pm6: drop, create-collection, get-last-error, get-prev-error,
       reset-error
-    * Collection.pm6: find-one, drop
+    * Collection.pm6: find-one, drop, count, distinct, insert, update, remove
 
   * Some extra multi's are created to set arguments more convenient. Fin(),
     and run-command() now have also List of Pair atrributes instead of
     BSON::Document.
+  * Version and build-info are stored in MongoDB as $MongoDB::version and
+    MongoDB::build-info
 
 * 0.25.13
   * All encoding and decoding done in Wire.pm6 is moved out to Header.pm6
