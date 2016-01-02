@@ -132,7 +132,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    multi method encode-query (
+    method encode-query (
       Str:D $full-collection-name, BSON::Document $projection?,
       Int :$flags = 0, Int :$number-to-skip = 0, Int :$number-to-return = 0
       --> Buf
@@ -185,7 +185,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    multi method encode-get-more (
+    method encode-get-more (
       Str:D $full-collection-name, Buf:D $cursor-id
       --> Buf
     ) {
@@ -225,7 +225,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    multi method encode-kill-cursor ( Buf:D @cursor-ids --> Buf ) {
+    method encode-kill-cursor ( Buf:D @cursor-ids --> Buf ) {
 
       my Buf $kill-cursors-buffer = [~]
 
@@ -253,6 +253,13 @@ package MongoDB {
       self!enc-msg-header(
         $kill-cursors-buffer.elems, BSON::C-OP-KILL-CURSORS
       ) ~ $kill-cursors-buffer;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method encode-cursor-id ( Int $cursor-id --> Buf ) {
+      
+      return encode-int64($cursor-id);
     }
 
     #---------------------------------------------------------------------------
@@ -308,18 +315,18 @@ package MongoDB {
 
       $index += 3 * BSON::C-INT32-SIZE + 8;
 
-say "MH length: ", $reply-document<message-header><message-length>;
-say "MH rid: ", $reply-document<message-header><request-id>;
-say "MH opc: ", $reply-document<message-header><op-code>;
-say "MH nret: ", $reply-document<number-returned>;
+#say "MH length: ", $reply-document<message-header><message-length>;
+#say "MH rid: ", $reply-document<message-header><request-id>;
+#say "MH opc: ", $reply-document<message-header><op-code>;
+#say "MH nret: ", $reply-document<number-returned>;
 
 #say "Buf: ", $b;
-say "Subbuf: ", $b.subbuf( $index, 30);
+#say "Subbuf: ", $b.subbuf( $index, 30);
       # Extract documents from message.
       #
       for ^$reply-document<number-returned> {
         my $doc-size = decode-int32( $b, $index);
-say "I: $index, $doc-size";
+#say "I: $index, $doc-size";
         my BSON::Document $document .= new($b.subbuf( $index, $doc-size));
 #        $index += BSON::C-INT32-SIZE;
         $index += $doc-size;
