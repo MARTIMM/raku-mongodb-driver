@@ -75,7 +75,7 @@ package MongoDB {
       my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
 # TODO check if requestID matches responseTo
 # TODO check if cursorID matches (if present)
-say "SR: ", $server-reply;
+#say "SR: ", $server-reply;
       return $d.decode-reply($server-reply);
     }
 

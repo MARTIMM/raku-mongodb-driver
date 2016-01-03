@@ -121,7 +121,7 @@ package Test-support
     say '-' x 80;
 
     my MongoDB::Cursor $cursor = $collection.find( $criteria, $projection);
-    while $cursor.fetch() -> BSON::Document $document {
+    while $cursor.fetch -> BSON::Document $document {
       show-document($document);
     }
   }

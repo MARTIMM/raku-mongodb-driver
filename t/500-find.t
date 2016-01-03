@@ -1,3 +1,10 @@
+use v6;
+use lib 't', '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use Test-support;
+use Test;
+use MongoDB::Connection;
+use BSON::ObjectId;
+
 #`{{
   Testing;
     collection.find()                   Query database
@@ -12,29 +19,50 @@
     cursor.next()                       Fetch a document
 }}
 
-use lib 't';
-use Test-support;
+my MongoDB::Connection $connection = get-connection();
+my MongoDB::Database $db-admin = $connection.database('admin');
+my MongoDB::Database $database = $connection.database('test');
+my MongoDB::Collection $collection = $database.collection('testf');
+my BSON::Document $req;
+my BSON::Document $doc;
 
-use v6;
-use Test;
-use MongoDB::Collection;
-use BSON::ObjectId-old;
+$database.run-command: (dropDatabase => 1);
 
-my MongoDB::Collection $collection = get-test-collection( 'test', 'testf');
-$collection.database.drop;
+$req .= new: (
+  insert => $collection.name,
+  documents => [(a => 1),]
+);
 
-my Hash $d1 = { code           => 'd1'
-              , name           => 'name and lastname'
-              , address        => 'address'
-              , city           => 'new york'
-              };
+#say "R: ", $req<documents>[0][4].WHAT;
+#say "RP: ", $req.perl;
+#exit(0);
 
 for ^50 -> $i {
-  $d1<test_record> = 'tr' ~ $i;
-  $collection.insert($d1);
+  $req<documents>.push: (
+    code                => 'd1',
+    name                => 'name and lastname',
+    address             => 'address',
+    city                => 'new york',
+    test_record         => "tr$i"
+  );
+
+say "RP: ", $req.perl if $i == 2;
 }
 
-#show-documents( $collection, {}, {_id => 0});
+$doc = $database.run-command($req);
+is $doc<ok>, 1, 'insert ok';
+
+show-documents(
+  $collection,
+  BSON::Document.new,
+  BSON::Document.new: (_id => 0)
+);
+
+done-testing();
+exit(0);
+=finish
+
+#------------------------------------------------------------------------------
 subtest {
   check-document( %( code => 'd1', test_record => 'tr3')
                 , %( _id => 1, code => 1, name => 1, 'some-name' => 0)
