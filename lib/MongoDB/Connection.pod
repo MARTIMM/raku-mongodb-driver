@@ -106,7 +106,6 @@ YOURSELF. Let instead the several modules do the receiving because they know
 what to expect.Besides this, it is subject to change when connection pooling
 comes into play.
 
-
 =head2 method database
 
 Defined as:
@@ -119,77 +118,5 @@ Usage:
 
 Get a database object named $name. When nonexistent, it will be created after
 inserting documents in the databases collection.
-
-=head2 method version
-
-Defined as
-
-  method version ( --> Hash )
-
-Usage
-
-  my Hash $v = $connection.version;
-  say $v<release1 release2 revision>.join('.'), ", $v<release-type>";
-
-This method uses build-info (see below) to get version information. The returned
-hash will have the following fields;
-
-=item B<release1>: First number of release.
-
-=item B<release2>: Second number or release. When odd it a development version.
-
-=item B<revision>: Release bug fixes and backwards-compatible changes.
-
-=item B<release-type>: Type can be one of 'production' or 'development'.
-
-When a connection is made this version is stored in the MongoDB package for
-tests by other methods in this or other modules. It saves al lot of
-communication when it is retrieved from the package because it will not change
-overnight.
-
-=head2 method build-info
-
-Defined as
-
-  method build-info ( --> Hash )
-
-Used as
-
-  my Hash $si = $connection.build-info;
-  say "Release is {$si<versionArray>[0,1].join('.')}";
-
-Method to get server information. The following fields are defined in the
-returned hash;
-
-=item B<version>: Version string, see version().
-
-=item B<gitVersion>: The commit identifier that identifies the state of the code
-used to build the mongod.
-
-=item B<sysInfo>: A string that holds information about the operating system,
-hostname, kernel, date, and Boost version used to compile the mongod.
-
-=item B<loaderFlags>: The flags passed to the loader that loads the mongod.
-=item B<compilerFlags>: The flags passed to the compiler that builds the mongod
-binary.
-
-=item B<allocator>: The memory allocator that mongod uses. By default this is
-tcmalloc after version 2.2, and system before 2.2.
-
-=item B<versionArray>: An array that conveys version information about the
-mongod instance. See version for a more readable version of this string.
-
-=item B<javascriptEngine>: A string that reports the JavaScript engine used in
-the mongod instance. By default, this is V8 after version 2.4, and SpiderMonkey
-before 2.4.
-
-=item B<bits>: A number that reflects the target processor architecture of the
-mongod binary.
-
-=item B<debug>: A boolean. true when built with debugging options.
-
-=item B<maxBsonObjectSize>: A number that reports the Maximum BSON Document
-Size.
-
 
 =end pod
