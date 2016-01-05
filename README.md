@@ -214,8 +214,8 @@ Legend;
 * [D] collection(). Set collection. Collection is created implicitly after
       inserting data into a collection.
 * [-] create-collection(). Create collection explicitly and sets collection parameters.
-* [D] list-collections().
-* [D] collection-names().
+* [-] list-collections().
+* [-] collection-names().
 
 ### Data serialization
 
@@ -530,7 +530,7 @@ change at any time. The public API should not be considered stable.*
     therefore becomes a good example file. Next a list of methods removed.
     * Connection.pm6: list-databases, database-names, version, build-info
     * Database.pm6: drop, create-collection, get-last-error, get-prev-error,
-      reset-error
+      reset-error, list-collections, collection_names
     * Collection.pm6: find-one, drop, count, distinct, insert, update, remove
 
   * Some extra multi's are created to set arguments more convenient. Fin(),

@@ -30,27 +30,28 @@ $database.run-command: (dropDatabase => 1);
 
 $req .= new: (
   insert => $collection.name,
-  documents => [(a => 1),]
+  documents => []
 );
 
-#say "R: ", $req<documents>[0][4].WHAT;
 #say "RP: ", $req.perl;
 #exit(0);
 
 for ^50 -> $i {
-  $req<documents>.push: (
-    code                => 'd1',
-    name                => 'name and lastname',
-    address             => 'address',
-    city                => 'new york',
-    test_record         => "tr$i"
+  $req.modify-array( 'documents', 'push', $(
+      code                => 'd1',
+      name                => 'name and lastname',
+      address             => 'address',
+      city                => 'new york',
+      test_record         => "tr$i"
+    )
   );
-
-say "RP: ", $req.perl if $i == 2;
 }
+
+say "RP:\n", $req.perl;
 
 $doc = $database.run-command($req);
 is $doc<ok>, 1, 'insert ok';
+say $doc<errmsg> unless $doc<ok>;
 
 show-documents(
   $collection,

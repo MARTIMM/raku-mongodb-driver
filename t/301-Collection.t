@@ -62,27 +62,6 @@ subtest {
   );
   is-deeply $doc<values>, [20], 'Code found is 20';
 
-  #-------------------------------------------------------------------------------
-  #
-  $doc = $database.run-command: (
-    insert => 'cl2',
-    documents => [(code => 15)]
-  );
-
-  $doc = $database.run-command: (listCollections => 1);
-  is $doc<ok>, 1, 'list collections request ok';
-
-  my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
-  my Bool $f-cl1 = False;
-  my Bool $f-cl2 = False;
-  while $c.fetch -> $d {
-#say "N & O: ", $d<name>, $d<options>;
-    $f-cl1 = True if $d<name> eq 'cl1';
-    $f-cl2 = True if $d<name> eq 'cl2';
-  }
-
-  ok $f-cl1, 'Collection cl1 listed';
-  ok $f-cl2, 'Collection cl2 listed';
 
 }, "simple collection operations";
 

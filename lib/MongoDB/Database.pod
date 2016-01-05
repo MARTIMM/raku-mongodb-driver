@@ -13,6 +13,21 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
+=begin Xhtml
+<style>
+  pre {
+/**/
+    border-width:       2px;
+    border-style:       solid;
+    border-color:       #060;
+    padding:            10px 0 3px 10px;
+    color:              #060;
+    background-color:   #eaefea;
+    font-family:        FreeMono;
+  }
+</style>
+=end Xhtml
+
 =TITLE class MongoDB::Database
 
 =SUBTITLE Operations on a MongoDB database
@@ -29,30 +44,13 @@ Use as
   #
   my $connection = MongoDB::Connection.new;
   my $database = $connection.database('test');
-  my $collection = $database.collection('coll');
-
-  # Or explicit create. Collection holding at most 30 documents.
-  #
-  create-collection( 'new_coll', :capped, :max(30));
-
-  # Get collection names
-  #
-  say "Collections: ", $database.collection-names();
 
   # Drop whole database
   #
-  $database.drop;
+  $database.run-command:.dropDatabase => 1;
 
 
 =head1 METHODS
-
-=head2 method drop
-
-Defined as
-
-  method drop ( --> Hash )
-
-Drop the database. All indexes and other stuff involved are removed.
 
 =head2 method collection
 
@@ -63,6 +61,105 @@ Defined as
 Select collection and return a collection object. When the collection is new it
 will only be created when data is inserted.
 
+=head2 method run-command
+
+Defined as
+
+  multi method run-command ( BSON::Document:D $command --> BSON::Document )
+
+  multi method run-command ( |command-capture --> BSON::Document )
+
+Run a command against the preselected collection and database. For proper
+handling of this command it is nesseary to study the MongoDB site. A good
+starting point is L<at this page|https://docs.mongodb.org/manual/reference/command/>.
+
+The command argument is a C<BSON::Document> or List of Pair of which the latter
+might be more convenient. run-command must have the command at the first key
+value pair. Hashes cannot be used because it will not keep the same order for
+keys as they will be entered.
+
+First method to insert a document using a C<BSON::Document> See also L<here|https://docs.mongodb.org/manual/reference/command/insert/>
+
+=begin code
+
+# Method 1. With info from http://perldoc.perl.org/perlhist.html
+# There are tests from the Test package
+# 
+BSON::Document $req .= new: (
+  insert => 'famous_people',
+  documents => [
+    BSON::Document.new((
+      name => 'Larry',
+      surname => 'Walll',
+      languages => BSON::Document.new((
+        Perl0 => 'introduced Perl to my officemates.',
+        Perl1 => 'introduced Perl to the world',
+        Perl2 => 'introduced Henry Spencer\'s regular expression package.',
+        Perl3 => 'introduced the ability to handle binary data.',
+        Perl4 => 'introduced the first Camel book.',
+        Perl5 => 'introduced everything else, including the ability to introduce everything else.',
+        Perl6 => 'A perl changing perl event, Dec 24, 2015'
+      )),
+    )),
+  ]
+);
+
+# Run the command with the insert request
+#
+BSON::Document $doc = $database.run-command($req);
+is $doc<ok>, 1, "Result is ok";
+is $doc<n>, 1, "Inserted 1 document";
+
+=end code
+
+As you can see above, it might be confusing how to use the round brackets ().
+Normally when a (sub)method or sub is called you have positional and named
+arguments. A named argument is like a pair. So to provide a pair as a positional
+argument, the pair must be enclosed between an extra pair of round brackets.
+E.g. B<<$some-array.push(($some-key => $some-value));>>. There is a nicer form
+whith a colon ':' e.g. B<<$some-array.push: ($some-key => $some-value);>>. This
+is done above on the first line. However, this is not possible at the inner
+calls because these round brackets also group the pairs in the list.
+
+The second method is easier using C<List> of C<Pair> not only for the
+run-command but also in place of nested C<BSON:Document>'s. Now we use
+findAndModify (see documentation 
+L<here|https://docs.mongodb.org/manual/reference/command/findAndModify/>) to
+repair Larry's surname which should be Wall instead of Walll.
+
+=begin code
+
+my BSON::Document $doc = $database.run-command: (
+  findAndModify => 'famous_people',
+  query => (surname => 'Walll'),
+  update => ('$set' => surname => 'Wall'),
+);
+
+is $doc<ok>, 1, "Result is ok";
+is $doc<value><surname>, 'Walll', "Old data returned";
+is $doc<lastErrorObject><updatedExisting>, True, "Existing document updated";
+
+
+=end code
+
+Please also note that mongodb uses query selectors such as $set above and
+virtual collections like $cmd. Because they start with a '$' these must be
+protected against evaluation using single quotes.
+
+=end pod
+
+
+
+
+=finish
+
+=head2 method drop
+
+Defined as
+
+  method drop ( --> Hash )
+
+Drop the database. All indexes and other stuff involved are removed.
 =head2 method create-collection
 
 Defined as
@@ -119,52 +216,6 @@ Defined as
   method collection-names ( --> Array )
 
 Return an array of the users collectionnames.
-
-=head2 method run-command
-
-Defined as
-
-  method run-command ( Pair @command --> Hash )
-
-Run a command against the preselected collection and database. For proper
-handling of this command it is nesseary to study the MongoDB site and perhaps
-this perl6 driver code (there are many examples) will it be of any use.
-
-The command argument is special that it is not a hash but an array of pairs.
-run-command must have the command at the first key value pair. Hashes cannot be
-used because it will not keep the same order for keys as they will be entered.
-
-There are two ways to prepare the Pair array when some items of the request are
-optional and e.g. depending on what your method is given;
-
-
-  # Method 1
-  #
-  my Hash $h;
-  $h<sort> = %sort if ?%sort;
-  ...
-  my Pair @req = findAndModify => $collection.name,
-                 query => $criteria, @$h;
-  my Hash $doc = $database.run-command(@req);
-  if $doc<ok>.Bool == False {
-  ...
-  }
-  # Method 2, Mind the extra brackets around the pairs list when pushing!
-  # Otherwise it will be recognized as named arguments which push does not
-  # recognize.
-  #
-  my Hash $h;
-  $h<sort> = %sort if ?%sort;
-  ...
-  my Pair @req = findAndModify => $collection.name,
-                 query => $criteria, @$h;
-  @req.push((sort => %sort)) if ?%sort;
-  ...
-  my Hash $doc = $database.run-command(@req);
-  if $doc<ok>.Bool == False {
-  ...
-  }
-
 
 =head2 method get-last-error
 
@@ -231,5 +282,4 @@ Defined as
 
 Reset all errors.
 
-=end pod
 

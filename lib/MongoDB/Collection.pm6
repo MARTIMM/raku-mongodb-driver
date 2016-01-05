@@ -133,7 +133,6 @@ package MongoDB {
     ) {
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
-say "CR: $criteria, ", $cr.perl;
       my BSON::Document $server-reply = $wire.query(
         self, $cr, $pr, :$flags, :$number-to-skip,
         :$number-to-return

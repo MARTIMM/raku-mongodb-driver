@@ -8,9 +8,6 @@ use MongoDB::Connection;
   Testing;
     MongoDB::Connection.new()           Create connection to server
     connection.database                 Return database
-    connection.list-databases()         Get the statistics of the databases
-    connection.database-names()         Get the database names
-    connection.buildinfo()              Server info
 }}
 
 my MongoDB::Connection $connection;

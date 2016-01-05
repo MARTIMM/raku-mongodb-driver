@@ -8,14 +8,6 @@ use MongoDB::Connection;
   Testing: Query and Write Operation Commands
     insert
     findAndModify
-
-  Testing: Diagnostic Commands
-    listDatabases
-    buildInfo not tested
-
-  Testing: Instance Administration Commands
-    listCollections
-    dropDatabase
 }}
 
 my MongoDB::Connection $connection = get-connection();
@@ -51,21 +43,8 @@ subtest {
   );
 
   $doc = $database.run-command($req);
-  is $doc<ok>, 1, "Result is ok";
-  is $doc<n>, 1, "Inserted 1 document";
-
-  $doc = $database.run-command: (
-    findAndModify => 'famous_people',
-    query => (surname => 'Walll'),
-    update => ('$set' => surname => 'Wall'),
-  );
-
-#say "\nDoc: ", $doc.perl, "\n";
-
-  is $doc<ok>, 1, "Result is ok";
-  is $doc<value><surname>, 'Walll', "Old data returned";
-  is $doc<lastErrorObject><updatedExisting>, True, "Existing document updated";
-
+  is $doc<ok>, 1, "insert request ok";
+  is $doc<n>, 1, "inserted 1 document";
 
   $req .= new: (
     insert => 'names',
@@ -90,73 +69,56 @@ subtest {
 #say "RP:\n", $req.perl;
 
   $doc = $database.run-command($req);
-  is $doc<ok>, 1, "Result is ok";
-  is $doc<n>, 5, "Inserted 5 documents";
+  is $doc<ok>, 1, "insert request ok";
+  is $doc<n>, 5, "inserted 5 documents";
 
-}, "Query and Write Operation Commands";
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  # List databases
-  #
-  $doc = $db-admin.run-command(BSON::Document.new: (listDatabases => 1));
-  is $doc<ok>, 1, 'List databases response ok';
-  ok $doc<databases>[0]<name>:exists, "name field in doc[0] ok";
-  ok $doc<databases>[0]<sizeOnDisk>:exists, "sizeOnDisk field in do[0]c ok";
-  ok $doc<databases>[0]<empty>:exists, "empty field in doc[0] ok";
-
-  # Get the database name from the statistics and save the index into the array
-  # with that name. Use the zip operator to pair the array entries %doc with
-  # their index number $idx.
-  #
-  my Array $db-docs = $doc<databases>;
-  my %db-names;
-  for $db-docs.kv -> $idx, $doc {
-    %db-names{$doc<name>} = $idx;
-  }
-
-  ok %db-names<test>:exists, 'database test found';
-  ok !$db-docs[%db-names<test>]<empty>, 'Database test is not empty';
-
-  #-------------------------------------------------------------------------------
-  #
-  $doc = $database.run-command: (
-    insert => 'cl1',
-    documents => [(code => 10)]
-  );
-
-  $doc = $database.run-command: (
-    insert => 'cl2',
-    documents => [(code => 15)]
-  );
-
-  $doc = $database.run-command: (listCollections => 1);
-  is $doc<ok>, 1, 'list collections request ok';
-
-  my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
-  my Bool $f-cl1 = False;
-  my Bool $f-cl2 = False;
-  while $c.fetch -> $d {
-    $f-cl1 = True if $d<name> eq 'cl1';
-    $f-cl2 = True if $d<name> eq 'cl2';
-  }
-
-  ok $f-cl1, 'Collection cl1 listed';
-  ok $f-cl2, 'Collection cl2 listed';
-
-}, "Diagnostic Commands";
+}, "Insert";
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  # Drop database
-  #
-  $req .= new: ( dropDatabase => 1 );
+  $doc = $database.run-command: (
+    findAndModify => 'famous_people',
+    query => (surname => 'Walll'),
+    update => ('$set' => surname => 'Wall'),
+  );
+
+  is $doc<ok>, 1, "findAndModify request ok";
+  is $doc<value><surname>, 'Walll', "old data returned";
+  is $doc<lastErrorObject><updatedExisting>, True, "existing document updated";
+
+
+  $doc = $database.run-command: (
+    findAndModify => 'famous_people',
+    query => (surname => 'Walll'),
+    update => ('$set' => surname => 'Wall'),
+  );
+
+  is $doc<ok>, 1, "findAndModify request ok";
+  is $doc<value>, Any, 'record not found';
+
+}, "findAndModify";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $req .= new: (
+    update => 'names',
+    updates => [ (
+        q => ( name => ('$regex' => BSON::Regex.new( :regex<y>, :options<i>),),),
+        u => ('$set' => (type => "men with 'y' in name"),),
+        upsert => True,
+        multi => True,
+      ),
+    ],
+  );
+
   $doc = $database.run-command($req);
-  is $doc<ok>, 1, "Drop database test ok";
+  is $doc<ok>, 1, "update request ok";
+  is $doc<n>, 2, "selected 2 docs";
+  is $doc<nModified>, 2, "modified 2 docs using multi";
 
-}, "Instance Administration Commands";
+}, 'update';
 
 #-------------------------------------------------------------------------------
 # Cleanup
@@ -165,9 +127,15 @@ done-testing();
 exit(0);
 
 
+
+
 =finish
 
 #-------------------------------------------------------------------------------
 subtest {
   
 }, '';
+
+say "\nReq: ", $req.perl, "\n";
+say "\nDoc: ", $doc.perl, "\n";
+
