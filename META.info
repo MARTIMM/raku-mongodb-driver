@@ -9,6 +9,7 @@
     "Digest::MD5"
   ],
   "description": "MongoDB driver",
+  "license": "The Artistic License 2.0",
   "name": "MongoDB",
   "provides": {
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
