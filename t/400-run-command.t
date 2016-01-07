@@ -137,7 +137,7 @@ subtest {
   my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
   my Bool $f-cl1 = False;
   my Bool $f-cl2 = False;
-  while $c.fetch -> $d {
+  while $c.fetch -> BSON::Document $d {
     $f-cl1 = True if $d<name> eq 'cl1';
     $f-cl2 = True if $d<name> eq 'cl2';
   }
@@ -157,6 +157,16 @@ subtest {
   is $doc<ok>, 1, "Drop database test ok";
 
 }, "Instance Administration Commands";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $doc = $database.run-command: (unknownDbCommand => 'unknownCollection');
+  is $doc<ok>, 0, 'unknown request';
+  is $doc<errmsg>, 'no such command: unknownDbCommand', 'Err: no such command';
+  is $doc<code>, 59, 'Code 59';
+#say "\nDoc: ", $doc.perl, "\n";
+}, "Error tests";
 
 #-------------------------------------------------------------------------------
 # Cleanup

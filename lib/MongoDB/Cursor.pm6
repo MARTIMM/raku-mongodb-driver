@@ -58,7 +58,7 @@ package MongoDB {
     #
     multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
 
-      $!collection = $$cursor-doc<ns>;
+      $!collection = $cursor-doc<ns>;
       $!criteria .= new;
       $!full-collection-name = $cursor-doc<ns>;
 

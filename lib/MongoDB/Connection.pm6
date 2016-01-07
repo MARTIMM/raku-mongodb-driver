@@ -14,10 +14,44 @@ package MongoDB {
 
     has IO::Socket::INET $!sock;
     has Exception $.status = Nil;
+    
+#TODO refine this method of using server name/port, connection pooling etc
+    # All users of the object have the same server and port
+    #
+    my Str $server-name;
+    my Int $server-port;
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( Str :$host = 'localhost', Int :$port = 27017 ) {
+    multi submethod BUILD ( Str :$host, Int :$port, Str :$url ) {
+
+      # Test for the server name. When no cases match a previously stored
+      # server name is taken
+      #
+      if !?$host and !?$server-name and !?$url {
+        $server-name = 'localhost';
+      }
+      
+      elsif ?$host {
+        $server-name = $host;
+      }
+      
+      elsif ?$url {
+#TODO process url
+        $server-name = 'localhost';
+        $server-port = 27017;
+      }
+
+      # Test for the server port. When no cases match a previously stored
+      # server port is taken
+      #
+      if !$port.defined and !$server-port.defined {
+        $server-port = 27017;
+      }
+      
+      elsif $port.defined and 0 <= $port <= 65535 {
+        $server-port = $port;
+      }
 
       # Try block used because IO::Socket::INET throws an exception when things
       # go wrong. This is not nessesary because there is no risc of data loss
@@ -29,12 +63,12 @@ package MongoDB {
         }
 
         $!status = Nil;
-        $!sock .= new( :$host, :$port);
+        $!sock .= new( :host($server-name), :port($server-port));
         CATCH {
           default {
             $!status = X::MongoDB.new(
-              :error-text("Failed to connect to $host at port $port"),
-              :oper-name<new>
+              :error-text("Failed to connect to $server-name at port $server-port"),
+              :oper-name<new>,
               :severity(MongoDB::Severity::Error)
             );
           }
@@ -62,6 +96,10 @@ package MongoDB {
         $MongoDB::version = $version;
       }
     }
+
+#    multi submethod BUILD ( |c ) {
+#say "Connection caption: {c}";
+#    }
 
     #---------------------------------------------------------------------------
     #

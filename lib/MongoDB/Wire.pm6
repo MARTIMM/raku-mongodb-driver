@@ -56,10 +56,10 @@ package MongoDB {
       my $collection = $cursor.collection;
       my $database = $collection.database;
       my $connection = $database.connection;
-      my $full-collection-name = [~] $database.name, '.', $collection.name;
+#      my $full-collection-name = [~] $database.name, '.', $collection.name;
 
       my Buf $encoded-get-more = $d.encode-get-more(
-        $full-collection-name, $cursor.id
+        $cursor.full-collection-name, $cursor.id
       );
 
       $connection.send($encoded-get-more);

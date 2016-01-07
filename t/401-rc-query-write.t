@@ -7,7 +7,14 @@ use MongoDB::Connection;
 #`{{
   Testing: Query and Write Operation Commands
     insert
+    update
+    delete
     findAndModify
+    getLastError
+    getLastError, getPrevError and resetError are not much needed because
+      after 2.6 the write operation commands return error information
+    eval is deprecated
+    parallelCollectionScan
 }}
 
 my MongoDB::Connection $connection = get-connection();
@@ -63,6 +70,9 @@ subtest {
       ), (
         name => 'Many',
         surname => 'More',
+      ), (
+        name => 'Someone',
+        surname => 'Unknown',
       ),
     ]
   );
@@ -70,34 +80,28 @@ subtest {
 
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "insert request ok";
-  is $doc<n>, 5, "inserted 5 documents";
+  is $doc<n>, 6, "inserted 6 documents";
 
 }, "Insert";
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $doc = $database.run-command: (
-    findAndModify => 'famous_people',
-    query => (surname => 'Walll'),
-    update => ('$set' => surname => 'Wall'),
+  $req .= new: (
+    delete => 'names',
+    deletes => [ (
+        q => ( surname => ('Unknown'),),
+        limit => 1,
+      ),
+    ],
   );
 
-  is $doc<ok>, 1, "findAndModify request ok";
-  is $doc<value><surname>, 'Walll', "old data returned";
-  is $doc<lastErrorObject><updatedExisting>, True, "existing document updated";
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, "delete request ok";
+  is $doc<n>, 1, "deleted 1 doc";
 
+}, 'delete';
 
-  $doc = $database.run-command: (
-    findAndModify => 'famous_people',
-    query => (surname => 'Walll'),
-    update => ('$set' => surname => 'Wall'),
-  );
-
-  is $doc<ok>, 1, "findAndModify request ok";
-  is $doc<value>, Any, 'record not found';
-
-}, "findAndModify";
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -119,6 +123,72 @@ subtest {
   is $doc<nModified>, 2, "modified 2 docs using multi";
 
 }, 'update';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $doc = $database.run-command: (
+    findAndModify => 'famous_people',
+    query => (surname => 'Walll'),
+    update => ('$set' => surname => 'Wall'),
+  );
+
+  is $doc<ok>, 1, "findAndModify request ok";
+  is $doc<value><surname>, 'Walll', "old data returned";
+  is $doc<lastErrorObject><updatedExisting>, True, "existing document updated";
+
+  $doc = $database.run-command: (
+    findAndModify => 'famous_people',
+    query => (surname => 'Walll'),
+    update => ('$set' => surname => 'Wall'),
+  );
+
+  is $doc<ok>, 1, "findAndModify request ok";
+  is $doc<value>, Any, 'record not found';
+
+}, "findAndModify";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $doc = $database.run-command: (
+    getLastError => 1,
+    j => True,
+    w => 1,
+    wtimeout => 1000
+  );
+  is $doc<ok>, 1, 'getLastError request ok';
+  is $doc<err>, Any, 'no errors';
+  is $doc<errmsg>, Any, 'No message';
+
+}, "getLastError";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $doc = $database.run-command: (
+    parallelCollectionScan => 'names',
+    numCursors => 2
+  );
+  is $doc<ok>, 1, 'parallelCollectionScan request ok';
+  ok $doc<cursors> ~~ Array, 'found array of cursors';
+  ok $doc<cursors>.elems > 0, "returned {$doc<cursors>.elems} cursors";
+say "\nDoc: ", $doc.perl, "\n";
+
+  for $doc<cursors>.list -> $cdoc {
+say 'C doc: ', $cdoc.perl;
+
+    is $cdoc<ok>, True, 'returned cursor ok';
+    if $cdoc<ok> {
+      my MongoDB::Cursor $c .= new(:cursor-doc($cdoc<cursor>));
+      while $c.fetch -> BSON::Document $d {
+        
+say 'C doc: ', $d.perl;
+      }
+    }
+  }
+
+}, "parallelCollectionScan";
 
 #-------------------------------------------------------------------------------
 # Cleanup

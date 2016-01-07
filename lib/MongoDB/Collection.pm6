@@ -3,7 +3,6 @@ use v6;
 use MongoDB;
 use MongoDB::Wire;
 use MongoDB::Cursor;
-#use BSON::Javascript-old;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
@@ -41,85 +40,6 @@ package MongoDB {
       }
     }
 
-    #---------------------------------------------------------------------------
-    # Check keys in documents for insert operations
-    # See http://docs.mongodb.org/meta-driver/latest/legacy/bson/
-    #
-    method !check-doc-keys ( @docs! ) {
-      for @docs -> $d {
-        die X::MongoDB.new(
-          error-text => qq:to/EODIE/,
-            Document is not a hash.
-            EODIE
-          oper-name => 'insert',
-          oper-data => @docs.perl,
-          collection-ns => [~] $!database.name, '.', $!name
-        ) unless $d ~~ Hash;
-
-        for $d.keys -> $k {
-          if $k ~~ m/ (^ '$' | '.') / {
-            die X::MongoDB.new(
-              error-text => qq:to/EODIE/,
-                $k is not properly defined.
-                Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
-                point 1; Data storage
-                EODIE
-              oper-name => 'insert',
-              oper-data => @docs.perl,
-              collection-ns => [~] $!database.name, '.', $!name
-            );
-          }
-
-          elsif $k ~~ m/ ^ '_id' $ / {
-            # Check if unique in the document
-            my $cursor = self.find( hash( _id => $d{$k}));
-
-            # If there are records(at most one!) this id is not unique
-            #
-            if $cursor.count {
-              die X::MongoDB.new(
-                error-text => "$k => $d{$k} value for id is not unique",
-                oper-name => 'insert',
-                oper-data => @docs.perl,
-                collection-ns => [~] $!database.name, '.', $!name
-              );
-            }
-          }
-
-          # Recursively go through sub documents
-          #
-          elsif $d{$k} ~~ Hash {
-            self!cdk($d{$k});
-          }
-        }
-      }
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method !cdk ( $sub-doc! ) {
-      for $sub-doc.keys -> $k {
-        if $k ~~ m/ (^ '$' | '.') / {
-          die X::MongoDB.new(
-            error-text => qq:to/EODIE/,
-              $k is not properly defined.
-              Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
-              point 1; Data storage
-              EODIE
-            oper-name => 'insert',
-            oper-data => $sub-doc.perl,
-            collection-ns => [~] $!database.name, '.', $!name
-          );
-        }
-
-        elsif $sub-doc{$k} ~~ Hash {
-          self!cdk($sub-doc{$k});
-        }
-      }
-    }
-
-    #---------------------------------------------------------------------------
-    # CRUD - Create(insert), Read(find*), Update, Delete
     #---------------------------------------------------------------------------
     # Find record in a collection. One of the few left to use the wire protocol.
     #
@@ -164,54 +84,6 @@ package MongoDB {
       );
 
       return $c;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method find_and_modify (
-      Hash $criteria = { }, Hash $projection = { },
-      Hash :$update = { }, Hash :$sort = { },
-      Bool :$remove = False, Bool :$new = False,
-      Bool :$upsert = False
-      --> Hash
-    ) is DEPRECATED('find-and-modify') {
-
-      my $h = self.find-and-modify(
-        $criteria, $projection, :$remove, :$update, :$sort, :$new, :$upsert
-      );
-
-      return $h;
-    }
-
-    method find-and-modify (
-      Hash $criteria = { }, Hash $projection = { },
-      Hash :$update = { }, Hash :$sort = { },
-      Bool :$remove = False, Bool :$new = False,
-      Bool :$upsert = False
-      --> Hash
-    ) {
-
-      my Pair @req = findAndModify => self.name, query => $criteria;
-      @req.push: (:$sort) if ?$sort;
-      @req.push: (:remove) if $remove;
-      @req.push: (:$update) if ?$update;
-      @req.push: (:new) if $new;
-      @req.push: (:upsert) if $upsert;
-      @req.push: (:$projection) if ?$projection;
-
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'find-and-modify',
-          oper-data => @req.perl,
-          collection-ns => [~] $!database.name, '.', $!name
-        );
-      }
-
-      # Return its value of the status document
-      #
-      return $doc<value>;
     }
 
     #---------------------------------------------------------------------------
@@ -551,16 +423,119 @@ package MongoDB {
 =finish
 
 #`{{
+
     #---------------------------------------------------------------------------
     #
-    method find_one (
-      %criteria = { },
-      %projection = { }
-      --> Hash ) is DEPRECATED('find-one') {
+    method find-and-modify (
+      Hash $criteria = { }, Hash $projection = { },
+      Hash :$update = { }, Hash :$sort = { },
+      Bool :$remove = False, Bool :$new = False,
+      Bool :$upsert = False
+      --> Hash
+    ) {
 
-      return self.find-one( %criteria, %projection);
+      my Pair @req = findAndModify => self.name, query => $criteria;
+      @req.push: (:$sort) if ?$sort;
+      @req.push: (:remove) if $remove;
+      @req.push: (:$update) if ?$update;
+      @req.push: (:new) if $new;
+      @req.push: (:upsert) if $upsert;
+      @req.push: (:$projection) if ?$projection;
+
+      my Hash $doc = $!database.run-command(@req);
+      if $doc<ok>.Bool == False {
+        die X::MongoDB.new(
+          error-text => $doc<errmsg>,
+          oper-name => 'find-and-modify',
+          oper-data => @req.perl,
+          collection-ns => [~] $!database.name, '.', $!name
+        );
+      }
+
+      # Return its value of the status document
+      #
+      return $doc<value>;
     }
 
+    #---------------------------------------------------------------------------
+    # Check keys in documents for insert operations
+    # See http://docs.mongodb.org/meta-driver/latest/legacy/bson/
+    #
+    method !check-doc-keys ( @docs! ) {
+      for @docs -> $d {
+        die X::MongoDB.new(
+          error-text => qq:to/EODIE/,
+            Document is not a hash.
+            EODIE
+          oper-name => 'insert',
+          oper-data => @docs.perl,
+          collection-ns => [~] $!database.name, '.', $!name
+        ) unless $d ~~ Hash;
+
+        for $d.keys -> $k {
+          if $k ~~ m/ (^ '$' | '.') / {
+            die X::MongoDB.new(
+              error-text => qq:to/EODIE/,
+                $k is not properly defined.
+                Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
+                point 1; Data storage
+                EODIE
+              oper-name => 'insert',
+              oper-data => @docs.perl,
+              collection-ns => [~] $!database.name, '.', $!name
+            );
+          }
+
+          elsif $k ~~ m/ ^ '_id' $ / {
+            # Check if unique in the document
+            my $cursor = self.find( hash( _id => $d{$k}));
+
+            # If there are records(at most one!) this id is not unique
+            #
+            if $cursor.count {
+              die X::MongoDB.new(
+                error-text => "$k => $d{$k} value for id is not unique",
+                oper-name => 'insert',
+                oper-data => @docs.perl,
+                collection-ns => [~] $!database.name, '.', $!name
+              );
+            }
+          }
+
+          # Recursively go through sub documents
+          #
+          elsif $d{$k} ~~ Hash {
+            self!cdk($d{$k});
+          }
+        }
+      }
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method !cdk ( $sub-doc! ) {
+      for $sub-doc.keys -> $k {
+        if $k ~~ m/ (^ '$' | '.') / {
+          die X::MongoDB.new(
+            error-text => qq:to/EODIE/,
+              $k is not properly defined.
+              Please see 'http://docs.mongodb.org/meta-driver/latest/legacy/bson/'
+              point 1; Data storage
+              EODIE
+            oper-name => 'insert',
+            oper-data => $sub-doc.perl,
+            collection-ns => [~] $!database.name, '.', $!name
+          );
+        }
+
+        elsif $sub-doc{$k} ~~ Hash {
+          self!cdk($sub-doc{$k});
+        }
+      }
+    }
+
+    #---------------------------------------------------------------------------
+    #
     method find-one ( %criteria = { }, %projection = { } --> Hash ) {
       my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
                                               :number-to-return(1)

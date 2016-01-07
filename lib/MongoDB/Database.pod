@@ -7,7 +7,7 @@ use v6;
 my Str $pod = "$*PROGRAM";
 my Str $pdf = $pod;
 $pdf ~~ s/\. <-[.]>+ $/.pdf/;
-shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
+shell("perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 #-------------------------------------------------------------------------------
 

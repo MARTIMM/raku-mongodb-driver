@@ -531,7 +531,8 @@ change at any time. The public API should not be considered stable.*
     * Connection.pm6: list-databases, database-names, version, build-info
     * Database.pm6: drop, create-collection, get-last-error, get-prev-error,
       reset-error, list-collections, collection_names
-    * Collection.pm6: find-one, drop, count, distinct, insert, update, remove
+    * Collection.pm6: find-one, drop, count, distinct, insert, update, remove,
+      find-and-modify
 
   * Some extra multi's are created to set arguments more convenient. Fin(),
     and run-command() now have also List of Pair atrributes instead of
