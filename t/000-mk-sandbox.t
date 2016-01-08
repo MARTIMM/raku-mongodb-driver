@@ -1,4 +1,8 @@
 use v6;
+use lib 't';
+use Test-support;
+use MongoDB::Connection;
+use Test;
 
 #`{{
   Setup sandbox
@@ -7,10 +11,7 @@ use v6;
   Test connection
 }}
 
-use lib 't';
-use Test-support;
-use MongoDB::Connection;
-use Test;
+#TODO Checks for windows environment
 
 #-------------------------------------------------------------------------------
 # Skip sandbox setup if requested

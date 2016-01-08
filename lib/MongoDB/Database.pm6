@@ -10,18 +10,14 @@ package MongoDB {
   #
   class Database {
 
-    has $.connection;
     has Str $.name;
 
     #---------------------------------------------------------------------------
     #
     submethod BUILD (
-      :$connection where $connection.isa('MongoDB::Connection'),
       Str :$name
     ) {
-      $!connection = $connection;
-
-      # TODO validate name
+# TODO validate name
       $!name = $name;
     }
 

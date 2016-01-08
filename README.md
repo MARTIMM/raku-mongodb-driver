@@ -533,6 +533,17 @@ change at any time. The public API should not be considered stable.*
       reset-error, list-collections, collection_names
     * Collection.pm6: find-one, drop, count, distinct, insert, update, remove,
       find-and-modify
+  * There is a need to get a connection from several classes in the package.
+    Normally it can be found by following the references from a collection to
+    the database then onto the connection. However, when a cursor is returned
+    from the server, there is no collection involved except for the full
+    collection name. Loading the Connection module in Cursor to create a
+    connection directly will endup in a loop in the loading cycle. Conclusion is
+    then to create the database object on its own without having a link back to
+    to the connection object. Because of this, database() is removed from
+    Connection. To create a Database object now only needs a name of the
+    database. The Wire class is the only one to send() and receive() so there is
+    the only place to load the Connection class.
 
   * Some extra multi's are created to set arguments more convenient. Fin(),
     and run-command() now have also List of Pair atrributes instead of

@@ -10,7 +10,9 @@ package MongoDB {
   #
   class Cursor {
 
-    state MongoDB::Wire $wire = MongoDB::Wire.new;
+    # State used so it initializes only once
+    #
+    state MongoDB::Wire $wire .= new;
 
     has $.collection;
     has $.full-collection-name;

@@ -1,6 +1,8 @@
 use v6;
 use Test;
 use MongoDB::Connection;
+use MongoDB::Database;
+use MongoDB::Collection;
 
 package Test-support
 {
@@ -106,7 +108,7 @@ package Test-support
                           ) is export {
 
     my MongoDB::Connection $connection = get-connection();
-    my MongoDB::Database $database = $connection.database($db-name);
+    my MongoDB::Database $database .= new($db-name);
     return $database.collection($col-name);
   }
 
@@ -122,10 +124,11 @@ package Test-support
 
     my MongoDB::Cursor $cursor = $collection.find( $criteria, $projection);
     while $cursor.fetch -> BSON::Document $document {
-      show-document($document);
+      $document.perl;
     }
   }
 
+#`{{
   #-----------------------------------------------------------------------------
   # Display a document
   #
@@ -140,6 +143,7 @@ package Test-support
     say "";
   }
 
+
   #-----------------------------------------------------------------------------
   # Drop database
   #
@@ -150,7 +154,7 @@ package Test-support
 
     return $database.run-command(BSON::Document.new: (dropDatabase => 1));
   }
-}
+}}}
 
 
 

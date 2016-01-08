@@ -3,6 +3,7 @@ use v6;
 #use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 
 use BSON::Document;
+use MongoDB::Connection;
 use MongoDB::Header;
 
 package MongoDB {
@@ -22,15 +23,15 @@ package MongoDB {
       my BSON::Document $d = $qdoc.clone;
       $d does MongoDB::Header;
 
-      my $database = $collection.database;
-      my $connection = $database.connection;
-      my $full-collection-name = [~] $database.name, '.', $collection.name;
+#      my $database = $collection.database;
+      my $full-collection-name = $collection.full-collection-name;
 
       my Buf $encoded-query = $d.encode-query(
         $full-collection-name, $projection,
         :$flags, :$number-to-skip, :$number-to-return
       );
 
+      my MongoDB::Connection $connection .= new;
       $connection.send($encoded-query);
 
       # Read 4 bytes for int32 response size
@@ -42,6 +43,7 @@ package MongoDB {
       # read bytes and decode. Return the resulting document.
       #
       my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
+#$connection.close;
 #say "SR: ", $server-reply;
 # TODO check if requestID matches responseTo
       return $d.decode-reply($server-reply);
@@ -53,9 +55,9 @@ package MongoDB {
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
 
-      my $collection = $cursor.collection;
-      my $database = $collection.database;
-      my $connection = $database.connection;
+#      my $collection = $cursor.collection;
+#      my $database = $collection.database;
+      my MongoDB::Connection $connection .= new;
 #      my $full-collection-name = [~] $database.name, '.', $collection.name;
 
       my Buf $encoded-get-more = $d.encode-get-more(

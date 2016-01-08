@@ -11,7 +11,9 @@ package MongoDB {
 
   class Collection {
 
-    state MongoDB::Wire $wire = MongoDB::Wire.new;
+    # State used so it initializes only once
+    #
+    state MongoDB::Wire $wire .= new;
 
     has $.database;
     has Str $.name;
@@ -23,7 +25,8 @@ package MongoDB {
     #
     submethod BUILD ( :$database!, Str:D :$name ) {
       $!database = $database;
-      $!full-collection-name = $!database.name, '.', $!name;
+      $!name = $name;
+      $!full-collection-name = [~] $!database.name, '.', $name;
 
       # This should be possible: 'admin.$cmd' which is used by run-command
       #
@@ -46,7 +49,8 @@ package MongoDB {
     # Method using Pair.
     #
     multi method find (
-      List $criteria = (), List $projection = (),
+      List $criteria where all(@$criteria) ~~ Pair = (),
+      List $projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0
       --> MongoDB::Cursor
@@ -86,6 +90,16 @@ package MongoDB {
       return $c;
     }
 
+  }
+}
+
+
+
+
+
+=finish
+
+#`{{
     #---------------------------------------------------------------------------
     # Some methods also created in Cursor.pm
     #---------------------------------------------------------------------------
@@ -155,20 +169,6 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    multi method map_reduce ( Str:D $map-js-func, Str:D $reduce-js-func,
-                              Hash :$out, Str :$finalize, Hash :$criteria,
-                              Hash :$sort, Hash :$scope, Int :$limit,
-                              Bool :$jsMode = False
-                              --> Hash ) is DEPRECATED('map-reduce') {
-
-      my $h = self.map-reduce(
-         $map-js-func, $reduce-js-func, :$out, :$finalize, :$criteria,
-         :$sort, :$scope, :$limit, :$jsMode
-      );
-
-      return $h;
-    }
-
     multi method map-reduce ( Str:D $map-js-func, Str:D $reduce-js-func,
                               Hash :$out, Str :$finalize, Hash :$criteria,
                               Hash :$sort, Hash :$scope, Int :$limit,
@@ -180,22 +180,6 @@ package MongoDB {
                        :finalize(BSON::Javascript.new(:javascript($finalize))),
                        :$out, :$criteria, :$sort, :$scope, :$limit, :$jsMode
                      );
-    }
-
-    multi method map_reduce ( BSON::Javascript:D $map-js-func,
-                              BSON::Javascript:D $reduce-js-func,
-                              BSON::Javascript :$finalize = $!default-js,
-                              Hash :$out, Hash :criteria($query), Hash :$sort,
-                              Hash :$scope, Int :$limit, Bool :$jsMode = False
-                              --> Hash
-                            ) is DEPRECATED('map-reduce') {
-
-      my $h = self.map-reduce(
-         $map-js-func, $reduce-js-func, :$out, :$finalize, :criteria($query),
-         :$sort, :$scope, :$limit, :$jsMode
-      );
-
-      return $h;
     }
 
     multi method map-reduce ( BSON::Javascript:D $map-js-func,
@@ -258,13 +242,6 @@ package MongoDB {
     #   deleted first. Therefore check first. drop index if exists then set new
     #   index.
     #
-    method ensure_index (
-      %key-spec!, %options = {}
-    ) is DEPRECATED('ensure-index') {
-
-      self.ensure-index( %key-spec, %options);
-    }
-
     method ensure-index ( %key-spec!, %options = {} ) {
 
       # Generate name of index if not given in options
@@ -321,10 +298,6 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Drop an index
     #
-    method drop_index ( $key-spec! --> Hash ) is DEPRECATED('drop-index') {
-      return self.drop-index($key-spec);
-    }
-
     method drop-index ( $key-spec! --> Hash ) {
       my Pair @req = deleteIndexes => $!name,
                      index => $key-spec,
@@ -349,10 +322,6 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Drop all indexes
     #
-    method drop_indexes ( --> Hash ) is DEPRECATED('drop-indexes') {
-      return self.drop-index('*');
-    }
-
     method drop-indexes ( --> Hash ) {
       return self.drop-index('*');
     }
@@ -360,10 +329,6 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Get indexes for the current collection
     #
-    method get_indexes ( --> MongoDB::Cursor ) is DEPRECATED('get-indexes') {
-      return self.get-indexes;
-    }
-
     method get-indexes ( --> MongoDB::Cursor ) {
       my $system-indexes = $!database.collection('system.indexes');
       return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
@@ -405,24 +370,10 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Return size of collection in bytes
     #
-    method data_size ( --> Int ) is DEPRECATED('data-size') {
-      return self.data-size;
-    }
-
     method data-size ( --> Int ) {
       my Hash $doc = self.stats();
       return $doc<size>;
     }
-  }
-}
-
-
-
-
-
-=finish
-
-#`{{
 
     #---------------------------------------------------------------------------
     #

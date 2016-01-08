@@ -6,9 +6,6 @@ use MongoDB::Connection;
 
 #`{{
   Testing;
-    database.get-last-error()           Get last error
-    database.get-prev-error()           Get previous errors
-    database.reset-error()              Reset errors
     database.run-command()              Run command
     database.drop()                     Drop database
     database.create-collection()        Create collection explicitly
@@ -17,14 +14,13 @@ use MongoDB::Connection;
 my BSON::Document $req;
 my BSON::Document $doc;
 my MongoDB::Connection $connection = get-connection();
-my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Database $db-admin = $connection.database('admin');
+my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $db-admin .= new(:name<admin>);
 
 # Drop database first then create new databases
 #
 $req .= new: ( dropDatabase => 1 );
 $doc = $database.run-command($req);
-
 
 #-------------------------------------------------------------------------------
 subtest {
