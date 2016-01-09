@@ -124,7 +124,7 @@ package Test-support
 
     my MongoDB::Cursor $cursor = $collection.find( $criteria, $projection);
     while $cursor.fetch -> BSON::Document $document {
-      $document.perl;
+      say $document.perl;
     }
   }
 
@@ -154,7 +154,8 @@ package Test-support
 
     return $database.run-command(BSON::Document.new: (dropDatabase => 1));
   }
-}}}
+}}
+}
 
 
 

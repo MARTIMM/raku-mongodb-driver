@@ -36,27 +36,22 @@ package MongoDB {
       BSON::Document:D :$server-reply
     ) {
 
-#say "CR: ", $server-reply.perl, ', ', $server-reply<cursor-id>, ', ', $server-reply<cursor-id>.WHAT;
-
       $!collection = $collection;
       $!criteria = $criteria;
-      $!full-collection-name = [~] $!collection.database.name,
-                                   '.', $!collection.name;
+      $!full-collection-name = $!collection.full-collection-name;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
       # batches left on the server to retrieve. Documents may be present in
       # this reply.
       #
       $!id = $server-reply<cursor-id>;
-#say "Id: ", $!id;
 
       # Get documents from the reply.
       #
-#say "D: {$server-reply<documents>}";
       @!documents = $server-reply<documents>.list;
     }
 
-    # This can be set with data from e.g. list documents
+    # This can be set with data received from a command e.g. list documents
     #
     multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
 
@@ -70,20 +65,17 @@ package MongoDB {
       #
       my BSON::Document $d .= new; 
       $d does MongoDB::Header;
+
       $!id = $d.encode-cursor-id($cursor-doc<id>);
-#say "B2 Id: ", $!id;
 
       # Get documents from the reply.
       #
-#say "B2 D: {$cursor-doc<firstBatch>}";
       @!documents = @($cursor-doc<firstBatch>);
-#say "B2 docs: {@!documents.elems}";
     }
 
     #-----------------------------------------------------------------------------
-    method fetch ( --> Any ) {
+    method fetch ( --> BSON::Document ) {
 
-#say "N docs: {@!documents.elems}, id {$!id.list}";
       # If there are no more documents in last response batch but there is
       # still a next batch(sum of id bytes not 0) to fetch from database.
       #
@@ -107,6 +99,24 @@ package MongoDB {
       #
       return +@!documents ?? @!documents.shift !! Nil;
     }
+
+    #-----------------------------------------------------------------------------
+    method kill ( --> Nil ) {
+
+      # invalidate cursor on database
+      $wire.kill-cursors((self,));
+
+      # invalidate cursor id
+      $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+
+      return;
+    }
+  }
+}
+
+
+=finish
+#`{{
 
     #-----------------------------------------------------------------------------
     # Get explanation about given search criteria
@@ -140,17 +150,6 @@ package MongoDB {
       return $docs;
     }
 
-    #-----------------------------------------------------------------------------
-    method kill ( --> Nil ) {
-
-      # invalidate cursor on database
-      $wire.kill-cursors((self,));
-
-      # invalidate cursor id
-      $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-
-      return;
-    }
 
     #-----------------------------------------------------------------------------
     # Get count of found documents
@@ -179,5 +178,4 @@ package MongoDB {
 
       return $doc<n>;
     }
-  }
-}
+}}

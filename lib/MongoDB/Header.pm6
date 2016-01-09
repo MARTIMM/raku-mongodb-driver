@@ -271,57 +271,57 @@ package MongoDB {
       # be initialized explicitly. There may not be another decode() started in the
       # mean time using this object because this attribute will be disturbed.
       #
+
+      # MsgHeader header
+      # standard message header
+      #
       my $index = 0;
-
-      my BSON::Document $reply-document .= new: (
-
-        # MsgHeader header
-        # standard message header
-        #
-        message-header => self.decode-message-header( $b, $index),
-
-        # int32 responseFlags
-        # bit vector
-        #
-        response-flags  => decode-int32( $b, $index),
-
-        # int64 cursorID
-        # cursor id if client needs to do get more's
-        # TODO big integers are not yet implemented in Rakudo
-        # so cursor is build using raw Buf
-        #
-        cursor-id       => Buf.new(
-          $b.subbuf(
-            $index + BSON::C-INT32-SIZE,
-            $index + BSON::C-INT32-SIZE + 8
-          )
-        ),
-
-        # int32 startingFrom
-        # where in the cursor this reply is starting
-        #
-        starting-from   => decode-int32( $b, $index + BSON::C-INT32-SIZE + 8),
-
-        # int32 numberReturned
-        # number of documents in the reply
-        #
-        number-returned => decode-int32( $b, $index + 2 * BSON::C-INT32-SIZE + 8),
-
-        # document* documents
-        # documents
-        #
-        documents => [ ],
+      my BSON::Document $message-header = self.decode-message-header(
+        $b, $index
       );
 
-      $index += 3 * BSON::C-INT32-SIZE + 8;
+      # int32 responseFlags
+      # bit vector
+      #
+      my $response-flags = decode-int32( $b, $index);
+
+      # int64 cursorID
+      # cursor id if client needs to do get more's
+      # TODO big integers are not yet implemented in Rakudo
+      # so cursor is build using raw Buf
+      #
+      $index += BSON::C-INT32-SIZE;
+      my Buf $cursor-id = $b.subbuf( $index, 8);
+
+      # int32 startingFrom
+      # where in the cursor this reply is starting
+      #
+      $index += 8;
+      my Int $starting-from = decode-int32( $b, $index);
+
+      # int32 numberReturned
+      # number of documents in the reply
+      #
+      $index += BSON::C-INT32-SIZE;
+      my Int $number-returned = decode-int32( $b, $index);
+
+      $index += BSON::C-INT32-SIZE;
+
+      my BSON::Document $reply-document .= new: (
+        :$message-header, :$response-flags, :$cursor-id,
+        :$starting-from, :$number-returned,
+        documents => []
+      );
 
 #say "MH length: ", $reply-document<message-header><message-length>;
 #say "MH rid: ", $reply-document<message-header><request-id>;
 #say "MH opc: ", $reply-document<message-header><op-code>;
 #say "MH nret: ", $reply-document<number-returned>;
+#say "MH cid: ", $reply-document<cursor-id>;
 
 #say "Buf: ", $b;
 #say "Subbuf: ", $b.subbuf( $index, 30);
+
       # Extract documents from message.
       #
       for ^$reply-document<number-returned> {

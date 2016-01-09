@@ -58,7 +58,7 @@ sub check-document ( $criteria, %field-list, %projection = { })
       if %field-list{$k} {
         is( %document{$k}:exists, True, "Key '$k' exists. Check using find-one()");
       }
-      
+
       else {
         is( %document{$k}:exists, False, "Key '$k' does not exist. Check using find-one()");
       }

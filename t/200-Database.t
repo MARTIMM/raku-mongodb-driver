@@ -44,7 +44,6 @@ subtest {
 
 #-------------------------------------------------------------------------------
 subtest {
-say "L: ", (getLastError => 1).WHAT;
   $doc = $database.run-command: (getLastError => 1);
   is $doc<ok>, 1, 'No last errors';
 

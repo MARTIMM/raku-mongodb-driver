@@ -52,18 +52,15 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method get-more ( $cursor --> BSON::Document ) {
+
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
-
-#      my $collection = $cursor.collection;
-#      my $database = $collection.database;
-      my MongoDB::Connection $connection .= new;
-#      my $full-collection-name = [~] $database.name, '.', $collection.name;
 
       my Buf $encoded-get-more = $d.encode-get-more(
         $cursor.full-collection-name, $cursor.id
       );
 
+      my MongoDB::Connection $connection .= new;
       $connection.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -77,7 +74,6 @@ package MongoDB {
       my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
 # TODO check if requestID matches responseTo
 # TODO check if cursorID matches (if present)
-#say "SR: ", $server-reply;
       return $d.decode-reply($server-reply);
     }
 
@@ -88,10 +84,6 @@ package MongoDB {
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
 
-#      my $collection = @cursors[0].collection;
-#      my $database = $collection.database;
-      my $connection = MongoDB::Connection.new;
-
       # Gather the ids only when they are non-zero.i.e. still active.
       #
       my Buf @cursor-ids;
@@ -101,6 +93,7 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
+      my $connection = MongoDB::Connection.new;
       if +@cursor-ids {
         my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
         $connection.send($encoded-kill-cursors);

@@ -49,8 +49,8 @@ package MongoDB {
     # Method using Pair.
     #
     multi method find (
-      List $criteria where all(@$criteria) ~~ Pair = (),
-      List $projection where all(@$criteria) ~~ Pair = (),
+      List :$criteria where all(@$criteria) ~~ Pair = (),
+      List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0
       --> MongoDB::Cursor
@@ -72,8 +72,8 @@ package MongoDB {
     # Find record in a collection using a BSON::Document
     #
     multi method find (
-      BSON::Document $criteria = BSON::Document.new,
-      BSON::Document $projection?,
+      BSON::Document :$criteria = BSON::Document.new,
+      BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0
       --> MongoDB::Cursor

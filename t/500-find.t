@@ -1,8 +1,9 @@
 use v6;
-use lib 't', '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
 use MongoDB::Connection;
+use MongoDB::Cursor;
 use BSON::ObjectId;
 
 #`{{
@@ -20,8 +21,8 @@ use BSON::ObjectId;
 }}
 
 my MongoDB::Connection $connection = get-connection();
-my MongoDB::Database $db-admin = $connection.database('admin');
-my MongoDB::Database $database = $connection.database('test');
+my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $db-admin .= new(:name<admin>);
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
 my BSON::Document $doc;
@@ -36,28 +37,41 @@ $req .= new: (
 #say "RP: ", $req.perl;
 #exit(0);
 
-for ^50 -> $i {
-  $req.modify-array( 'documents', 'push', $(
-      code                => 'd1',
-      name                => 'name and lastname',
-      address             => 'address',
-      city                => 'new york',
-      test_record         => "tr$i"
-    )
+# Insert many documents to see proper working of get-more docs request
+# using wireshark
+#
+my Array $docs = [];
+my $t0 = now;
+for ^200 -> $i {
+  $docs.push: (
+    code                => 'd1',
+    name                => 'name and lastname',
+    address             => 'address',
+    city                => 'new york',
+    test_record         => "tr$i"
   );
 }
 
-say "RP:\n", $req.perl;
+say "RTT modify array: ", now - $t0;
+
+$req .= new: (
+  insert => $collection.name,
+  documents => $docs
+);
+
+#say "RP:\n", $req.perl;
 
 $doc = $database.run-command($req);
 is $doc<ok>, 1, 'insert ok';
+is $doc<n>, 200, 'inserted 200 docs';
 say $doc<errmsg> unless $doc<ok>;
 
-show-documents(
-  $collection,
-  BSON::Document.new,
-  BSON::Document.new: (_id => 0)
-);
+# Request to get all documents listed to generate a get-more request
+#
+my MongoDB::Cursor $cursor = $collection.find(:projection(_id => 0,));
+while $cursor.fetch -> BSON::Document $document {
+#  say $document.perl;
+}
 
 done-testing();
 exit(0);
