@@ -125,30 +125,41 @@ subtest {
   is $doc<n>, 2, '2 records using skip and limit';
 }, "Count tests";
 
-done-testing();
-exit(0);
-
 #-------------------------------------------------------------------------------
 subtest {
   # The server needs to scan through all documents to see if the query matches
   # when there is no index set.
   #
-  $doc = $collection.explain({test_record => 'tr38'});
-  my $s = $doc<executionStats>;
-#  is $doc<cursor>, "BasicCursor", 'No index -> basic cursor';
-  is $s<nReturned>, 1, 'One doc found';
-  is $s<totalDocsExamined>, 50, 'Scanned 50 docs, bad searching';
+  $req .= new: (
+    explain => (
+      find => 'testf',
+      filter => (test_record => 'tr38'),
+      options => ()
+    ),
+    verbosity => 'executionStats'
+  );
+  $doc = $database.run-command($req);
 
-  # Do the same via a cursor
-  $cursor = $collection.find({test_record => 'tr38'});
-  $doc = $cursor.explain;
-  $s = $doc<executionStats>;
-#  is $doc<cursor>, "BasicCursor", 'No index -> basic cursor, explain via cursor';
-  is $s<nReturned>, 1, 'One doc found, explain via cursor';
-  is $s<totalDocsExamined>, 50, 'Scanned 50 docs, bad searching, explain via cursor';
+  my $s = $doc<executionStats>;
+  is $s<nReturned>, 1, 'One doc found';
+  is $s<totalDocsExamined>, 200, 'Scanned 200 docs, bad searching';
 
   # Now set an index on the field and the scan goes only through one document
   #
+#  my MongoDB::Database $db-system .= new(:name<system>);
+  $doc = $database.run-command: (
+    createIndexes => $collection.name,
+    indexes => [ (
+        key => (test_record => 1),
+        name => 'tf_idx'
+#        ns => 'test.testf',
+      )
+    ]
+  );
+
+say $doc.perl;
+#`{{
+
   $collection.ensure-index(%(test_record => 1));
   $doc = $collection.explain({test_record => 'tr38'});
 #  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type';
@@ -163,7 +174,11 @@ subtest {
   $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found, explain via cursor';
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via cursor';
+}}
 }, "Testing explain and performance using cursor";
+
+done-testing();
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -248,7 +263,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup and close
 #
-$collection.database.drop;
+#$collection.database.drop;
 
 done-testing();
 exit(0);
