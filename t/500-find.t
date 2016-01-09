@@ -26,6 +26,7 @@ my MongoDB::Database $db-admin .= new(:name<admin>);
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
 my BSON::Document $doc;
+my MongoDB::Cursor $cursor;
 
 $database.run-command: (dropDatabase => 1);
 
@@ -68,64 +69,64 @@ say $doc<errmsg> unless $doc<ok>;
 
 # Request to get all documents listed to generate a get-more request
 #
-my MongoDB::Cursor $cursor = $collection.find(:projection(_id => 0,));
+$cursor = $collection.find(:projection(_id => 0,));
 while $cursor.fetch -> BSON::Document $document {
 #  say $document.perl;
 }
 
-done-testing();
-exit(0);
-=finish
-
 #------------------------------------------------------------------------------
 subtest {
-  check-document( %( code => 'd1', test_record => 'tr3')
-                , %( _id => 1, code => 1, name => 1, 'some-name' => 0)
-                );
+  check-document(
+    ( code => 'd1', test_record => 'tr3'),
+    ( _id => 1, code => 1, name => 1, 'some-name' => 0)
+  );
 
-  check-document( %( code => 'd1', test_record => 'tr4')
-                , %( _id => 1, code => 1, name => 0, address => 0, city => 0)
-                , %( code => 1)
-                );
+  check-document(
+    ( code => 'd1', test_record => 'tr4'),
+    ( _id => 1, code => 1, name => 0, address => 0, city => 0),
+    ( code => 1,)
+  );
 
-  check-document( %( code => 'd1', test_record => 'tr5')
-                , %( _id => 0, code => 0, name => 1, address => 1, city => 1)
-                , %( _id => 0, code => 0)
-                );
+  check-document(
+    ( code => 'd1', test_record => 'tr5'),
+    ( _id => 0, code => 0, name => 1, address => 1, city => 1),
+    ( _id => 0, code => 0)
+  );
 }, "Find tests";
 
 #------------------------------------------------------------------------------
-my Hash $doc;
-my $cursor;
-
 subtest {
-  $cursor = $collection.find();
-  ok $cursor.count == 50.0, 'Counting fifty documents';
+  $req .= new: ( count => $collection.name);
+#  $cursor = $collection.find();
+#  ok $cursor.count == 50.0, 'Counting fifty documents';
+  $req<query> = ();
+  $doc = $database.run-command($req);
+  is $doc<n>, 200, '200 records';
 
-  $cursor = $collection.find( %( code => 'd1', test_record => 'tr3'));
-  ok $cursor.count == 1.0, 'Counting one document';
+#  $cursor = $collection.find( %( code => 'd1', test_record => 'tr3'));
+#  ok $cursor.count == 1.0, 'Counting one document';
+  $req<query> = ( code => 'd1', test_record => 'tr3');
+  $doc = $database.run-command($req);
+  is $doc<n>, 1, '1 record';
 
-  $cursor = $collection.find();
-  ok $cursor.count(:limit(3)) == 3.0, 'Limiting count to 3 documents';
+#  $cursor = $collection.find();
+#  ok $cursor.count(:limit(3)) == 3.0, 'Limiting count to 3 documents';
+  $req<query> = ();
+  $req<limit> = 3;
+  $doc = $database.run-command($req);
+  is $doc<n>, 3, '3 records with limit';
 
-  $cursor = $collection.find();
-  ok $cursor.count( :skip(48), :limit(3)) == 2.0, 'Skip 48 then limit 3 yields 2';
+#  $cursor = $collection.find();
+#  ok $cursor.count( :skip(48), :limit(3)) == 2.0, 'Skip 48 then limit 3 yields 2';
+  $req<query> = ();
+  $req<limit> = 3;
+  $req<skip> = 198;
+  $doc = $database.run-command($req);
+  is $doc<n>, 2, '2 records using skip and limit';
 }, "Count tests";
 
-#-------------------------------------------------------------------------------
-subtest {
-  # Testing find() using Pairs instead of hash.
-  #
-  my Pair @f = code => 'd1', test_record => 'tr3';
-  $cursor = $collection.find( @f, %( _id => 0, code => 1));
-  #$cursor = $collection.find( @f);
-  is $cursor.count, 1, 'Counting one document';
-  $doc = $cursor.next;
-  #show-document($doc);
-  ok $doc<code>:exists, 'code field returned';
-  ok $doc<_id>:!exists, 'id field not returned';
-  ok $doc<name>:!exists, 'name field not returned';
-}, 'Testing with pairs';
+done-testing();
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -256,17 +257,17 @@ exit(0);
 # Check one document for its fields. Something like {code => 1, nofield => 0}
 # use find()
 #
-sub check-document ( $criteria, %field-list, %projection = { })
+sub check-document ( $criteria, $field-list, $projection = ())
 {
-  my $cursor = $collection.find( $criteria, %projection);
-  while $cursor.next() -> %document {
-    for %field-list.keys -> $k {
-      if %field-list{$k} {
-        is( %document{$k}:exists, True, "Key '$k' exists");
+  $cursor = $collection.find( :$criteria, :$projection);
+  while $cursor.fetch() -> BSON::Document $document {
+    for @$field-list -> $pair {
+      if $pair.value == 1 {
+        is( $document{$pair.key}:exists, True, "Key '{$pair.key}' exists");
       }
 
       else {
-        is( %document{$k}:exists, False, "Key '$k' does not exist");
+        is( $document{$pair.key}:exists, False, "Key '{$pair.key}' does not exist");
       }
     }
 
