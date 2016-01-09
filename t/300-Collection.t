@@ -1,7 +1,8 @@
-use lib 't', '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use v6;
 use Test;
+use MongoDB::Database;
 use MongoDB::Connection;
 
 #`{{
@@ -14,7 +15,7 @@ use MongoDB::Connection;
 }}
 
 my MongoDB::Connection $connection = get-connection();
-my MongoDB::Database $database = $connection.database('test');
+my MongoDB::Database $database .= new(:name<test>);
 
 # Create collection and insert data in it!
 #

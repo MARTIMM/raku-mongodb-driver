@@ -1,5 +1,5 @@
 use v6;
-use lib 't', '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
 use MongoDB::Connection;
@@ -19,8 +19,8 @@ use MongoDB::Connection;
 }}
 
 my MongoDB::Connection $connection = get-connection();
-my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Database $db-admin = $connection.database('admin');
+my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $db-admin .= new(:name<admin>);
 my BSON::Document $req;
 my BSON::Document $doc;
 

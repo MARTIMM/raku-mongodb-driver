@@ -1,5 +1,5 @@
 use v6;
-use lib 't', '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
 use MongoDB::Connection;
@@ -18,8 +18,8 @@ use MongoDB::Connection;
 }}
 
 my MongoDB::Connection $connection = get-connection();
-my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Database $db-admin = $connection.database('admin');
+my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $db-admin .= new(:name<admin>);
 my BSON::Document $req;
 my BSON::Document $doc;
 
@@ -173,7 +173,7 @@ subtest {
   is $doc<ok>, 1, 'parallelCollectionScan request ok';
   ok $doc<cursors> ~~ Array, 'found array of cursors';
   ok $doc<cursors>.elems > 0, "returned {$doc<cursors>.elems} cursors";
-say "\nDoc: ", $doc.perl, "\n";
+#say "\nDoc: ", $doc.perl, "\n";
 
   for $doc<cursors>.list -> $cdoc {
 say 'C doc: ', $cdoc.perl;
@@ -181,10 +181,12 @@ say 'C doc: ', $cdoc.perl;
     is $cdoc<ok>, True, 'returned cursor ok';
     if $cdoc<ok> {
       my MongoDB::Cursor $c .= new(:cursor-doc($cdoc<cursor>));
-      while $c.fetch -> BSON::Document $d {
-        
-say 'C doc: ', $d.perl;
-      }
+      $c.kill;
+
+#      while $c.fetch -> BSON::Document $d {
+#        
+#say 'C doc: ', $d.perl;
+#      }
     }
   }
 

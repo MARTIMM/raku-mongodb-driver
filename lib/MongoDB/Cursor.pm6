@@ -144,7 +144,7 @@ package MongoDB {
     method kill ( --> Nil ) {
 
       # invalidate cursor on database
-      $wire.OP-KILL-CURSORS( self );
+      $wire.kill-cursors((self,));
 
       # invalidate cursor id
       $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);

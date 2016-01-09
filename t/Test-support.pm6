@@ -27,7 +27,7 @@ package Test-support
     }
 
     my $port-number = slurp('Sandbox/port-number').Int;
-    return $port-number
+    return $port-number;
   }
 
   #-----------------------------------------------------------------------------

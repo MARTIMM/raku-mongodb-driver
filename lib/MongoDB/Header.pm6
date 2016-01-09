@@ -225,7 +225,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method encode-kill-cursor ( Buf:D @cursor-ids --> Buf ) {
+    method encode-kill-cursors ( Buf:D @cursor-ids --> Buf ) {
 
       my Buf $kill-cursors-buffer = [~]
 
@@ -250,8 +250,8 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      self!enc-msg-header(
-        $kill-cursors-buffer.elems, BSON::C-OP-KILL-CURSORS
+      return self.encode-message-header(
+        $kill-cursors-buffer.elems, MongoDB::C-OP-KILL-CURSORS
       ) ~ $kill-cursors-buffer;
     }
 

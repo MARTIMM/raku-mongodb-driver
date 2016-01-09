@@ -7,15 +7,15 @@ use MongoDB::Cursor;
 
 #`{{
   Testing;
-    collection.count()                  Count documents whithout using find.
-    collection.distinct()               Find distinct values
-    list_collections()                  Return collection info in database
-    collection-names()                  Return collectionnames in database
+    count                       Count documents whithout using find.
+    distinct                    Find distinct values
+    list collections            Return collection info in database
+    collection names            Return collectionnames in database
 }}
 
 my MongoDB::Connection $connection = get-connection();
-my MongoDB::Database $database = $connection.database('test');
-my MongoDB::Database $db-admin = $connection.database('admin');
+my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $db-admin .= new(:name<admin>);
 my MongoDB::Collection $collection = $database.collection('cl1');
 my BSON::Document $req;
 my BSON::Document $doc;

@@ -88,13 +88,13 @@ package MongoDB {
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
 
-      my $collection = @cursors[0].collection;
-      my $database = $collection.database;
-      my $connection = $database.connection;
+#      my $collection = @cursors[0].collection;
+#      my $database = $collection.database;
+      my $connection = MongoDB::Connection.new;
 
       # Gather the ids only when they are non-zero.i.e. still active.
       #
-      my @cursor-ids;
+      my Buf @cursor-ids;
       for @cursors -> $cursor {
         @cursor-ids.push($cursor.id) if [+] $cursor.id.list;
       }
