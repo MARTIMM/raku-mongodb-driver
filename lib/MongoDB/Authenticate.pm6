@@ -1,6 +1,7 @@
 use v6;
-use MongoDB::Database;
 use Digest::MD5;
+use BSON::Document;
+use MongoDB::Database;
 
 #-------------------------------------------------------------------------------
 #
@@ -14,13 +15,13 @@ package MongoDB {
     #
     submethod BUILD ( MongoDB::Database :$database ) {
 
-      # TODO validate name
+# TODO validate name
       $!database = $database;
     }
 
     #---------------------------------------------------------------------------
     #
-    method authenticate ( Str:D :$user, Str :$password --> Hash ) {
+    method authenticate ( Str:D :$user, Str :$password --> BSON::Document ) {
       my Pair @req = (getnonce => 1);
       my Hash $doc = $!database.run-command(@req);
 say "N0: ", $doc.perl;
@@ -58,6 +59,12 @@ say "N2: ", $doc.perl;
 
       return $doc;
     }
+  }
+}
+
+
+=finish
+#`{{
 
     #---------------------------------------------------------------------------
     #
@@ -75,5 +82,6 @@ say "N2: ", $doc.perl;
 
       return $doc;
     }
-  }
-}
+
+}}
+

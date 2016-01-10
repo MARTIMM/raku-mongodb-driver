@@ -2,53 +2,29 @@ use v6;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.25.11> {
+package MongoDB:ver<0.26.1> {
 
   #-----------------------------------------------------------------------------
+  # Server version on current connection
   #
+  our $build-info = Nil;
   our $version = Nil;
 
+  # Definition of all severity types
+  #
   enum Severity <Trace Debug Info Warn Error Fatal>;
 
-  #-----------------------------------------------------------------------------
-  # A role to be used to handle exceptions.
+  # Must keep the following variables here because it must be possible to set
+  # these before creating the exception.
   #
-  role Logging {
+  our $severity-throw-level = Fatal;
+  our $severity-process-level = Info;
 
-    my $severity-throw-level = Fatal;
-    my $severity-process-level = Info;
+  our $do-log = True;
+  our $do-check = True;
 
-    my $do-log = True;
-    my $do-check = True;
-
-    my $log-fh;
-    my $log-fn = 'MongoDB.log';
-
-    #---------------------------------------------------------------------------
-    #
-    method log (  ) {
-#say "L: $do-log, self.severity, $severity-process-level";
-      return unless $do-log and self.severity >= $severity-process-level;
-
-      # Check if file is open.
-      open-logfile() unless ? $log-fh;
-
-      # Define log text. If severity > Info insert empty line
-      #
-      my Str $etxt;
-      $etxt ~= "\n" if self.severity > Info;
-      $etxt ~= [~] self.date-time.Str, " [{uc self.severity}]", self."{lc(self.severity)}"();
-      $log-fh.print($etxt);
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method test-severity (  ) {
-#say "S: $do-check, self.severity, $severity-throw-level";
-      return unless $do-check and self.severity >= $severity-throw-level;
-
-      die self;
-    }
+  our $log-fh;
+  our $log-fn = 'MongoDB.log';
 
     #-----------------------------------------------------------------------------
     #
@@ -90,6 +66,36 @@ package MongoDB:ver<0.25.11> {
     sub open-logfile (  ) is export {
       $log-fh.close if ? $log-fh and $log-fh !eqv $*OUT and $log-fh !eqv $*ERR;
       $log-fh = $log-fn.IO.open: :a;
+    }
+
+  #-----------------------------------------------------------------------------
+  # A role to be used to handle exceptions.
+  #
+  role Logging {
+
+    #---------------------------------------------------------------------------
+    #
+    method log (  ) {
+      return unless $do-log and self.severity >= $severity-process-level;
+      # Check if file is open.
+      open-logfile() unless ? $log-fh;
+
+      # Define log text. If severity > Info insert empty line
+      #
+      my Str $etxt;
+      $etxt ~= "\n" if self.severity > Info;
+      $etxt ~= [~] self.date-time.Str,
+                   " [{uc self.severity}]",
+                   self."{lc(self.severity)}"();
+      $log-fh.print($etxt);
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method test-severity (  ) {
+      return unless $do-check and self.severity >= $severity-throw-level;
+
+      die self;
     }
 
     #-----------------------------------------------------------------------------
@@ -135,7 +141,6 @@ package MongoDB:ver<0.25.11> {
 
       my $fn = 0;
       while my $cf = callframe($fn++) {
-  #say "A F,l: {$cf.file}:{$cf.line} {$cf.code.^name} {$cf.code.name}";
 
         # End loop with the program that starts on line 1
         #
@@ -166,8 +171,6 @@ package MongoDB:ver<0.25.11> {
           #
           my Bool $found-entry = False;
           while my $cfx = callframe($fn++) {
-  #say "B F,l: [$found-entry]",
-  #    " {$cfx.file}:{$cfx.line} {$cfx.code.^name} {$cfx.code.name}";
 
             # If we find the entry then go to the next frame to check for the
             # Routine we need to know.

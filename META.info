@@ -9,6 +9,7 @@
     "Digest::MD5"
   ],
   "description": "MongoDB driver",
+  "license": "The Artistic License 2.0",
   "name": "MongoDB",
   "provides": {
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
@@ -16,11 +17,11 @@
     "MongoDB::Connection":              "lib/MongoDB/Connection.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
-    "MongoDB::DBRef":                   "lib/MongoDB/DBRef.pm6",
+    "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
     "MongoDB::Users":                   "lib/MongoDB/Users.pm6",
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm6",
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.25.11"
+  "version": "0.26.1"
 }

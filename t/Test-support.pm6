@@ -1,10 +1,13 @@
 use v6;
-use MongoDB;
-use MongoDB::Connection;
 use Test;
+use MongoDB::Connection;
+use MongoDB::Database;
+use MongoDB::Collection;
 
 package Test-support
 {
+  state $empty-document = BSON::Document.new();
+
   #-----------------------------------------------------------------------------
   # Get selected port number. When file is not there the process fails.
   #
@@ -24,7 +27,7 @@ package Test-support
     }
 
     my $port-number = slurp('Sandbox/port-number').Int;
-    return $port-number
+    return $port-number;
   }
 
   #-----------------------------------------------------------------------------
@@ -105,7 +108,7 @@ package Test-support
                           ) is export {
 
     my MongoDB::Connection $connection = get-connection();
-    my MongoDB::Database $database = $connection.database($db-name);
+    my MongoDB::Database $database .= new($db-name);
     return $database.collection($col-name);
   }
 
@@ -113,21 +116,23 @@ package Test-support
   # Search and show content of documents
   #
   sub show-documents ( MongoDB::Collection $collection,
-                       Hash $criteria, Hash $projection = { }
+                       BSON::Document $criteria,
+                       BSON::Document $projection = $empty-document
                      ) is export {
 
     say '-' x 80;
 
     my MongoDB::Cursor $cursor = $collection.find( $criteria, $projection);
-    while $cursor.fetch() -> %document {
-      show-document(%document);
+    while $cursor.fetch -> BSON::Document $document {
+      say $document.perl;
     }
   }
 
+#`{{
   #-----------------------------------------------------------------------------
   # Display a document
   #
-  sub show-document ( Hash $document ) is export {
+  sub show-document ( BSON::Document $document ) is export {
 
     print "Document: ";
     my $indent = '';
@@ -137,6 +142,19 @@ package Test-support
     }
     say "";
   }
+
+
+  #-----------------------------------------------------------------------------
+  # Drop database
+  #
+  sub drop-database (
+    MongoDB::Database $database
+    --> BSON::Document
+  ) is export {
+
+    return $database.run-command(BSON::Document.new: (dropDatabase => 1));
+  }
+}}
 }
 
 

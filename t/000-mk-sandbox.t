@@ -1,4 +1,8 @@
 use v6;
+use lib 't';
+use Test-support;
+use MongoDB::Connection;
+use Test;
 
 #`{{
   Setup sandbox
@@ -7,10 +11,7 @@ use v6;
   Test connection
 }}
 
-use lib 't';
-use Test-support;
-use MongoDB::Connection;
-use Test;
+#TODO Checks for windows environment
 
 #-------------------------------------------------------------------------------
 # Skip sandbox setup if requested
@@ -251,7 +252,7 @@ my MongoDB::Connection $connection = get-connection-try10();
 
 # Test version
 #
-my $version = $connection.version;
+my $version = $MongoDB::version;
 ok $version<release1> >= 3, "MongoDB release >= 3";
 
 #-------------------------------------------------------------------------------

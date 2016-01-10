@@ -11,3 +11,4 @@ Travis-ci/m*
 *.log
 .precomp
 */.procomp
+*.zargo~

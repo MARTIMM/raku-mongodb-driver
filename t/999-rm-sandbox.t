@@ -54,8 +54,8 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 diag "delete directory Sandbox";
 rmdir "Sandbox";
 
-$connection .= new( :host<localhost>, :port($port-number));
-ok ? $connection.status, 'MongoDB not running';
+#$connection .= new( :host<localhost>, :port($port-number));
+#ok ? $connection.status, 'MongoDB not running';
 
 #-----------------------------------------------------------------------------
 # Cleanup and close

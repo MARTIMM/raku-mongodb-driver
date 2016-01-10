@@ -1,111 +1,96 @@
+use v6;
+use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use Test-support;
+use Test;
+use MongoDB::Connection;
+
 #`{{
   Testing;
-    database.get-last-error()           Get last error
-    database.get-prev-error()           Get previous errors
-    database.reset-error()              Reset errors
     database.run-command()              Run command
     database.drop()                     Drop database
     database.create-collection()        Create collection explicitly
 }}
 
-use v6;
-use Test;
-use MongoDB::Connection;
-
-use lib 't';
-use Test-support;
-
+my BSON::Document $req;
+my BSON::Document $doc;
 my MongoDB::Connection $connection = get-connection();
+my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $db-admin .= new(:name<admin>);
 
 # Drop database first then create new databases
 #
-$connection.database('test').drop;
+$req .= new: ( dropDatabase => 1 );
+$doc = $database.run-command($req);
 
-my MongoDB::Database $database = $connection.database('test');
-isa-ok $database, 'MongoDB::Database';
-is $database.name, 'test', 'Check database name';
+#-------------------------------------------------------------------------------
+subtest {
+  isa-ok $database, 'MongoDB::Database';
+  is $database.name, 'test', 'Check database name';
 
-# Create a collection explicitly. Try for a second time
-#
-$database.create-collection('cl1');
+  # Create a collection explicitly. Try for a second time
+  #
+  $req .= new: (create => 'cl1');
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, 'Created collection cl1';
 
-try {
-  $database.create-collection('cl1');
-  CATCH {
-    when X::MongoDB {
-      ok .message ~~ ms/collection already exists/, 'Collection cl1 exists';
-    }
+  # Second try gets an error
+  #
+  $doc = $database.run-command($req);
+  is $doc<ok>, 0, 'Second collection cl1 not created';
+  is $doc<errmsg>, 'collection already exists', $doc<errmsg>;
+  is $doc<code>, 48, 'mongo error code 40';
 
-    default {
-      say .perl;
-    }
+}, "Database, create collection, drop";
+
+#-------------------------------------------------------------------------------
+subtest {
+  $doc = $database.run-command: (getLastError => 1);
+  is $doc<ok>, 1, 'No last errors';
+
+  $doc = $database.run-command: (getPrevError => 1);
+  is $doc<ok>, 1, 'No previous errors';
+
+  $doc = $database.run-command: (resetError => 1);
+  is $doc<ok>, 1, 'Rest errors ok';
+}, "Error checking";
+
+
+#-------------------------------------------------------------------------------
+subtest {
+  $doc = $db-admin.run-command: (listDatabases => 1);
+  ok $doc<ok>.Bool, 'Run command ran ok';
+  ok $doc<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
+
+  my %db-names;
+  my Array $db-docs = $doc<databases>;
+  my $idx = 0;
+  for $db-docs[*] -> $d {
+    %db-names{$d<name>} = $idx++;
   }
-}
+
+  ok %db-names<test>:exists, 'test found';
+
+  ok !@($doc<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
+}, 'Database statistics';
 
 #-------------------------------------------------------------------------------
-# Error checking
-#
-my $error-doc = $database.get-last-error;
-ok $error-doc<ok>.Bool, 'No errors';
-$error-doc = $database.get-prev-error;
-ok $error-doc<ok>.Bool, 'No previous errors';
+subtest {
+  $doc = $database.run-command: (dropDatabase => 1);
+  is $doc<ok>, 1, 'Drop command went well';
 
-$database.reset-error;
+  $doc = $db-admin.run-command: (listDatabases => 1);
+  my %db-names = %();
+  my $idx = 0;
+  my Array $db-docs = $doc<databases>;
+  for $db-docs[*] -> $d {
+    %db-names{$d<name>} = $idx++;
+  }
 
-#-------------------------------------------------------------------------------
-# Use run-command foolishly
-#
-$database = $connection.database('test');
-my Pair @req = listDatabases => 1;
-my $docs = $database.run-command(@req);
-ok !$docs<ok>.Bool, 'Run command ran not ok';
-is $docs<errmsg>,
-   'listDatabases may only be run against the admin database.',
-   $docs<errmsg>;
-
-#-------------------------------------------------------------------------------
-# Use run-command to get database statistics
-#
-$database = $connection.database('admin');
-$docs = $database.run-command(@req);
-ok $docs<ok>.Bool, 'Run command ran ok';
-ok $docs<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
-
-my %db-names;
-my Array $db-docs = $docs<databases>;
-my $idx = 0;
-for $db-docs[*] -> $doc {
-  %db-names{$doc<name>} = $idx++;
-}
-
-ok %db-names<test>:exists, 'test found';
-
-ok !@($docs<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
-
-#-------------------------------------------------------------------------------
-# Drop a database
-#
-$database = $connection.database('test');
-my %r = %($database.drop());
-ok %r<ok>.Bool, 'Drop command went well';
-is %r<dropped>, 'test', 'Dropped database name checks ok';
-
-$database = $connection.database('admin');
-$docs = $database.run-command(@req);
-
-%db-names = %();
-$idx = 0;
-$db-docs = $docs<databases>;
-for $db-docs[*] -> $doc {
-  %db-names{$doc<name>} = $idx++;
-}
-
-ok %db-names<test>:!exists, 'test not found';
+  nok %db-names<test>:exists, 'test not found';
+}, 'Drop a database';
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$connection.database('test').drop;
-
 done-testing();
 exit(0);

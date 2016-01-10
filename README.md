@@ -40,6 +40,11 @@ and perhaps even to slim down the current set of methods and to document the use
 of the run-command so that the user of this package can, after reading the
 mongodb documents, use the run-command method to get the work done themselves.
 
+* There is another thing to mention about the helper functions. Providing them
+will always have a parsing impact while many of them are not always needed.
+Examples are list-databases(), get-prev-error() etc. Removing the helper
+functions will reduce the parsing time.
+
 * The use of hashes to send and receive mongodb documents is wrong. It is
 wrong because the key-value pairs in the hash are getting a different order then
 is entered in the hash. Mongodb needs the command at the front of the document
@@ -56,6 +61,11 @@ package which a) keeps the order, 2) have the same capabilities as Hashes, 3)
 can do encoding and decoding in parallel. This BSON::Document will probably be
 implemented in the coming (sub)versions of this package after complete testing
 of the module in BSON.
+
+* At the moment a connection is made using a server-name or ip address with or
+without a port number. In the future it must also or even replaced by using a
+URL in fortmat ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```.
+See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/).
 
 ## API CHANGES
 
@@ -118,308 +128,17 @@ $ panda install MongoDB
 ```
 
 ## Versions of PERL, MOARVM and MongoDB
-perl6 version 2015.10-70-gba70274 built on MoarVM version 2015.10-14-g5ff3001
-* Perl6 version ```2015.11-143-g7046681```
-* MoarVM version ```2015.11-19-g623eadf```
+
+* Perl6 version ```2015.12-1-g6452f8d``` implementing ```Perl 6.c```
+* MoarVM version ```2015.12```
+
 * MongoDB version ```3.0.5```
 
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
 
-There are lists on the MongoDB site see references above. Items from the list
-below will be worked on. There are many items shown here, it might be impossible
-to implement it all. By using run-command(), much can be accomplished. A lot of the
-items are using that call to get the information for you. Also quite a few items
-are shown in in more than one place place. Removed all internal commands.
-
-As explained above a lot of helper functions will not be implemented. Thorough
-documentation must be written to help the user to write their own code using the
-documentation of mongodb.
-
-Legend;
-
-* [x] Implemented
-* [-] Will not be implemented
-* [C] Implemented in MongoDB::Connection, Connection.pm
-* [D] Implemented in MongoDB::Database, Database.pm
-* [DU] Implemented in MongoDB::Database::Users, Database/Users.pm
-* [DA] Implemented in MongoDB::Database::Authentication, Database/Authentication.pm
-* [O] Implemented in MongoDB::Collection, Collection.pm
-* [U] Implemented in MongoDB::Cursor, Cursor.pm
-
-### Role Management Commands
-
-* [ ] createRole. Creates a role and specifies its privileges.
-* [ ] dropAllRolesFromDatabase. Deletes all user-defined roles from a database.
-* [ ] dropRole. Deletes the user-defined role.
-* [ ] grantPrivilegesToRole. Assigns privileges to a user-defined role.
-* [ ] grantRolesToRole. Specifies roles from which a user-defined role inherits privileges.
-* [ ] invalidateUserCache. Flushes the in-memory cache of user information, including credentials and roles.
-* [ ] revokePrivilegesFromRole. Removes the specified privileges from a user-defined role.
-* [ ] revokeRolesFromRole. Removes specified inherited roles from a user-defined role.
-* [ ] rolesInfo. Returns information for the specified role or roles.
-* [ ] updateRole. Updates a user-defined role.
-
-### Replication Commands
-
-* [ ] isMaster. Displays information about this member\u2019s role in the replica set, including whether it is the master.
-* [ ] replSetFreeze. Prevents the current member from seeking election as primary for a period of time.
-* [ ] replSetGetStatus. Returns a document that reports on the status of the replica set.
-* [ ] replSetInitiate. Initializes a new replica set.
-* [ ] replSetMaintenance. Enables or disables a maintenance mode, which puts a secondary node in a RECOVERING state.
-* [ ] replSetReconfig. Applies a new configuration to an existing replica set.
-* [ ] replSetStepDown. Forces the current primary to step down and become a secondary, forcing an election.
-* [ ] replSetSyncFrom. Explicitly override the default logic for selecting a member to replicate from.
-* [ ] resync. Forces a mongod to re-synchronize from the master. For master-slave replication only.
-
-### Sharding Commands
-
-* [ ] addShard. Adds a shard to a sharded cluster.
-* [ ] cleanupOrphaned. Removes orphaned data with shard key values outside of the ranges of the chunks owned by a shard.
-* [ ] enableSharding. Enables sharding on a specific database.
-* [ ] flushRouterConfig. Forces an update to the cluster metadata cached by a mongos.
-* [ ] isdbgrid. Verifies that a process is a mongos.
-* [ ] listShards. Returns a list of configured shards.
-* [ ] mergeChunks. Provides the ability to combine chunks on a single shard.
-* [ ] movePrimary. Reassigns the primary shard when removing a shard from a sharded cluster.
-* [ ] removeShard. Starts the process of removing a shard from a sharded cluster.
-* [ ] shardCollection. Enables the sharding functionality for a collection, allowing the collection to be sharded.
-* [ ] shardingState. Reports whether the mongod is a member of a sharded cluster.
-* [ ] split. Creates a new chunk.
-
-### Database Management
-
-* [C] Set database is done with database(). Database is created implicitly after
-      inserting data into a collection.
-* [D] list-databases(). Returns database statistics.
-* [D] database-names(). Returns a list of database names.
-* [D] run-command(), Many helper methods are using this command.
-* [D] get-last-error(). Get error status from last operation
-* [D] get-prev-error().
-* [D] reset-error().
-
-### Collection Methods
-
-* [D] collection(). Set collection. Collection is created implicitly after
-      inserting data into a collection.
-* [D] create-collection(). Create collection explicitly and sets collection parameters.
-* [D] list-collections().
-* [D] collection-names().
-
-### Data serialization
-
-* [x] Convert all strings to UTF-8. This is inherent to perl6. Everything is
-      UTF8 and conversion to buffers is done using encode and decode.
-* [x] Automatic _id generation. See BSON module.
-* [x] BSON serialization/deserialization. See [BSON module](https://github.com/MARTIMM/BSON) and
-      [Site](http://bsonspec.org/). Parts are finished but not all variable
-      types are supported. See BSON documentation of what is supported.
-* [ ] Support detecting max BSON size on connection (e.g., using buildInfo or
-      isMaster commands) and allowing users to insert docs up to that size.
-* [ ] File chunking (/applications/gridfs)
-
-### Connection
-
-* [ ] In/out buffer pooling, if implementing in garbage collected language
-* [ ] Connection pooling
-* [ ] Automatic reconnect on connection failure
-* [ ] DBRef Support: - Ability to generate easily - Automatic traversal
-
-### Authentication Commands
-
-* [ ] authSchemaUpgrade. Supports the upgrade process for user data between version 2.4 and 2.6.
-* [ ] authenticate. Starts an authenticated session using a username and password.
-* [ ] logout. Terminates the current authenticated session.
-
-### User Management Commands
-
-* [DU] create-user. Creates a new user.
-* [DU] drop-all-users-from-database. Deletes all users associated with a
-       database.
-* [DU] drop-user. Removes a single user.
-* [DU] grant-roles-to-user. Grants a role and its privileges to a user.
-* [DU] revoke-roles-from-user. Removes a role from a user.
-* [DU] update-user. Updates a user's data.
-* [DU] users-info. Returns information about the specified users.
-* [DU] set-pw-security, Specify restrictions on username and password.
-* [DU] get-users, Get info about all users
-
-
-
-### User Commands
-
-#### Aggregation Commands
-
-#### Geospatial Commands
-
-* [ ] geoNear. Performs a geospatial query that returns the documents closest to a given point.
-* [ ] geoSearch. Performs a geospatial query that uses MongoDB\u2019s haystack index functionality.
-
-#### Query and Write Operation Commands
-
-* [ ] eval. Runs a JavaScript function on the database server.
-* [ ] parallelCollectionScan. Lets applications use multiple parallel cursors when reading documents from a collection.
-* [ ] text. Performs a text search.
-
-#### Query Plan Cache Commands
-
-* [ ] planCacheClearFilters. Clears index filter(s) for a collection.
-* [ ] planCacheClear. Removes cached query plan(s) for a collection.
-* [ ] planCacheListFilters. Lists the index filters for a collection.
-* [ ] planCacheListPlans. Displays the cached query plans for the specified query shape.
-* [ ] planCacheListQueryShapes. Displays the query shapes for which cached query plans exist.
-* [ ] planCacheSetFilter. Sets an index filter for a collection.
-
-#### Administration Commands
-
-* [ ] cloneCollectionAsCapped. Copies a non-capped collection as a new capped collection.
-* [ ] cloneCollection. Copies a collection from a remote host to the current host.
-* [ ] clone. Copies a database from a remote host to the current host.
-* [ ] collMod. Add flags to collection to modify the behavior of MongoDB.
-* [ ] compact. Defragments a collection and rebuilds the indexes.
-* [ ] connectionStatus. Reports the authentication state for the current connection.
-* [ ] convertToCapped. Converts a non-capped collection to a capped collection.
-* [ ] copydb. Copies a database from a remote host to the current host.
-* [ ] filemd5. Returns the md5 hash for files stored using GridFS.
-* [ ] fsync. Flushes pending writes to the storage layer and locks the database to allow backups.
-* [ ] getParameter. Retrieves configuration options.
-* [ ] logRotate. Rotates the MongoDB logs to prevent a single file from taking too much space.
-* [ ] reIndex. Rebuilds all indexes on a collection.
-* [ ] renameCollection. Changes the name of an existing collection.
-* [ ] repairDatabase. Repairs any errors and inconsistencies with the data storage.
-* [ ] setParameter. Modifies configuration options.
-* [ ] shutdown. Shuts down the mongod or mongos process.
-* [ ] touch. Loads documents and indexes from data storage to memory.
-
-#### Diagnostic Commands
-
-* [ ] buildInfo. Displays statistics about the MongoDB build.
-* [ ] collStats. Reports storage utilization statics for a specified collection.
-* [ ] connPoolStats. Reports statistics on the outgoing connections from this MongoDB instance to other MongoDB instances in the deployment.
-* [ ] cursorInfo. Deprecated. Reports statistics on active cursors.
-* [ ] dbStats. Reports storage utilization statistics for the specified database.
-* [ ] features. Reports on features available in the current MongoDB instance.
-* [ ] getCmdLineOpts. Returns a document with the run-time arguments to the MongoDB instance and their parsed options.
-* [ ] getLog. Returns recent log messages.
-* [ ] hostInfo. Returns data that reflects the underlying host system.
-* [ ] listCommands. Lists all database commands provided by the current mongod instance.
-* [ ] profile. Interface for the database profiler.
-* [ ] serverStatus. Returns a collection metrics on instance-wide resource utilization and status.
-* [ ] shardConnPoolStats. Reports statistics on a mongos\u2018s connection pool for client operations against shards.
-* [ ] top. Returns raw usage statistics for each database in the mongod instance.
-
-#### Auditing Commands
-
-* [ ] logApplicationMessage. Posts a custom message to the audit log.
-
-### Collection Methods
-
-* [ ] aggregate(). Provides access to the aggregation pipeline. Performs
-      aggregation tasks such as group using the aggregation framework.
-* [-] copyTo(). Wraps eval to copy data between collections in a single MongoDB
-      instance. Deprecated since version MongoDB 3.0.
-* [O] count(). Wraps count to return a count of the number of documents in a
-      collection or matching a query.
-* [-] create-index(). Builds an index on a collection. Use ensure-index().
-      Deprecated since 1.8 according to [message](http://stackoverflow.com/questions/25968592/difference-between-createindex-and-ensureindex-in-java-using-mongodb)
-* [-] create-indexes(), see ensure-index(). Builds one or more indexes for a
-      collection.
-* [O] data-size(). Returns the size of the collection. Wraps the size field in
-      the output of the collStats.
-* [O] explain(). Done also in collection! Reports on the query execution plan,
-      including index use, for a cursor.
-* [O] distinct(). Returns an array of documents that have distinct values for
-      the specified field. Displays the distinct values found for a specified
-      key in a collection.
-* [O] drop(). Removes the specified collection from the database.
-* [O] drop-index(). Removes a specified index on a collection.
-* [O] drop-indexes(). Removes all indexes on a collection.
-* [O] ensure-index(). Creates an index if it does not currently exist. If the
-      index exists ensure-index() does nothing. Ensure-index commands should be
-      cached to prevent excessive communication with the database. Or, the
-      driver user should be informed that ensureIndex is not a lightweight
-      operation for the particular driver.
-* [O] find(). Performs a query on a collection and returns a cursor object.
-    * [x] %criteria (Search criteria)
-    * [x] %projection (Field selection)
-    * [x] Int :$number-to-skip = 0
-    * [x] Int :$number-to-return = 0
-    * [x] Bool :$no-cursor-timeout = False
-  * Testing find(). Not all is tested because e.g. $eq is not yet supported in
-    my version of Mongod.
-    * [x] exact matching, implicit AND.
-    * [x] $eq, $lt, $lte, $gt, $gte, $ne
-    * [x] $in, $nin
-    * [x] $or, $and, $not, $nor
-    * [x] $exists, $type
-    * [x] $mod, $text, $where, $regex: regular expressions
-    * [ ] arrays, $all, $size, $slice
-    * [ ] embedded docs, $elemMatch
-    * [ ] null
-
-* [O] find-and-modify(). Atomically modifies and returns a single document.
-* [O] find-one(). Performs a query and returns a single document.
-    * [x] %criteria (Search criteria)
-    * [x] %projection (Field selection)
-* [-] getIndexStats(). Renders a human-readable view of the data collected by
-      indexStats which reflects B-tree utilization. The function/command can be
-      run only on a mongod instance that uses the
-      --enableExperimentalIndexStatsCmd option.
-* [O] get-indexes(). Returns an array of documents that describe the existing
-      indexes on a collection.
-* [ ] getShardDistribution(). For collections in sharded clusters, db.collection.getShardDistribution() reports data of chunk distribution.
-* [O] group(). Provides simple data aggregation function. Groups documents in a
-      collection by a key, and processes the results. Use aggregate() for more
-      complex data aggregation. Groups documents in a collection by the
-      specified key and performs simple aggregation.
-* [-] indexStats(). Renders a human-readable view of the data collected by
-      indexStats which reflects B-tree utilization. See getIndexStats().
-* [O] insert(). Creates a new document in a collection.
-* [ ] isCapped(). Reports if a collection is a capped collection.
-* [O] map-reduce(). Performs map-reduce style data aggregation for large data
-      sets.
-* [ ] reIndex(). Rebuilds all existing indexes on a collection.
-* [O] remove(). Deletes documents from a collection.
-* [ ] renameCollection(). Changes the name of a collection.
-* [ ] save(). Provides a wrapper around an insert() and update() to insert new documents.
-* [O] stats(). Reports on the state of a collection. Provides a wrapper around
-      the collStats.
-* [ ] storageSize(). Reports the total size used by the collection in bytes. Provides a wrapper around the storageSize field of the collStats output.
-* [ ] totalIndexSize(). Reports the total size used by the indexes on a collection. Provides a wrapper around the totalIndexSize field of the collStats output.
-* [ ] totalSize(). Reports the total size of a collection, including the size of all documents and all indexes on a collection.
-* [O] update(). Modifies a document in a collection.
-    * [x] upsert
-    * [ ] update operators: $addToSet, $bit, $currentDate, $each, $inc,
-          $isolated, $max, $min, $mul, $pop, $position, $positional, $pull,
-          $pullAll, $push, $pushAll, $rename, $set, $setOnInsert, $slice,
-          $sort, $unset
-* [ ] validate(). Performs diagnostic operations on a collection.
-
-### Cursor Methods
-
-* [ ] addOption(). Adds special wire protocol flags that modify the behavior of the query.\u2019
-* [ ] batchSize(). Controls the number of documents MongoDB will return to the client in a single network message.
-* [U] count(). Also on collection. Returns a count of the documents in a cursor.
-* [U] explain(). Done also in collection. Reports on the query execution plan,
-      including index use, for a cursor.
-* [U] fetch(). Not found in mongo. Equivalent function is next()
-* [ ] forEach(). Applies a JavaScript function for every document in a cursor.
-* [ ] hasNext(). Returns true if the cursor has documents and can be iterated.
-* [U] hint(). Forces MongoDB to use a specific index for a query.
-* [U] kill().
-* [ ] limit(). Constrains the size of a cursor\u2019s result set.
-* [ ] map(). Applies a function to each document in a cursor and collects the return values in an array.
-* [ ] max(). Specifies an exclusive upper index bound for a cursor. For use with cursor.hint()
-* [ ] maxTimeMS(). Specifies a cumulative time limit in milliseconds for processing operations on a cursor.
-* [ ] min(). Specifies an inclusive lower index bound for a cursor. For use with cursor.hint()
-* [U] next(). Returns the next document in a cursor.
-* [ ] objsLeftInBatch(). Returns the number of documents left in the current cursor batch.
-* [ ] readPref(). Specifies a read preference to a cursor to control how the client directs queries to a replica set.
-* [ ] showDiskLoc(). Returns a cursor with modified documents that include the on-disk location of the document.
-* [ ] size(). Returns a count of the documents in the cursor after applying skip() and limit() methods.
-* [ ] skip(). Returns a cursor that begins returning results only after passing or skipping a number of documents.
-* [ ] snapshot(). Forces the cursor to use the index on the _id field. Ensures that the cursor returns each document, with regards to the value of the _id field, only once.
-* [ ] sort(). Returns results ordered according to a sort specification.
-* [ ] toArray(). Returns an array that contains all documents returned by the cursor.
+Well, there was once a checklist but a lot of the methods can be done using
+run-command. In the change log below you can see an overview of the removed
+methods.
 
 ## BUGS, KNOWN LIMITATIONS AND TODO
 
@@ -512,13 +231,57 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
-* 0.*.0
-  * Remove deprecation messages of converted method names
+* 0.26.1
+  * There is a need to get a connection from several classes in the package.
+    Normally it can be found by following the references from a collection to
+    the database then onto the connection. However, when a cursor is returned
+    from the server, there is no collection involved except for the full
+    collection name. Loading the Connection module in Cursor to create a
+    connection directly will endup in a loop in the loading cycle. Conclusion is
+    then to create the database object on its own without having a link back to
+    to the connection object. Because of this, database() is removed from
+    Connection. To create a Database object now only needs a name of the
+    database. The Wire class is the only one to send() and receive() so there is
+    the only place to load the Connection class.
+  * find() api is changed to have only named arguments because all arguments
+    are optional.
+  * Removed DBRef. Will be looked into later.
+* 0.26.0
+  * Remove deprecation messages of converted method names. A lot of them were
+    helper methods and are removed anyway.
+  * Many methods are removed from modules because they can be done by using
+    run-command(). Many commands are tested in ```t/400-run-command.t``` and
+    therefore becomes a good example file. Next a list of methods removed.
+    * Connection.pm6: list-databases, database-names, version, build-info
+    * Database.pm6: drop, create-collection, get-last-error, get-prev-error,
+      reset-error, list-collections, collection_names
+    * Collection.pm6: find-one, drop, count, distinct, insert, update, remove,
+      find-and-modify, explain, group, map-reduce, ensure-index, drop-index,
+      drop-indexes, get-indexes, stats, data-size, find-and-modify
+    * cursor.pm6: explain, hint, count
+    * Users.pm6: drop-user, drop-all-users-from-database, grant-roles-to-user,
+      revoke-roles-from-user, users-info, get-users
+    * Authenticate: logout
+  * Some extra multi's are created to set arguments more convenient. Find(),
+    and run-command() now have also List of Pair atrributes instead of
+    BSON::Document.
+  * Version and build-info are stored in MongoDB as $MongoDB::version and
+    MongoDB::build-info
 
+* 0.25.13
+  * All encoding and decoding done in Wire.pm6 is moved out to Header.pm6
+  * Wire.pm6 has now query() using Header.pm6 to encode the request and decode
+    the server results. find() in Collection.pm6 uses query() to set the cursor
+    object from Cursor.pm6 after which the reseived documents can be processed
+    with fetch(). It replaces OP-QUERY().
+  * get-more() is added also to help the Cursor object getting more documents if
+    there are any. It replaces OP-GETMORE().
 * 0.25.12
-  * Changes in Wire.pm6 using lower case method names. I find the use of uppercase
-    method names only when called by perl6 (e.g. FALLBACK, BUILD). Other use of
-    uppercase words only with constants.
+  * ```@*INC``` is gone, ```use lib``` is the way. A lot of changes done by
+    zoffixznet.
+  * Changes in Wire.pm6 using lower case method names. I find the use of
+    uppercase method names only when called by perl6 (e.g. FALLBACK, BUILD).
+    Other use of uppercase words only with constants.
 * 0.25.11
   * Changes caused by changes in BSON
 * 0.25.10
