@@ -134,7 +134,7 @@ package MongoDB {
       return $docs;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Give the query analizer a hint on what index to use.
     #
     method hint ( $index-spec, :$explain = False --> Hash ) {
@@ -150,8 +150,7 @@ package MongoDB {
       return $docs;
     }
 
-
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Get count of found documents
     #
     method count ( Int :$skip = 0, Int :$limit = 0 --> Int ) {

@@ -139,7 +139,6 @@ subtest {
     verbosity => 'executionStats'
   );
   $doc = $database.run-command($req);
-
   my $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found';
   is $s<totalDocsExamined>, 200, 'Scanned 200 docs, bad searching';
@@ -150,53 +149,62 @@ subtest {
   $doc = $database.run-command: (
     createIndexes => $collection.name,
     indexes => [ (
-        key => (test_record => 1),
-        name => 'tf_idx'
+        key => (test_record => 1,),
+        name => 'tf_idx',
 #        ns => 'test.testf',
-      )
+      ),
     ]
   );
+  is $doc<createdCollectionAutomatically>, False, 'Not created automatically';
+  is $doc<numIndexesBefore>, 1, 'Only 1 index before call';
+  is $doc<numIndexesAfter>, 2, 'Now there are 2';
 
-say $doc.perl;
-#`{{
-
-  $collection.ensure-index(%(test_record => 1));
-  $doc = $collection.explain({test_record => 'tr38'});
-#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type';
+#say $doc.perl;
+  $doc = $database.run-command($req);
   $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found';
-  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing';
-
-  # Do the same via a cursor
-  $cursor = $collection.find({test_record => 'tr38'});
-  $doc = $cursor.explain;
-#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via cursor';
-  $s = $doc<executionStats>;
-  is $s<nReturned>, 1, 'One doc found, explain via cursor';
-  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via cursor';
-}}
+  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great searching';
 }, "Testing explain and performance using cursor";
-
-done-testing();
-exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {
-  $doc = $cursor.hint( %("_id" => 1), :explain);
-  #$doc = $cursor.explain;
-  #say $doc.perl;
-  #say "N, scanned: ", $doc<n>, ', ', $doc<nscanned>;
-#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via bad hint';
+
+  # Give a bad hint and get explaination(another possibility from above
+  # explain using find in stead of run-command)
+  #
+  $cursor = $collection.find(
+    :criteria(
+      '$query' => (test_record => 'tr38',),
+      '$hint' => (_id => 1,),
+      '$explain' => 1
+    ),
+    :number-to-return(1)
+  );
+  $doc = $cursor.fetch;
   my $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found, explain via bad hint';
-  is $s<totalDocsExamined>, 50, 'Scanned 50 docs, bad searching, explain via bad hint';
+  is $s<totalDocsExamined>, 200, 'Scanned 200 docs, bad searching, explain via bad hint';
 
-  $doc = $cursor.hint( %(test_record => 1), :explain);
-#  ok $doc<cursor> ~~ m/BtreeCursor/, 'Different cursor type, explain via good hint';
+  # Give a good hint and get explaination(another possibility from above
+  # explain using find in stead of run-command)
+  #
+  $cursor = $collection.find(
+    :criteria(
+      '$query' => (test_record => 'tr38',),
+      '$hint' => (test_record => 1,),
+      '$explain' => 1
+    ),
+    :number-to-return(1)
+  );
+  $doc = $cursor.fetch;
+#say "Doc: ", $doc.perl;
   $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found, explain via a good hint';
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
 }, "Testing explain and performance using hint";
+
+done-testing();
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {

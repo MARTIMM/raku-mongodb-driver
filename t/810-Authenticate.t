@@ -1,16 +1,15 @@
+use v6;
+use lib 't';
+use Test-support;
+use Test;
+use MongoDB::Database;
+use MongoDB::Users;
+use MongoDB::Authenticate;
+
 #`{{
   Testing;
     Authentication of a user
 }}
-
-use v6;
-use Test;
-use MongoDB::Connection;
-use MongoDB::Users;
-use MongoDB::Authenticate;
-
-use lib 't';
-use Test-support;
 
 #-------------------------------------------------------------------------------
 # No sandboxing therefore authentication will not be tested as a precaution.
@@ -21,68 +20,62 @@ if %*ENV<NOSANDBOX> {
   exit(0);
 }
 
-#-------------------------------------------------------------------------------
-#
-my MongoDB::Connection $connection = get-connection();
-
-# Drop database first then create new databases
-#
-#$connection.database('test').drop;
-
-my MongoDB::Database $database;
-my MongoDB::Users $users;
-my MongoDB::Authenticate $auth;
-
-my Hash $doc;
-my $exit_code;
-
 plan 1;
 skip-rest "Some modules needed for authentication are not yet supported in perl 6";
 exit(0);
 
 #-------------------------------------------------------------------------------
+my Int $exit_code;
+
+my MongoDB::Connection $connection = get-connection();
+my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Collection $collection = $database.collection('testf');
+my BSON::Document $req;
+my BSON::Document $doc;
+my MongoDB::Cursor $cursor;
+my MongoDB::Users $users .= new(:$database);
+my MongoDB::Authenticate $auth;
+
+$database.run-command: (dropDatabase => 1);
+$database.run-command: (dropAllUsersFromDatabase => 1);
+
+#-------------------------------------------------------------------------------
 subtest {
-  $database = $connection.database('test');
-  $users .= new(:$database);
-
-  $doc = $users.drop_all_users_from_database();
-  ok $doc<ok>, 'All users dropped';
-
   $users.set-pw-security(
     :min-un-length(10), 
     :min-pw-length(8),
-    :pw_attribs($MongoDB::Users::PW-OTHER-CHARS)
+    :pw_attribs(MongoDB::Users::C-PW-OTHER-CHARS)
   );
 
   $doc = $users.create-user(
-    :user('site-admin'),
-    :password('B3n@Hurry'),
-    :custom-data({user-type => 'site-admin'}),
-    :roles([{role => 'userAdminAnyDatabase', db => 'admin'}])
+    'site-admin', 'B3n@Hurry',
+    :custom-data((user-type => 'site-admin'),),
+    :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
   );
 
   ok $doc<ok>, 'User site-admin created';
 
   $doc = $users.create-user(
-    :user('Dondersteen'),
-    :password('w@tD8jeDan'),
+    'Dondersteen', 'w@tD8jeDan',
     :custom-data(
-      { license => 'to_kill',
+        license => 'to_kill',
         user-type => 'database-test-admin'
-      }
     ),
-    :roles([{role => 'readWrite', db => 'test'}])
+    :roles([(role => 'readWrite', db => 'test'),])
   );
 
   ok $doc<ok>, 'User Dondersteen created';
 
-  $doc = $users.get-users;
 #say "Users: ", $doc.perl;
+  $doc = $database.run-command: (usersInfo => 1);
   is $doc<users>.elems, 2, '2 users defined';
   is $doc<users>[0]<user>, 'site-admin', 'User site-admin';
   is $doc<users>[1]<user>, 'Dondersteen', 'User Dondersteen';
 }, "User account preparation";
 
+done-testing();
+exit(0);
 
 #---------------------------------------------------------------------------------
 subtest {
