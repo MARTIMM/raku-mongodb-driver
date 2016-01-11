@@ -58,21 +58,28 @@ entered. This works but it is cumbersome. In the mean time thoughts about how to
 implement parallel encoding to and decoding from BSON byte strings have been
 past my mind. These thoughts are crystalized into a Document class in the BSON
 package which a) keeps the order, 2) have the same capabilities as Hashes, 3)
-can do encoding and decoding in parallel. This BSON::Document will probably be
-implemented in the coming (sub)versions of this package after complete testing
-of the module in BSON.
+can do encoding and decoding in parallel. This BSON::Document is now available
+in the BSON package.
 
 * At the moment a connection is made using a server-name or ip address with or
 without a port number. In the future it must also or even replaced by using a
-URL in fortmat ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```.
+URL in format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```.
 See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/).
+
+* Authentication of users
+
+* Blog [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116)
+
+* Blog [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116)
+
 
 ## API CHANGES
 
-There has been a lot of changes in the API. All methods which had underscores ('_')
-are converted to dashed ones ('-'). The old ones will show deprecation info.
-However, it is important to know that also named parameters are changed in the
-same way but these cannot be warned for.
+There has been a lot of changes in the API.
+* All methods which had underscores ('_') are converted to dashed ones ('-').
+* Many helper functions are removed, see change log
+* The way to get a database is changed. One doesn't use a connection for that
+  anymore.
 
 ## DOCUMENTATION
 
@@ -142,10 +149,6 @@ methods.
 
 ## BUGS, KNOWN LIMITATIONS AND TODO
 
-Although the lists above represent one hell of a todo, below are a few notes
-which I have to make to remember to add items to programmed functions. There
-are also items to be implemented in BSON. You need to look there for info
-
 Maybe we also need to test other versions of mongodb such as 2.6.* and provide
 functionality for it. This will make it a bit slower caused by tests on version
 and act on it but it is not nessesary to test in all methods.
@@ -162,12 +165,9 @@ there is no need for many of the command helpers from the list above. I will
 turn this list into a testing checklist for the most part of the list.
 
 BSON has some changes too. A module BSON::Document is created to implement a
-hash like behavior while keeping the input order of key-values. This will also
-be implemented.
+hash like behavior while keeping the input order of key-values.
 
 * Blog [A Consistent CRUD API](https://www.mongodb.com/blog/post/consistent-crud-api-next-generation-mongodb-drivers?jmp=docs&_ga=1.72964115.1411139568.1420476116)
-* Blog [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116)
-* Blog [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116)
 * Following [priority recomendations](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/) from the mongodb site about writing drivers.
 * Speed, protocol correctness and clear code are priorities for now.
   * Speed can be influenced by specifying types on all variables
@@ -204,24 +204,38 @@ be implemented.
     RUN 3 Time: 9
     END Time: 9
 ```
-* Keys must be checked for illegal characters when inserting documents.
-* Test to compare documents
-* Test group aggregation keyf field and finalize
-* Test map reduce aggregation more thoroughly.
-* Map-reduce, look into scope. argument is not used.
-* Explain changed after mongodb 3.0
+
+The next test is taken at 11th January 2016 which shows considerable
+improvements in compile time as well as run time
+```
+    > perl6 --stagestats Tests/bench-connect.pl6
+    Stage start      :   0.000
+    Stage parse      :   3.075
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.006
+    Stage mast       :   0.023
+    Stage mbc        :   0.000
+    Stage moar       :   0.000
+    INIT Time: 3
+    RUN 1 Time: 3
+    RUN 2 Time: 3
+    Benchmark: 
+    Timing 50 iterations of connect...
+       connect: 0.2792 wallclock secs @ 179.0934/s (n=50)
+                    (warning: too few iterations for a reliable count)
+    RUN 3 Time: 3
+    END Time: 3
+```
+
 * Testing $mod in queries seems to have problems in version 3.0.5
-* Get info about multiple accounts instead of one at the time
-* Need a change in throwing exceptions. Not all errors are unrecoverable. Return
-  e.g. a failure instead of die with an exception.
-* Modify Mongo.pm. Remove use statements and add variables for use by modules.
 * While we can add users to the database we cannot authenticate due to the lack
   of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
   authenticate with. 
-
-* Sharpening check on database-, collection- and document key names.
-* other items to [check](https://docs.mongodb.org/manual/reference/limits/)
-* table to map mongo status codes to severity level. This will modify the
+* Sharpening check on database-, collection- and document key names. Keys must
+  be checked for illegal characters when inserting documents.
+* Other items to [check](https://docs.mongodb.org/manual/reference/limits/)
+* Table to map mongo status codes to severity level. This will modify the
   default severity when an error code from the server is received.
   Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
 
@@ -231,6 +245,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.26.2
+  * Pod documentation changed as well as its location.
 * 0.26.1
   * There is a need to get a connection from several classes in the package.
     Normally it can be found by following the references from a collection to

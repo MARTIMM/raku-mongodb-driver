@@ -62,11 +62,7 @@ package MongoDB {
         :$number-to-return
       );
 
-      my $c = MongoDB::Cursor.new(
-        :collection(self), :$server-reply, :criteria($cr)
-      );
-
-      return $c;
+      return MongoDB::Cursor.new( :collection(self), :$server-reply);
     }
 
     # Find record in a collection using a BSON::Document
@@ -83,13 +79,8 @@ package MongoDB {
         :$number-to-return
       );
 
-      my $c = MongoDB::Cursor.new(
-        :collection(self), :$server-reply, :$criteria
-      );
-
-      return $c;
+      return MongoDB::Cursor.new( :collection(self), :$server-reply);
     }
-
   }
 }
 

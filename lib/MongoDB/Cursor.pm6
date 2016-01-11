@@ -16,7 +16,6 @@ package MongoDB {
 
     has $.collection;
     has $.full-collection-name;
-    has BSON::Document $!criteria;
 
     # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
     # no documents on the server or the cursor is killed.
@@ -30,14 +29,9 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     # Support for the newer BSON::Document
     #
-    multi submethod BUILD (
-      :$collection!,
-      BSON::Document:D :$criteria,
-      BSON::Document:D :$server-reply
-    ) {
+    multi submethod BUILD ( :$collection!, BSON::Document:D :$server-reply ) {
 
       $!collection = $collection;
-      $!criteria = $criteria;
       $!full-collection-name = $!collection.full-collection-name;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
@@ -51,12 +45,13 @@ package MongoDB {
       @!documents = $server-reply<documents>.list;
     }
 
-    # This can be set with data received from a command e.g. list documents
+    # This can be set with data received from a command e.g. listDocuments
     #
     multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
 
+#TODO Check provided structure for the fields.
+
       $!collection = $cursor-doc<ns>;
-      $!criteria .= new;
       $!full-collection-name = $cursor-doc<ns>;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
@@ -114,67 +109,3 @@ package MongoDB {
   }
 }
 
-
-=finish
-#`{{
-
-    #-----------------------------------------------------------------------------
-    # Get explanation about given search criteria
-    #
-    method explain ( --> Hash ) {
-
-      my MongoDB::Cursor $cursor = $!collection.find(
-         hash( '$query' => $!criteria,
-               '$explain' => True
-             )
-             :number-to-return(1)
-      );
-
-      my $docs = $cursor.fetch();
-      return $docs;
-    }
-
-    #---------------------------------------------------------------------------
-    # Give the query analizer a hint on what index to use.
-    #
-    method hint ( $index-spec, :$explain = False --> Hash ) {
-
-      my $req = %( '$query' => $!criteria, '$hint' => $index-spec);
-      $req{'$explain'} = 1 if $explain;
-
-      my MongoDB::Cursor $cursor = $!collection.find(
-        $req,
-        :number-to-return(1)
-      );
-      my $docs = $cursor.fetch;
-      return $docs;
-    }
-
-    #---------------------------------------------------------------------------
-    # Get count of found documents
-    #
-    method count ( Int :$skip = 0, Int :$limit = 0 --> Int ) {
-
-      my $database = $!collection.database;
-
-      my BSON::Document $req .= new: (
-        count => $!collection.name,
-        query => $!criteria
-      );
-      $req<$skip> = $skip if $skip;
-      $req<limit> = $limit if $limit;
-
-      my BSON::Document $doc = $database.run-command($req);
-      if !?$doc<ok>.Bool {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          error-code => $doc<code>,
-          oper-name => 'count',
-          oper-data => $req.perl,
-          collection-ns => $!collection.database.name, '.',  $!collection.name
-        );
-      }
-
-      return $doc<n>;
-    }
-}}
