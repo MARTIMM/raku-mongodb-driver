@@ -245,7 +245,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
-* 0.26.2
+* 0.26.4
   * Pod documentation changed as well as its location.
 * 0.26.1
   * There is a need to get a connection from several classes in the package.
