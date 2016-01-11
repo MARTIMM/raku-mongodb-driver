@@ -50,7 +50,6 @@ use MongoDB::Connection;
 
 # Connect to MongoDB server at localhost port 27017
 my MongoDB::Connection $connection .= new();
-my MongoDB::Database $database = $connection.database('my_database');
 
 =end code
 
@@ -84,6 +83,9 @@ Example:
     die $connection.status if ? $c.status;
   }
 
+B<NOTE: This is going to change when connections are created in the background.
+furthermore the way hosts and ports are to be defined will be as a kind of url
+format.>
 
 =head2 method send
 
@@ -105,18 +107,5 @@ Receive the number of bytes from the server. Again: DO NOT ATTEMPT TO USE IT
 YOURSELF. Let instead the several modules do the receiving because they know
 what to expect.Besides this, it is subject to change when connection pooling
 comes into play.
-
-=head2 method database
-
-Defined as:
-
-  method database ( Str $name --> MongoDB::Database )
-
-Usage:
-
-  my MongoDB::Database = $connection.database('my-database');
-
-Get a database object named $name. When nonexistent, it will be created after
-inserting documents in the databases collection.
 
 =end pod

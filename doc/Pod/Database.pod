@@ -38,12 +38,13 @@ Defined as
 
 Use as
 
-  use MongoDB;
+  use MongoDB::Connection;
+  use MongoDB::Database;
 
   # Initialize
   #
-  my $connection = MongoDB::Connection.new;
-  my $database = $connection.database('test');
+  my MongoDB::Connection $connection .= new;
+  my MongoDB::Database $database .= new(:name<mydatabase>);
 
   # Drop whole database
   #
@@ -51,6 +52,22 @@ Use as
 
 
 =head1 METHODS
+
+=head1 method new
+
+Defined as
+
+  submethod BUILD ( Str :$name )
+
+Create a database object.
+
+=head2 method name
+
+Defined as
+
+  has Str $.name;
+
+Stored name of the database.
 
 =head2 method collection
 
@@ -66,7 +83,6 @@ will only be created when data is inserted.
 Defined as
 
   multi method run-command ( BSON::Document:D $command --> BSON::Document )
-
   multi method run-command ( |command-capture --> BSON::Document )
 
 Run a command against the preselected collection and database. For proper
@@ -74,11 +90,27 @@ handling of this command it is nesseary to study the MongoDB site. A good
 starting point is L<at this page|https://docs.mongodb.org/manual/reference/command/>.
 
 The command argument is a C<BSON::Document> or List of Pair of which the latter
-might be more convenient. run-command must have the command at the first key
-value pair. Hashes cannot be used because it will not keep the same order for
-keys as they will be entered.
+might be more convenient. Mind the comma's when describing list of one Pair!
+This is very important see e.g. the following perl6 REPL interaction;
 
-First method to insert a document using a C<BSON::Document> See also L<here|https://docs.mongodb.org/manual/reference/command/insert/>
+  > 123.WHAT.say
+  (Int)
+  > (123).WHAT.say
+  (Int)
+  > (123,).WHAT.say
+  (List)
+
+  > (a => 1).WHAT.say
+  (Pair)
+  > (a => 1,).WHAT.say
+  (List)
+
+See also L<Perl6 docs here|http://doc.perl6.org/routine/%2C> and
+L<here|http://doc.perl6.org/language/list>
+
+
+First example to insert a document using a C<BSON::Document>
+See also L<information here|https://docs.mongodb.org/manual/reference/command/insert/>.
 
 =begin code
 
@@ -117,7 +149,7 @@ Normally when a (sub)method or sub is called you have positional and named
 arguments. A named argument is like a pair. So to provide a pair as a positional
 argument, the pair must be enclosed between an extra pair of round brackets.
 E.g. B<<$some-array.push(($some-key => $some-value));>>. There is a nicer form
-whith a colon ':' e.g. B<<$some-array.push: ($some-key => $some-value);>>. This
+using a colon ':' e.g. B<<$some-array.push: ($some-key => $some-value);>>. This
 is done above on the first line. However, this is not possible at the inner
 calls because these round brackets also group the pairs in the list.
 
@@ -129,6 +161,8 @@ repair Larry's surname which should be Wall instead of Walll.
 
 =begin code
 
+# Method 2 using List of Pair
+#
 my BSON::Document $doc = $database.run-command: (
   findAndModify => 'famous_people',
   query => (surname => 'Walll'),

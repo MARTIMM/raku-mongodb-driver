@@ -1,0 +1,139 @@
+#!/usr/bin/env perl6
+#
+use v6;
+
+# Running the pod file will create a pdf using wkhtmltopdf
+#
+my Str $pod = "$*PROGRAM";
+my Str $pdf = $pod;
+$pdf ~~ s/\. <-[.]>+ $/.pdf/;
+shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
+
+#-------------------------------------------------------------------------------
+
+=begin pod
+
+=begin Xhtml
+<style>
+  pre {
+/**/
+    border-width:       2px;
+    border-style:       solid;
+    border-color:       #060;
+    padding:            10px 0 3px 10px;
+    color:              #060;
+    background-color:   #eaefea;
+    font-family:        FreeMono;
+  }
+</style>
+=end Xhtml
+
+=TITLE class MongoDB::Cursor
+
+=SUBTITLE Cursor to iterate a set of documents
+
+Defined as
+
+  package MongoDB { class Cursor {...} }
+
+After calling find to query the collection for data, a cursor object is
+returned. With this cursor it is possible to modify the query or ask information
+from the server about the query. A cursor can also be returned from other calls
+using run-command. See second example;
+
+=head1 METHODS
+
+=head2 new
+
+Defined as
+
+  multi submethod BUILD ( :$collection!, BSON::Document:D :$server-reply ) {
+  multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
+
+Create a new Cursor object. the find() method in Collection will return
+a cursor. 
+
+First example using find().
+
+  use MongoDB;
+
+  my MongoDB::Connection $connection .= new;
+  my MongoDB::Database $database .= new(:name<contacts>);
+  my MongoDB::Collection $collection = $database.collection('perl_users');
+
+  my Array $docs = [];
+  for ^10 -> $i {
+    $docs.push: (
+      code => 'd1' ~ $i.Str,
+      name => 'name and lastname',
+      address => 'address',
+      city => 'new york',
+    );
+  }
+
+  my BSON::Document $d = $database.run-command(
+    insert => $collection.name,
+    documents => $docs,
+  );
+  is $d<ok>, 1, 'insert request ok';
+
+  $d = $database.run-command: (count => $collection.name,);
+  is $d<n>, 10, '10 documents found';
+
+  # Find everything
+  #
+  my MongoDB::Cursor $cursor = $collection.find;
+  while $cursor.fetch -> BSON::Document $document { $document.perl.say; }
+
+
+Second example using run-command to get information about collections
+
+  $doc = $database.run-command: (listCollections => 1);
+  is $doc<ok>, 1, 'list collections request ok';
+
+  my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
+  while $c.fetch -> BSON::Document $d {
+    ...
+  }
+
+
+=head2 method collection
+
+Defined as
+
+  has $.collection;
+
+This is the MongoDB::Collection on which the fetch() has been executed.
+
+=head2 method full-collection-name
+
+Defined as 
+
+  has $.full-collection-name;
+
+This is the same as B<<[~] $database.name, '.', $collection.name>>.
+
+=head2 method fetch
+
+Defined as
+
+  method fetch ( --> BSON::Document )
+
+Get the document from the query. The method returns a document or Nil
+when no (more) documents are found.
+
+=head2 method kill
+
+Defined as
+
+  method kill ( --> Nil )
+
+Delete the cursor when it is no longer needed. By default the server will delete
+the cursor after a non-usage period of 10 minutes. See also find() flags
+described in Collection.
+
+=end pod
+
+
+
+

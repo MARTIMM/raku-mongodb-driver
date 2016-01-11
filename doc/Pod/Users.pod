@@ -13,6 +13,21 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =begin pod
 
+=begin Xhtml
+<style>
+  pre {
+/**/
+    border-width:       2px;
+    border-style:       solid;
+    border-color:       #060;
+    padding:            10px 0 3px 10px;
+    color:              #060;
+    background-color:   #eaefea;
+    font-family:        FreeMono;
+  }
+</style>
+=end Xhtml
+
 =TITLE class MongoDB::Users
 
 =SUBTITLE Administration of accounts used for authentication.
@@ -35,9 +50,8 @@ Use as
   my MongoDB::Users $users .= new(:$database);
 
   my Hash $doc = $users.create-user(
-    :user('John'),
-    :password('simple'),
-    :custom-data({license => 'to_kill'}),
+    'John', 'simple',
+    :custom-data((license => 'to_kill'),),
     :roles(['readWrite'])
   );
 
@@ -48,39 +62,26 @@ Use as
   );
 
   my Hash $doc = $users.create-user(
-    :user('Long-John'),
-    :password('N0t-s0-S!mPl3'),
-    :custom-data({license => 'to_kill'}),
-    :roles([${role => 'readWrite', db => 'test3'}])
+    :'Long-John', 'N0t-s0-S!mPl3',
+    :custom-data((license => 'to_kill'),),
+    :roles([${role => 'readWrite', db => 'test3'},])
   );
 
   $doc = $users.update-user(
-    :user('John'),
+    'John',
     :password('mt+++'),
     :custom-data({license => 'to_heal'}),
-    :roles([{role => 'readWrite', db => 'test1'},
-            {role => 'dbAdmin', db => 'test2'}
-           ]
+    :roles( [ {role => 'readWrite', db => 'test1'},
+              {role => 'dbAdmin', db => 'test2'}
+            ]
           )
   );
-
-  $doc = $users.drop-user(:user('John'));
-
-  $doc = $users.grant-roles-to-user( :user('Long-John'), :roles(['dbOwner']));
-
-  $doc = $users.revoke-roles-from-user(
-    :user('Long-John'),
-    :roles([${role => 'readWrite', db => 'test1'}])
-  );
-
-  $doc = $users.users-info(:user('Long-John'));
-
-  $doc = $users.drop_all_users_from_database();
 
 
 Some methods from the C<MongoDB::Users> class will throw
 C<X::MongoDB> exceptions when things go wrong. E.g. creating a user
-which already exists with faulty arguments.
+which already exists or create a user with faulty arguments, e.g. password
+too short.
 
 =head1 METHODS
 
@@ -91,7 +92,7 @@ Defined as
   method set-pw-security (
     Int :$min-un-length where $min-un-length >= 2,
     Int :$min-pw-length where $min-pw-length >= 2,
-    Int :$pw-attribs = $PW-LOWERCASE
+    Int :$pw-attribs = MongoDB::C-PW-LOWERCASE
   )
 
 Method to specify some checks upon usernames and passwords. Default values for
@@ -99,31 +100,32 @@ the username minimal length is 2. For passwords idem depending on the password
 attribute code. $pw-attribs specifies how passwords are to be checked. There are
 4 codes recognized.
 
-=item C<$PW-LOWERCASE>: All is accepted but lowercase characters must at least be
-used. When $min-pw-length is not set it will be set to 2.
-
-=item C<$PW-UPPERCASE>: All is accepted but lowercase and uppercase characters must
+=item B<MongoDB::C-PW-LOWERCASE>: All is accepted but lowercase characters must
 at least be used. When $min-pw-length is not set it will be set to 2.
 
-=item C<$PW-NUMBERS>: All is accepted but lowercase, uppercase characters and
-numbers must at least be used. When $min-pw-length is not set it will be set to
-3.
+=item B<MongoDB::C-PW-UPPERCASE>: All is accepted but lowercase and uppercase
+characters must at least be used. When $min-pw-length is not set it will be set
+to 2.
 
-=item C<$PW-OTHER-CHARS>: All is accepted but lowercase, uppercase characters,
-numbers and special characters like @ ! $ etcetera, must at least be used. When
-$min-pw-length is not set it will be set to 4.
+=item B<MongoDB::C-PW-NUMBERS>: All is accepted but lowercase, uppercase
+characters and numbers must at least be used. When $min-pw-length is not set it
+will be set to 3.
 
-If e.g. C<$PW-OTHER-CHARS> and C<$min-pw-length> is set to 2 then when using a
-password of less the 4 characters is bound to fail.
+=item B<MongoDB::C-PW-OTHER-CHARS>: All is accepted but lowercase, uppercase
+characters, numbers and special characters like @ ! $ etcetera, must at least be
+used. When $min-pw-length is not set it will be set to 4.
+
+If e.g. C<MongoDB::C-PW-OTHER-CHARS> and C<$min-pw-length> is set to 2 then when
+using a password of less the 4 characters the call is bound to fail.
 
 =head2 method create-user
 
 Defined as
 
   method create-user (
-    Str :$user, Str :$password,
+    Str $user:D, Str:D $password,
     :$custom-data, Array :$roles, Int :$timeout
-    --> Hash
+    --> BSON::Document
   )
 
 Method to create a user. Roles can be specified in several ways. It is an array
@@ -151,78 +153,18 @@ Some examples of the roles option;
 
 Notice the $ in the 3rd and the comma in the last example.
 
-
-=head2 method drop-user
-
-Defined as
-
-  method drop-user ( Str :$user, Int :$timeout --> Hash )
-
-Delete user from the database.
-
-=head2 method drop_all_users_from_database
-
-Defined as
-
-  method drop_all_users_from_database ( Int :$timeout --> Hash )
-
-Drop all users from the database
-
-=head2 method grant-roles-to-user
-
-Defined as
-
-  method grant-roles-to-user (
-    Str :$user, Array :$roles, Int :$timeout
-    --> Hash
-  )
-
-Grant roles to user.
-
-=head2 method revoke-roles-from-user
-
-Defined as
-
-  method revoke-roles-from-user (
-    Str :$user, Array :$roles, Int :$timeout
-    --> Hash
-  )
-
-Revoke roles from user
-
 =head2 method update-user
 
 Defined as
 
   method update-user (
-    Str :$user, Str :$password,
+    Str $user, Str :$password,
     :$custom-data, Array :$roles, Int :$timeout
-    --> Hash
+    --> BSON::Document
   )
 
 Update user accont data
 
-=head2 method users-info
-
-Defined as
-
-  method users-info (
-    Str :$user,
-    Bool :$show-credentials,
-    Bool :$show-privileges,
-    Str :$database
-    --> Hash
-  )
-
-Get information about a user
-
-=head2 method get-users
-
-Defined as
-
-  method get-users ( --> Hash )
-
-Get information about all users
 
 =end pod
 
