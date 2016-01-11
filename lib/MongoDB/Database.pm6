@@ -14,9 +14,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD (
-      Str :$name
-    ) {
+    submethod BUILD ( Str :$name ) {
 # TODO validate name
       $!name = $name;
     }

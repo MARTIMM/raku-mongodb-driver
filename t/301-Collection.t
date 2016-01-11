@@ -3,7 +3,6 @@ use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
 use MongoDB::Connection;
-use MongoDB::Cursor;
 
 #`{{
   Testing;
