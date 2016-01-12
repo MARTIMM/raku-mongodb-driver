@@ -1,16 +1,8 @@
-#`{{
-  Setup sandbox
-  Generate mongo config
-  Start mongo daemon
-  Test connection
-}}
-
-use lib 't';
-use Test-support;
-use MongoDB::Connection;
-
 use v6;
+use lib 't';
 use Test;
+use Test-support;
+use MongoDB::Client;
 
 #-----------------------------------------------------------------------------
 # Stop mongodb unless sandbox isn't found, no sandbox requested
@@ -26,8 +18,8 @@ if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
 my Int $port-number = slurp('Sandbox/port-number').Int;
 
 
-my MongoDB::Connection $connection .= new( :host<localhost>, :port($port-number));
-ok !? $connection.status, 'MongoDB still running';
+my MongoDB::Client $client .= new( :host<localhost>, :port($port-number));
+ok !? $client.status, 'MongoDB still running';
 
 diag "Wait for server to stop";
 my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
@@ -54,8 +46,8 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 diag "delete directory Sandbox";
 rmdir "Sandbox";
 
-#$connection .= new( :host<localhost>, :port($port-number));
-#ok ? $connection.status, 'MongoDB not running';
+#$client .= new( :host<localhost>, :port($port-number));
+#ok ? $client.status, 'MongoDB not running';
 
 #-----------------------------------------------------------------------------
 # Cleanup and close

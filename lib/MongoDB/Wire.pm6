@@ -3,7 +3,7 @@ use v6;
 #use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 
 use BSON::Document;
-use MongoDB::Connection;
+use MongoDB::Client;
 use MongoDB::Header;
 
 package MongoDB {
@@ -31,19 +31,19 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my MongoDB::Connection $connection .= new;
-      $connection.send($encoded-query);
+      my MongoDB::Client $client .= new;
+      $client.send($encoded-query);
 
       # Read 4 bytes for int32 response size
       #
-      my Buf $size-bytes = $connection.receive(4);
+      my Buf $size-bytes = $client.receive(4);
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
       # Receive remaining response bytes from socket. Prefix it with the already
       # read bytes and decode. Return the resulting document.
       #
-      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
-#$connection.close;
+      my Buf $server-reply = $size-bytes ~ $client.receive($response-size);
+#$client.close;
 #say "SR: ", $server-reply;
 # TODO check if requestID matches responseTo
       return $d.decode-reply($server-reply);
@@ -60,18 +60,18 @@ package MongoDB {
         $cursor.full-collection-name, $cursor.id
       );
 
-      my MongoDB::Connection $connection .= new;
-      $connection.send($encoded-get-more);
+      my MongoDB::Client $client .= new;
+      $client.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
       #
-      my Buf $size-bytes = $connection.receive(4);
+      my Buf $size-bytes = $client.receive(4);
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
       # Receive remaining response bytes from socket. Prefix it with the already
       # read bytes and decode. Return the resulting document.
       #
-      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
+      my Buf $server-reply = $size-bytes ~ $client.receive($response-size);
 # TODO check if requestID matches responseTo
 # TODO check if cursorID matches (if present)
       return $d.decode-reply($server-reply);
@@ -93,10 +93,10 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $connection = MongoDB::Connection.new;
+      my $client = MongoDB::Client.new;
       if +@cursor-ids {
         my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
-        $connection.send($encoded-kill-cursors);
+        $client.send($encoded-kill-cursors);
       }
     }
   }
@@ -145,7 +145,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection.send( $msg-header ~ $B-OP-INSERT, False);
+      $collection.database.client.send( $msg-header ~ $B-OP-INSERT, False);
     }
 }}
 #`{{
@@ -188,7 +188,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      @cursors[0].collection.database.connection.send( $msg-header ~ $B-OP-KILL_CURSORS, False);
+      @cursors[0].collection.database.client.send( $msg-header ~ $B-OP-KILL_CURSORS, False);
     }
 }}
 #`{{
@@ -241,7 +241,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection.send( $msg-header ~ $B-OP-UPDATE, False);
+      $collection.database.client.send( $msg-header ~ $B-OP-UPDATE, False);
     }
 }}
 #`{{
@@ -289,6 +289,6 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection.send( $msg-header ~ $B-OP-DELETE, False);
+      $collection.database.client.send( $msg-header ~ $B-OP-DELETE, False);
     }
 }}
