@@ -11,12 +11,17 @@ package MongoDB {
   class Database {
 
     has Str $.name;
+    has MongoDB::Collection $!cmd-collection;
 
     #---------------------------------------------------------------------------
     #
     submethod BUILD ( Str :$name ) {
 # TODO validate name
       $!name = $name;
+
+      # Create a collection $cmd to be used with run-command()
+      #
+      $!cmd-collection .= new( :database(self), :name('$cmd'));
     }
 
     #---------------------------------------------------------------------------
@@ -49,16 +54,9 @@ package MongoDB {
     #
     multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
 
-      # Create a local collection structure here
-      #
-      my MongoDB::Collection $c .= new(
-        database    => self,
-        name        => '$cmd',
-      );
-
       # And use it to do a find on it, get the doc and return it.
       #
-      my MongoDB::Cursor $cursor = $c.find(
+      my MongoDB::Cursor $cursor = $!cmd-collection.find(
         :criteria($command),
         :number-to-return(1)
       );
@@ -75,17 +73,9 @@ package MongoDB {
 
       my BSON::Document $command .= new: c[0];
 
-      # Create a local collection structure here. $cmd is not a perl variable
-      # but virt mongo collection.
-      #
-      my MongoDB::Collection $c .= new(
-        database    => self,
-        name        => '$cmd',
-      );
-
       # And use it to do a find on it, get the doc and return it.
       #
-      my MongoDB::Cursor $cursor = $c.find(
+      my MongoDB::Cursor $cursor = $!cmd-collection.find(
         :criteria($command),
         :number-to-return(1)
       );
