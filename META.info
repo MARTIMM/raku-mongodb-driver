@@ -13,6 +13,7 @@
   "name": "MongoDB",
   "provides": {
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
+    "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
     "MongoDB::Connection":              "lib/MongoDB/Connection.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
@@ -20,15 +21,8 @@
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
     "MongoDB::Users":                   "lib/MongoDB/Users.pm6",
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm6",
-    "MongoDB":                          "lib/MongoDB.pm6",
-
-    "Collection.pod":                   "doc/Pod/Collection.pod",
-    "Connection.pod":                   "doc/Pod/Connection.pod",
-    "Cursor.pod":                       "doc/Pod/Cursor.pod",
-    "Database.pod":                     "doc/Pod/Database.pod",
-    "MongoDB.pod":                      "doc/Pod/MongoDB.pod",
-    "Users.pod":                        "doc/Pod/Users.pod"
+    "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.26.4"
+  "version": "0.26.5"
 }

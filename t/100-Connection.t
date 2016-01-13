@@ -21,38 +21,11 @@ my BSON::Document $doc;
 
 #-------------------------------------------------------------------------------
 subtest {
+
   $client .= new( :host<localhost>, :port(65535));
-  is $client.^name,
-     'MongoDB::Client',
-     "Client isa {$client.^name}";
-
-  is $client.status.^name,
-     'MongoDB::X::MongoDB',
-     "1 Status isa {$client.status.^name}";
-
-  ok $client.status ~~ X::MongoDB,
-     "2 Status isa {$client.status.^name}";
-
-  ok $client.status ~~ Exception, "3 Status is also an Exception";
-  ok ? $client.status, "Status is defined";
-  is $client.status.severity,
-     MongoDB::Severity::Error,
-     "Status is {$client.status.^name}"
-     ;
-
-  is $client.status.error-text,
-     "Failed to connect to localhost at port 65535",
-     '1 ' ~ $client.status.error-text;
-
-  try {
-    die $client.status;
-    CATCH {
-      default {
-        ok .message ~~ m:s/'connect' 'to' 'localhost' 'at' 'port' \d+/,
-           '2 ' ~ .error-text
-      }
-    }
-  }
+  is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
+  my $connection = $client.select-server;
+  nok $connection.defined, 'No servers found';
 
 }, "Connect failure testing";
 
@@ -60,11 +33,9 @@ subtest {
 subtest {
 
   $client = get-connection();
-  is $client.status.^name, 'Exception', '1 Status isa Exception';
-  ok $client.status ~~ Exception, '2 Status isa Exception';
-  ok $client.status !~~ X::MongoDB,
-     '3 Status is not a !X::MongoDBn';
-  ok ! ? $client.status, "Status is not defined";
+  my $connection = $client.select-server;
+  ok $connection.defined, 'Connection available';
+  ok $connection.status, 'Server found';
 
   # Create databases with a collection and data to make sure the databases are
   # there
@@ -74,8 +45,7 @@ subtest {
 
   # Drop database db2
   #
-  $req .= new: (dropDatabase => 1);
-  $doc = $database.run-command($req);
+  $doc = $database.run-command: (dropDatabase => 1);
   is $doc<ok>, 1, 'Drop request ok';
 
 }, "Create database, collection. Collect database info, drop data";

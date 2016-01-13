@@ -2,14 +2,9 @@ use v6;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.26.4> {
+package MongoDB:ver<0.26.5> {
 
   #-----------------------------------------------------------------------------
-  # Server version on current connection
-  #
-  our $build-info = Nil;
-  our $version = Nil;
-
   # Definition of all severity types
   #
   enum Severity <Trace Debug Info Warn Error Fatal>;
