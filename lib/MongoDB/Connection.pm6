@@ -72,12 +72,12 @@ package MongoDB {
     #
     method !monitor ( ) {
 
-say "Monitor ", $!sock.defined;
+print "Monitor ", $!sock.defined;
       $!sock .= new( :host($!server-name), :port($!server-port))
         unless $!sock.defined;
 say " --> ", $!sock.defined;
-return;
 
+#`{{
       # Check monitor results
       #
       if $!monitor.defined {
@@ -104,6 +104,7 @@ note "Broken, doc result: $doc<ok>";
 #          }
 #        );
       }
+}}
     }
   }
 }
