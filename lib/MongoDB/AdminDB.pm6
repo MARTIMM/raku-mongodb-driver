@@ -1,4 +1,5 @@
 use v6;
+use MongoDB::Database;
 use MongoDB::Collection;
 use BSON::Document;
 
@@ -8,16 +9,13 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class Database {
-
-    has Str $.name;
-    has MongoDB::Collection $!cmd-collection;
+  class UserDB is MongoDB::Database {
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( Str :$name ) {
-# TODO validate name
-      $!name = $name;
+    submethod BUILD ( ) {
+
+      $!name = 'admin';
 
       # Create a collection $cmd to be used with run-command()
       #
