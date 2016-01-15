@@ -3,7 +3,6 @@ use v6;
 #use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 
 use BSON::Document;
-use MongoDB::Connection;
 use MongoDB::Client;
 use MongoDB::Header;
 
@@ -33,7 +32,7 @@ package MongoDB {
       );
 
       my MongoDB::Client $client .= new;
-      my MongoDB::Connection $connection = $client.select-server;
+      my $connection = $client.select-server;
       $connection.send($encoded-query);
 
       # Read 4 bytes for int32 response size
@@ -63,7 +62,7 @@ package MongoDB {
       );
 
       my MongoDB::Client $client .= new;
-      my MongoDB::Connection $connection = $client.select-server;
+      my $connection = $client.select-server;
       $connection.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -97,7 +96,7 @@ package MongoDB {
       # Kill the cursors if found any
       #
       my $client = MongoDB::Client.new;
-      my MongoDB::Connection $connection = $client.select-server;
+      my $connection = $client.select-server;
       if +@cursor-ids {
         my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
         $connection.send($encoded-kill-cursors);
