@@ -3,6 +3,7 @@ use lib 't';
 use Test-support;
 use Test;
 use MongoDB::Client;
+use MongoDB::Database;
 use MongoDB::Collection;
 
 #`{{
