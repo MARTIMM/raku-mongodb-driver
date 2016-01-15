@@ -1,6 +1,7 @@
 use v6;
 
 use MongoDB;
+use MongoDB::DatabaseIF;
 use MongoDB::Wire;
 use MongoDB::Cursor;
 use BSON::Document;
@@ -15,7 +16,7 @@ package MongoDB {
     #
     state MongoDB::Wire $wire .= new;
 
-    has $.database;
+    has MongoDB::DatabaseIF $.database;
     has Str $.name;
     has Str $.full-collection-name;
 
@@ -26,7 +27,8 @@ package MongoDB {
     submethod BUILD ( :$database!, Str:D :$name ) {
       $!database = $database;
       $!name = $name;
-      $!full-collection-name = [~] $!database.name, '.', $name;
+      $!full-collection-name = [~] $!database.name, '.', $!name
+        if $database.name.defined;
 
       # This should be possible: 'admin.$cmd' which is used by run-command
       #
@@ -55,6 +57,7 @@ package MongoDB {
       Int :$flags = 0
       --> MongoDB::Cursor
     ) {
+
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
       my BSON::Document $server-reply = $wire.query(
@@ -74,12 +77,22 @@ package MongoDB {
       Int :$flags = 0
       --> MongoDB::Cursor
     ) {
+
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return
       );
 
       return MongoDB::Cursor.new( :collection(self), :$server-reply);
+    }
+
+    #---------------------------------------------------------------------------
+    # Helper to set full collection name in cases that the name of the database
+    # isn't available at BUILD time
+    #
+    method _set-full-collection-name ( ) {
+      $!full-collection-name = [~] $!database.name, '.', $!name
+        unless $!full-collection-name.defined;
     }
   }
 }

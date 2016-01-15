@@ -1,5 +1,5 @@
 use v6;
-#use MongoDB::Database;
+use MongoDB::DatabaseIF;
 use BSON::Document;
 
 package MongoDB {
@@ -13,7 +13,7 @@ package MongoDB {
     has Bool $.status = False;
     has Bool $.is-master = False;
     has Promise $!monitor;
-#    has MongoDB::Database $!db-admin;
+    has MongoDB::DatabaseIF $!db-admin;
     has $!client;
 
     submethod BUILD (
