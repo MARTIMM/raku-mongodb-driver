@@ -1,49 +1,18 @@
 use v6;
 
-use MongoDB;
-use MongoDB::DatabaseIF;
+use MongoDB::CollectionIF;
 use MongoDB::Wire;
 use MongoDB::Cursor;
-use BSON::Document;
 
 #-------------------------------------------------------------------------------
 #
 package MongoDB {
 
-  class Collection {
+  class Collection is MongoDB::CollectionIF {
 
     # State used so it initializes only once
     #
     state MongoDB::Wire $wire .= new;
-
-    has MongoDB::DatabaseIF $.database;
-    has Str $.name;
-    has Str $.full-collection-name;
-
-    has BSON::Javascript $!default-js = BSON::Javascript.new(:javascript(''));
-
-    #---------------------------------------------------------------------------
-    #
-    submethod BUILD ( :$database!, Str:D :$name ) {
-      $!database = $database;
-      $!name = $name;
-      $!full-collection-name = [~] $!database.name, '.', $!name
-        if $database.name.defined;
-
-      # This should be possible: 'admin.$cmd' which is used by run-command
-      #
-      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
-        $!name = $name;
-      }
-
-      else {
-        die X::MongoDB.new(
-          error-text => "Illegal collection name: '$name'",
-          oper-name => 'MongoDB::Collection.new()',
-          severity => MongoDB::Severity::Error
-        );
-      }
-    }
 
     #---------------------------------------------------------------------------
     # Find record in a collection. One of the few left to use the wire protocol.
@@ -84,15 +53,6 @@ package MongoDB {
       );
 
       return MongoDB::Cursor.new( :collection(self), :$server-reply);
-    }
-
-    #---------------------------------------------------------------------------
-    # Helper to set full collection name in cases that the name of the database
-    # isn't available at BUILD time
-    #
-    method _set-full-collection-name ( ) {
-      $!full-collection-name = [~] $!database.name, '.', $!name
-        unless $!full-collection-name.defined;
     }
   }
 }
