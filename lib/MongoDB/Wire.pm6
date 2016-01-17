@@ -94,7 +94,7 @@ package MongoDB {
 
       # Read 4 bytes for int32 response size
       #
-      my Buf $size-bytes = $client.receive(4);
+      my Buf $size-bytes = $connection.receive(4);
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
       # Receive remaining response bytes from socket. Prefix it with the already
