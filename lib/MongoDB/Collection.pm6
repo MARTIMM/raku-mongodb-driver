@@ -10,10 +10,6 @@ package MongoDB {
 
   class Collection is MongoDB::CollectionIF {
 
-    # State used so it initializes only once
-    #
-    state MongoDB::Wire $wire .= new;
-
     #---------------------------------------------------------------------------
     # Find record in a collection. One of the few left to use the wire protocol.
     #
@@ -29,7 +25,7 @@ package MongoDB {
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
-      my BSON::Document $server-reply = $wire.query(
+      my BSON::Document $server-reply = MongoDB::Wire.get-instance.query(
         self, $cr, $pr, :$flags, :$number-to-skip,
         :$number-to-return
       );
@@ -47,7 +43,7 @@ package MongoDB {
       --> MongoDB::Cursor
     ) {
 
-      my BSON::Document $server-reply = $wire.query(
+      my BSON::Document $server-reply = MongoDB::Wire.get-instance.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return
       );

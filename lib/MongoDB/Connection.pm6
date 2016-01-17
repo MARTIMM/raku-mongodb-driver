@@ -20,8 +20,9 @@ package MongoDB {
       :$client! where .^name eq 'MongoDB::Client',
       Str:D :$host!,
       Int:D :$port! where (0 <= $_ <= 65535),
+      MongoDB::DatabaseIF:D :$db-admin!
     ) {
-#      $!db-admin .= new(:name<admin>);
+      $!db-admin = $db-admin;
       $!client = $client;
       $!server-name = $host;
       $!server-port = $port;

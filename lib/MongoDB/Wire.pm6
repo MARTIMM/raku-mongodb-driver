@@ -3,12 +3,42 @@ use v6;
 #use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 
 use BSON::Document;
-use MongoDB::Client;
+use MongoDB;
+use MongoDB::ClientIF;
 use MongoDB::Header;
 
 package MongoDB {
 
   class Wire {
+  
+    my MongoDB::ClientIF $client;
+
+    #---------------------------------------------------------------------------
+    # Wire must be a singleton, new() must throw an exception, get-instance
+    # is the way to get this classes object
+    #
+    my MongoDB::Wire $wire-object;
+    
+    method new ( ) {
+
+      die X::MongoDB.new(
+        error-text => "This is a singleton, Please use get-instance()",
+        oper-name => 'MongoDB::Wire.new()',
+        severity => MongoDB::Severity::Fatal
+      );
+    }
+
+    submethod get-instance ( --> MongoDB::Wire ) {
+
+      $wire-object = MongoDB::Wire.bless unless $wire-object.defined;
+      $wire-object;
+    }
+
+    #---------------------------------------------------------------------------
+    # 
+    method set-client ( MongoDB::ClientIF:D $client-object! ) {
+      $client = $client-object;
+    }
 
     #---------------------------------------------------------------------------
     # 
@@ -31,7 +61,6 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my MongoDB::Client $client .= new;
       my $connection = $client.select-server;
       $connection.send($encoded-query);
 
@@ -61,7 +90,6 @@ package MongoDB {
         $cursor.full-collection-name, $cursor.id
       );
 
-      my MongoDB::Client $client .= new;
       my $connection = $client.select-server;
       $connection.send($encoded-get-more);
 
@@ -95,7 +123,6 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $client = MongoDB::Client.new;
       my $connection = $client.select-server;
       if +@cursor-ids {
         my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);

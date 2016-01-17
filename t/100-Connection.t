@@ -23,7 +23,7 @@ my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= new( :host<localhost>, :port(65535));
+  $client .= get-instance( :host<localhost>, :port(65535));
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
   my $connection = $client.select-server;
   nok $connection.defined, 'No servers found';

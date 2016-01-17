@@ -1,29 +1,46 @@
 use v6;
 
-# use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
-
-#use MongoDB::AdminDB;
+use MongoDB;
+use MongoDB::ClientIF;
 use MongoDB::Connection;
+use MongoDB::AdminDB;
+use MongoDB::Wire;
 use BSON::Document;
 
 package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class Client {
+  class Client is MongoDB::ClientIF {
 
 #TODO refine this method of using server name/port, connection pooling etc
 
     my Array $server-connections;       # Array of connections
     my Array $server-discovery;         # Array of promises
+    my MongoDB::AdminDB $db-admin;
 
     #---------------------------------------------------------------------------
+    # This class is a singleton class
     #
-    multi submethod BUILD (
+    my MongoDB::Client $client-object;
+
+    method new ( ) {
+
+      die X::MongoDB.new(
+        error-text => "This is a singleton, Please use get-instance()",
+        oper-name => 'MongoDB::Client.new()',
+        severity => MongoDB::Severity::Fatal
+      );
+    }
+
+    multi submethod get-instance  (
       Str :$host,
       Int :$port where (!$_.defined or 0 <= $_ <= 65535),
       Str :$url
+      --> MongoDB::Client
     ) {
+
+      initialize();
 
       $server-connections = [] unless $server-connections.defined;
       $server-discovery = [] unless $server-discovery.defined;
@@ -76,14 +93,31 @@ say "H & P: {$host//'nh'}, {$port//'np'}, {$url // 'nu'}";
         for @server-specs -> Pair $spec {
           $server-discovery.push: Promise.start( {
               MongoDB::Connection.new(
-                :client(self),
+                :client($client-object),
                 :host($spec.key),
                 :port($spec.value)
+                :dbadmin($db-admin)
               );
             }
           );
 say "KV: {$spec.kv}, {@server-specs.elems}, {$server-discovery.elems}";
         }
+      }
+
+      return $client-object;
+    }
+
+    multi submethod get-instance ( --> MongoDB::Client ) {
+
+      initialize();
+      return $client-object;
+    }
+
+    sub initialize ( ) {
+      unless $client-object.defined {
+        $client-object = MongoDB::Client.bless;
+        MongoDB::Wire.get-instance.set-client($client-object);
+        $db-admin .= new;
       }
     }
 
