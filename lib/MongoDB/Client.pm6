@@ -92,12 +92,23 @@ say "H & P: {$host//'nh'}, {$port//'np'}, {$url // 'nu'}";
 
         for @server-specs -> Pair $spec {
           $server-discovery.push: Promise.start( {
-              MongoDB::Connection.new(
-                :client($client-object),
-                :host($spec.key),
-                :port($spec.value)
-                :dbadmin($db-admin)
-              );
+              my $server;
+              try {
+                $server = MongoDB::Connection.new(
+                  :client($client-object),
+                  :host($spec.key),
+                  :port($spec.value)
+                  :db-admin($db-admin)
+                );
+                
+                # Only show the error but do not handle
+                #
+                CATCH { .say; }
+              }
+
+              # Return server object
+              #
+              $server;
             }
           );
 say "KV: {$spec.kv}, {@server-specs.elems}, {$server-discovery.elems}";
@@ -147,6 +158,7 @@ say "P sts: ", $promise.status;
           # If promise is kept, the Connection object has been created
           #
           if $promise.status ~~ Kept {
+say "P sts2: ", $promise.status;
             
             # Get the Connection object from the promise result and check
             # its status. When True, there is a proper server found and its
@@ -191,7 +203,8 @@ say "C sts: ", $server.WHAT, ', ', $server.status;
 #TODO Test for master server, continue if not and needed
 #$isMaster = True;
 #last;
-say "Cached server $si: ", $server.WHAT, ', ', $server.status;
+say "Cached server $si: ", $server.WHAT, ', ', $server.defined, ', ', $server.status;
+            last if $server.defined;
           }
         }
 
@@ -208,6 +221,7 @@ say "server discovery data exhausted";
         }
       }
 
+      $server.open() if $server.defined;
       return $server;
     }
   }

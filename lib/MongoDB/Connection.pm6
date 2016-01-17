@@ -1,4 +1,5 @@
 use v6;
+use MongoDB::ClientIF;
 use MongoDB::DatabaseIF;
 use BSON::Document;
 
@@ -14,10 +15,10 @@ package MongoDB {
     has Bool $.is-master = False;
     has Promise $!monitor;
     has MongoDB::DatabaseIF $!db-admin;
-    has $!client;
+    has MongoDB::ClientIF $!client;
 
     submethod BUILD (
-      :$client! where .^name eq 'MongoDB::Client',
+      MongoDB::ClientIF :$client!,
       Str:D :$host!,
       Int:D :$port! where (0 <= $_ <= 65535),
       MongoDB::DatabaseIF:D :$db-admin!
@@ -38,6 +39,10 @@ package MongoDB {
         #
         self.close;
 
+        # IO::Socket::INET throws an exception when there is no server response.
+        # So we catch it here and set the status to False to show there is no
+        # server found.
+        #
         CATCH {
           default {
             $!status = False;
@@ -48,15 +53,24 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
+    method open ( --> Nil ) {
+      $!sock .= new( :host($!server-name), :port($!server-port))
+        unless $!sock.defined;
+    }
+
+    #---------------------------------------------------------------------------
+    #
     method send ( Buf:D $b --> Nil ) {
-      self!monitor;
+#      $!sock .= new( :host($!server-name), :port($!server-port))
+#        unless $!sock.defined;
       $!sock.write($b);
     }
 
     #---------------------------------------------------------------------------
     #
     method receive ( Int $nbr-bytes --> Buf ) {
-      self!monitor;
+#      $!sock .= new( :host($!server-name), :port($!server-port))
+#        unless $!sock.defined;
       return $!sock.read($nbr-bytes);
     }
 
@@ -71,41 +85,9 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method !monitor ( ) {
-
-print "Monitor ", $!sock.defined;
-      $!sock .= new( :host($!server-name), :port($!server-port))
-        unless $!sock.defined;
-say " --> ", $!sock.defined;
-
-#`{{
-      # Check monitor results
-      #
-      if $!monitor.defined {
-        if $!monitor.status ~~ Kept {
-          my BSON::Document $doc = $!monitor.result;
-          $!monitor = Nil;
-          $!is-master = $doc<ismaster>;
-#TODO get host and replica info
-        }
-
-        elsif $!monitor.status ~~ Broken {
-#TODO Should not happen
-          my BSON::Document $doc = $!monitor.result;
-          $!monitor = Nil;
-note "Broken, doc result: $doc<ok>";
-        }
-        
-        # else still Planned
-      }
-
-      else {
-#        $!monitor = Promise.start( {
-#            $!db-admin.run-command: (isMaster => 1);
-#          }
-#        );
-      }
-}}
+    method !check-is-master ( ) {
+      my BSON::Document $doc = $!db-admin.run-command: (isMaster => 1);
+      $!is-master = $doc<ismaster>;
     }
   }
 }

@@ -245,10 +245,16 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.26.6
+  * Broken cyclic dependency Client -> Connection -> Database -> Collection ->
+    Wire -> Client by creating a Client interface ClientIF
+  * Wire and Client are singletons now.
+  * DatabaseIF and CollectionIF created. No needed at the moment but ...
+  * AdminDB and CommandCll as subclasses.
 * 0.26.5
   * Renamed Connection into Client and created a new Connection module to handle
     more than one connection by the client.
-  * collection $cmd created each time whenrun-command was called is turned into
+  * collection $cmd created each time when run-command was called is turned into
     a class attribute and created once on database creation time.
 * 0.26.4
   * Skipped some patch versions because of install problems with panda. Seems

@@ -53,7 +53,6 @@ package MongoDB {
       my BSON::Document $d = $qdoc.clone;
       $d does MongoDB::Header;
 
-#      my $database = $collection.database;
       my $full-collection-name = $collection.full-collection-name;
 
       my Buf $encoded-query = $d.encode-query(
@@ -73,9 +72,9 @@ package MongoDB {
       # read bytes and decode. Return the resulting document.
       #
       my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
-#$client.close;
-#say "SR: ", $server-reply;
-# TODO check if requestID matches responseTo
+
+      $connection.close;
+
       return $d.decode-reply($server-reply);
     }
 
@@ -103,6 +102,8 @@ package MongoDB {
       #
       my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
 # TODO check if requestID matches responseTo
+
+      $connection.close;
 # TODO check if cursorID matches (if present)
       return $d.decode-reply($server-reply);
     }
@@ -128,6 +129,8 @@ package MongoDB {
         my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
         $connection.send($encoded-kill-cursors);
       }
+
+      $connection.close;
     }
   }
 }
