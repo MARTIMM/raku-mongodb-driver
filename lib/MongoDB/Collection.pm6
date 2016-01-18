@@ -25,7 +25,7 @@ package MongoDB {
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
-      my BSON::Document $server-reply = MongoDB::Wire.get-instance.query(
+      my BSON::Document $server-reply = MongoDB::Wire.instance.query(
         self, $cr, $pr, :$flags, :$number-to-skip,
         :$number-to-return
       );
@@ -43,7 +43,7 @@ package MongoDB {
       --> MongoDB::Cursor
     ) {
 
-      my BSON::Document $server-reply = MongoDB::Wire.get-instance.query(
+      my BSON::Document $server-reply = MongoDB::Wire.instance.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return
       );

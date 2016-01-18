@@ -1,14 +1,14 @@
 use v6;
 use lib 't';
 use Test-support;
-use MongoDB::Connection;
+use MongoDB::Server;
 use Test;
 
 #`{{
   Setup sandbox
   Generate mongo config
   Start mongo daemon
-  Test connection
+  Test Server
 }}
 
 #TODO Checks for windows environment

@@ -75,7 +75,7 @@ package MongoDB {
         # Request next batch of documents
         #
         my BSON::Document $server-reply =
-          MongoDB::Wire.get-instance.get-more(self);
+          MongoDB::Wire.instance.get-more(self);
 
         # Get cursor id, It may change to "0" if there are no more
         # documents to fetch.
@@ -96,7 +96,7 @@ package MongoDB {
     method kill ( --> Nil ) {
 
       # invalidate cursor on database
-      MongoDB::Wire.get-instance.kill-cursors((self,));
+      MongoDB::Wire.instance.kill-cursors((self,));
 
       # invalidate cursor id
       $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);

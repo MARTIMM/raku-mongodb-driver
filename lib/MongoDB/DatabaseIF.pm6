@@ -34,7 +34,6 @@ package MongoDB {
     #---------------------------------------------------------------------------
     method _set_name ( Str:D $name ) {
       $!name = $name;
-say "Set db name: $!name";
     }
   }
 }

@@ -78,11 +78,11 @@ package MongoDB {
         :criteria($command),
         :number-to-return(1)
       );
+
       my $doc = $cursor.fetch;
 #TODO throw exception when undefined!!!
       return $doc.defined ?? $doc !! BSON::Document.new;
     }
-
   }
 }
 

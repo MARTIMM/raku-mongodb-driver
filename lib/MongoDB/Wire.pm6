@@ -14,7 +14,7 @@ package MongoDB {
     my MongoDB::ClientIF $client;
 
     #---------------------------------------------------------------------------
-    # Wire must be a singleton, new() must throw an exception, get-instance
+    # Wire must be a singleton, new() must throw an exception, instance()
     # is the way to get this classes object
     #
     my MongoDB::Wire $wire-object;
@@ -22,13 +22,13 @@ package MongoDB {
     method new ( ) {
 
       die X::MongoDB.new(
-        error-text => "This is a singleton, Please use get-instance()",
+        error-text => "This is a singleton, Please use instance()",
         oper-name => 'MongoDB::Wire.new()',
         severity => MongoDB::Severity::Fatal
       );
     }
 
-    submethod get-instance ( --> MongoDB::Wire ) {
+    submethod instance ( --> MongoDB::Wire ) {
 
       $wire-object = MongoDB::Wire.bless unless $wire-object.defined;
       $wire-object;
@@ -60,20 +60,20 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my $connection = $client.select-server;
-      $connection.send($encoded-query);
+      my $socket = $client.select-server.get-socket;
+      $socket.send($encoded-query);
 
       # Read 4 bytes for int32 response size
       #
-      my Buf $size-bytes = $connection.receive(4);
+      my Buf $size-bytes = $socket.receive(4);
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
       # Receive remaining response bytes from socket. Prefix it with the already
       # read bytes and decode. Return the resulting document.
       #
-      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
+      my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
 
-      $connection.close;
+      $socket.close;
 
       return $d.decode-reply($server-reply);
     }
@@ -89,21 +89,21 @@ package MongoDB {
         $cursor.full-collection-name, $cursor.id
       );
 
-      my $connection = $client.select-server;
-      $connection.send($encoded-get-more);
+      my $socket = $client.select-server.get-socket;
+      $socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
       #
-      my Buf $size-bytes = $connection.receive(4);
+      my Buf $size-bytes = $socket.receive(4);
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
       # Receive remaining response bytes from socket. Prefix it with the already
       # read bytes and decode. Return the resulting document.
       #
-      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
+      my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
 # TODO check if requestID matches responseTo
 
-      $connection.close;
+      $socket.close;
 # TODO check if cursorID matches (if present)
       return $d.decode-reply($server-reply);
     }
@@ -124,13 +124,13 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $connection = $client.select-server;
+      my $socket = $client.select-server.get-socket;
       if +@cursor-ids {
         my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
-        $connection.send($encoded-kill-cursors);
+        $socket.send($encoded-kill-cursors);
       }
 
-      $connection.close;
+      $socket.close;
     }
   }
 }

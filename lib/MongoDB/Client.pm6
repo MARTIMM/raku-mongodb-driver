@@ -1,8 +1,7 @@
 use v6;
-
 use MongoDB;
 use MongoDB::ClientIF;
-use MongoDB::Connection;
+use MongoDB::Server;
 use MongoDB::AdminDB;
 use MongoDB::Wire;
 use BSON::Document;
@@ -13,11 +12,12 @@ package MongoDB {
   #
   class Client is MongoDB::ClientIF {
 
-#TODO refine this method of using server name/port, connection pooling etc
+#TODO refine this method of using server name/port, server pooling etc
 
-    my Array $server-connections;       # Array of connections
+    my Array $servers;                  # Array of servers
     my Array $server-discovery;         # Array of promises
     my MongoDB::AdminDB $db-admin;
+    my Bool $master-search-in-process = False;
 
     #---------------------------------------------------------------------------
     # This class is a singleton class
@@ -27,13 +27,14 @@ package MongoDB {
     method new ( ) {
 
       die X::MongoDB.new(
-        error-text => "This is a singleton, Please use get-instance()",
+        error-text => "This is a singleton, Please use instance()",
         oper-name => 'MongoDB::Client.new()',
         severity => MongoDB::Severity::Fatal
       );
     }
 
-    multi submethod get-instance  (
+    #---------------------------------------------------------------------------
+    multi submethod instance  (
       Str :$host,
       Int :$port where (!$_.defined or 0 <= $_ <= 65535),
       Str :$url
@@ -42,14 +43,14 @@ package MongoDB {
 
       initialize();
 
-      $server-connections = [] unless $server-connections.defined;
+      $servers = [] unless $servers.defined;
       $server-discovery = [] unless $server-discovery.defined;
 
       my Pair @server-specs = ();
       my Str $server-name;
       my Int $server-port;
 
-say "H & P: {$host//'nh'}, {$port//'np'}, {$url // 'nu'}";
+#say "H & P: {$host//'nh'}, {$port//'np'}, {$url // 'nu'}";
 
       if ?$url {
 #TODO process url
@@ -86,21 +87,22 @@ say "H & P: {$host//'nh'}, {$port//'np'}, {$url // 'nu'}";
       # Background process to discover hosts only if there are no servers
       # discovered yet or that new non default cases are presnted.
       #
-      if !$server-connections.elems
+      if !$servers.elems
          or $server-name ne 'localhost'
          or $server-port != 27017 {
 
         for @server-specs -> Pair $spec {
           $server-discovery.push: Promise.start( {
               my $server;
+
               try {
-                $server = MongoDB::Connection.new(
+                $server = MongoDB::Server.new(
                   :client($client-object),
                   :host($spec.key),
-                  :port($spec.value)
+                  :port($spec.value),
                   :db-admin($db-admin)
                 );
-                
+
                 # Only show the error but do not handle
                 #
                 CATCH { .say; }
@@ -111,23 +113,24 @@ say "H & P: {$host//'nh'}, {$port//'np'}, {$url // 'nu'}";
               $server;
             }
           );
-say "KV: {$spec.kv}, {@server-specs.elems}, {$server-discovery.elems}";
+#say "KV: {$spec.kv}, {@server-specs.elems}, {$server-discovery.elems}";
         }
       }
 
       return $client-object;
     }
 
-    multi submethod get-instance ( --> MongoDB::Client ) {
-
+    #---------------------------------------------------------------------------
+    multi submethod instance ( --> MongoDB::Client ) {
       initialize();
       return $client-object;
     }
 
+    #---------------------------------------------------------------------------
     sub initialize ( ) {
       unless $client-object.defined {
         $client-object = MongoDB::Client.bless;
-        MongoDB::Wire.get-instance.set-client($client-object);
+        MongoDB::Wire.instance.set-client($client-object);
         $db-admin .= new;
       }
     }
@@ -141,88 +144,86 @@ say "KV: {$spec.kv}, {@server-specs.elems}, {$server-discovery.elems}";
 
     #---------------------------------------------------------------------------
     #
-#    method select-server ( Bool :$need-master = True --> MongoDB::Connection ) {
-    method select-server ( --> MongoDB::Connection ) {
+    method select-server ( Bool :$need-master = False --> MongoDB::Server ) {
 
-      my MongoDB::Connection $server;
+      my MongoDB::Server $server;
+      
+      # Read all Kept promises and store Server objects in $servers array
+      #
       while !$server.defined {
-        my Bool $isMaster = False;
+        my Bool $is-master = False;
 
         loop ( my $pi = 0; $pi < $server-discovery.elems; $pi++ ) {
           my $promise = $server-discovery[$pi];
-say "P: $pi, ", $promise.WHAT;
 
           next unless $promise ~~ Promise and $promise.defined;
-say "P sts: ", $promise.status;
 
-          # If promise is kept, the Connection object has been created
+          # If promise is kept, the Server object has been created
           #
           if $promise.status ~~ Kept {
-say "P sts2: ", $promise.status;
-            
-            # Get the Connection object from the promise result and check
+
+            # Get the Server object from the promise result and check
             # its status. When True, there is a proper server found and its
             # socket can be used for I/O.
             #
             $server = $promise.result;
-say "C sts: ", $server.WHAT, ', ', $server.status;
-            if $server.status {
-
-              $server-connections.push: $server;
-
-#TODO Test for master server, continue if not and needed
-#$isMaster = True;
-#last;
-            }
-            
-            else {
-              $server = Nil;
-            }
-
+            $servers.push: $server if $server.status;
             $server-discovery[$pi] = Nil;
             $server-discovery.splice( $pi, 1);
           }
 
+          # When broken throw away result
+          #
           elsif $promise.status == Broken {
+            $server-discovery[$pi].result;
             $server-discovery[$pi] = Nil;
             $server-discovery.splice( $pi, 1);
           }
-        
-#          elsif $promise.status == Planned {
-#            $server-discovery[$pi] = Nil;
-#            $server-discovery.splice( $pi, 1);
-#          }
         }
 
-        # When there isn't a server found from newly created servers
-        # try cached entries
+        # Walk through servers array and return server
         #
-        unless $server.defined {
-          loop ( my $si = 0; $si < $server-connections.elems; $si++) {
-            $server = $server-connections[$si];
-#TODO Test for master server, continue if not and needed
-#$isMaster = True;
-#last;
-say "Cached server $si: ", $server.WHAT, ', ', $server.defined, ', ', $server.status;
-            last if $server.defined;
+        $server = Nil;
+
+        loop ( my $si = 0; $si < $servers.elems; $si++) {
+          $server = $servers[$si];
+
+          # Guard the operation because the request ends up in Wire which
+          # will ask for a server using this select-server() method.
+          #
+          if !$master-search-in-process {
+            $master-search-in-process = True;
+            $is-master = $server.check-is-master;
+            $master-search-in-process = False;
           }
+
+          last if !$need-master or ($need-master and $is-master);
         }
 
         unless $server.defined {
           if $server-discovery.elems {
-say "sleep ...";
             sleep 1;
           }
 
           else {
-say "server discovery data exhausted";
-            return $server;
+#say "server discovery data exhausted";
+            last;
+            #return $server;
           }
         }
       }
 
-      $server.open() if $server.defined;
       return $server;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method remove-server ( MongoDB::Server $server ) {
+      loop ( my $si = 0; $si < $servers.elems; $si++) {
+        if $servers[$si] === $server {
+          $server.splice( $si, 1);
+        }
+      }
     }
   }
 }

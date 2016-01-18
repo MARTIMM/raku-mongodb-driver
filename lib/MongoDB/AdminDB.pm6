@@ -15,7 +15,6 @@ package MongoDB {
     #
     submethod BUILD ( ) {
 # TODO validate name
-say "Build AdminDB";
       
       # Set the name in the object. Build sequence is topdown so this will
       # run later than Database BUILD where a collection for $cmd is created.
@@ -31,8 +30,6 @@ say "Build AdminDB";
     #
     method collection ( Str:D $name ) {
 
-#TODO throw error";
-note "Cannot set collection on virtual database admin";
       die X::MongoDB.new(
           error-text => "Cannot set collection name on virtual admin database",
           oper-name => 'collection()',

@@ -3,6 +3,8 @@ use lib 't';
 use Test;
 use Test-support;
 use MongoDB::Client;
+use MongoDB::Server;
+use MongoDB::Socket;
 
 #-----------------------------------------------------------------------------
 # Stop mongodb unless sandbox isn't found, no sandbox requested
@@ -18,16 +20,20 @@ if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
 my Int $port-number = slurp('Sandbox/port-number').Int;
 
 
-my MongoDB::Client $client .= new( :host<localhost>, :port($port-number));
-ok !? $client.status, 'MongoDB still running';
+my MongoDB::Client $client .= instance( :host<localhost>, :port($port-number));
+my MongoDB::Server $server = $client.select-server;
+ok $server.defined, 'Server defined';
+#my MongoDB::Socket $socket = $server.get-socket;
 
 diag "Wait for server to stop";
-my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
+$server.shutdown;
+
+#my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
 #diag $exit_code ?? "Server already stopped" !! "Server stopped";
 sleep 2;
 diag "Server stopped";
-
 diag "Remove sandbox data";
+
 for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
   next unless $path.IO ~~ :d;
   for dir($path) -> $dir-entry {
@@ -46,7 +52,7 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 diag "delete directory Sandbox";
 rmdir "Sandbox";
 
-#$client .= new( :host<localhost>, :port($port-number));
+#$client .= instance( :host<localhost>, :port($port-number));
 #ok ? $client.status, 'MongoDB not running';
 
 #-----------------------------------------------------------------------------
