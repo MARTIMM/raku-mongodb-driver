@@ -99,14 +99,14 @@ Plenty of documents can be found on the MongoDB site
 * [Create a User Administrator](http://docs.mongodb.org/manual/tutorial/add-user-administrator/)
 
 
-Documentation about this driver can be found in doc/Original-README.md and the
-following pod files
+Documentation about this driver can be found in the following pod files;
 
-* lib/MongoDB.pod
-* lib/MongoDB/Collection.pod
-* lib/MongoDB/Connection.pod
-* lib/MongoDB/Cursor.pod
-* lib/MongoDB/Database.pod
+* doc/Pod/Collection.pod
+* doc/Pod/Cursor.pod
+* doc/Pod/Database.pod
+* doc/Pod/MongoDB.pod
+* doc/Pod/Server.pod
+* doc/Pod/Users.pod
 
 When you have *Pod::To::HTML* installed and the pdf generator *wkhtmltopdf* then
 you can execute the pod file with perl6 to generate a pdf from the pod document.

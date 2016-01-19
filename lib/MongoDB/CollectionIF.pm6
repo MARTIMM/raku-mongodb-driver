@@ -34,6 +34,8 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    # Abstract methods
+    #
     multi method find (
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
@@ -42,7 +44,7 @@ package MongoDB {
     ) {
       ...
     }
-    
+
     multi method find (
       BSON::Document :$criteria = BSON::Document.new,
       BSON::Document :$projection?,
@@ -53,6 +55,10 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    # Set the name of the collection. Used by command collection to set
+    # collection name to '$cmd'. There are several other names starting with
+    # 'system.'.
+    #
     method _set_name ( Str:D $name ) {
       $!name = $name;
 say "Set cll name: $!name";

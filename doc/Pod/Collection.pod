@@ -59,11 +59,6 @@ Use as
 
 Class to help accessing and manipulating collections in MongoDB databases.
 
-Defined as
-
-  package MongoDB { class Collection {...} }
-
-
 =head1 METHODS
 
 =head2 method new
@@ -71,7 +66,7 @@ Defined as
 Defined as
 
   submethod BUILD ( :$database!, Str:D :$name )
-  
+
 Creates a new Collection object. However, it is easier to call collection on
 the database object as shown in the examples above.
 
