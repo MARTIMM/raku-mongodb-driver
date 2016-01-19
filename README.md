@@ -245,6 +245,9 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.26.7
+  * Documentation changes
+
 * 0.26.6
   * Broken cyclic dependency Client -> Connection -> Database -> Collection ->
     Wire -> Client by creating a Client interface ClientIF

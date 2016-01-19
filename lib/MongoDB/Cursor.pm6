@@ -95,11 +95,12 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     method kill ( --> Nil ) {
 
-      # invalidate cursor on database
-      MongoDB::Wire.instance.kill-cursors((self,));
+      # Invalidate cursor on database
+      MongoDB::Wire.instance.kill-cursors: (self,);
 
-      # invalidate cursor id
-      $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+      # Invalidate cursor id with 8 0x00 bytes
+      #
+      $!id = Buf.new(0x00 xx 8);
 
       return;
     }
