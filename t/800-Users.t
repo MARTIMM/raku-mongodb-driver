@@ -2,7 +2,7 @@ use v6;
 use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
-use MongoDB::Connection;
+use MongoDB::Client;
 use MongoDB::Users;
 
 #`{{
@@ -27,7 +27,7 @@ if %*ENV<NOSANDBOX> {
 }
 
 #-------------------------------------------------------------------------------
-my MongoDB::Connection $connection = get-connection();
+my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
 my MongoDB::Database $db-admin .= new(:name<admin>);
 my MongoDB::Collection $collection = $database.collection('testf');

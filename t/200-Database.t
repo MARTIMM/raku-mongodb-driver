@@ -2,7 +2,9 @@ use v6;
 use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
-use MongoDB::Connection;
+use MongoDB::Client;
+use MongoDB::Database;
+use MongoDB::AdminDB;
 
 #`{{
   Testing;
@@ -13,9 +15,9 @@ use MongoDB::Connection;
 
 my BSON::Document $req;
 my BSON::Document $doc;
-my MongoDB::Connection $connection = get-connection();
+my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::AdminDB $db-admin .= new;
 
 # Drop database first then create new databases
 #
@@ -57,7 +59,22 @@ subtest {
 
 #-------------------------------------------------------------------------------
 subtest {
+  is $db-admin.name, 'admin', 'Name admin database ok';
+  try {
+    $db-admin.collection('my-collection');
+    
+    CATCH {
+      default {
+        my $m = .message;
+        $m ~~ s:g/\n+//;
+        ok .message ~~ m:s/Cannot set collection name on virtual admin database/,
+           'Cannot set collection name on virtual admin database';
+      }
+    }
+  }
+
   $doc = $db-admin.run-command: (listDatabases => 1);
+#say $doc.perl;
   ok $doc<ok>.Bool, 'Run command ran ok';
   ok $doc<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
 

@@ -2,7 +2,7 @@ use v6;
 use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
-use MongoDB::Connection;
+use MongoDB::Client;
 
 #`{{
   Testing: Query and Write Operation Commands
@@ -18,7 +18,7 @@ use MongoDB::Connection;
     dropDatabase
 }}
 
-my MongoDB::Connection $connection = get-connection();
+my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
 my MongoDB::Database $db-admin .= new(:name<admin>);
 my BSON::Document $req;

@@ -12,23 +12,23 @@
   "license": "The Artistic License 2.0",
   "name": "MongoDB",
   "provides": {
+    "MongoDB::AdminDB":                 "lib/MongoDB/AdminDB.pm6",
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
+    "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
+    "MongoDB::ClientIF":                "lib/MongoDB/ClientIF.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
-    "MongoDB::Connection":              "lib/MongoDB/Connection.pm6",
+    "MongoDB::CollectionIF":            "lib/MongoDB/CollectionIF.pm6",
+    "MongoDB::CommandCll":              "lib/MongoDB/CommandCll.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
+    "MongoDB::DatabaseIF":              "lib/MongoDB/DatabaseIF.pm6",
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
+    "MongoDB::Server":                  "lib/MongoDB/Server.pm6",
+    "MongoDB::Socket":                  "lib/MongoDB/Socket.pm6",
     "MongoDB::Users":                   "lib/MongoDB/Users.pm6",
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm6",
-    "MongoDB":                          "lib/MongoDB.pm6",
-
-    "Collection.pod":                   "doc/Pod/Collection.pod",
-    "Connection.pod":                   "doc/Pod/Connection.pod",
-    "Cursor.pod":                       "doc/Pod/Cursor.pod",
-    "Database.pod":                     "doc/Pod/Database.pod",
-    "MongoDB.pod":                      "doc/Pod/MongoDB.pod",
-    "Users.pod":                        "doc/Pod/Users.pod"
+    "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.26.4"
+  "version": "0.26.6"
 }

@@ -3,12 +3,42 @@ use v6;
 #use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 
 use BSON::Document;
-use MongoDB::Connection;
+use MongoDB;
+use MongoDB::ClientIF;
 use MongoDB::Header;
 
 package MongoDB {
 
   class Wire {
+  
+    my MongoDB::ClientIF $client;
+
+    #---------------------------------------------------------------------------
+    # Wire must be a singleton, new() must throw an exception, instance()
+    # is the way to get this classes object
+    #
+    my MongoDB::Wire $wire-object;
+    
+    method new ( ) {
+
+      die X::MongoDB.new(
+        error-text => "This is a singleton, Please use instance()",
+        oper-name => 'MongoDB::Wire.new()',
+        severity => MongoDB::Severity::Fatal
+      );
+    }
+
+    submethod instance ( --> MongoDB::Wire ) {
+
+      $wire-object = MongoDB::Wire.bless unless $wire-object.defined;
+      $wire-object;
+    }
+
+    #---------------------------------------------------------------------------
+    # 
+    method set-client ( MongoDB::ClientIF:D $client-object! ) {
+      $client = $client-object;
+    }
 
     #---------------------------------------------------------------------------
     # 
@@ -22,8 +52,14 @@ package MongoDB {
       #
       my BSON::Document $d = $qdoc.clone;
       $d does MongoDB::Header;
+      my BSON::Document $result;
 
-#      my $database = $collection.database;
+      # Special test for shutdown command for which the server doesn't respond
+      # when going down
+      #
+      my Bool $has-response = True;
+      $has-response = False if $d<shutdown>:exists and $d<shutdown> == 1;
+
       my $full-collection-name = $collection.full-collection-name;
 
       my Buf $encoded-query = $d.encode-query(
@@ -31,22 +67,39 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my MongoDB::Connection $connection .= new;
-      $connection.send($encoded-query);
+      my $socket = $client.select-server.get-socket;
+      $socket.send($encoded-query);
 
-      # Read 4 bytes for int32 response size
-      #
-      my Buf $size-bytes = $connection.receive(4);
-      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+      if $has-response {
+        # Read 4 bytes for int32 response size
+        #
+        my Buf $size-bytes = $socket.receive(4);
+        die X::MongoDB.new(
+          error-text => "No response from server",
+          oper-name => 'MongoDB::Wire.query()',
+          severity => MongoDB::Severity::Fatal
+        ) if $size-bytes.elems < 4;
 
-      # Receive remaining response bytes from socket. Prefix it with the already
-      # read bytes and decode. Return the resulting document.
-      #
-      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
-#$connection.close;
-#say "SR: ", $server-reply;
-# TODO check if requestID matches responseTo
-      return $d.decode-reply($server-reply);
+        my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+
+        # Receive remaining response bytes from socket. Prefix it with the already
+        # read bytes and decode. Return the resulting document.
+        #
+        my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
+
+        $result = $d.decode-reply($server-reply);
+      }
+      
+      else {
+        $result .= new: (
+          ok => 1,
+          cursor-id => Buf.new(0x00 xx 8),
+          documents => [  ]
+        );
+      }
+      
+      $socket.close;
+      return $result;
     }
 
     #---------------------------------------------------------------------------
@@ -60,19 +113,21 @@ package MongoDB {
         $cursor.full-collection-name, $cursor.id
       );
 
-      my MongoDB::Connection $connection .= new;
-      $connection.send($encoded-get-more);
+      my $socket = $client.select-server.get-socket;
+      $socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
       #
-      my Buf $size-bytes = $connection.receive(4);
+      my Buf $size-bytes = $socket.receive(4);
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
       # Receive remaining response bytes from socket. Prefix it with the already
       # read bytes and decode. Return the resulting document.
       #
-      my Buf $server-reply = $size-bytes ~ $connection.receive($response-size);
+      my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
 # TODO check if requestID matches responseTo
+
+      $socket.close;
 # TODO check if cursorID matches (if present)
       return $d.decode-reply($server-reply);
     }
@@ -93,11 +148,13 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $connection = MongoDB::Connection.new;
+      my $socket = $client.select-server.get-socket;
       if +@cursor-ids {
         my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
-        $connection.send($encoded-kill-cursors);
+        $socket.send($encoded-kill-cursors);
       }
+
+      $socket.close;
     }
   }
 }
@@ -145,7 +202,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection.send( $msg-header ~ $B-OP-INSERT, False);
+      $collection.database.client.send( $msg-header ~ $B-OP-INSERT, False);
     }
 }}
 #`{{
@@ -188,7 +245,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      @cursors[0].collection.database.connection.send( $msg-header ~ $B-OP-KILL_CURSORS, False);
+      @cursors[0].collection.database.client.send( $msg-header ~ $B-OP-KILL_CURSORS, False);
     }
 }}
 #`{{
@@ -241,7 +298,7 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection.send( $msg-header ~ $B-OP-UPDATE, False);
+      $collection.database.client.send( $msg-header ~ $B-OP-UPDATE, False);
     }
 }}
 #`{{
@@ -289,6 +346,6 @@ package MongoDB {
 
       # send message without waiting for response
       #
-      $collection.database.connection.send( $msg-header ~ $B-OP-DELETE, False);
+      $collection.database.client.send( $msg-header ~ $B-OP-DELETE, False);
     }
 }}

@@ -27,7 +27,7 @@ exit(0);
 #-------------------------------------------------------------------------------
 my Int $exit_code;
 
-my MongoDB::Connection $connection = get-connection();
+my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
 my MongoDB::Database $db-admin .= new(:name<admin>);
 my MongoDB::Collection $collection = $database.collection('testf');
@@ -84,7 +84,7 @@ subtest {
   sleep 2;
 
   $exit_code = shell("mongod --auth --config '$*CWD/Sandbox/m-auth.conf'");
-  $connection = get-connection-try10();
+  $client = get-connection-try10();
 #  diag "Changed server mode";
 }, "Server changed to authentication mode";
 
@@ -93,7 +93,7 @@ subtest {
   # Must get a new database, users and authentication object because server
   # is restarted.
   #
-  $database = $connection.database('test');
+  $database = $client.database('test');
   $users .= new(:$database);
   $auth .= new(:$database);
 
@@ -133,12 +133,12 @@ subtest {
   sleep 2;
 
   $exit_code = shell("mongod --config '$*CWD/Sandbox/m.conf'");
-  $connection = get-connection-try10();
+  $client = get-connection-try10();
 #  diag "Changed server mode";
 
   # Must get a new database and user object because server is restarted.
   #
-  $database = $connection.database('test');
+  $database = $client.database('test');
   $users .= new(:$database);
 
   $doc = $users.drop_all_users_from_database();
@@ -148,7 +148,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$connection.database('test').drop;
+$client.database('test').drop;
 
 done-testing();
 exit(0);

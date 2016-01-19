@@ -3,7 +3,7 @@ use Test-support;
 use v6;
 use Test;
 use MongoDB::Database;
-use MongoDB::Connection;
+use MongoDB::Client;
 
 #`{{
   Testing;
@@ -14,7 +14,7 @@ use MongoDB::Connection;
     X::MongoDB                          Catch exceptions
 }}
 
-my MongoDB::Connection $connection = get-connection();
+my MongoDB::Client $connection = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
 
 # Create collection and insert data in it!

@@ -1,47 +1,14 @@
 use v6;
 
-use MongoDB;
+use MongoDB::CollectionIF;
 use MongoDB::Wire;
 use MongoDB::Cursor;
-use BSON::Document;
 
 #-------------------------------------------------------------------------------
 #
 package MongoDB {
 
-  class Collection {
-
-    # State used so it initializes only once
-    #
-    state MongoDB::Wire $wire .= new;
-
-    has $.database;
-    has Str $.name;
-    has Str $.full-collection-name;
-
-    has BSON::Javascript $!default-js = BSON::Javascript.new(:javascript(''));
-
-    #---------------------------------------------------------------------------
-    #
-    submethod BUILD ( :$database!, Str:D :$name ) {
-      $!database = $database;
-      $!name = $name;
-      $!full-collection-name = [~] $!database.name, '.', $name;
-
-      # This should be possible: 'admin.$cmd' which is used by run-command
-      #
-      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
-        $!name = $name;
-      }
-
-      else {
-        die X::MongoDB.new(
-          error-text => "Illegal collection name: '$name'",
-          oper-name => 'MongoDB::Collection.new()',
-          severity => MongoDB::Severity::Error
-        );
-      }
-    }
+  class Collection is MongoDB::CollectionIF {
 
     #---------------------------------------------------------------------------
     # Find record in a collection. One of the few left to use the wire protocol.
@@ -55,9 +22,10 @@ package MongoDB {
       Int :$flags = 0
       --> MongoDB::Cursor
     ) {
+
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
-      my BSON::Document $server-reply = $wire.query(
+      my BSON::Document $server-reply = MongoDB::Wire.instance.query(
         self, $cr, $pr, :$flags, :$number-to-skip,
         :$number-to-return
       );
@@ -74,7 +42,8 @@ package MongoDB {
       Int :$flags = 0
       --> MongoDB::Cursor
     ) {
-      my BSON::Document $server-reply = $wire.query(
+
+      my BSON::Document $server-reply = MongoDB::Wire.instance.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return
       );

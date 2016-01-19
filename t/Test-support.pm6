@@ -1,6 +1,6 @@
 use v6;
 use Test;
-use MongoDB::Connection;
+use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
 
@@ -31,9 +31,9 @@ package Test-support
   }
 
   #-----------------------------------------------------------------------------
-  # Get a connection and test version. When version is wrong the process fails.
+  # Get a connection.
   #
-  sub get-connection ( --> MongoDB::Connection ) is export {
+  sub get-connection ( --> MongoDB::Client ) is export {
 
     if 'Sandbox/NO-MONGODB-SEFVER'.IO ~~ :e {
       plan 1;
@@ -43,60 +43,31 @@ package Test-support
     }
 
     my Int $port-number = get-port-number();
-    my MongoDB::Connection $connection .= new(
+    my MongoDB::Client $client .= instance(
       :host('localhost'),
       :port($port-number)
     );
 
-    my $version = $MongoDB::version;
-    if ? $version {
-      diag "MongoDB server ready on port $port-number";
-      diag "MongoDB version: $version<release1>.$version<release2>.$version<revision>";
-      if $version<release1> < 3 {
-        plan 1;
-        flunk('Mongod version not ok to use this set of modules?');
-        skip-rest('Mongod version not ok to use this set of modules?');
-        exit(0);
-      }
-    }
-
-    else {
-      diag "No version found === no mongod server found";
-      plan 1;
-      flunk('No mongod server found?');
-      skip-rest('No mongod server found?');
-      exit(0);
-    }
-
-    return $connection;
+    return $client;
   }
 
   #-----------------------------------------------------------------------------
   # Test communication after starting up db server
   #
-  sub get-connection-try10 ( --> MongoDB::Connection ) is export {
+  sub get-connection-try10 ( --> MongoDB::Client ) is export {
     my Int $port-number = get-port-number();
-    my MongoDB::Connection $connection;
+    my MongoDB::Client $client;
     for ^10 {
-      $connection .= new( :host<localhost>, :port($port-number));
-      if ? $connection.status {
+      $client .= instance( :host<localhost>, :port($port-number));
+      if ? $client.status {
         diag [~] "Error: ",
-                 $connection.status.error-text,
+                 $client.status.error-text,
                  ". Wait a bit longer";
         sleep 2;
       }
     }
 
-    my $version = $MongoDB::version;
-    diag "MongoDB version: " ~ $version<release1 release2 revision>.join('.');
-    if $version<release1> < 3 {
-      plan 1;
-      flunk('Version not ok to use this set of modules?');
-      skip-rest('Version not ok to use this set of modules?');
-      exit(0);
-    }
-
-    return $connection;
+    return $client;
   }
 
   #-----------------------------------------------------------------------------
@@ -107,7 +78,7 @@ package Test-support
                             --> MongoDB::Collection
                           ) is export {
 
-    my MongoDB::Connection $connection = get-connection();
+    my MongoDB::Client $client = get-connection();
     my MongoDB::Database $database .= new($db-name);
     return $database.collection($col-name);
   }

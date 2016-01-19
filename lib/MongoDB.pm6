@@ -2,14 +2,9 @@ use v6;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.26.4> {
+package MongoDB:ver<0.26.6> {
 
   #-----------------------------------------------------------------------------
-  # Server version on current connection
-  #
-  our $build-info = Nil;
-  our $version = Nil;
-
   # Definition of all severity types
   #
   enum Severity <Trace Debug Info Warn Error Fatal>;
@@ -26,47 +21,47 @@ package MongoDB:ver<0.26.4> {
   our $log-fh;
   our $log-fn = 'MongoDB.log';
 
-    #-----------------------------------------------------------------------------
-    #
-    sub set-exception-throw-level ( Severity:D $s ) is export {
-      $severity-throw-level = $s;
-    }
+  #-----------------------------------------------------------------------------
+  #
+  sub set-exception-throw-level ( Severity:D $s ) is export {
+    $severity-throw-level = $s;
+  }
 
-    #-----------------------------------------------------------------------------
-    #
-    sub set-exception-process-level ( Severity:D $s ) is export {
-      $severity-process-level = $s;
-    }
+  #-----------------------------------------------------------------------------
+  #
+  sub set-exception-process-level ( Severity:D $s ) is export {
+    $severity-process-level = $s;
+  }
 
-    #-----------------------------------------------------------------------------
-    #
-    sub set-exception-processing (
-      Bool :$logging = True,
-      Bool :$checking = True
-    ) is export {
-      $do-log = $logging;
-      $do-check = $checking;
-    }
+  #-----------------------------------------------------------------------------
+  #
+  sub set-exception-processing (
+    Bool :$logging = True,
+    Bool :$checking = True
+  ) is export {
+    $do-log = $logging;
+    $do-check = $checking;
+  }
 
-    #-----------------------------------------------------------------------------
-    #
-    multi sub set-logfile ( Str:D $filename! ) is export {
-      $log-fn = $filename;
-    }
+  #-----------------------------------------------------------------------------
+  #
+  multi sub set-logfile ( Str:D $filename! ) is export {
+    $log-fn = $filename;
+  }
 
-    #-----------------------------------------------------------------------------
-    #
-    multi sub set-logfile ( IO::Handle:D $file-handle! ) is export {
-      $log-fh.close if ? $log-fh and $log-fh !eqv $*OUT and $log-fh !eqv $*ERR;
-      $log-fh = $file-handle;
-    }
+  #-----------------------------------------------------------------------------
+  #
+  multi sub set-logfile ( IO::Handle:D $file-handle! ) is export {
+    $log-fh.close if ? $log-fh and $log-fh !eqv $*OUT and $log-fh !eqv $*ERR;
+    $log-fh = $file-handle;
+  }
 
-    #-----------------------------------------------------------------------------
-    #
-    sub open-logfile (  ) is export {
-      $log-fh.close if ? $log-fh and $log-fh !eqv $*OUT and $log-fh !eqv $*ERR;
-      $log-fh = $log-fn.IO.open: :a;
-    }
+  #-----------------------------------------------------------------------------
+  #
+  sub open-logfile (  ) is export {
+    $log-fh.close if ? $log-fh and $log-fh !eqv $*OUT and $log-fh !eqv $*ERR;
+    $log-fh = $log-fn.IO.open: :a;
+  }
 
   #-----------------------------------------------------------------------------
   # A role to be used to handle exceptions.

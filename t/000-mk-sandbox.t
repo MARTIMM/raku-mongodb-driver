@@ -1,14 +1,14 @@
 use v6;
 use lib 't';
 use Test-support;
-use MongoDB::Connection;
+use MongoDB::Server;
 use Test;
 
 #`{{
   Setup sandbox
   Generate mongo config
   Start mongo daemon
-  Test connection
+  Test Server
 }}
 
 #TODO Checks for windows environment
@@ -116,6 +116,8 @@ for 65000 ..^ 2**16 -> $p {
     }
   }
 }
+
+ok $port-number >= 65000, 'Portnumber found';
 
 # Save portnumber for later tests
 #
@@ -246,18 +248,8 @@ else {
   }
 }
 
-# Test communication
-#
-my MongoDB::Connection $connection = get-connection-try10();
-
-# Test version
-#
-my $version = $MongoDB::version;
-ok $version<release1> >= 3, "MongoDB release >= 3";
-
 #-------------------------------------------------------------------------------
 # Cleanup and close
 #
-
 done-testing();
 exit(0);
