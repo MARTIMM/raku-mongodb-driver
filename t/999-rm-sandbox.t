@@ -26,7 +26,7 @@ ok $server.defined, 'Server defined';
 #my MongoDB::Socket $socket = $server.get-socket;
 
 diag "Wait for server to stop";
-$server.shutdown;
+$server.shutdown; #(:force);
 
 #my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
 #diag $exit_code ?? "Server already stopped" !! "Server stopped";
@@ -52,8 +52,17 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 diag "delete directory Sandbox";
 rmdir "Sandbox";
 
-#$client .= instance( :host<localhost>, :port($port-number));
-#ok ? $client.status, 'MongoDB not running';
+try {
+  $client .= instance( :host<localhost>, :port($port-number));
+  $server = $client.select-server;
+  nok $server.defined, 'Server defined';
+  CATCH {
+    default {
+      ok .message ~~ m:s/Failed to connect\: connection refused/,
+         'Failed to connect: connection refused';
+    }
+  }
+}
 
 #-----------------------------------------------------------------------------
 # Cleanup and close

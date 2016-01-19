@@ -250,7 +250,11 @@ change at any time. The public API should not be considered stable.*
     Wire -> Client by creating a Client interface ClientIF
   * Wire and Client are singletons now.
   * DatabaseIF and CollectionIF created. No needed at the moment but ...
-  * AdminDB and CommandCll as subclasses.
+  * AdminDB and CommandCll as subclasses of Database and Collection resp.
+  * New class Socket and is controlled by Server. Request Server for Socket via
+    get-socket().
+  * Connection renamed to Server. Client controls Servers and Servers provides
+    Sockets. Request Client for Server via select-server().
 * 0.26.5
   * Renamed Connection into Client and created a new Connection module to handle
     more than one connection by the client.

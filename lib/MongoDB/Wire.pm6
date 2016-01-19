@@ -52,6 +52,13 @@ package MongoDB {
       #
       my BSON::Document $d = $qdoc.clone;
       $d does MongoDB::Header;
+      my BSON::Document $result;
+
+      # Special test for shutdown command for which the server doesn't respond
+      # when going down
+      #
+      my Bool $has-response = True;
+      $has-response = False if $d<shutdown>:exists and $d<shutdown> == 1;
 
       my $full-collection-name = $collection.full-collection-name;
 
@@ -63,19 +70,36 @@ package MongoDB {
       my $socket = $client.select-server.get-socket;
       $socket.send($encoded-query);
 
-      # Read 4 bytes for int32 response size
-      #
-      my Buf $size-bytes = $socket.receive(4);
-      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+      if $has-response {
+        # Read 4 bytes for int32 response size
+        #
+        my Buf $size-bytes = $socket.receive(4);
+        die X::MongoDB.new(
+          error-text => "No response from server",
+          oper-name => 'MongoDB::Wire.query()',
+          severity => MongoDB::Severity::Fatal
+        ) if $size-bytes.elems < 4;
 
-      # Receive remaining response bytes from socket. Prefix it with the already
-      # read bytes and decode. Return the resulting document.
-      #
-      my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
+        my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
+        # Receive remaining response bytes from socket. Prefix it with the already
+        # read bytes and decode. Return the resulting document.
+        #
+        my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
+
+        $result = $d.decode-reply($server-reply);
+      }
+      
+      else {
+        $result .= new: (
+          ok => 1,
+          cursor-id => Buf.new(0x00 xx 8),
+          documents => [  ]
+        );
+      }
+      
       $socket.close;
-
-      return $d.decode-reply($server-reply);
+      return $result;
     }
 
     #---------------------------------------------------------------------------
