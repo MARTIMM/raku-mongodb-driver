@@ -28,31 +28,74 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 </style>
 =end Xhtml
 
-=TITLE class MongoDB::Connection
+=TITLE class MongoDB::Server
 
-=SUBTITLE Mongod server connection and info
+=SUBTITLE Mongod server object and info
 
 Defined as
 
-  package MongoDB { class Connection { ... } }
+  package MongoDB { class Server { ... } }
 
-The class provides methods such as connecting to mongod server and ask
-information from the server.
-
-This class helps the client to connect to the server and provides some
-maintenance commands. The class is loaded automatically with the MongoDB
-module.
+The class is provides methods to provvide info about a mongod or mongos server.
+The class is loaded and controlled by the MongoDB::Client module. Users should
+not use this class but ask for a server using methods from Client. And even that
+users should not do. All I/O is controlled internally.
 
 =begin code
 
 use v6;
-use MongoDB::Connection;
+use MongoDB::Client;
+use MongoDB::Server;
 
-# Connect to MongoDB server at localhost port 27017
-my MongoDB::Connection $connection .= new();
+# Get a server object
+#
+my MongoDB::Client $client .= instance;
+my MongoDB::Server $server = $client.select-server;
 
 =end code
 
+
+
+=head1 ATTRIBUTES
+
+=head2 server-name
+
+Defined as
+
+  has Str $.server-name;
+
+Server name of this object
+
+=head2 server-port
+
+Defined as
+
+  has Int $.server-port;
+
+Server port of this object
+
+=head2 max-sockets
+
+Defined as
+
+  has Int $.max-sockets is rw where $_ >= 3;
+
+Maximum number of open sockets per server object
+Can be changed by user of Server object. New values must >= 3.
+
+=head2 status
+
+Defined as
+
+  has Bool $.status = False;
+
+Status of server. True means that server is active and accepts connections.
+
+=head2 is-master
+
+  has Bool $.is-master = False;
+
+Server is a master server.
 
 
 =head1 METHODS
@@ -61,32 +104,63 @@ my MongoDB::Connection $connection .= new();
 
 Defined as:
 
-  method new ( Str :$host = 'localhost', Int :$port = 27017 )
+  submethod BUILD (
+    MongoDB::ClientIF :$client!,
+    Str:D :$host!,
+    Int:D :$port! where (0 <= $_ <= 65535),
+    MongoDB::DatabaseIF:D :$db-admin!,
+    Int :$max-sockets where $_ >= 3 = 3
+  )
 
-Usage:
-
-  my MongoDB::Connection $c .= new( :host<example.com>, :port(1234));
-
-Creates a new C<Connection> object. When all is ok the connection status will
-be undefined. Otherwise it will hold the X::MongoDB exception which can be
-thrown when needed.
+Creates a new C<Server> object. When all is ok the server status will
+be True. Otherwise it will be False if a socket could not be opened. You see
+that this must be created by a Client object to provide its address to the new()
+method.
 
 Example:
 
-  my MongoDB::Connection $c .= new(:host<non-existent-host.gov>);
-  if ? $c.status {
+  my MongoDB::Server $s .= new(:host<non-existent-host.gov>);
+  if !?$s.status {
     note 'Oh oh not good, try something else';
-    note $c.status.error-text;
 
     # Try default or die
-    $c .= new;
-    die $connection.status if ? $c.status;
+    $s .= new;
+    die $s.status unless ?$s.status;
   }
 
-B<NOTE: This is going to change when connections are created in the background.
-furthermore the way hosts and ports are to be defined will be as a kind of url
-format.>
+=head2 method get-socket
 
+Defined as
+
+  method get-socket ( --> MongoDB::Socket )
+
+Get a MongoDB::Socket object. By default there can be only 3 open socket per
+server object.
+
+=head2 method check-is-master
+
+Defined as
+
+  method check-is-master ( --> Bool )
+
+Check if server is a master server. This method will also set the is-master
+attribute.
+
+=head2 method shutdown
+
+Defined as
+
+   method shutdown ( Bool :$force = False )
+
+Shutdown mongod server.
+
+=pod
+
+
+
+
+
+=finish
 =head2 method send
 
 Defined as
