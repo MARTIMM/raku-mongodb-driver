@@ -65,8 +65,8 @@ subtest {
           last;
         }
       }
-    } 
-  }  
+    }
+  }
 
   try {
     $server.max-sockets = 5;
@@ -74,7 +74,6 @@ subtest {
 
     my @skts;
     for ^10 {
-#.say;
       my $s = $server.get-socket;
 
       # Still below max
@@ -91,7 +90,18 @@ subtest {
         }
       }
     }
-  }  
+  }
+
+  try {
+    $server.max-sockets = 2;
+
+    CATCH {
+      default {
+        ok .message ~~ m:s/Type check failed in assignment to '$!max-sockets'/,
+           "Type check failed in assignment to \$!max-sockets";
+      }
+    }
+  }
 }, 'Client, Server, Socket tests';
 
 #-------------------------------------------------------------------------------

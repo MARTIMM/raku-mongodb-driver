@@ -13,7 +13,7 @@ package MongoDB {
     has Int $.server-port;
 
     has MongoDB::Socket @!sockets;
-    has Int $.max-sockets is rw;
+    has Int $.max-sockets is rw where $_ >= 3;
     has Bool $.status = False;
     has Bool $.is-master = False;
 
