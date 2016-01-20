@@ -32,7 +32,7 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    method _set_name ( Str:D $name ) {
+    method _set-name ( Str:D $name ) {
       $!name = $name;
     }
   }

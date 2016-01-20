@@ -36,6 +36,7 @@ package MongoDB {
     # Find record in a collection using a BSON::Document
     #
     multi method find (
+
       BSON::Document :$criteria = BSON::Document.new,
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,

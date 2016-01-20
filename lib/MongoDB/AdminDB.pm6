@@ -22,7 +22,7 @@ package MongoDB {
       # Consequence of this is that the run-command below must be defined to
       # get the possibility to repair this.
       # 
-      self._set_name('admin');
+      self._set-name('admin');
     }
 
     #---------------------------------------------------------------------------

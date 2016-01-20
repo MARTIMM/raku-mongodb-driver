@@ -6,9 +6,9 @@ package MongoDB {
   class CommandCll is MongoDB::Collection {
 
     #---------------------------------------------------------------------------
-    method BUILD ( :$database!, Str :$name ) {
+    method BUILD ( :$database! ) {
 
-      self._set_name('$cmd');
+      self._set-name('$cmd');
     }
   }
 }

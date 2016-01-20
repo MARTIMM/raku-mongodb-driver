@@ -12,25 +12,9 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( :$database!, Str:D :$name ) {
+    submethod BUILD ( :$database!, Str :$name ) {
       $!database = $database;
-      $!name = $name;
-      $!full-collection-name = [~] $!database.name, '.', $!name
-        if $database.name.defined;
-
-      # This should be possible: 'admin.$cmd' which is used by run-command
-      #
-      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
-        $!name = $name;
-      }
-
-      else {
-        die X::MongoDB.new(
-          error-text => "Illegal collection name: '$name'",
-          oper-name => 'MongoDB::Collection.new()',
-          severity => MongoDB::Severity::Error
-        );
-      }
+      self._set-name($name) if ?$name;
     }
 
     #---------------------------------------------------------------------------
@@ -59,9 +43,22 @@ package MongoDB {
     # collection name to '$cmd'. There are several other names starting with
     # 'system.'.
     #
-    method _set_name ( Str:D $name ) {
-      $!name = $name;
-say "Set cll name: $!name";
+    method _set-name ( Str:D $name ) {
+
+      # This should be possible: 'admin.$cmd' which is used by run-command
+      #
+      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
+        $!name = $name;
+        self._set-full-collection-name;
+      }
+
+      else {
+        die X::MongoDB.new(
+          error-text => "Illegal collection name: '$name'",
+          oper-name => 'MongoDB::Collection.new()',
+          severity => MongoDB::Severity::Error
+        );
+      }
     }
 
     #---------------------------------------------------------------------------
@@ -69,8 +66,9 @@ say "Set cll name: $!name";
     # isn't available at BUILD time
     #
     method _set-full-collection-name ( ) {
-      $!full-collection-name = [~] $.database.name, '.', $.name
-        unless $.full-collection-name.defined;
+
+      return unless !?$.full-collection-name and ?$.database.name and ?$.name;
+      $!full-collection-name = [~] $.database.name, '.', $.name;
     }
   }
 }
