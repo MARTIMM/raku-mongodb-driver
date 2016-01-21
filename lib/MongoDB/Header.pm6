@@ -43,7 +43,7 @@ package MongoDB {
     # These variables must be shared between role Header objects.
     #
     my Bool $debug = False;
-    my Int $request_id = 0;
+    my Int $request-id = 0;
 
     #---------------------------------------------------------------------------
     # Needed call because of error:
@@ -59,7 +59,9 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method encode-message-header ( Int $buffer-size, Int $op-code --> Buf ) {
+    method encode-message-header ( Int $buffer-size, Int $op-code --> List ) {
+
+      my Int $used-request-id = $request-id++;
 
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
       # struct MsgHeader
@@ -74,7 +76,7 @@ package MongoDB {
         # int32 requestID
         # identifier for this message, at start 0, visible across wire ojects
         #
-        encode-int32($request_id++),
+        encode-int32($used-request-id),
 
         # int32 responseTo
         # requestID from the original request, no response so 0
@@ -87,7 +89,7 @@ package MongoDB {
         #
         encode-int32($op-code);
 
-      return $msg-header;
+      return ( $msg-header, $used-request-id);
     }
 
     #---------------------------------------------------------------------------
@@ -136,7 +138,7 @@ package MongoDB {
     method encode-query (
       Str:D $full-collection-name, BSON::Document $projection?,
       Int :$flags = 0, Int :$number-to-skip = 0, Int :$number-to-return = 0
-      --> Buf
+      --> List
     ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
@@ -180,15 +182,20 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      return self.encode-message-header( $query-buffer.elems, MongoDB::C-OP-QUERY)
-             ~ $query-buffer;
+      ( my Buf $encoded-query, my Int $u-request-id) = 
+        self.encode-message-header(
+          $query-buffer.elems,
+          MongoDB::C-OP-QUERY
+        );
+
+      return ( $encoded-query ~ $query-buffer, $u-request-id);
     }
 
     #---------------------------------------------------------------------------
     #
     method encode-get-more (
       Str:D $full-collection-name, Buf:D $cursor-id
-      --> Buf
+      --> List
     ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPGETMORE
 
@@ -219,14 +226,18 @@ package MongoDB {
       # standard message header
       # (watch out for inconsistent OP_code and messsage name)
       #
-      return self.encode-message-header(
-        $get-more-buffer.elems, MongoDB::C-OP-GET-MORE
-      ) ~ $get-more-buffer;
+      ( my Buf $encoded-get-more, my Int $u-request-id) = 
+        self.encode-message-header(
+          $get-more-buffer.elems,
+          MongoDB::C-OP-GET-MORE
+        );
+
+      return ( $encoded-get-more ~ $get-more-buffer, $u-request-id);
     }
 
     #---------------------------------------------------------------------------
     #
-    method encode-kill-cursors ( Buf:D @cursor-ids --> Buf ) {
+    method encode-kill-cursors ( Buf:D @cursor-ids --> List ) {
 
       my Buf $kill-cursors-buffer = [~]
 
@@ -251,15 +262,19 @@ package MongoDB {
       # MsgHeader header
       # standard message header
       #
-      return self.encode-message-header(
-        $kill-cursors-buffer.elems, MongoDB::C-OP-KILL-CURSORS
-      ) ~ $kill-cursors-buffer;
+      ( my Buf $encoded-kill-cursors, my Int $u-request-id) = 
+        self.encode-message-header(
+          $kill-cursors-buffer.elems,
+          MongoDB::C-OP-KILL-CURSORS
+        );
+
+      return ( $encoded-kill-cursors ~ $kill-cursors-buffer, $u-request-id);
     }
 
     #---------------------------------------------------------------------------
     #
     method encode-cursor-id ( Int $cursor-id --> Buf ) {
-      
+
       return encode-int64($cursor-id);
     }
 

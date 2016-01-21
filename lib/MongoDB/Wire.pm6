@@ -62,7 +62,7 @@ package MongoDB {
 
       my $full-collection-name = $collection.full-collection-name;
 
-      my Buf $encoded-query = $d.encode-query(
+      ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
         $full-collection-name, $projection,
         :$flags, :$number-to-skip, :$number-to-return
       );
@@ -109,7 +109,7 @@ package MongoDB {
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
 
-      my Buf $encoded-get-more = $d.encode-get-more(
+      ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
         $cursor.full-collection-name, $cursor.id
       );
 
@@ -150,7 +150,10 @@ package MongoDB {
       #
       my $socket = $client.select-server.get-socket;
       if +@cursor-ids {
-        my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
+        ( my Buf $encoded-kill-cursors,
+          my Int $request-id
+        ) = $d.encode-kill-cursors(@cursor-ids);
+
         $socket.send($encoded-kill-cursors);
       }
 
