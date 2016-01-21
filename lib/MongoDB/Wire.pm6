@@ -68,7 +68,7 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my $socket = $client.select-server.get-socket;
+      my $socket = $client.select-server(:$need-master).get-socket;
       $socket.send($encoded-query);
 
       if $has-response {

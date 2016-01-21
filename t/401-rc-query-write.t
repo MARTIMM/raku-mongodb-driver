@@ -176,7 +176,7 @@ subtest {
 #say "\nDoc: ", $doc.perl, "\n";
 
   for $doc<cursors>.list -> $cdoc {
-say 'C doc: ', $cdoc.perl;
+#say 'C doc: ', $cdoc.perl;
 
     is $cdoc<ok>, True, 'returned cursor ok';
     if $cdoc<ok> {
