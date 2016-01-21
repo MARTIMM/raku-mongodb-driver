@@ -1,7 +1,5 @@
 use v6;
 
-#use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
-
 use BSON::Document;
 use MongoDB;
 use MongoDB::ClientIF;
@@ -10,7 +8,7 @@ use MongoDB::Header;
 package MongoDB {
 
   class Wire {
-  
+
     my MongoDB::ClientIF $client;
 
     #---------------------------------------------------------------------------
@@ -18,7 +16,7 @@ package MongoDB {
     # is the way to get this classes object
     #
     my MongoDB::Wire $wire-object;
-    
+
     method new ( ) {
 
       die X::MongoDB.new(
@@ -88,8 +86,16 @@ package MongoDB {
         my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
 
         $result = $d.decode-reply($server-reply);
+
+        # Assert that the request-id and response-to are the same
+        #
+        die X::MongoDB.new(
+          error-text => "Id in request is not the same as in the response",
+          oper-name => 'MongoDB::Wire.query()',
+          severity => MongoDB::Severity::Fatal
+        ) unless $request-id == $result<message-header><response-to>;
       }
-      
+
       else {
         $result .= new: (
           ok => 1,
@@ -97,7 +103,7 @@ package MongoDB {
           documents => [  ]
         );
       }
-      
+
       $socket.close;
       return $result;
     }
@@ -129,7 +135,17 @@ package MongoDB {
 
       $socket.close;
 # TODO check if cursorID matches (if present)
-      return $d.decode-reply($server-reply);
+      my BSON::Document $result = $d.decode-reply($server-reply);
+
+      # Assert that the request-id and response-to are the same
+      #
+      die X::MongoDB.new(
+        error-text => "Id in request is not the same as in the response",
+        oper-name => 'MongoDB::Wire.query()',
+        severity => MongoDB::Severity::Fatal
+      ) unless $request-id == $result<message-header><response-to>;
+
+      return $result;
     }
 
     #---------------------------------------------------------------------------
