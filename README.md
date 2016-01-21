@@ -247,7 +247,13 @@ change at any time. The public API should not be considered stable.*
 
 * 0.26.7
   * Documentation changes
-
+  * Use request-id and response-to used in client request and server response
+    to check if returned responses are responses to the proper request.
+  * A few variables are set from the ismaster request. Requests must be
+    checked against these values. max-bson-object-size is the max size of a
+    request and max-write-batch-size against the number of documents in a
+    request. is-master is used to direct write operations to. The non-master
+    servers are read only servers.
 * 0.26.6
   * Broken cyclic dependency Client -> Connection -> Database -> Collection ->
     Wire -> Client by creating a Client interface ClientIF

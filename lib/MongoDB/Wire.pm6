@@ -58,6 +58,9 @@ package MongoDB {
       my Bool $has-response = True;
       $has-response = False if $d<shutdown>:exists and $d<shutdown> == 1;
 
+      my Bool $need-master = False;
+      $need-master = ($d.find-key(0) ~~ any(<insert update delete>));
+#say "Need master for {$d.find-key(0)} $need-master";
       my $full-collection-name = $collection.full-collection-name;
 
       ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(

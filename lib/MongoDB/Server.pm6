@@ -115,9 +115,9 @@ package MongoDB {
       my BSON::Document $doc = $!db-admin.run-command: (isMaster => 1);
       my Duration $rtt = now - $t0;
       $!weighted-mean-rtt .= new(0.2 * $rtt + 0.8 * $!weighted-mean-rtt);
-say "Weighted mean RTT: $!weighted-mean-rtt";
+#say "Weighted mean RTT: $!weighted-mean-rtt";
       $!is-master = $doc<ismaster>;
-say $doc.perl;
+#say $doc.perl;
 
       # When not defined set these too
       #
