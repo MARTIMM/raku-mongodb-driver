@@ -15,7 +15,11 @@ package MongoDB {
     has MongoDB::Socket @!sockets;
     has Int $.max-sockets is rw where $_ >= 3;
     has Bool $.status = False;
+
     has Bool $.is-master = False;
+    has Int $.max-bson-object-size;
+    has Int $.max-write-batch-size;
+    has Duration $!weighted-mean-rtt .= new(0);
 
     has Promise $!monitor;
 
@@ -107,8 +111,22 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method check-is-master ( --> Bool ) {
+      my Instant $t0 = now;
       my BSON::Document $doc = $!db-admin.run-command: (isMaster => 1);
+      my Duration $rtt = now - $t0;
+      $!weighted-mean-rtt .= new(0.2 * $rtt + 0.8 * $!weighted-mean-rtt);
+say "Weighted mean RTT: $!weighted-mean-rtt";
       $!is-master = $doc<ismaster>;
+say $doc.perl;
+
+      # When not defined set these too
+      #
+      unless ?$!max-bson-object-size {
+        $!max-bson-object-size = $doc<maxBsonObjectSize>;
+        $!max-write-batch-size = $doc<maxWriteBatchSize>;
+      }
+
+      return $!is-master;
     }
 
     #---------------------------------------------------------------------------

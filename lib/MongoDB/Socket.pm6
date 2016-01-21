@@ -8,7 +8,6 @@ package MongoDB {
 
     has Str $.server-name;
     has Int $.server-port;
-    has Int $.rtt;
     has Bool $.is-open;
 
     #---------------------------------------------------------------------------
@@ -16,7 +15,6 @@ package MongoDB {
     submethod BUILD ( Str:D :$server-name!, Int:D :$server-port!) {
       $!server-port = $server-port;
       $!server-name = $server-name;
-      $!rtt = 0;
       $!is-open = False;
     };
 
