@@ -254,6 +254,11 @@ change at any time. The public API should not be considered stable.*
     request and max-write-batch-size against the number of documents in a
     request. is-master is used to direct write operations to. The non-master
     servers are read only servers.
+  * implementing read and write concerns
+    http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
+    https://docs.mongodb.org/manual/tutorial/configure-replica-set-tag-sets/
+    https://docs.mongodb.org/manual/core/read-preference/
+    https://docs.mongodb.org/v3.0/reference/connection-string/
 * 0.26.6
   * Broken cyclic dependency Client -> Connection -> Database -> Collection ->
     Wire -> Client by creating a Client interface ClientIF

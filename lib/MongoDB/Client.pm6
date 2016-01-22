@@ -144,7 +144,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method select-server ( Bool :$need-master = False --> MongoDB::Server ) {
+    method select-server (
+      Bool :$need-master = False,
+      BSON::Document:D :$read-concern
+      --> MongoDB::Server
+    ) {
 
       my MongoDB::Server $server;
       

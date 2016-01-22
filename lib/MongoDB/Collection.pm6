@@ -19,18 +19,24 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0
+      Int :$flags = 0, List :$read-concern = ()
+
       --> MongoDB::Cursor
     ) {
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
+      my BSON::Document $rc .= new: $read-concern;
       my BSON::Document $server-reply = MongoDB::Wire.instance.query(
         self, $cr, $pr, :$flags, :$number-to-skip,
-        :$number-to-return
+        :$number-to-return, :read-concern($rc)
       );
 
-      return MongoDB::Cursor.new( :collection(self), :$server-reply);
+      return MongoDB::Cursor.new(
+        :collection(self),
+        :$server-reply,
+        :$read-concern
+      );
     }
 
     # Find record in a collection using a BSON::Document
@@ -40,16 +46,21 @@ package MongoDB {
       BSON::Document :$criteria = BSON::Document.new,
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0
+      Int :$flags = 0,
+      BSON::Document :$read-concern = BSON::Document.new
       --> MongoDB::Cursor
     ) {
 
       my BSON::Document $server-reply = MongoDB::Wire.instance.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
-        :$number-to-return
+        :$number-to-return, :$read-concern
       );
 
-      return MongoDB::Cursor.new( :collection(self), :$server-reply);
+      return MongoDB::Cursor.new(
+        :collection(self),
+        :$server-reply
+        :$read-concern
+      );
     }
   }
 }

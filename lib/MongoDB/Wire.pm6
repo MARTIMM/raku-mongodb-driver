@@ -33,16 +33,18 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # 
+    #
     method set-client ( MongoDB::ClientIF:D $client-object! ) {
       $client = $client-object;
     }
 
     #---------------------------------------------------------------------------
-    # 
+    #
     method query (
-      $collection, BSON::Document:D $qdoc,
-      $projection?, :$flags, :$number-to-skip, :$number-to-return
+      $collection! where .^name ~~ any(<MongoDB::Collection MongoDB::CommandCll>),
+      BSON::Document:D $qdoc,
+      $projection?, :$flags, :$number-to-skip, :$number-to-return,
+      BSON::Document:D :$read-concern
       --> BSON::Document
     ) {
       # Must clone the document otherwise the MongoDB::Header will be added
@@ -68,7 +70,10 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my $socket = $client.select-server(:$need-master).get-socket;
+      my $socket = $client.select-server(
+        :$need-master,
+        :$read-concern
+      ).get-socket;
       $socket.send($encoded-query);
 
       if $has-response {
@@ -113,7 +118,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method get-more ( $cursor --> BSON::Document ) {
+    method get-more (
+      $cursor,
+      BSON::Document:D :$read-concern
+      --> BSON::Document
+    ) {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
@@ -122,7 +131,7 @@ package MongoDB {
         $cursor.full-collection-name, $cursor.id
       );
 
-      my $socket = $client.select-server.get-socket;
+      my $socket = $client.select-server(:$read-concern).get-socket;
       $socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -153,7 +162,10 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method kill-cursors ( @cursors where $_.elems > 0 ) {
+    method kill-cursors (
+      @cursors where $_.elems > 0,
+      BSON::Document:D :$read-concern
+    ) {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
@@ -167,7 +179,7 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $socket = $client.select-server.get-socket;
+      my $socket = $client.select-server(:$read-concern).get-socket;
       if +@cursor-ids {
         ( my Buf $encoded-kill-cursors,
           my Int $request-id

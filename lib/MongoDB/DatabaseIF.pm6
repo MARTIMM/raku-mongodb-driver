@@ -23,7 +23,9 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     multi method run-command (
-      $command where .^name eq 'BSON::Document' ) {
+      $command where (.defined and .^name eq 'BSON::Document'),
+      :$read-concern where (!.defined or .^name eq 'BSON::Document')
+    ) {
       ...
     }
 

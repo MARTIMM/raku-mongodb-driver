@@ -1,4 +1,5 @@
 use v6;
+use MongoDB;
 use MongoDB::DatabaseIF;
 use MongoDB::Collection;
 use MongoDB::CommandCll;
@@ -17,7 +18,6 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     submethod BUILD ( Str :$name ) {
-# TODO validate name
 
       # Create a collection $cmd to be used with run-command()
       #
@@ -46,19 +46,20 @@ package MongoDB {
     # $cmd collection. Method is placed here because it works on a database be
     # it a special one.
     #
-    # Possible returns are:
-    # %("ok" => 0e0, "errmsg" => <Some error string>)
-    # %("ok" => 1e0, ...);
-    #
     # Run command using the BSON::Document.
     #
-    multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
+    multi method run-command (
+      BSON::Document:D $command,
+      BSON::Document :$read-concern = BSON::Document.new
+      --> BSON::Document
+    ) {
 
       # And use it to do a find on it, get the doc and return it.
       #
       my MongoDB::Cursor $cursor = $.cmd-collection.find(
         :criteria($command),
-        :number-to-return(1)
+        :number-to-return(1),
+        :$read-concern
       );
       my $doc = $cursor.fetch;
 
@@ -68,16 +69,33 @@ package MongoDB {
 
     # Run command using List of Pair.
     #
-    multi method run-command ( |c --> BSON::Document ) {
+    multi method run-command (
+      |c --> BSON::Document
+    ) {
 #TODO check on arguments
 
+      return X::MongoDB.new(
+        error-text => "Not enough arguments",
+        oper-name => 'MongoDB::Database.run-command()',
+        severity => MongoDB::Severity::Fatal
+      ) unless ? c.elems;
+
       my BSON::Document $command .= new: c[0];
+      my BSON::Document $read-concern;
+      if c<read-concern>.defined {
+        $read-concern .= new: c<read-concern>;
+      }
+      
+      else {
+        $read-concern .= new;
+      }
 
       # And use it to do a find on it, get the doc and return it.
       #
       my MongoDB::Cursor $cursor = $.cmd-collection.find(
         :criteria($command),
         :number-to-return(1)
+        :$read-concern
       );
 
       my $doc = $cursor.fetch;

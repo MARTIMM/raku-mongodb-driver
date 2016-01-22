@@ -21,11 +21,17 @@ package MongoDB {
     # Batch of documents in last response
     #
     has @.documents;
+    
+    has BSON::Document $!read-concern;
 
     #-----------------------------------------------------------------------------
     # Support for the newer BSON::Document
     #
-    multi submethod BUILD ( :$collection!, BSON::Document:D :$server-reply ) {
+    multi submethod BUILD (
+      :$collection!,
+      BSON::Document:D :$server-reply,
+      BSON::Document :$read-concern = BSON::Document.new
+    ) {
 
       $!collection = $collection;
       $!full-collection-name = $!collection.full-collection-name;
@@ -39,11 +45,16 @@ package MongoDB {
       # Get documents from the reply.
       #
       @!documents = $server-reply<documents>.list;
+      
+      $!read-concern = $read-concern;
     }
 
     # This can be set with data received from a command e.g. listDocuments
     #
-    multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
+    multi submethod BUILD (
+      BSON::Document:D :$cursor-doc!,
+      BSON::Document :$read-concern = BSON::Document.new
+    ) {
 
 #TODO Check provided structure for the fields.
 
@@ -62,6 +73,8 @@ package MongoDB {
       # Get documents from the reply.
       #
       @!documents = @($cursor-doc<firstBatch>);
+
+      $!read-concern = $read-concern;
     }
 
     #-----------------------------------------------------------------------------
@@ -75,7 +88,7 @@ package MongoDB {
         # Request next batch of documents
         #
         my BSON::Document $server-reply =
-          MongoDB::Wire.instance.get-more(self);
+          MongoDB::Wire.instance.get-more( self, :$!read-concern);
 
         # Get cursor id, It may change to "0" if there are no more
         # documents to fetch.
@@ -96,7 +109,7 @@ package MongoDB {
     method kill ( --> Nil ) {
 
       # Invalidate cursor on database
-      MongoDB::Wire.instance.kill-cursors: (self,);
+      MongoDB::Wire.instance.kill-cursors( (self,), :$!read-concern);
 
       # Invalidate cursor id with 8 0x00 bytes
       #

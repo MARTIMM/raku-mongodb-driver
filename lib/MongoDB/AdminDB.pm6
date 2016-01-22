@@ -43,7 +43,11 @@ package MongoDB {
     #
     # Run command using BSON::Document.
     #
-    multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
+    multi method run-command (
+      BSON::Document:D $command,
+      BSON::Document :$read-concern
+      --> BSON::Document
+    ) {
 
       $.cmd-collection._set-full-collection-name;
       return callsame;

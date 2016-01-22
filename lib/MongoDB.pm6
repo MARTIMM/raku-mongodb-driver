@@ -88,7 +88,7 @@ package MongoDB:ver<0.26.6> {
     #---------------------------------------------------------------------------
     #
     method test-severity (  ) {
-      return unless $do-check and self.severity >= $severity-throw-level;
+      return self unless $do-check and self.severity >= $severity-throw-level;
 
       die self;
     }
