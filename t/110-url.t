@@ -29,6 +29,10 @@ subtest {
 
   $url .= new(:url<mongodb://>);
   $url .= new(:url<mongodb:///users>);
+  $url .= new(:url<mongodb://localhost>);
+  $url .= new(:url<mongodb://localhost/users>);
+  $url .= new(:url<mongodb://localhost:2000/>);
+  $url .= new(:url<mongodb://h1,h2,localhost:2000/>);
 
 }, "Url parsing";
 

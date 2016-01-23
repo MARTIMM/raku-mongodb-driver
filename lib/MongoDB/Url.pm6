@@ -13,7 +13,7 @@ package MongoDB {
       }
       
       token server-section {
-        <username-password> <server-list>
+        <username-password>? <server-list>?
       }
       
       token path-section {
@@ -26,7 +26,9 @@ package MongoDB {
         '.' ?
       }
       
-      token server-list { <host> [ ':' <port> ]? }
+      token server-list { <host-port> ( ',' <host-port> )* }
+      
+      token host-port { <host> [ ':' <port> ]? }
 
       token host { <[\w\d-]>+ }
 
@@ -44,9 +46,12 @@ package MongoDB {
       
       }
 
-      method protocol (Match $m) {
-        say "Protocol: ", ~$m;
-        
+      method host (Match $m) {
+        say "Host: ", ~$m;
+      }
+
+      method port (Match $m) {
+        say "Port: ", ~$m;
       }
 
     }
@@ -60,10 +65,11 @@ package MongoDB {
       
       my Match $m = $grammar.parse( $url, :$actions, :rule<URL>);
 say $m.WHAT;
-say $m.defined;
+#say $m.perl;
 
       if ? $m {
         say "Protocol: ", ~$m<protocol>;
+        say "Server list: ", ~$m<server-list> if $m<server-list>.defined;
       }
       
       else {
