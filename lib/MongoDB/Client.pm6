@@ -146,7 +146,7 @@ package MongoDB {
     #
     method select-server (
       Bool :$need-master = False,
-      BSON::Document:D :$read-concern
+      BSON::Document :$read-concern = BSON::Document.new
       --> MongoDB::Server
     ) {
 

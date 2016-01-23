@@ -35,7 +35,7 @@ package MongoDB {
       return MongoDB::Cursor.new(
         :collection(self),
         :$server-reply,
-        :$read-concern
+        :read-concern($rc)
       );
     }
 

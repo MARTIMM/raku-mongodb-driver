@@ -13,8 +13,11 @@ subtest {
 
   is $b.elems, ([+] 4, 1, 4, 9, 1), 'Length of encoded buf is 19';
 
-  my Buf $h = $d.encode-message-header( $b.elems, MongoDB::C-OP-QUERY);
+  ( my Buf $h,
+    my Int $req-id
+  ) = $d.encode-message-header( $b.elems, MongoDB::C-OP-QUERY);
   is $h.elems, 4*4, 'Size of header is 16';
+  is $req-id, 0, 'First request encoding';
 
   my $index = 0;
   my BSON::Document $dh = $d.decode-message-header( $h, $index);
@@ -23,12 +26,16 @@ subtest {
   is $dh<request-id>, 0, "First request is $dh<request-id>";
   is $dh<op-code>, MongoDB::C-OP-QUERY, "Operation code is $dh<op-code>";
 
-  my Buf $q-encode = $d.encode-query( 'users.files',
+  ( my Buf $q-encode,
+    $req-id
+  ) = $d.encode-query(
+    'users.files',
     :flags(MongoDB::C-QF-SLAVEOK +| MongoDB::C-QF-NOCURSORTIMOUT)
   );
   is $q-encode.elems,
      ([+] 4, 12, 4, 4, $b.elems, 4 * 4),
      "Total encoded size is {$q-encode.elems}";
+  is $req-id, 1, 'Second request encoding';
 
 #  my BSON::Document $d
 }, "Header encode/decode";
@@ -66,10 +73,11 @@ subtest {
   my BSON::Document $d .= new;
   $d does MongoDB::Header;
   
-  my Buf $encoded-get-more = $d.encode-get-more(
+  ( my Buf $encoded-get-more, my Int $req-id) = $d.encode-get-more(
     'testdb.testcoll',
     Buf.new( 0x02, 0x01, 0x03, 0x04, 0x03, 0x0f, 0x0e, 0x0a)
   );
+  is $req-id, 2, 'Third encoded request';
 
   my Buf $hand-made-buf .= new(
     0x30, 0x00, 0x00, 0x00,             # size 48 bytes
