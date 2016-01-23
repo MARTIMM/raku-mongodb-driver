@@ -88,10 +88,10 @@ package MongoDB {
         # Protect against too many open sockets.
         #
         if @!sockets.elems >= $!max-sockets {
-          die X::MongoDB.new(
+          return X::MongoDB.new(
             error-text => "Too many sockets opened, max is $!max-sockets",
             oper-name => 'MongoDB::Server.get-socket()',
-            severity => MongoDB::Severity::Error
+            severity => MongoDB::Severity::Fatal
           );
         }
 

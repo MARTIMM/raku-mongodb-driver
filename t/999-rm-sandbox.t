@@ -34,6 +34,7 @@ sleep 2;
 diag "Server stopped";
 diag "Remove sandbox data";
 
+#`{{    Temporary inhibit the removal of the Sandbox
 for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
   next unless $path.IO ~~ :d;
   for dir($path) -> $dir-entry {
@@ -51,6 +52,7 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 
 diag "delete directory Sandbox";
 rmdir "Sandbox";
+}}
 
 try {
   $client .= instance( :host<localhost>, :port($port-number));
