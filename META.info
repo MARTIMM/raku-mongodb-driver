@@ -25,6 +25,7 @@
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
     "MongoDB::Server":                  "lib/MongoDB/Server.pm6",
     "MongoDB::Socket":                  "lib/MongoDB/Socket.pm6",
+    "MongoDB::Uri"  :                   "lib/MongoDB/Uri.pm6",
     "MongoDB::Users":                   "lib/MongoDB/Users.pm6",
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm6",
     "MongoDB":                          "lib/MongoDB.pm6"
