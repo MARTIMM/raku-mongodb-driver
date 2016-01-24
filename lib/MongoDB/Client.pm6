@@ -1,5 +1,6 @@
 use v6;
 use MongoDB;
+use MongoDB::Uri;
 use MongoDB::ClientIF;
 use MongoDB::Server;
 use MongoDB::AdminDB;
@@ -37,11 +38,16 @@ package MongoDB {
     multi submethod instance  (
       Str :$host,
       Int :$port where (!$_.defined or 0 <= $_ <= 65535),
-      Str :$url
       --> MongoDB::Client
-    ) {
+    )  {
+      return self.instance(uri => "mongodb://$host:$port");
+    }
 
+    #---------------------------------------------------------------------------
+    multi submethod instance ( Str :$uri --> MongoDB::Client )  {
       initialize();
+
+      my MongoDB::Uri $uri-obj .= new($uri);
 
       $servers = [] unless $servers.defined;
       $server-discovery = [] unless $server-discovery.defined;
@@ -50,56 +56,21 @@ package MongoDB {
       my Str $server-name;
       my Int $server-port;
 
-#say "H & P: {$host//'nh'}, {$port//'np'}, {$url // 'nu'}";
-
-      if ?$url {
-#TODO process url
-#        $server-name = 'localhost';
-#        $server-port = 27017;
-      }
-
-      else {
-        # Test for the server name. When no cases match a previously stored
-        # server name is taken
-        #
-        if !?$host and !?$server-name and !?$url {
-          $server-name = 'localhost';
-        }
-
-        elsif ?$host {
-          $server-name = $host;
-        }
-
-        # Test for the server port. When no cases match a previously stored
-        # server port is taken
-        #
-        if !$port.defined and !$server-port.defined {
-          $server-port = 27017;
-        }
-
-        elsif $port.defined {
-          $server-port = $port;
-        }
-
-        @server-specs.push: ($server-name => $server-port);
-      }
 
       # Background process to discover hosts only if there are no servers
       # discovered yet or that new non default cases are presnted.
       #
-      if !$servers.elems
-         or $server-name ne 'localhost'
-         or $server-port != 27017 {
+      if $uri-obj.server-data<servers>.elems {
 
-        for @server-specs -> Pair $spec {
+        for $uri-obj.server-data<servers> -> Hash $sdata {
           $server-discovery.push: Promise.start( {
-              my $server;
+              my MongoDB::Server $server;
 
               try {
-                $server = MongoDB::Server.new(
+                $server .= new(
                   :client($client-object),
-                  :host($spec.key),
-                  :port($spec.value),
+                  :host($sdata<host>),
+                  :port($sdata<port>),
                   :db-admin($db-admin)
                 );
 
