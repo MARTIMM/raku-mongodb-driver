@@ -261,6 +261,7 @@ change at any time. The public API should not be considered stable.*
     https://docs.mongodb.org/v3.0/reference/connection-string/
   * Implementing class Uri and with it deprecating the old interface to create
     a client.
+  * database and collection name testing
 * 0.26.6
   * Broken cyclic dependency Client -> Connection -> Database -> Collection ->
     Wire -> Client by creating a Client interface ClientIF
