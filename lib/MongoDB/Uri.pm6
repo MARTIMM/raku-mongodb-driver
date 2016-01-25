@@ -60,7 +60,7 @@ package MongoDB {
 
       method host-port (Match $m) {
         my $h = $m<host> ?? ~$m<host> !! 'localhost';
-        my $p = $m<port> ?? ~$m<port> !! 27017;
+        my $p = $m<port> ?? (~$m<port>).Int !! 27017;
         $!host-ports.push: %( host => $h, port => $p);
       }
 

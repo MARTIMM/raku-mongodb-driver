@@ -55,7 +55,7 @@ rmdir "Sandbox";
 }}
 
 try {
-  $client .= instance( :host<localhost>, :port($port-number));
+  $client .= instance(:uri('mongodb://localhost:' ~ $port-number));
   $server = $client.select-server;
   nok $server.defined, 'Server defined';
   CATCH {

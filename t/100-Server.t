@@ -25,7 +25,7 @@ my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= instance( :host<localhost>, :port(65535));
+  $client .= instance(:uri('mongodb://localhost:' ~ 65535));
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
   my $server = $client.select-server;
   nok $server.defined, 'No servers found';

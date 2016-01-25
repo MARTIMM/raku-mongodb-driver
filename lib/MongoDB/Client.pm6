@@ -35,34 +35,26 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    multi submethod instance  (
-      Str :$host,
-      Int :$port where (!$_.defined or 0 <= $_ <= 65535),
-      --> MongoDB::Client
-    )  {
-      return self.instance(uri => "mongodb://$host:$port");
-    }
-
-    #---------------------------------------------------------------------------
-    multi submethod instance ( Str :$uri --> MongoDB::Client )  {
+    submethod instance ( Str :$uri = 'mongodb://' --> MongoDB::Client )  {
       initialize();
 
-      my MongoDB::Uri $uri-obj .= new($uri);
+      # Parse the uri and get info in $uri-obj.server-data;
+      # Fields are protocol, username, password, servers, database and options
+      #
+      my MongoDB::Uri $uri-obj .= new(:$uri);
 
-      $servers = [] unless $servers.defined;
-      $server-discovery = [] unless $server-discovery.defined;
+      # Copy some fields into a local $server-data hash which is handed over
+      # to the server object.
+      #
+      my @item-list = <username password database options>;
+      my Hash $server-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
-      my Pair @server-specs = ();
-      my Str $server-name;
-      my Int $server-port;
-
-
-      # Background process to discover hosts only if there are no servers
-      # discovered yet or that new non default cases are presnted.
+      # Background process to discover hosts only if there are new servers
+      # to be discovered or that new non default cases are presnted.
       #
       if $uri-obj.server-data<servers>.elems {
 
-        for $uri-obj.server-data<servers> -> Hash $sdata {
+        for @($uri-obj.server-data<servers>) -> Hash $sdata {
           $server-discovery.push: Promise.start( {
               my MongoDB::Server $server;
 
@@ -72,6 +64,7 @@ package MongoDB {
                   :host($sdata<host>),
                   :port($sdata<port>),
                   :db-admin($db-admin)
+                  :$server-data
                 );
 
                 # Only show the error but do not handle
@@ -84,7 +77,6 @@ package MongoDB {
               $server;
             }
           );
-#say "KV: {$spec.kv}, {@server-specs.elems}, {$server-discovery.elems}";
         }
       }
 
@@ -92,13 +84,10 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    multi submethod instance ( --> MongoDB::Client ) {
-      initialize();
-      return $client-object;
-    }
-
-    #---------------------------------------------------------------------------
     sub initialize ( ) {
+      $servers = [] unless $servers.defined;
+      $server-discovery = [] unless $server-discovery.defined;
+
       unless $client-object.defined {
         $client-object = MongoDB::Client.bless;
         MongoDB::Wire.instance.set-client($client-object);

@@ -12,6 +12,11 @@ package MongoDB {
     has Str $.server-name;
     has Int $.server-port;
 
+    # As in MongoDB::Uri without servers key. So there are
+    # database, username, password and options
+    #
+    has Hash $!server-data;
+
     has MongoDB::Socket @!sockets;
     has Int $.max-sockets is rw where $_ >= 3;
     has Bool $.status = False;
@@ -31,13 +36,15 @@ package MongoDB {
       Str:D :$host!,
       Int:D :$port! where (0 <= $_ <= 65535),
       MongoDB::DatabaseIF:D :$db-admin!,
-      Int :$max-sockets where $_ >= 3 = 3
+      Int :$max-sockets where $_ >= 3 = 3,
+      Hash :$server-data
     ) {
       $!db-admin = $db-admin;
       $!client = $client;
       $!server-name = $host;
       $!server-port = $port;
       $!max-sockets = $max-sockets;
+      $!server-data = $server-data;
 
       # Try block used because IO::Socket::INET throws an exception when things
       # go wrong. This is not nessesary because there is no risc of data loss
@@ -84,7 +91,7 @@ package MongoDB {
       # If none is found insert a new Socket in the array
       #
       if ! $s.defined {
-        
+
         # Protect against too many open sockets.
         #
         if @!sockets.elems >= $!max-sockets {
