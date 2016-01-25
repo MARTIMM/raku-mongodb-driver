@@ -30,14 +30,6 @@ package MongoDB {
     #
     method collection ( Str:D $name --> MongoDB::Collection ) {
 
-      if !($name ~~ m/^ <[_ A..Z a..z]> <[.\w _]>+ $/) {
-        die X::MongoDB.new(
-            error-text => "Illegal collection name: '$name'",
-            oper-name => 'collection()',
-            collection-ns => $.name
-        );
-      }
-
       return MongoDB::Collection.new: :database(self), :name($name);
     }
 
