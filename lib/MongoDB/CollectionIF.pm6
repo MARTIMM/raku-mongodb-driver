@@ -45,20 +45,24 @@ package MongoDB {
     #
     method _set-name ( Str:D $name ) {
 
-      # This should be possible: 'admin.$cmd' which is used by run-command
+      # Check for the CommandCll because of $name is $cmd
       #
-      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
-        $!name = $name;
-        self._set-full-collection-name;
+      unless self.^name eq 'MongoDB::CommandCll' {
+
+        # This should be possible: 'admin.$cmd' which is used by run-command
+        # https://docs.mongodb.org/manual/reference/limits/
+        #
+        if $name !~~ m/^ <[_ A..Z a..z]> <[\w _ \-]>* $/ {
+          return X::MongoDB.new(
+            error-text => "Illegal collection name: '$name'",
+            oper-name => 'MongoDB::Collection.new',
+            severity => MongoDB::Severity::Error
+          );
+        }
       }
 
-      else {
-        die X::MongoDB.new(
-          error-text => "Illegal collection name: '$name'",
-          oper-name => 'MongoDB::Collection.new()',
-          severity => MongoDB::Severity::Error
-        );
-      }
+      $!name = $name;
+      self._set-full-collection-name;
     }
 
     #---------------------------------------------------------------------------
