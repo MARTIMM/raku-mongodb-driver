@@ -21,6 +21,7 @@ package MongoDB:ver<0.26.6> {
   our $log-fh;
   our $log-fn = 'MongoDB.log';
 
+
   #-----------------------------------------------------------------------------
   #
   sub set-exception-throw-level ( Severity:D $s ) is export {
@@ -118,10 +119,8 @@ package MongoDB:ver<0.26.6> {
     has Int $.line;               # Line number where X::MongoDB is created
     has Str $.file;               # File in which that happened
 
-    has MongoDB::Severity $.severity;
-                                  # Severity level
-    has DateTime $.date-time;
-                                  # Date and time of creation.
+    has MongoDB::Severity $.severity;   # Severity level
+    has DateTime $.date-time;           # Date and time of creation.
 
     #-----------------------------------------------------------------------------
     #
@@ -263,5 +262,82 @@ package MongoDB:ver<0.26.6> {
                  ;
     }
   }
+
+  #-------------------------------------------------------------------------------
+  # Message without throwing exceptions around
+  #
+  class Message does MongoDB::Logging {
+
+    has Str $.oper-name;          # Used operation or server request
+    has Str $.message;
+
+    has MongoDB::Severity $.severity;   # Severity level
+    has DateTime $.date-time;           # Date and time of creation.
+
+    #-----------------------------------------------------------------------------
+    #
+    method mlog (
+      Str:D :$message,
+      Str:D :$oper-name,
+      :$error-code where $_ ~~ any(Int|Str) = '',
+      Str :$oper-data = '',
+      Str :$collection-ns = '',
+      MongoDB::Severity :$severity = MongoDB::Severity::Trace,
+    ) {
+
+      # If severity gets higher then Info turn the message into an Exception
+      #
+      if $severity > MongoDB::Info {
+        return X::MongoDB.new(
+          :error-text($message),
+          :$oper-name,
+          :$oper-data,
+          :$collection-ns,
+          :$severity
+        );
+      }
+
+      $!message = $message;
+      $!oper-name = $oper-name;
+
+      $!severity = $severity;
+      $!date-time .= now;
+
+      self.log( );
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method trace ( --> Str ) {
+      return [~] ' ', $!oper-name, '(): ', $!message, "\n";
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method debug ( --> Str ) {
+      return [~] ' ', $!oper-name, '(): ', $!message, "\n";
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method info ( --> Str ) {
+      return [~] ' ', $!oper-name, '(): ', $!message, "\n";
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method warn ( --> Str ) { '' }
+    method error ( --> Str ) { '' }
+    method fatal ( --> Str ) { '' }
+
+    method message ( --> Str ) { '' }
+  }
+
+#TODO Make a singleton exception processor
+#TODO Make a singleton logger
+
+  # Declare a message object to be used anywhere
+  #
+  our $logger = MongoDB::Message.new unless $logger.defined;
 }
 
