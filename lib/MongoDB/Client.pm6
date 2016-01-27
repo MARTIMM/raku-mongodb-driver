@@ -19,6 +19,7 @@ package MongoDB {
     my Array $server-discovery;         # Array of promises
     my MongoDB::AdminDB $db-admin;
     my Bool $master-search-in-process = False;
+#    my MongoDB::Message $logger;
 
     #---------------------------------------------------------------------------
     # This class is a singleton class
@@ -63,13 +64,24 @@ package MongoDB {
                   :client($client-object),
                   :host($sdata<host>),
                   :port($sdata<port>),
-                  :db-admin($db-admin)
+                  :db-admin($db-admin),
                   :$server-data
+                );
+
+                $MongoDB::logger.mlog(
+                  message => "Server $sdata<host>:$sdata<port> connected",
+                  oper-name => 'Client.instance',
                 );
 
                 # Only show the error but do not handle
                 #
-                CATCH { .say; }
+                CATCH {
+                  .say;
+                  $MongoDB::logger.mlog(
+                    message => "Server $sdata<host>:$sdata<port> not connected",
+                    oper-name => 'Client.instance'
+                  );
+                }
               }
 
               # Return server object
@@ -85,13 +97,30 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     sub initialize ( ) {
-      $servers = [] unless $servers.defined;
-      $server-discovery = [] unless $server-discovery.defined;
 
+      # If the Client object isn't created yet then make it and
+      # define some variables
+      #
       unless $client-object.defined {
         $client-object = MongoDB::Client.bless;
+        
+        # Wire is also a Singleton and needs this object to get a Server
+        # using select-server()
+        #
         MongoDB::Wire.instance.set-client($client-object);
+
+        # The admin database is given to each server to get server data
+        #
         $db-admin .= new;
+
+        $servers = [];
+        $server-discovery = [];
+#        $logger .= new;
+
+        $MongoDB::logger.mlog(
+          message => "Client initialized",
+          oper-name => 'Client.initialize'
+        );
       }
     }
 
@@ -111,37 +140,67 @@ package MongoDB {
     ) {
 
       my MongoDB::Server $server;
-      
+
       # Read all Kept promises and store Server objects in $servers array
       #
       while !$server.defined {
         my Bool $is-master = False;
 
+        # First go through all Promises to see if there are still
+        # Server objects in the making
+        #
         loop ( my $pi = 0; $pi < $server-discovery.elems; $pi++ ) {
           my $promise = $server-discovery[$pi];
 
-          next unless $promise ~~ Promise and $promise.defined;
+          # Skip all undefined entries in the array
+          #
+          #next unless $promise ~~ Promise and $promise.defined;
 
-          # If promise is kept, the Server object has been created
+          # If promise is kept, the Server object has been created 
           #
           if $promise.status ~~ Kept {
 
             # Get the Server object from the promise result and check
-            # its status. When True, there is a proper server found and its
-            # socket can be used for I/O.
+            # its status. When True, the Server object could make a
+            # proper connection to the mongo server.
             #
             $server = $promise.result;
             $servers.push: $server if $server.status;
             $server-discovery[$pi] = Nil;
             $server-discovery.splice( $pi, 1);
+
+            $MongoDB::logger.mlog(
+              message => (
+                [~] "Server $pi ", $server.server-name,
+                ':', $server.server-port, " saved"
+              ),
+              oper-name => 'Client.select-server'
+            );
           }
 
           # When broken throw away result
           #
           elsif $promise.status == Broken {
-            $server-discovery[$pi].result;
+            my $s = $server-discovery[$pi].result;
             $server-discovery[$pi] = Nil;
             $server-discovery.splice( $pi, 1);
+
+            $MongoDB::logger.mlog(
+              message => (
+                [~] "Server $pi ", $server.server-name,
+                ':', $server.server-port, " not saved"
+              ),
+              oper-name => 'Client.select-server'
+            );
+          }
+
+          # When planned look at it in next while cycle
+          #
+          elsif $promise.status == Planned {
+            $MongoDB::logger.mlog(
+              message => "Promise $pi still running",
+              oper-name => 'Client.select-server'
+            );
           }
         }
 
@@ -161,18 +220,36 @@ package MongoDB {
             $master-search-in-process = False;
           }
 
-          last if !$need-master or ($need-master and $is-master);
+          if !$need-master or ($need-master and $is-master) {
+            $MongoDB::logger.mlog(
+              message => (
+                [~] "Server $pi ", $server.server-name,
+                ':', $server.server-port, " selected"
+              ),
+              oper-name => 'Client.select-server'
+            );
+
+            last;
+          }
         }
 
         unless $server.defined {
           if $server-discovery.elems {
+            $MongoDB::logger.mlog(
+              message => "No server found, wait for running discovery",
+              oper-name => 'Client.select-server'
+            );
             sleep 1;
           }
 
           else {
-#say "server discovery data exhausted";
+            $MongoDB::logger.mlog(
+              message => "No server found, discovery data exhausted, stopping",
+              oper-name => 'Client.select-server',
+              severity => MongoDB::Severity::Info
+            );
+            
             last;
-            #return $server;
           }
         }
       }
@@ -185,7 +262,8 @@ package MongoDB {
     method remove-server ( MongoDB::Server $server ) {
       loop ( my $si = 0; $si < $servers.elems; $si++) {
         if $servers[$si] === $server {
-          $server.splice( $si, 1);
+          undefine $server;
+          $servers.splice( $si, 1);
         }
       }
     }

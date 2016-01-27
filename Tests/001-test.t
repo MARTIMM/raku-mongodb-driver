@@ -12,14 +12,15 @@ use MongoDB::Collection;
     Replication using mongodb at localhost:27017
 }}
 
+set-exception-process-level(MongoDB::Severity::Trace);
+#open-logfile();
+
 my MongoDB::Client $client .= instance(:url('mongodb:///'));
 my MongoDB::Database $database .= new(:name<test>);
 my MongoDB::AdminDB $db-admin .= new;
 my MongoDB::Collection $collection = $database.collection('repl-test');
 my BSON::Document $req;
 my BSON::Document $doc;
-
-open-logfile();
 
 #-------------------------------------------------------------------------------
 subtest {

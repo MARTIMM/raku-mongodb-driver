@@ -26,10 +26,11 @@ package MongoDB {
     has Int $.max-write-batch-size;
     has Duration $!weighted-mean-rtt .= new(0);
 
-    has Promise $!monitor;
-
     has MongoDB::DatabaseIF $!db-admin;
     has MongoDB::ClientIF $!client;
+
+    has Channel $!channel;
+    has Promise $!server-monitor-code;
 
     submethod BUILD (
       MongoDB::ClientIF :$client!,
@@ -45,6 +46,7 @@ package MongoDB {
       $!server-port = $port;
       $!max-sockets = $max-sockets;
       $!server-data = $server-data;
+      $!channel = Channel.new;
 
       # Try block used because IO::Socket::INET throws an exception when things
       # go wrong. This is not nessesary because there is no risc of data loss
@@ -56,6 +58,17 @@ package MongoDB {
         );
 
         $!status = True;
+
+        $!server-monitor-code .= start( {
+            while 1 {
+#              my BSON::Document $doc = $!db-admin.run-command: (isMaster => 1);
+
+              my $cmd = $!channel.poll;
+              last if ?$cmd and $cmd eq 'stop';
+              sleep 10;
+            }
+          }
+        );
 
         # Must close this because of thread errors when reading the socket
         # Besides the sockets are encapsulated in Socket and kept in an array.
@@ -97,7 +110,7 @@ package MongoDB {
         if @!sockets.elems >= $!max-sockets {
           return X::MongoDB.new(
             error-text => "Too many sockets opened, max is $!max-sockets",
-            oper-name => 'MongoDB::Server.get-socket()',
+            oper-name => 'MongoDB::Server.get-socket',
             severity => MongoDB::Severity::Fatal
           );
         }
@@ -148,6 +161,27 @@ package MongoDB {
       if $doc<ok> {
         $!client.remove-server(self);
       }
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    submethod DESTROY {
+
+      # Send a stop code to the monitor code thread and wait for it to finish
+      #
+      $!channel.send('stop');
+      $!server-monitor-code.await;
+      undefine $!server-monitor-code;
+
+      # Clear all sockets
+      #
+      for @!sockets -> $s {
+        undefine $s;
+      }
+
+      # and channel
+      #
+      undefine $!channel;
     }
   }
 }
