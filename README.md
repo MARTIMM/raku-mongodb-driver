@@ -2,30 +2,27 @@
 
 ![Leaf](http://modules.perl6.org/logos/MongoDB.png) [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver)
 
-# IMPORTANT NOTICE
-As of version 0.25.1 a sandbox is setup to run a separate mongod server. Since
-version 0.25.3 it tests the environment variable or NOSANDBOX to turn off
-sand-boxing. This can be used to speedup testing. The default port number of
-27017 is used to get to the mongod server.
+## NOTE 
 
-*IT IS IMPORTANT TO KNOW THAT ANYTHING MAY HAPPEN DURING TESTS INCLUDING
-DELETION OF ANY EXISTING DATABASES (SUCH AS THE TEST DATABASE) AND COLLECTIONS
-ON YOUR SERVER WHEN NOT IN SANDBOX MODE! ALSO TESTING ADMINISTRATION TASKS MAY
-CREATE PROBLEMS FOR EXISTING ACCOUNTS! THIS WILL BE TOTALLY AT YOUR OWN RISK.*
+As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because
+of the sandbox, the testing programs are able to test administration tasks,
+authentication, replication, sharding, master/slave setup and independent server
+setup.
 
-To be save enaugh some tests are turned off when not in sandbox mode.
+This testing might put some presure on your system so when installing it not all
+tests will be executed. However on the Travis-ci system everything will be
+tested.
 
-When sandboxing is turned on, the testing programs are able to test
-administration tasks, authentication, sharding and master/slave server setup.
-This testing might put some presure on your system and the default situation
-will then be that some of those elaborate tests are skipped and you are given
-some opportunities in the form of environment variables to turn it on when you
-are installing this package. We're not yet there so watch this space to see
-when it comes to that. Btw, on Travis-ci this package is tested so you can also
-study the test results there. Just click on the link (green hopefully) above at
-the top of this page.
+We're not yet there so watch this space to see when it comes to that. Btw, on
+Travis-ci this package is tested so you can also study the test results there.
+Just click on the link (green hopefully) above at the top of this page.
 
-See also the license link below
+Because all helper functions are torn out of the modules the support is now
+increased to 2.6 and above. When using run-command() the documentation of
+MongoDB will tell for which version it applies to. 2.4 is not supported because
+not all of the wire protocol is supported anymore. Since version 2.6 it is
+possible to do insert, update and delete by using run-command() and therefore
+those parts of the wire protocol is not needed anymore.
 
 ## IMPLEMENTATION TRACK
 
@@ -139,8 +136,6 @@ $ panda install MongoDB
 * Perl6 version ```2015.12-1-g6452f8d``` implementing ```Perl 6.c```
 * MoarVM version ```2015.12```
 
-* MongoDB version ```3.0.5```
-
 ## FEATURE CHECKLIST FOR MONGODB DRIVERS
 
 Well, there was once a checklist but a lot of the methods can be done using
@@ -148,13 +143,6 @@ run-command. In the change log below you can see an overview of the removed
 methods.
 
 ## BUGS, KNOWN LIMITATIONS AND TODO
-
-Maybe we also need to test other versions of mongodb such as 2.6.* and provide
-functionality for it. This will make it a bit slower caused by tests on version
-and act on it but it is not nessesary to test in all methods.
-
-Mongo will also stop supporting versions lower than 2.6 in 2016 so this driver
-will not support lower versions either.
 
 One of the newer ways of sending commands to the server is by using database
 commands (Already implemented since version 2.6). I didn't realize that this can
