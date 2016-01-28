@@ -14,11 +14,11 @@ use MongoDB::Authenticate;
 #-------------------------------------------------------------------------------
 # No sandboxing therefore authentication will not be tested as a precaution.
 #
-if %*ENV<NOSANDBOX> {
-  plan 1;
-  skip-rest('No sand-boxing requested, so authentication tests are skipped');
-  exit(0);
-}
+#if %*ENV<NOSANDBOX> {
+#  plan 1;
+#  skip-rest('No sand-boxing requested, so authentication tests are skipped');
+#  exit(0);
+#}
 
 plan 1;
 skip-rest "Some modules needed for authentication are not yet supported in perl 6";

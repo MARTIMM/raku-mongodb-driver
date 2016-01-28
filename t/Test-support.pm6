@@ -15,11 +15,12 @@ package Test-support
     # Skip sandbox setup if testing on TRAVIS-CI or no sandboxing is requested,
     # just return default port.
     #
-    if %*ENV<NOSANDBOX> {
-      return 27017;
-    }
+#    if %*ENV<NOSANDBOX> {
+#      return 27017;
+#    }
 
-    elsif 'Sandbox/port-number'.IO !~~ :e {
+#    elsif 'Sandbox/port-number'.IO !~~ :e {
+    if 'Sandbox/port-number'.IO !~~ :e {
       plan 1;
       flunk('No port number found, Sandbox cleaned up?');
       skip-rest('No port number found, Sandbox cleaned up?');

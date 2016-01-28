@@ -9,11 +9,11 @@ use MongoDB::Socket;
 #-----------------------------------------------------------------------------
 # Stop mongodb unless sandbox isn't found, no sandbox requested
 #
-if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
-  plan 1;
-  skip-rest('No sand-boxing requested');
-  exit(0);
-}
+#if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
+#  plan 1;
+#  skip-rest('No sand-boxing requested');
+#  exit(0);
+#}
 
 #-----------------------------------------------------------------------------
 #

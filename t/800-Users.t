@@ -20,11 +20,11 @@ use MongoDB::Users;
 #-------------------------------------------------------------------------------
 # No sandboxing therefore administration will not be tested as a precaution.
 #
-if %*ENV<NOSANDBOX> {
-  plan 1;
-  skip-rest('No sand-boxing requested, administration tests are skipped');
-  exit(0);
-}
+#if %*ENV<NOSANDBOX> {
+#  plan 1;
+#  skip-rest('No sand-boxing requested, administration tests are skipped');
+#  exit(0);
+#}
 
 #-------------------------------------------------------------------------------
 my MongoDB::Client $client = get-connection();

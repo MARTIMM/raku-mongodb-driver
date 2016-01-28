@@ -16,11 +16,11 @@ use Test;
 #-------------------------------------------------------------------------------
 # Skip sandbox setup if requested
 #
-if %*ENV<NOSANDBOX> {
-  plan 1;
-  skip-rest('No sand-boxing requested');
-  exit(0);
-}
+#if %*ENV<NOSANDBOX> {
+#  plan 1;
+#  skip-rest('No sand-boxing requested');
+#  exit(0);
+#}
 
 #-------------------------------------------------------------------------------
 # Download mongodb binaries before testing on TRAVIS-CI. Version of mongo on
