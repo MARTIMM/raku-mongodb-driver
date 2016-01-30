@@ -1,4 +1,5 @@
 use v6;
+use Digest::MD5;
 use MongoDB;
 use MongoDB::Uri;
 use MongoDB::ClientIF;
@@ -9,22 +10,28 @@ use BSON::Document;
 
 package MongoDB {
 
+  our $db-admin;
+
   #-----------------------------------------------------------------------------
   #
   class Client is MongoDB::ClientIF {
 
-#TODO refine this method of using server name/port, server pooling etc
+    my Array $servers;
+    my Array $server-discovery;
 
-    my Array $servers;                  # Array of servers
-    my Array $server-discovery;         # Array of promises
-    my MongoDB::AdminDB $db-admin;
-    my Bool $master-search-in-process = False;
-#    my MongoDB::Message $logger;
+  our $db-admin;
+
+    # Reserved servers. select-server finds a server using some directions
+    # such as read concerns or even direct host:port string. Structure is
+    # MD5 code => servers[$server entry]
+    #
+    has Hash $!server-reservations;
 
     #---------------------------------------------------------------------------
     # This class is a singleton class
     #
     my MongoDB::Client $client-object;
+    my Bool $master-search-in-process = False;
 
     method new ( ) {
 
@@ -37,6 +44,8 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     submethod instance ( Str :$uri = 'mongodb://' --> MongoDB::Client )  {
+      
+      #my $db-admin = 
       initialize();
 
       # Parse the uri and get info in $uri-obj.server-data;
@@ -64,7 +73,7 @@ package MongoDB {
                   :client($client-object),
                   :host($sdata<host>),
                   :port($sdata<port>),
-                  :db-admin($db-admin),
+                  :db-admin($MongoDB::db-admin),
                   :$server-data
                 );
 
@@ -96,7 +105,7 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    sub initialize ( ) {
+    sub initialize ( ) { #--> MongoDB::AdminDB ) {
 
       # If the Client object isn't created yet then make it and
       # define some variables
@@ -111,24 +120,18 @@ package MongoDB {
 
         # The admin database is given to each server to get server data
         #
-        $db-admin .= new;
+        $MongoDB::db-admin .= new;
 
         $servers = [];
         $server-discovery = [];
-#        $logger .= new;
 
         $MongoDB::logger.mlog(
           message => "Client initialized",
           oper-name => 'Client.initialize'
         );
       }
-    }
-
-    #---------------------------------------------------------------------------
-    # Server discovery
-    #
-    method !discover-servers ( ) {
-
+      
+#      return $!db-admin;
     }
 
     #---------------------------------------------------------------------------
@@ -136,10 +139,11 @@ package MongoDB {
     method select-server (
       Bool :$need-master = False,
       BSON::Document :$read-concern = BSON::Document.new
-      --> MongoDB::Server
+      --> Str
     ) {
 
       my MongoDB::Server $server;
+      my Int $server-entry;
 
       # Read all Kept promises and store Server objects in $servers array
       #
@@ -210,13 +214,14 @@ package MongoDB {
 
         loop ( my $si = 0; $si < $servers.elems; $si++) {
           $server = $servers[$si];
+          $server-entry = $si;
 
           # Guard the operation because the request ends up in Wire which
           # will ask for a server using this select-server() method.
           #
           if !$master-search-in-process {
             $master-search-in-process = True;
-            $is-master = $server.check-is-master;
+#            $is-master = $server.check-is-master;
             $master-search-in-process = False;
           }
 
@@ -248,13 +253,47 @@ package MongoDB {
               oper-name => 'Client.select-server',
               severity => MongoDB::Severity::Info
             );
-            
+
             last;
           }
         }
       }
 
-      return $server;
+      my Str $reservation-code;
+      $reservation-code = self!set-reservation( $server, $server-entry)
+        if $server.defined;
+
+      return $reservation-code;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method !set-reservation(
+      MongoDB::Server:D $server,
+      Int:D $server-entry
+      --> Str
+    ) {
+      my $md5 = Digest::MD5.new;
+      
+      my Str $reservation-code = $md5.md5_hex(
+        [~] $server.server-name, $server.server-port,
+            $server-entry, now.DateTime.Str
+      );
+
+      $!server-reservations{$reservation-code} = $server;
+      return $reservation-code;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method get-server ( Str:D $reservation-code --> MongoDB::Server ) {
+      return $!server-reservations{$reservation-code};
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method clear-reserved-server ( Str:D $reservation-code ) {
+      $!server-reservations{$reservation-code}:delete;
     }
 
     #---------------------------------------------------------------------------

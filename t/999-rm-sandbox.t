@@ -7,15 +7,6 @@ use MongoDB::Server;
 use MongoDB::Socket;
 
 #-----------------------------------------------------------------------------
-# Stop mongodb unless sandbox isn't found, no sandbox requested
-#
-#if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
-#  plan 1;
-#  skip-rest('No sand-boxing requested');
-#  exit(0);
-#}
-
-#-----------------------------------------------------------------------------
 #
 my Int $port-number = slurp('Sandbox/port-number').Int;
 
@@ -34,7 +25,7 @@ sleep 2;
 diag "Server stopped";
 diag "Remove sandbox data";
 
-#`{{    Temporary inhibit the removal of the Sandbox
+#`{{    TEMPORARY INHIBIT THE REMOVAL OF THE SANDBOX
 for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
   next unless $path.IO ~~ :d;
   for dir($path) -> $dir-entry {

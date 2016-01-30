@@ -23,6 +23,7 @@ package MongoDB {
     has @.documents;
     
     has BSON::Document $!read-concern;
+    has Str $!reservation-code;
 
     #-----------------------------------------------------------------------------
     # Support for the newer BSON::Document
@@ -30,7 +31,8 @@ package MongoDB {
     multi submethod BUILD (
       :$collection!,
       BSON::Document:D :$server-reply,
-      BSON::Document :$read-concern = BSON::Document.new
+      BSON::Document :$read-concern = BSON::Document.new,
+      Str :$reservation-code
     ) {
 
       $!collection = $collection;
@@ -56,6 +58,7 @@ package MongoDB {
       BSON::Document :$read-concern = BSON::Document.new
     ) {
 
+#TODO :$reservation-code
 #TODO Check provided structure for the fields.
 
       $!collection = $cursor-doc<ns>;
@@ -88,7 +91,7 @@ package MongoDB {
         # Request next batch of documents
         #
         my BSON::Document $server-reply =
-          MongoDB::Wire.instance.get-more( self, :$!read-concern);
+          MongoDB::Wire.instance.get-more( self, :$!reservation-code);
 
         # Get cursor id, It may change to "0" if there are no more
         # documents to fetch.
@@ -109,13 +112,13 @@ package MongoDB {
     method kill ( --> Nil ) {
 
       # Invalidate cursor on database
-      MongoDB::Wire.instance.kill-cursors( (self,), :$!read-concern);
+      MongoDB::Wire.instance.kill-cursors( (self,), :$!reservation-code);
 
       # Invalidate cursor id with 8 0x00 bytes
       #
       $!id = Buf.new(0x00 xx 8);
 
-      return;
+      
     }
   }
 }

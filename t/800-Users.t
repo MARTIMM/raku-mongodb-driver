@@ -18,15 +18,6 @@ use MongoDB::Users;
 }}
 
 #-------------------------------------------------------------------------------
-# No sandboxing therefore administration will not be tested as a precaution.
-#
-#if %*ENV<NOSANDBOX> {
-#  plan 1;
-#  skip-rest('No sand-boxing requested, administration tests are skipped');
-#  exit(0);
-#}
-
-#-------------------------------------------------------------------------------
 my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
 my MongoDB::Database $db-admin .= new(:name<admin>);

@@ -6,7 +6,9 @@ package MongoDB {
   #
   class ClientIF {
 
-    method select-server  ( ) { ... }
+    #---------------------------------------------------------------------------
+    method select-server ( ) { ... }
+    method get-server ( ) { ... }
   }
 }
 

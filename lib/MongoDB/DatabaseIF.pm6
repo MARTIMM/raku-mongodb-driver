@@ -38,7 +38,7 @@ package MongoDB {
 
       # Check special database first. Should be empty and is set later
       #
-say 'S: ', self.^name;
+#say 'S: ', self.^name;
       if !?$name and self.^name ne 'MongoDB::AdminDB' {
         return X::MongoDB.new(
           error-text => "Illegal database name: '$name'",
@@ -46,9 +46,13 @@ say 'S: ', self.^name;
           severity => MongoDB::Severity::Error
         );
       }
-      
+
       elsif !?$name {
-      
+        return X::MongoDB.new(
+          error-text => "No database name provided",
+          oper-name => 'MongoDB::Database._set-name',
+          severity => MongoDB::Severity::Error
+        );
       }
 
       # Check the name of the database. On window systems more is prohibited

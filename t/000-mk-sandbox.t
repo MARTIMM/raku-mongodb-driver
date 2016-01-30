@@ -14,15 +14,6 @@ use Test;
 #TODO Checks for windows environment
 
 #-------------------------------------------------------------------------------
-# Skip sandbox setup if requested
-#
-#if %*ENV<NOSANDBOX> {
-#  plan 1;
-#  skip-rest('No sand-boxing requested');
-#  exit(0);
-#}
-
-#-------------------------------------------------------------------------------
 # Download mongodb binaries before testing on TRAVIS-CI. Version of mongo on
 # Travis is still from the middle ages (2.4.12).
 #

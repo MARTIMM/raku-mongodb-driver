@@ -4,6 +4,8 @@ use Test-support;
 use Test;
 use MongoDB;
 use MongoDB::Client;
+use MongoDB::Server;
+use MongoDB::Socket;
 use MongoDB::Database;
 use MongoDB::Collection;
 
@@ -27,8 +29,8 @@ subtest {
 
   $client .= instance(:uri('mongodb://localhost:' ~ 65535));
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
-  my $server = $client.select-server;
-  nok $server.defined, 'No servers found';
+  my Str $reservation-code = $client.select-server;
+  nok $reservation-code.defined, 'No servers selected';
 
 }, "Connect failure testing";
 
@@ -36,12 +38,14 @@ subtest {
 subtest {
 
   $client = get-connection();
-  my $server = $client.select-server;
+  my Str $reservation-code = $client.select-server;
+say "RC: $reservation-code";
+  my MongoDB::Server $server = $client.get-server($reservation-code);
   ok $server.defined, 'Connection available';
   ok $server.status, 'Server found';
   is $server.max-sockets, 3, "Maximum socket $server.max-sockets()";
 
-  my $socket = $server.get-socket;
+  my MongoDB::Socket $socket = $server.get-socket;
   ok $socket.is-open, 'Socket is open';
   $socket.close;
   nok $socket.is-open, 'Socket is closed';
