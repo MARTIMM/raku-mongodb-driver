@@ -12,11 +12,10 @@ package MongoDB {
 
       token URI { <protocol> <server-section>? <path-section>? }
 
-      token server-section { <username-password>? <server-list>? }
-
-      token path-section { '/' <database>? <options>? }
-
       token protocol { 'mongodb://' }
+
+
+      token server-section { <username-password>? <server-list>? }
 
       token username-password {
         $<username>=<[\w\d-]>+ ':' $<password>=<[\w\d-]>+ '@'
@@ -26,9 +25,12 @@ package MongoDB {
 
       token host-port { <host> [ ':' <port> ]? }
 
-      token host { <[\w\d-]>+ }
+      token host { <[\w\d-]>* }
 
       token port { \d+ }
+
+
+      token path-section { '/' <database>? <options>? }
 
       token database { <[\w]>+ }
 
@@ -59,7 +61,7 @@ package MongoDB {
       }
 
       method host-port (Match $m) {
-        my $h = $m<host> ?? ~$m<host> !! 'localhost';
+        my $h = ? ~$m<host> ?? ~$m<host> !! 'localhost';
         my $p = $m<port> ?? (~$m<port>).Int !! 27017;
         $!host-ports.push: %( host => $h, port => $p);
       }

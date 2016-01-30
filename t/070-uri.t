@@ -54,6 +54,16 @@ subtest {
   is $uri.server-data<servers>[0]<host>, 'h2', 'mongodb://h2:2345 --> server = h2';
   is $uri.server-data<servers>[0]<port>, 2345, 'mongodb://h2:2345 --> port = 2345';
 
+  $uri .= new(:uri<mongodb://:2345>);
+  is $uri.server-data<servers>[0]<host>, 'localhost', 'mongodb://:2345 --> server = localhost';
+  is $uri.server-data<servers>[0]<port>, 2345, 'mongodb://:2345 --> port = 2345';
+
+  $uri .= new(:uri<mongodb://:9875,:456>);
+  is $uri.server-data<servers>[0]<host>, 'localhost', 'mongodb://:9875,:456 --> server1 = localhost';
+  is $uri.server-data<servers>[0]<port>, 9875, 'mongodb://:9875,:456 --> port1 = 9875';
+  is $uri.server-data<servers>[1]<host>, 'localhost', 'mongodb://:9875,:456 --> server2 = localhost';
+  is $uri.server-data<servers>[1]<port>, 456, 'mongodb://:9875,:456 --> port2 = 456';
+
   $uri .= new(:uri<mongodb://h2:2345/users>);
   is $uri.server-data<database>, 'users', 'mongodb://h2:2345/users --> auth database = users';
   is $uri.server-data<servers>[0]<host>, 'h2', 'mongodb://h2:2345/users --> server = h2';
