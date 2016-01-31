@@ -8,12 +8,7 @@ use MongoDB::Server;
 use MongoDB::Socket;
 use MongoDB::Database;
 use MongoDB::Collection;
-
-#`{{
-  Testing;
-    MongoDB::Client.new()               Define client
-    MongoDB::Database.new()             Return database
-}}
+use MongoDB::Object-store;
 
 my MongoDB::Client $client;
 my BSON::Document $req;
@@ -39,8 +34,7 @@ subtest {
 
   $client = get-connection();
   my Str $reservation-code = $client.select-server;
-say "RC: $reservation-code";
-  my MongoDB::Server $server = $client.get-server($reservation-code);
+  my MongoDB::Server $server = get-stored-object($reservation-code);
   ok $server.defined, 'Connection available';
   ok $server.status, 'Server found';
   is $server.max-sockets, 3, "Maximum socket $server.max-sockets()";

@@ -62,7 +62,14 @@ package MongoDB {
 
       method host-port (Match $m) {
         my $h = ? ~$m<host> ?? ~$m<host> !! 'localhost';
+
         my $p = $m<port> ?? (~$m<port>).Int !! 27017;
+        return X::MongoDB.new(
+          error-text => "Port number out of range ",
+          oper-name => 'MongoDB::Url.new',
+          severity => MongoDB::Severity::Fatal
+        ) unless 0 <= $p <= 65535;
+
         $!host-ports.push: %( host => $h, port => $p);
       }
 

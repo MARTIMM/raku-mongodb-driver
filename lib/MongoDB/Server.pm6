@@ -33,15 +33,13 @@ package MongoDB {
     has Promise $!server-monitor-code;
 
     submethod BUILD (
-      MongoDB::ClientIF :$client!,
       Str:D :$host!,
       Int:D :$port! where (0 <= $_ <= 65535),
-      MongoDB::DatabaseIF:D :$db-admin!,
       Int :$max-sockets where $_ >= 3 = 3,
       Hash :$server-data
     ) {
-      $!db-admin = $db-admin;
-      $!client = $client;
+      $!db-admin = $server-data<db-admin>;
+      $!client = $server-data<client>;
       $!server-name = $host;
       $!server-port = $port;
       $!max-sockets = $max-sockets;
@@ -61,7 +59,7 @@ package MongoDB {
 
         $!server-monitor-code .= start( {
             while 1 {
-#              my BSON::Document $doc = $!db-admin.run-command: (isMaster => 1);
+              my BSON::Document $doc = $!db-admin.run-command: (isMaster => 1);
 
               my $cmd = $!channel.poll;
               last if ?$cmd and $cmd eq 'stop';
@@ -130,7 +128,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method check-is-master ( --> Bool ) {
+    method !check-is-master ( --> Bool ) {
       my Instant $t0 = now;
       my BSON::Document $doc = $!db-admin.run-command: (isMaster => 1);
       my Duration $rtt = now - $t0;
@@ -161,6 +159,13 @@ package MongoDB {
       if $doc<ok> {
         $!client.remove-server(self);
       }
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method perl ( --> Str ) {
+      return [~] 'MongoDB::Server.new(', ':host(', $.server-name, '), :port(',
+                 $.server-port, '))';
     }
 
     #---------------------------------------------------------------------------

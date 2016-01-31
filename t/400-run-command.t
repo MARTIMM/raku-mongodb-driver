@@ -133,7 +133,7 @@ subtest {
 
   $doc = $database.run-command: (listCollections => 1);
   is $doc<ok>, 1, 'list collections request ok';
-
+say "LC: ", $doc.perl;
   my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
   my Bool $f-cl1 = False;
   my Bool $f-cl2 = False;

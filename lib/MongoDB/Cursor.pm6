@@ -21,7 +21,7 @@ package MongoDB {
     # Batch of documents in last response
     #
     has @.documents;
-    
+
     has BSON::Document $!read-concern;
     has Str $!reservation-code;
 
@@ -32,7 +32,7 @@ package MongoDB {
       :$collection!,
       BSON::Document:D :$server-reply,
       BSON::Document :$read-concern = BSON::Document.new,
-      Str :$reservation-code
+      Str :$server-ticket
     ) {
 
       $!collection = $collection;
@@ -47,7 +47,7 @@ package MongoDB {
       # Get documents from the reply.
       #
       @!documents = $server-reply<documents>.list;
-      
+
       $!read-concern = $read-concern;
     }
 
@@ -58,7 +58,7 @@ package MongoDB {
       BSON::Document :$read-concern = BSON::Document.new
     ) {
 
-#TODO :$reservation-code
+#TODO :$server-ticket
 #TODO Check provided structure for the fields.
 
       $!collection = $cursor-doc<ns>;
@@ -118,7 +118,7 @@ package MongoDB {
       #
       $!id = Buf.new(0x00 xx 8);
 
-      
+
     }
   }
 }

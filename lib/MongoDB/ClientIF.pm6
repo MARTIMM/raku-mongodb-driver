@@ -8,7 +8,6 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     method select-server ( ) { ... }
-    method get-server ( ) { ... }
   }
 }
 

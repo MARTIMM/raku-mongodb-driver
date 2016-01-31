@@ -26,7 +26,7 @@ package MongoDB {
 
       my $wire = MongoDB::Wire.instance;
       my BSON::Document $rc .= new: $read-concern;
-      my Str $reservation-code = $wire.client.select-server(
+      my Str $server-ticket = $wire.client.select-server(
         :read-concern($rc)
       );
 
@@ -34,12 +34,12 @@ package MongoDB {
       my BSON::Document $pr .= new: $projection;
       my BSON::Document $server-reply = $wire.query(
         self, $cr, $pr, :$flags, :$number-to-skip,
-        :$number-to-return, :$reservation-code
+        :$number-to-return, :$server-ticket
       );
 
       return MongoDB::Cursor.new(
         :collection(self), :$server-reply,
-        :read-concern($rc), :$reservation-code
+        :read-concern($rc), :$server-ticket
       );
     }
 
@@ -56,18 +56,18 @@ package MongoDB {
     ) {
 
       my $wire = MongoDB::Wire.instance;
-      my Str $reservation-code = $wire.client.select-server(
+      my Str $server-ticket = $wire.client.select-server(
         :read-concern($read-concern)
       );
 
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
-        :$number-to-return, :$reservation-code
+        :$number-to-return, :$server-ticket
       );
 
       return MongoDB::Cursor.new(
         :collection(self), :$server-reply
-        :$read-concern, :$reservation-code
+        :$read-concern, :$server-ticket
       );
     }
   }

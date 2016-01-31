@@ -1,6 +1,6 @@
 use v6;
-use Digest::MD5;
 use MongoDB;
+use MongoDB::Object-store;
 use MongoDB::Uri;
 use MongoDB::ClientIF;
 use MongoDB::Server;
@@ -10,8 +10,6 @@ use BSON::Document;
 
 package MongoDB {
 
-  our $db-admin;
-
   #-----------------------------------------------------------------------------
   #
   class Client is MongoDB::ClientIF {
@@ -19,7 +17,7 @@ package MongoDB {
     my Array $servers;
     my Array $server-discovery;
 
-  our $db-admin;
+    our $db-admin;
 
     # Reserved servers. select-server finds a server using some directions
     # such as read concerns or even direct host:port string. Structure is
@@ -31,7 +29,6 @@ package MongoDB {
     # This class is a singleton class
     #
     my MongoDB::Client $client-object;
-    my Bool $master-search-in-process = False;
 
     method new ( ) {
 
@@ -43,37 +40,35 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    submethod instance ( Str :$uri = 'mongodb://' --> MongoDB::Client )  {
-      
-      #my $db-admin = 
+    submethod instance ( Str :$uri --> MongoDB::Client ) {
+
       initialize();
 
-      # Parse the uri and get info in $uri-obj.server-data;
-      # Fields are protocol, username, password, servers, database and options
-      #
-      my MongoDB::Uri $uri-obj .= new(:$uri);
+      if ?$uri {
+        # Parse the uri and get info in $uri-obj.server-data;
+        # Fields are protocol, username, password, servers, database and options
+        #
+        my MongoDB::Uri $uri-obj .= new(:$uri);
 
-      # Copy some fields into a local $server-data hash which is handed over
-      # to the server object.
-      #
-      my @item-list = <username password database options>;
-      my Hash $server-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+        # Copy some fields into a local $server-data hash which is handed over
+        # to the server object. Then add some more.
+        #
+        my @item-list = <username password database options>;
+        my Hash $server-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+        $server-data<client> = $client-object;
+        $server-data<db-admin> = $db-admin;
 
-      # Background process to discover hosts only if there are new servers
-      # to be discovered or that new non default cases are presnted.
-      #
-      if $uri-obj.server-data<servers>.elems {
-
+        # Background process to discover hosts only if there are new servers
+        # to be discovered or that new non default cases are presnted.
+        #
         for @($uri-obj.server-data<servers>) -> Hash $sdata {
           $server-discovery.push: Promise.start( {
               my MongoDB::Server $server;
 
               try {
                 $server .= new(
-                  :client($client-object),
                   :host($sdata<host>),
                   :port($sdata<port>),
-                  :db-admin($MongoDB::db-admin),
                   :$server-data
                 );
 
@@ -112,7 +107,7 @@ package MongoDB {
       #
       unless $client-object.defined {
         $client-object = MongoDB::Client.bless;
-        
+
         # Wire is also a Singleton and needs this object to get a Server
         # using select-server()
         #
@@ -120,7 +115,7 @@ package MongoDB {
 
         # The admin database is given to each server to get server data
         #
-        $MongoDB::db-admin .= new;
+        $db-admin = MongoDB::AdminDB.new;
 
         $servers = [];
         $server-discovery = [];
@@ -130,8 +125,6 @@ package MongoDB {
           oper-name => 'Client.initialize'
         );
       }
-      
-#      return $!db-admin;
     }
 
     #---------------------------------------------------------------------------
@@ -144,11 +137,11 @@ package MongoDB {
 
       my MongoDB::Server $server;
       my Int $server-entry;
+      my Str $server-ticket;
 
       # Read all Kept promises and store Server objects in $servers array
       #
       while !$server.defined {
-        my Bool $is-master = False;
 
         # First go through all Promises to see if there are still
         # Server objects in the making
@@ -216,16 +209,7 @@ package MongoDB {
           $server = $servers[$si];
           $server-entry = $si;
 
-          # Guard the operation because the request ends up in Wire which
-          # will ask for a server using this select-server() method.
-          #
-          if !$master-search-in-process {
-            $master-search-in-process = True;
-#            $is-master = $server.check-is-master;
-            $master-search-in-process = False;
-          }
-
-          if !$need-master or ($need-master and $is-master) {
+          if !$need-master or ($need-master and $server.is-master) {
             $MongoDB::logger.mlog(
               message => (
                 [~] "Server $pi ", $server.server-name,
@@ -259,41 +243,8 @@ package MongoDB {
         }
       }
 
-      my Str $reservation-code;
-      $reservation-code = self!set-reservation( $server, $server-entry)
-        if $server.defined;
-
-      return $reservation-code;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method !set-reservation(
-      MongoDB::Server:D $server,
-      Int:D $server-entry
-      --> Str
-    ) {
-      my $md5 = Digest::MD5.new;
-      
-      my Str $reservation-code = $md5.md5_hex(
-        [~] $server.server-name, $server.server-port,
-            $server-entry, now.DateTime.Str
-      );
-
-      $!server-reservations{$reservation-code} = $server;
-      return $reservation-code;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method get-server ( Str:D $reservation-code --> MongoDB::Server ) {
-      return $!server-reservations{$reservation-code};
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method clear-reserved-server ( Str:D $reservation-code ) {
-      $!server-reservations{$reservation-code}:delete;
+      $server-ticket = store-object($server) if $server.defined;
+      return $server-ticket;
     }
 
     #---------------------------------------------------------------------------

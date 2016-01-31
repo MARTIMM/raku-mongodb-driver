@@ -4,6 +4,7 @@ use BSON::Document;
 use MongoDB;
 use MongoDB::ClientIF;
 use MongoDB::Header;
+use MongoDB::Object-store;
 
 package MongoDB {
 
@@ -43,7 +44,7 @@ package MongoDB {
     method query (
       $collection! where .^name ~~ any(<MongoDB::Collection MongoDB::CommandCll>),
       BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
-      :$number-to-return, Str:D :$reservation-code
+      :$number-to-return, Str:D :$server-ticket
       --> BSON::Document
     ) {
       # Must clone the document otherwise the MongoDB::Header will be added
@@ -69,7 +70,7 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my $socket = $.client.get-server($reservation-code).get-socket;
+      my $socket = get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-query);
 
       if $has-response {
@@ -114,7 +115,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method get-more ( $cursor, Str:D :$reservation-code --> BSON::Document ) {
+    method get-more ( $cursor, Str:D :$server-ticket --> BSON::Document ) {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
@@ -123,7 +124,7 @@ package MongoDB {
         $cursor.full-collection-name, $cursor.id
       );
 
-      my $socket = $.client.sget-server(:$reservation-code).get-socket;
+      my $socket = get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -156,7 +157,7 @@ package MongoDB {
     #
     method kill-cursors (
       @cursors where $_.elems > 0,
-      Str:D :$reservation-code
+      Str:D :$server-ticket
     ) {
 
       my BSON::Document $d .= new;
@@ -171,7 +172,7 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $socket = $.client.get-server(:$reservation-code).get-socket;
+      my $socket = get-stored-object($server-ticket).get-socket;
       if +@cursor-ids {
         ( my Buf $encoded-kill-cursors,
           my Int $request-id

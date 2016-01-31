@@ -21,7 +21,6 @@ package MongoDB:ver<0.26.6> {
   our $log-fh;
   our $log-fn = 'MongoDB.log';
 
-
   #-----------------------------------------------------------------------------
   #
   sub set-exception-throw-level ( Severity:D $s ) is export {
