@@ -19,6 +19,12 @@ package MongoDB {
 
     our $db-admin;
 
+    # Semaphore to control the use of select-server. This call can come
+    # from different threads.
+    #
+    my Int $permits = 1;
+    my Semaphore $control-select .= new($permits);
+
     # Reserved servers. select-server finds a server using some directions
     # such as read concerns or even direct host:port string. Structure is
     # MD5 code => servers[$server entry]
@@ -134,6 +140,8 @@ package MongoDB {
       BSON::Document :$read-concern = BSON::Document.new
       --> Str
     ) {
+note "Pre acquire: $permits";
+      $control-select.acquire;
 
       my MongoDB::Server $server;
       my Int $server-entry;
@@ -148,10 +156,6 @@ package MongoDB {
         #
         loop ( my $pi = 0; $pi < $server-discovery.elems; $pi++ ) {
           my $promise = $server-discovery[$pi];
-
-          # Skip all undefined entries in the array
-          #
-          #next unless $promise ~~ Promise and $promise.defined;
 
           # If promise is kept, the Server object has been created 
           #
@@ -244,6 +248,8 @@ package MongoDB {
       }
 
       $server-ticket = store-object($server) if $server.defined;
+note "Pre release: $permits";
+      $control-select.release;
       return $server-ticket;
     }
 

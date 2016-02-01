@@ -4,6 +4,8 @@ use Test-support;
 use Test;
 use MongoDB::Client;
 use MongoDB::Users;
+use MongoDB::Database;
+use MongoDB::Collection;
 
 #`{{
   Testing;
@@ -20,11 +22,8 @@ use MongoDB::Users;
 #-------------------------------------------------------------------------------
 my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
 my MongoDB::Collection $collection = $database.collection('testf');
-my BSON::Document $req;
 my BSON::Document $doc;
-my MongoDB::Cursor $cursor;
 my MongoDB::Users $users .= new(:$database);
 
 $database.run-command: (dropDatabase => 1);
