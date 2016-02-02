@@ -22,8 +22,7 @@ package MongoDB {
     # Semaphore to control the use of select-server. This call can come
     # from different threads.
     #
-    my Int $permits = 1;
-    my Semaphore $control-select .= new($permits);
+    state Semaphore $control-select .= new(1);
 
     # Reserved servers. select-server finds a server using some directions
     # such as read concerns or even direct host:port string. Structure is
@@ -140,7 +139,7 @@ package MongoDB {
       BSON::Document :$read-concern = BSON::Document.new
       --> Str
     ) {
-note "Pre acquire: $permits";
+note "server select acquire";
       $control-select.acquire;
 
       my MongoDB::Server $server;
@@ -177,6 +176,7 @@ note "Pre acquire: $permits";
               ),
               oper-name => 'Client.select-server'
             );
+say "kept";
           }
 
           # When broken throw away result
@@ -193,6 +193,7 @@ note "Pre acquire: $permits";
               ),
               oper-name => 'Client.select-server'
             );
+say "broken";
           }
 
           # When planned look at it in next while cycle
@@ -202,6 +203,7 @@ note "Pre acquire: $permits";
               message => "Promise $pi still running",
               oper-name => 'Client.select-server'
             );
+say "still one planned";
           }
         }
 
@@ -210,6 +212,7 @@ note "Pre acquire: $permits";
         $server = Nil;
 
         loop ( my $si = 0; $si < $servers.elems; $si++) {
+say "loop: $si";
           $server = $servers[$si];
           $server-entry = $si;
 
@@ -222,16 +225,19 @@ note "Pre acquire: $permits";
               oper-name => 'Client.select-server'
             );
 
+say "take: $si";
             last;
           }
         }
 
         unless $server.defined {
+say "not defined";
           if $server-discovery.elems {
             $MongoDB::logger.mlog(
               message => "No server found, wait for running discovery",
               oper-name => 'Client.select-server'
             );
+say "waiting";
             sleep 1;
           }
 
@@ -247,21 +253,25 @@ note "Pre acquire: $permits";
         }
       }
 
-      $server-ticket = store-object($server) if $server.defined;
-note "Pre release: $permits";
+note "server select release";
       $control-select.release;
+      $server-ticket = store-object($server) if $server.defined;
       return $server-ticket;
     }
 
     #---------------------------------------------------------------------------
     #
     method remove-server ( MongoDB::Server $server ) {
+note "server remove acquire";
+      $control-select.acquire;
       loop ( my $si = 0; $si < $servers.elems; $si++) {
         if $servers[$si] === $server {
           undefine $server;
           $servers.splice( $si, 1);
         }
       }
+note "server remove release";
+      $control-select.release;
     }
   }
 }

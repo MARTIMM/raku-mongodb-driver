@@ -26,6 +26,7 @@ my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $doc;
 my MongoDB::Users $users .= new(:$database);
 
+say "t 0: ";
 $database.run-command: (dropDatabase => 1);
 
 #-------------------------------------------------------------------------------
