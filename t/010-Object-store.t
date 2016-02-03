@@ -3,6 +3,8 @@ use Test;
 use MongoDB;
 use MongoDB::Object-store;
 
+set-exception-process-level(MongoDB::Severity::Trace);
+
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -44,7 +46,7 @@ subtest {
     $t = store-object( $b, :use-my-ticket<my-list>);
     
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message ~~ m:s/Ticket my\-list already in use/,
            'Ticket my-list already in use';
       }
@@ -52,6 +54,8 @@ subtest {
   }
 
 }, "Object storage subtleties";
+
+trace-message(:message('Number of exceptions raised to Inf'));
 
 #-------------------------------------------------------------------------------
 # Cleanup

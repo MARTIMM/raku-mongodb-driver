@@ -176,7 +176,6 @@ note "server select acquire";
               ),
               oper-name => 'Client.select-server'
             );
-say "kept";
           }
 
           # When broken throw away result
@@ -193,7 +192,6 @@ say "kept";
               ),
               oper-name => 'Client.select-server'
             );
-say "broken";
           }
 
           # When planned look at it in next while cycle
@@ -203,7 +201,6 @@ say "broken";
               message => "Promise $pi still running",
               oper-name => 'Client.select-server'
             );
-say "still one planned";
           }
         }
 
@@ -212,7 +209,6 @@ say "still one planned";
         $server = Nil;
 
         loop ( my $si = 0; $si < $servers.elems; $si++) {
-say "loop: $si";
           $server = $servers[$si];
           $server-entry = $si;
 
@@ -225,19 +221,16 @@ say "loop: $si";
               oper-name => 'Client.select-server'
             );
 
-say "take: $si";
             last;
           }
         }
 
         unless $server.defined {
-say "not defined";
           if $server-discovery.elems {
             $MongoDB::logger.mlog(
               message => "No server found, wait for running discovery",
               oper-name => 'Client.select-server'
             );
-say "waiting";
             sleep 1;
           }
 

@@ -40,19 +40,11 @@ package MongoDB {
       #
 #say 'S: ', self.^name;
       if !?$name and self.^name ne 'MongoDB::AdminDB' {
-        return X::MongoDB.new(
-          error-text => "Illegal database name: '$name'",
-          oper-name => 'MongoDB::Database._set-name',
-          severity => MongoDB::Severity::Error
-        );
+        return error-message("Illegal database name: '$name'");
       }
 
       elsif !?$name {
-        return X::MongoDB.new(
-          error-text => "No database name provided",
-          oper-name => 'MongoDB::Database._set-name',
-          severity => MongoDB::Severity::Error
-        );
+        return error-message("No database name provided");
       }
 
       # Check the name of the database. On window systems more is prohibited
@@ -61,21 +53,13 @@ package MongoDB {
       #
       elsif $*DISTRO.is-win {
         if $name ~~ m/^ <[\/\\\.\s\"\$\*\<\>\:\|\?]>+ $/ {
-          return X::MongoDB.new(
-            error-text => "Illegal database name: '$name'",
-            oper-name => 'MongoDB::Database._set-name',
-            severity => MongoDB::Severity::Error
-          );
+          return error-message("Illegal database name: '$name'");
         }
       }
       
       else {
         if $name ~~ m/^ <[\/\\\.\s\"\$]>+ $/ {
-          return X::MongoDB.new(
-            error-text => "Illegal database name: '$name'",
-            oper-name => 'MongoDB::Database.new',
-            severity => MongoDB::Severity::Error
-          );
+          return error-message("Illegal database name: '$name'");
         }
       }
 

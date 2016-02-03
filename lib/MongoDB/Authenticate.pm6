@@ -1,6 +1,7 @@
 use v6;
 use Digest::MD5;
 use BSON::Document;
+use MongoDB;
 use MongoDB::Database;
 
 #-------------------------------------------------------------------------------
@@ -26,13 +27,17 @@ package MongoDB {
       my Hash $doc = $!database.run-command(@req);
 say "N0: ", $doc.perl;
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'login',
+        error-message(
+          $doc<errmsg>, :code($doc<code>),
           oper-data => @req.perl,
           collection-ns => $!database.name
         );
       }
+
+      my Buf $b = Digest::MD5::md5(
+        [~] $doc<nonce>, $user,
+        Digest::MD5.md5_hex( [~] $user, ':mongo:', $password)
+      );
 
       @req = (
         authenticate => 1,
@@ -40,18 +45,14 @@ say "N0: ", $doc.perl;
 #        mechanism => 'MONGODB-CR',
         mechanism => 'SCRAM-SHA-1',
         nonce => $doc<nonce>,
-        key => Digest::MD5.md5_hex(
-                 [~] $doc<nonce>, $user,
-                     Digest::MD5.md5_hex( [~] $user, ':mongo:', $password)
-               )
+        key => $b>>.fmt('%02x').join;
       );
 
       $doc = $!database.run-command(@req);
 say "N2: ", $doc.perl;
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'login',
+        error-message(
+          $doc<errmsg>, :code($doc<code>),
           oper-data => @req.perl,
           collection-ns => $!database.name
         );
@@ -72,9 +73,8 @@ say "N2: ", $doc.perl;
       my Pair @req = (logout => 1);
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'logout',
+        error-message(
+          $doc<errmsg>, :code($doc<code>),
           oper-data => @req.perl,
           collection-ns => $!database.name
         );

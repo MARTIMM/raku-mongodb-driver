@@ -1,5 +1,5 @@
 use v6;
-use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';
 use Test-support;
 use Test;
 use MongoDB::Client;
@@ -12,6 +12,8 @@ use MongoDB::AdminDB;
     database.drop()                     Drop database
     database.create-collection()        Create collection explicitly
 }}
+
+set-exception-process-level(MongoDB::Severity::Trace);
 
 my BSON::Document $req;
 my BSON::Document $doc;

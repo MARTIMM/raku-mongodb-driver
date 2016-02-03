@@ -30,10 +30,9 @@ package MongoDB {
     #
     method collection ( Str:D $name ) {
 
-      die X::MongoDB.new(
-          error-text => "Cannot set collection name on virtual admin database",
-          oper-name => 'collection()',
-          collection-ns => $.name
+      return error-message(
+        "Cannot set collection name '$name' on virtual admin database",
+        collection-ns => $.name
       );
     }
 
