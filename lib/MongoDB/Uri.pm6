@@ -64,11 +64,8 @@ package MongoDB {
         my $h = ? ~$m<host> ?? ~$m<host> !! 'localhost';
 
         my $p = $m<port> ?? (~$m<port>).Int !! 27017;
-        return X::MongoDB.new(
-          error-text => "Port number out of range ",
-          oper-name => 'MongoDB::Url.new',
-          severity => MongoDB::Severity::Fatal
-        ) unless 0 <= $p <= 65535;
+        return fatal-message("Port number out of range ")
+          unless 0 <= $p <= 65535;
 
         $!host-ports.push: %( host => $h, port => $p);
       }
@@ -88,6 +85,7 @@ package MongoDB {
       my $actions = $uri-actions.new;
       my $grammar = $uri-grammar.new;
 
+      debug-message("parse $uri");
       my Match $m = $grammar.parse( $uri, :$actions, :rule<URI>);
 
       if ? $m {
@@ -111,11 +109,7 @@ package MongoDB {
       }
 
       else {
-        return X::MongoDB.new(
-          error-text => "Parsing error in url '$uri'",
-          oper-name => 'MongoDB::Url.new',
-          severity => MongoDB::Severity::Fatal
-        );
+        return fatal-message("Parsing error in url '$uri'");
       }
     }
   }

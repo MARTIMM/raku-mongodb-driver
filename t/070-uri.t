@@ -2,11 +2,8 @@ use v6.c;
 use lib 't';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Uri;
-
-#`{{
-  Testing: Url parsing
-}}
 
 #`{{
 my MongoDB::Client $client = get-connection();
@@ -128,7 +125,7 @@ subtest {
     $uri .= new(:uri<mongo://>);
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message ~~ m:s/Parsing error in url \'mongo\:\/\/\'/,
            "Parse error 'mongo://'";
       }
@@ -140,7 +137,7 @@ subtest {
 
     CATCH {
 #say .message;
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message.index("Parsing error in url 'mongodb://?a=b'"),
            "Parse error 'mongodb://?a=b'";
       }

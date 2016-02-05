@@ -11,7 +11,7 @@ use MongoDB::Socket;
 my Int $port-number = slurp('Sandbox/port-number').Int;
 
 
-my MongoDB::Client $client .= instance( :host<localhost>, :port($port-number));
+my MongoDB::Client $client .= new( :host<localhost>, :port($port-number));
 my MongoDB::Server $server = $client.select-server;
 ok $server.defined, 'Server defined';
 #my MongoDB::Socket $socket = $server.get-socket;
@@ -46,7 +46,7 @@ rmdir "Sandbox";
 }}
 
 try {
-  $client .= instance(:uri('mongodb://localhost:' ~ $port-number));
+  $client .= new(:uri('mongodb://localhost:' ~ $port-number));
   $server = $client.select-server;
   nok $server.defined, 'Server defined';
   CATCH {

@@ -3,7 +3,9 @@ use Test;
 use MongoDB;
 use MongoDB::Object-store;
 
+#-------------------------------------------------------------------------------
 set-exception-process-level(MongoDB::Severity::Trace);
+info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -55,10 +57,9 @@ subtest {
 
 }, "Object storage subtleties";
 
-trace-message(:message('Number of exceptions raised to Inf'));
-
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE end");
 done-testing();
 exit(0);

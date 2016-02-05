@@ -20,24 +20,32 @@ package MongoDB {
 
     method new ( ) {
 
-      die X::MongoDB.new(
-        error-text => "This is a singleton, Please use instance()",
-        oper-name => 'MongoDB::Wire.new()',
-        severity => MongoDB::Severity::Fatal
-      );
+      fatal-message("This is a singleton, Please use instance()");
     }
 
     submethod instance ( --> MongoDB::Wire ) {
 
-      $wire-object = MongoDB::Wire.bless unless $wire-object.defined;
+      state Semaphore $control-instance .= new(1);
+      trace-message(:message("wire instance acquire"));
+      $control-instance.acquire;
+
+      unless $wire-object.defined {
+        $wire-object = MongoDB::Wire.bless;
+        debug-message(:message("wire created"));
+      }
+
+      trace-message(:message("wire instance release"));
+      $control-instance.release;
+
       return $wire-object;
     }
 
     #---------------------------------------------------------------------------
     #
-    method set-client ( MongoDB::ClientIF:D $client-object! ) {
-      $!client = $client-object;
-    }
+#TODO must come again via client database collection (cursor)
+#    method set-client ( MongoDB::ClientIF:D $client-object! ) {
+#      $!client = $client-object;
+#    }
 
     #---------------------------------------------------------------------------
     #
@@ -70,6 +78,8 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
+#      my $server = $collection.database.client.select-server;
+#      my $socket = $server.get-socket;
       my $socket = get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-query);
 
@@ -77,11 +87,7 @@ package MongoDB {
         # Read 4 bytes for int32 response size
         #
         my Buf $size-bytes = $socket.receive(4);
-        die X::MongoDB.new(
-          error-text => "No response from server",
-          oper-name => 'MongoDB::Wire.query()',
-          severity => MongoDB::Severity::Fatal
-        ) if $size-bytes.elems < 4;
+        return fatal-message("No response from server") if $size-bytes.elems < 4;
 
         my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
@@ -94,11 +100,8 @@ package MongoDB {
 
         # Assert that the request-id and response-to are the same
         #
-        die X::MongoDB.new(
-          error-text => "Id in request is not the same as in the response",
-          oper-name => 'MongoDB::Wire.query()',
-          severity => MongoDB::Severity::Fatal
-        ) unless $request-id == $result<message-header><response-to>;
+        return fatal-message("Id in request is not the same as in the response")
+          unless $request-id == $result<message-header><response-to>;
       }
 
       else {
@@ -144,11 +147,8 @@ package MongoDB {
 
       # Assert that the request-id and response-to are the same
       #
-      die X::MongoDB.new(
-        error-text => "Id in request is not the same as in the response",
-        oper-name => 'MongoDB::Wire.query()',
-        severity => MongoDB::Severity::Fatal
-      ) unless $request-id == $result<message-header><response-to>;
+      return fatal-message("Id in request is not the same as in the response")
+        unless $request-id == $result<message-header><response-to>;
 
       return $result;
     }

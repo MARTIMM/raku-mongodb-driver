@@ -1,18 +1,19 @@
 use v6;
 use MongoDB;
+use MongoDB::DatabaseIF;
 use BSON::Document;
 
 package MongoDB {
 
   class CollectionIF {
 
-    has $.database;
+    has MongoDB::DatabaseIF $.database;
     has Str $.name;
     has Str $.full-collection-name;
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( :$database!, Str :$name ) {
+    submethod BUILD ( MongoDB::DatabaseIF :$database!, Str :$name ) {
       $!database = $database;
       self._set-name($name) if ?$name;
     }
@@ -53,11 +54,7 @@ package MongoDB {
         # https://docs.mongodb.org/manual/reference/limits/
         #
         if $name !~~ m/^ <[_ A..Z a..z]> <[\w _ \-]>* $/ {
-          return X::MongoDB.new(
-            error-text => "Illegal collection name: '$name'",
-            oper-name => 'MongoDB::Collection.new',
-            severity => MongoDB::Severity::Error
-          );
+          return error-message("Illegal collection name: '$name'");
         }
       }
 

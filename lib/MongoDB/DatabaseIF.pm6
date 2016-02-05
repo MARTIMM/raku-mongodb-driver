@@ -1,5 +1,6 @@
 use v6;
 use MongoDB;
+use MongoDB::ClientIF;
 
 # Abstract database object
 #
@@ -8,12 +9,14 @@ package MongoDB {
   class DatabaseIF {
 
     has Str $.name;
+    has MongoDB::ClientIF $.client;
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( Str :$name ) {
+    submethod BUILD ( MongoDB::ClientIF :$client, Str :$name ) {
 
       self._set-name($name);
+      $!client = $client;
     }
 
     #---------------------------------------------------------------------------
@@ -56,7 +59,7 @@ package MongoDB {
           return error-message("Illegal database name: '$name'");
         }
       }
-      
+
       else {
         if $name ~~ m/^ <[\/\\\.\s\"\$]>+ $/ {
           return error-message("Illegal database name: '$name'");

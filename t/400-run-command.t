@@ -2,7 +2,9 @@ use v6;
 use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
+use MongoDB::Database;
 
 #`{{
   Testing: Query and Write Operation Commands

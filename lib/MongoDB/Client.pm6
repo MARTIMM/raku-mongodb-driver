@@ -4,7 +4,7 @@ use MongoDB::Object-store;
 use MongoDB::Uri;
 use MongoDB::ClientIF;
 use MongoDB::Server;
-use MongoDB::AdminDB;
+use MongoDB::Database;
 use MongoDB::Wire;
 use BSON::Document;
 
@@ -14,15 +14,13 @@ package MongoDB {
   #
   class Client is MongoDB::ClientIF {
 
-    my Array $servers;
-    my Array $server-discovery;
-
-    our $db-admin;
+    has Array $!servers;
+    has Array $!server-discovery;
 
     # Semaphore to control the use of select-server. This call can come
     # from different threads.
     #
-    state Semaphore $control-select .= new(1);
+    has Semaphore $!control-select .= new(1);
 
     # Reserved servers. select-server finds a server using some directions
     # such as read concerns or even direct host:port string. Structure is
@@ -30,24 +28,30 @@ package MongoDB {
     #
     has Hash $!server-reservations;
 
-    #---------------------------------------------------------------------------
-    # This class is a singleton class
+    # These are shared among other Clients
     #
-    my MongoDB::Client $client-object;
-
-    method new ( ) {
-
-      die X::MongoDB.new(
-        error-text => "This is a singleton, Please use instance()",
-        oper-name => 'MongoDB::Client.new()',
-        severity => MongoDB::Severity::Fatal
-      );
-    }
+    my MongoDB::Database $db-admin;
+    my Bool $initialized = False;
 
     #---------------------------------------------------------------------------
-    submethod instance ( Str :$uri --> MongoDB::Client ) {
+    submethod BUILD ( Str :$uri --> MongoDB::Client ) {
 
-      initialize();
+      unless $initialized {
+
+        # Wire is a Singleton and needs this object to get a Server
+        # using select-server()
+        #
+#        MongoDB::Wire.instance.set-client(self);
+
+        # The admin database is given to each server to get server data
+        #
+        $db-admin = self.database('admin');
+
+        $initialized = True;
+      }
+
+      $!servers = [];
+      $!server-discovery = [];
 
       if ?$uri {
         # Parse the uri and get info in $uri-obj.server-data;
@@ -60,38 +64,23 @@ package MongoDB {
         #
         my @item-list = <username password database options>;
         my Hash $server-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
-        $server-data<client> = $client-object;
+        $server-data<client> = self;
         $server-data<db-admin> = $db-admin;
 
         # Background process to discover hosts only if there are new servers
         # to be discovered or that new non default cases are presnted.
         #
         for @($uri-obj.server-data<servers>) -> Hash $sdata {
-          $server-discovery.push: Promise.start( {
-              my MongoDB::Server $server;
+          $!server-discovery.push: Promise.start( {
+            my MongoDB::Server $server;
 
-              try {
-                $server .= new(
-                  :host($sdata<host>),
-                  :port($sdata<port>),
-                  :$server-data
-                );
+              $server .= new(
+                :host($sdata<host>),
+                :port($sdata<port>),
+                :$server-data
+              );
 
-                $MongoDB::logger.mlog(
-                  message => "Server $sdata<host>:$sdata<port> connected",
-                  oper-name => 'Client.instance',
-                );
-
-                # Only show the error but do not handle
-                #
-                CATCH {
-                  .say;
-                  $MongoDB::logger.mlog(
-                    message => "Server $sdata<host>:$sdata<port> not connected",
-                    oper-name => 'Client.instance'
-                  );
-                }
-              }
+              info-message("Server $sdata<host>:$sdata<port> connected");
 
               # Return server object
               #
@@ -100,36 +89,16 @@ package MongoDB {
           );
         }
       }
-
-      return $client-object;
     }
 
     #---------------------------------------------------------------------------
-    sub initialize ( ) { #--> MongoDB::AdminDB ) {
+    # Select a collection. When it is new it comes into existence only
+    # after inserting data
+    #
+    method database ( Str:D $name --> MongoDB::Database ) {
 
-      # If the Client object isn't created yet then make it and
-      # define some variables
-      #
-      unless $client-object.defined {
-        $client-object = MongoDB::Client.bless;
-
-        # Wire is also a Singleton and needs this object to get a Server
-        # using select-server()
-        #
-        MongoDB::Wire.instance.set-client($client-object);
-
-        # The admin database is given to each server to get server data
-        #
-        $db-admin = MongoDB::AdminDB.new;
-
-        $servers = [];
-        $server-discovery = [];
-
-        $MongoDB::logger.mlog(
-          message => "Client initialized",
-          oper-name => 'Client.initialize'
-        );
-      }
+      trace-message('create database $name');
+      return MongoDB::Database.new( :client(self), :name($name));
     }
 
     #---------------------------------------------------------------------------
@@ -139,86 +108,99 @@ package MongoDB {
       BSON::Document :$read-concern = BSON::Document.new
       --> Str
     ) {
-note "server select acquire";
-      $control-select.acquire;
 
       my MongoDB::Server $server;
-      my Int $server-entry;
       my Str $server-ticket;
+      my Bool $master-found = False;
 
-      # Read all Kept promises and store Server objects in $servers array
+      # Read all Kept promises and store Server objects in $!servers array
       #
       while !$server.defined {
 
-        # First go through all Promises to see if there are still
-        # Server objects in the making
-        #
-        loop ( my $pi = 0; $pi < $server-discovery.elems; $pi++ ) {
-          my $promise = $server-discovery[$pi];
+        if $!control-select.try_acquire {
+          trace-message("server select try_acquire");
 
-          # If promise is kept, the Server object has been created 
+          # First go through all Promises to see if there are still
+          # Server objects in the making
           #
-          if $promise.status ~~ Kept {
+          loop ( my $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
+            my $promise = $!server-discovery[$pi];
+            trace-message("discover server $pi");
 
-            # Get the Server object from the promise result and check
-            # its status. When True, the Server object could make a
-            # proper connection to the mongo server.
+            # If promise is kept, the Server object has been created 
             #
-            $server = $promise.result;
-            $servers.push: $server if $server.status;
-            $server-discovery[$pi] = Nil;
-            $server-discovery.splice( $pi, 1);
+            if $promise.status ~~ Kept {
 
-            $MongoDB::logger.mlog(
-              message => (
+              # Get the Server object from the promise result and check
+              # its status. When True, the Server object could make a
+              # proper connection to the mongo server.
+              #
+              $server = $promise.result;
+              $!servers.push: $server;
+              
+              # Start server monitoring
+              #
+              $server.monitor-server;
+              
+              # Cleanup promise entry
+              #
+              $!server-discovery[$pi] = Nil;
+              $!server-discovery.splice( $pi, 1);
+
+              info-message(
                 [~] "Server $pi ", $server.server-name,
                 ':', $server.server-port, " saved"
-              ),
-              oper-name => 'Client.select-server'
-            );
+              );
+            }
+
+            # When broken throw away result
+            #
+            elsif $promise.status == Broken {
+
+              try {
+                $!server-discovery[$pi].result;
+
+                CATCH {
+                  default {
+                    warn-message(.message);
+
+                    $!server-discovery[$pi] = Nil;
+                    $!server-discovery.splice( $pi, 1);
+                  }
+                }
+              }
+            }
+
+            # When planned look at it in next while cycle
+            #
+            elsif $promise.status == Planned {
+              info-message("Promise $pi still running");
+            }
           }
 
-          # When broken throw away result
-          #
-          elsif $promise.status == Broken {
-            my $s = $server-discovery[$pi].result;
-            $server-discovery[$pi] = Nil;
-            $server-discovery.splice( $pi, 1);
-
-            $MongoDB::logger.mlog(
-              message => (
-                [~] "Server $pi ", $server.server-name,
-                ':', $server.server-port, " not saved"
-              ),
-              oper-name => 'Client.select-server'
-            );
-          }
-
-          # When planned look at it in next while cycle
-          #
-          elsif $promise.status == Planned {
-            $MongoDB::logger.mlog(
-              message => "Promise $pi still running",
-              oper-name => 'Client.select-server'
-            );
-          }
+          trace-message("server select release");
+          $!control-select.release;
+        }
+        
+        else {
+          trace-message("server select try_acquire denied");
         }
 
-        # Walk through servers array and return server
+        # Walk through $!servers array and return server
         #
         $server = Nil;
 
-        loop ( my $si = 0; $si < $servers.elems; $si++) {
-          $server = $servers[$si];
-          $server-entry = $si;
+        loop ( my $si = 0; $si < $!servers.elems; $si++) {
+          trace-message("loop through discovered servers entry $si");
 
-          if !$need-master or ($need-master and $server.is-master) {
-            $MongoDB::logger.mlog(
-              message => (
-                [~] "Server $pi ", $server.server-name,
-                ':', $server.server-port, " selected"
-              ),
-              oper-name => 'Client.select-server'
+          my $s = $!servers[$si];
+          $master-found = $s.is-master unless $master-found;
+
+          if !$need-master or ($need-master and $s.is-master) {
+            $server = $s;
+            info-message(
+              [~] "Server $si ", $server.server-name,
+              ':', $server.server-port, " selected"
             );
 
             last;
@@ -226,28 +208,24 @@ note "server select acquire";
         }
 
         unless $server.defined {
-          if $server-discovery.elems {
-            $MongoDB::logger.mlog(
-              message => "No server found, wait for running discovery",
-              oper-name => 'Client.select-server'
-            );
+          if $!server-discovery.elems {
+            warn-message("No server found yet, wait for running discovery");
+            sleep 1;
+          }
+          
+          elsif $!servers.elems and !$master-found {
+            # Try again a bit later to give the servers monitoring some time
+            #
             sleep 1;
           }
 
           else {
-            $MongoDB::logger.mlog(
-              message => "No server found, discovery data exhausted, stopping",
-              oper-name => 'Client.select-server',
-              severity => MongoDB::Severity::Info
-            );
-
+            error-message("No server found, discovery data exhausted, stopping");
             last;
           }
         }
       }
 
-note "server select release";
-      $control-select.release;
       $server-ticket = store-object($server) if $server.defined;
       return $server-ticket;
     }
@@ -255,16 +233,18 @@ note "server select release";
     #---------------------------------------------------------------------------
     #
     method remove-server ( MongoDB::Server $server ) {
-note "server remove acquire";
-      $control-select.acquire;
-      loop ( my $si = 0; $si < $servers.elems; $si++) {
-        if $servers[$si] === $server {
+
+      trace-message("server select acquire");
+      $!control-select.acquire;
+      loop ( my $si = 0; $si < $!servers.elems; $si++) {
+        if $!servers[$si] === $server {
           undefine $server;
-          $servers.splice( $si, 1);
+          $!servers.splice( $si, 1);
         }
       }
-note "server remove release";
-      $control-select.release;
+
+      trace-message("server remove release");
+      $!control-select.release;
     }
   }
 }

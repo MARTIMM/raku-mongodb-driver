@@ -2,6 +2,7 @@ use v6;
 use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
 use MongoDB::Users;
 use MongoDB::Database;
@@ -69,7 +70,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .error-text eq 'Username too short, must be >= 5', .error-text;
       }
     }
@@ -83,7 +84,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .error-text eq 'Password too short, must be >= 6', .error-text;
       }
     }
@@ -97,7 +98,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .error-text eq 'Password does not have the right properties',
            .error-text;
       }

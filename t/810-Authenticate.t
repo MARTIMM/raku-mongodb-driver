@@ -21,7 +21,7 @@ my Int $exit_code;
 
 my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
 my BSON::Document $doc;

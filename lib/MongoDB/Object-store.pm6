@@ -59,10 +59,13 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     sub clear-stored-object ( Str:D $ticket --> Any ) is export {
-#say "store clear acquire";
+
+      trace-message(:message("store clear acquire"));
       $handle-store.acquire;
+
       my $object = ($store{$ticket}:exists) ?? ($store{$ticket}:delete) !! Any;
-#say "store clear release";
+
+      trace-message("store clear release");
       $handle-store.release;
       return $object;
     }

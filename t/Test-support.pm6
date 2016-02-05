@@ -39,7 +39,7 @@ package Test-support
     }
 
     my Int $port-number = get-port-number();
-    my MongoDB::Client $client .= instance(
+    my MongoDB::Client $client .= new(
       :uri('mongodb://localhost:' ~ $port-number)
     );
 
@@ -53,7 +53,7 @@ package Test-support
     my Int $port-number = get-port-number();
     my MongoDB::Client $client;
     for ^10 {
-      $client .= instance(:uri('mongodb://localhost:' ~ $port-number));
+      $client .= new(:uri('mongodb://localhost:' ~ $port-number));
       if ? $client.status {
         diag [~] "Error: ",
                  $client.status.error-text,

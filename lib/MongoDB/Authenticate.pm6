@@ -73,7 +73,7 @@ say "N2: ", $doc.perl;
       my Pair @req = (logout => 1);
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        error-message(
+        return error-message(
           $doc<errmsg>, :code($doc<code>),
           oper-data => @req.perl,
           collection-ns => $!database.name

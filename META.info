@@ -12,7 +12,6 @@
   "license": "The Artistic License 2.0",
   "name": "MongoDB",
   "provides": {
-    "MongoDB::AdminDB":                 "lib/MongoDB/AdminDB.pm6",
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
     "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
     "MongoDB::ClientIF":                "lib/MongoDB/ClientIF.pm6",

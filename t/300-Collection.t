@@ -2,6 +2,7 @@ use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use v6;
 use Test;
+use MongoDB;
 use MongoDB::Database;
 use MongoDB::Client;
 
@@ -11,7 +12,7 @@ use MongoDB::Client;
     database.create-collection()        Create collection explicitly
     collection.drop()                   Drop collection
 
-    X::MongoDB                          Catch exceptions
+    MongoDB::Message                    Catch exceptions
 }}
 
 my MongoDB::Client $connection = get-connection();
@@ -104,7 +105,7 @@ is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 try {
   $doc = $database.run-command($req);
   CATCH {
-    when X::MongoDB {
+    when MongoDB::Message {
       ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
     }
   }
@@ -120,7 +121,7 @@ exit(0);
 try {
   $database.create-collection('abc-def and a space');
   CATCH {
-    when X::MongoDB {
+    when MongoDB::Message {
       ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
     }
   }

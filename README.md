@@ -145,6 +145,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.26.8
+  * Shuffeling classes again now databases are created the old way ```$client.database('name')```. Back then it was a connection instead of client. Need to drop the class AdminDB too.
 * 0.26.7
   * Documentation changes
   * Use request-id and response-to used in client request and server response to check if returned responses are responses to the proper request.

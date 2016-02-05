@@ -6,23 +6,22 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Socket;
-use MongoDB::Database;
-use MongoDB::Collection;
+#use MongoDB::Database;
+#use MongoDB::Collection;
 use MongoDB::Object-store;
+
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
 my BSON::Document $req;
 my BSON::Document $doc;
 
-#set-logfile($*OUT);
-#set-logfile($*ERR);
-#say "Test of stdout";
-#set-exception-throw-level(MongoDB::Severity::Trace);
-
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= instance(:uri('mongodb://localhost:' ~ 65535));
+  $client .= new(:uri('mongodb://localhost:' ~ 65535));
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
   my Str $reservation-code = $client.select-server;
   nok $reservation-code.defined, 'No servers selected';
@@ -36,7 +35,6 @@ subtest {
   my Str $reservation-code = $client.select-server;
   my MongoDB::Server $server = get-stored-object($reservation-code);
   ok $server.defined, 'Connection available';
-  ok $server.status, 'Server found';
   is $server.max-sockets, 3, "Maximum socket $server.max-sockets()";
 
   my MongoDB::Socket $socket = $server.get-socket;
@@ -47,7 +45,6 @@ subtest {
   try {
     my @skts;
     for ^10 {
-#.say;
       my $s = $server.get-socket;
 
       # Still below max
@@ -55,7 +52,7 @@ subtest {
       @skts.push($s);
 
       CATCH {
-        when X::MongoDB {
+        when MongoDB::Message {
           ok .message ~~ m:s/Too many sockets 'opened,' max is/,
              "Too many sockets opened, max is $server.max-sockets()";
 
@@ -79,7 +76,7 @@ subtest {
       @skts.push($s);
 
       CATCH {
-        when X::MongoDB {
+        when MongoDB::Message {
           ok .message ~~ m:s/Too many sockets 'opened,' max is/,
              "Too many sockets opened, max is $server.max-sockets()";
 
@@ -102,13 +99,15 @@ subtest {
   }
 }, 'Client, Server, Socket tests';
 
+#`{{
 #-------------------------------------------------------------------------------
 subtest {
 
   # Create databases with a collection and data to make sure the databases are
   # there
   #
-  my MongoDB::Database $database .= new(:name<test>);
+  $client = get-connection();
+  my MongoDB::Database $database .= $client.database(:name<test>);
   isa-ok( $database, 'MongoDB::Database');
 
   my MongoDB::Collection $collection = $database.collection('abc');
@@ -126,9 +125,11 @@ subtest {
   is $doc<ok>, 1, 'Drop request ok';
 
 }, "Create database, collection. Collect database info, drop data";
+}}
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE end");
 done-testing();
 exit(0);

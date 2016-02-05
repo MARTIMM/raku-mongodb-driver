@@ -17,10 +17,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( Str :$name ) {
+    submethod BUILD ( MongoDB::ClientIF :$client, Str :$name ) {
 
       # Create a collection $cmd to be used with run-command()
       #
+      trace-message('Initialize command collection $cmd');
       $!cmd-collection .= new(:database(self));
     }
 
@@ -30,6 +31,7 @@ package MongoDB {
     #
     method collection ( Str:D $name --> MongoDB::Collection ) {
 
+      trace-message('create collection $name');
       return MongoDB::Collection.new: :database(self), :name($name);
     }
 
@@ -54,6 +56,7 @@ package MongoDB {
         :$read-concern
       );
       my $doc = $cursor.fetch;
+      trace-message('done run-command');
 
 #TODO throw exception when undefined!!!
       return $doc.defined ?? $doc !! BSON::Document.new;
@@ -66,11 +69,7 @@ package MongoDB {
     ) {
 #TODO check on arguments
 
-      return X::MongoDB.new(
-        error-text => "Not enough arguments",
-        oper-name => 'MongoDB::Database.run-command()',
-        severity => MongoDB::Severity::Fatal
-      ) unless ? c.elems;
+      return fatal-message("Not enough arguments",) unless ? c.elems;
 
       my BSON::Document $command .= new: c[0];
       my BSON::Document $read-concern;

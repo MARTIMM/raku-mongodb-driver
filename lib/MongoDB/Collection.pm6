@@ -26,7 +26,9 @@ package MongoDB {
 
       my $wire = MongoDB::Wire.instance;
       my BSON::Document $rc .= new: $read-concern;
-      my Str $server-ticket = $wire.client.select-server(:read-concern($rc));
+      my Str $server-ticket = $.database.client.select-server(
+        :read-concern($rc)
+      );
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
@@ -54,7 +56,7 @@ package MongoDB {
     ) {
 
       my $wire = MongoDB::Wire.instance;
-      my Str $server-ticket = $wire.client.select-server(
+      my Str $server-ticket = $.database.client.select-server(
         :read-concern($read-concern)
       );
 

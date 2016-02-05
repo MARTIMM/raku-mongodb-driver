@@ -2,6 +2,7 @@ use v6;
 use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
 use MongoDB::Cursor;
 use BSON::ObjectId;
@@ -224,7 +225,7 @@ subtest {
     $d2 = { '$abc' => 'pqr'};
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok $_.message ~~ m:s/is not properly defined/, "Key '\$abc' not properly defined";
       }
     }
@@ -234,7 +235,7 @@ subtest {
     $d2 = { 'abc.def' => 'pqr'};
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
       }
     }
@@ -244,7 +245,7 @@ subtest {
     $d2 = { x => {'abc.def' => 'pqr'}};
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message ~~ m:s/is not properly defined/, "Key 'abc.def' not properly defined";
       }
     }
@@ -261,7 +262,7 @@ subtest {
           };
     $collection.insert($d2);
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message ~~ m:s/not unique/, .error-text;
       }
     }

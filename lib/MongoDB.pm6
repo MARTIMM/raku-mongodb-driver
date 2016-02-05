@@ -31,8 +31,11 @@ package MongoDB:ver<0.26.6> {
   }
 
   #-----------------------------------------------------------------------------
+  # Logging always for Errors and Fatal
   #
-  sub set-exception-process-level ( Severity:D $s ) is export {
+  sub set-exception-process-level (
+    Severity:D $s where Trace <= $s <= Warn
+  ) is export {
     $severity-process-level = $s;
   }
 
@@ -74,18 +77,23 @@ package MongoDB:ver<0.26.6> {
     #---------------------------------------------------------------------------
     #
     method mlog ( ) {
-      return unless $do-log and self.severity >= $severity-process-level;
+
+#note "Mlog: {self.severity} >= $severity-process-level: ",
+#    self.severity >= $severity-process-level;
+
+      return unless ($do-log and (self.severity >= $severity-process-level));
+#note "log message: {self.message}";
+
       # Check if file is open.
+      #
       open-logfile() unless ? $log-fh;
 
       # Define log text. If severity > Info insert empty line
       #
-      my Str $etxt;
-#      $etxt ~= "\n" if $.severity > Info;
       my Str $dt-str = $.date-time.utc.Str;
       $dt-str ~~ s/\.\d+Z$//;
       $dt-str ~~ s/T/ /;
-      $etxt ~= [~] $dt-str,
+      my Str $etxt ~= [~] $dt-str,
                    " [{uc self.severity}]",
                    self."{lc(self.severity)}"(),
                    "\n";
@@ -95,8 +103,9 @@ package MongoDB:ver<0.26.6> {
     #---------------------------------------------------------------------------
     #
     method test-severity (  ) {
-      return self unless $do-check and self.severity >= $severity-throw-level;
+      return unless ($do-check and (self.severity >= $severity-throw-level));
 
+$control-logging.release;
       die self;
     }
 
@@ -116,9 +125,8 @@ package MongoDB:ver<0.26.6> {
   #-------------------------------------------------------------------------------
   #
   class Message is Exception does MongoDB::Logging {
-    has Str $.message;         # Error text and error code are data mostly
-    has Str $.code;         # originated from the mongod server
-    has Str $.oper-name;          # Used operation or server request
+    has Str $.message;            # Error text and error code are data mostly
+    has Str $.code;               # originated from the mongod server
     has Str $.oper-data;          # Operation data are items sent to the server
     has Str $.collection-ns;      # Collection name space == dbname.clname
     has Str $.method;             # Method or routine name
@@ -135,7 +143,6 @@ package MongoDB:ver<0.26.6> {
     method log (
       Str:D :$message,
       :$code where $_ ~~ any(Int|Str) = '',
-      Str :$oper-name = '',
       Str :$oper-data = '',
       Str :$collection-ns = '',
       MongoDB::Severity :$severity = MongoDB::Severity::Warn,
@@ -143,17 +150,26 @@ package MongoDB:ver<0.26.6> {
 
       $control-logging.acquire;
 
+say "Severity $severity, $message";
       my CallFrame $cf = self!search-callframe(Method);
       $cf = self!search-callframe(Submethod) unless $cf.defined;
       $cf = self!search-callframe(Sub) unless $cf.defined;
       $cf = self!search-callframe(Block) unless $cf.defined;
-      $!line = $cf.line.Int // 1;
-      $!file = $cf.file // '';
-      $!file ~~ s/$*CWD/\./;
-      $!method = $cf.code.name // '';
 
-      $!message        = $message;
-      $!code        = ~$code;
+      if $cf.defined {
+        $!line = $cf.line.Int // 1;
+        $!file = $cf.file // '';
+        $!file ~~ s/$*CWD/\./;
+        $!method = $cf.code.name // '';
+      }
+
+      else {
+        $!line = 0;
+        $!file = $!method = '';
+      }
+
+      $!message           = $message;
+      $!code              = ~$code;
       $!oper-data         = $oper-data;
       $!collection-ns     = $collection-ns;
 
@@ -161,10 +177,11 @@ package MongoDB:ver<0.26.6> {
       $!date-time         .= now;
 
       self.mlog;
+      self.test-severity;
+
       $control-logging.release;
 
-      self.test-severity;
-      return self.clone;
+      return self;
     }
 
     #-----------------------------------------------------------------------------
@@ -180,14 +197,28 @@ package MongoDB:ver<0.26.6> {
       my $fn = 3;
       while my CallFrame $cf = callframe($fn++) {
 
-        # End loop with the program that starts on line 1
+        # End loop with the program that starts on line 1 and code object is
+        # a hollow shell.
         #
-        if $cf.line == 1 and $cf.code ~~ Mu {
+        if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
           $cf = Nil;
           last;
         }
 
-say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name;
+        # Cannot pass sub THREAD-ENTRY either
+        #
+        if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
+          $cf = Nil;
+          last;
+        }
+
+say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name,
+', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
+
+        # Try to find a better place instead of dispatch:...
+        #
+        next if $cf.code ~~ $type and $cf.code.name ~~ m/dispatch/;
+
         last if $cf.code ~~ $type;
       }
 
@@ -197,8 +228,8 @@ say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name;
     #-----------------------------------------------------------------------------
     #
     method trace ( --> Str ) {
-      return [~] " $!message",
-                 ? $!method ?? " In method $!method" !! '',
+      return [~] " $!message.",
+                 ? $!method ?? " From method $!method" !! '',
 #                 " at $!file\:$!line",
                  ;
     }
@@ -206,10 +237,10 @@ say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name;
     #-----------------------------------------------------------------------------
     #
     method debug ( --> Str ) {
-      return [~] " $!message",
+      return [~] " $!message.",
                  ? $!code ?? " \({$!code})" !! '',
                  ? $!collection-ns ?? "c-ns=$!collection-ns" !! '',
-                 ? $!method ?? " In method $!method" !! '',
+                 ? $!method ?? " From method $!method" !! '',
 #                 " at $!file\:$!line"
                  ;
     }
@@ -217,10 +248,10 @@ say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name;
     #-----------------------------------------------------------------------------
     #
     method info ( --> Str ) {
-      return [~] " $!message",
+      return [~] " $!message.",
                  ? $!code ?? " \({$!code})" !! '',
                  ? $!collection-ns ?? " Collection namespace $!collection-ns." !! '',
-                 ? $!method ?? " In method $!method" !! '',
+                 ? $!method ?? " From method $!method" !! '',
                  " at $!file\:$!line"
                  ;
     }
@@ -246,12 +277,12 @@ say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name;
     #-----------------------------------------------------------------------------
     #
     method message ( --> Str ) {
-      return [~] "\n  $!message",
+      return [~] "\n  $!message.",
                  ? $!code ?? " \({$!code})" !! '',
                  ? $!oper-data ?? "\n  Request data: $!oper-data" !! '',
                  ? $!collection-ns
                    ?? "\n  Collection namespace $!collection-ns" !! '',
-                 ? $!method ?? "\n  In method $!method" !! '',
+                 ? $!method ?? "\n  From method $!method" !! '',
                  " at $!file\:$!line"
                  ;
     }
@@ -262,7 +293,7 @@ say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name;
 
   # Declare a message object to be used anywhere
   #
-  our $logger = MongoDB::Message.new unless $logger.defined;
+  state MongoDB::Message $logger .= new;
 
   sub combine-args ( $c, $s) {
     my %args = $c.kv;

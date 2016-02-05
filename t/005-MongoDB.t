@@ -2,10 +2,10 @@ use v6;
 use Test;
 use MongoDB;
 
-#`{{
-  Testing;
-    exception block
-}}
+#set-logfile($*OUT);
+#set-logfile($*ERR);
+#say "Test of stdout";
+#set-exception-throw-level(MongoDB::Severity::Trace);
 
 #-------------------------------------------------------------------------------
 subtest {
