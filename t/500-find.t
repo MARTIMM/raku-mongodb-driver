@@ -7,23 +7,9 @@ use MongoDB::Client;
 use MongoDB::Cursor;
 use BSON::ObjectId;
 
-#`{{
-  Testing;
-    collection.find()                   Query database
-      implicit AND selection            Find with more fields
-      projection                        Select fields to return
-    collection.find() with pairs ipv hash
-    cursor.count()                      Count number of docs
-    collection.explain()                Explain what is done for a search
-    cursor.explain()                    Explain what is done for a search
-    cursor.hint()                       Control choice of index
-    cursor.kill()                       Kill a cursor
-    cursor.next()                       Fetch a document
-}}
-
-my MongoDB::Client $connection = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Client $client = get-connection();
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
 my BSON::Document $doc;

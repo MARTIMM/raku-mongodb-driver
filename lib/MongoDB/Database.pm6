@@ -2,7 +2,6 @@ use v6;
 use MongoDB;
 use MongoDB::DatabaseIF;
 use MongoDB::Collection;
-use MongoDB::CommandCll;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
@@ -13,7 +12,7 @@ package MongoDB {
   #
   class Database is MongoDB::DatabaseIF {
 
-    has MongoDB::CommandCll $.cmd-collection;
+    has MongoDB::Collection $.cmd-collection;
 
     #---------------------------------------------------------------------------
     #
@@ -22,7 +21,7 @@ package MongoDB {
       # Create a collection $cmd to be used with run-command()
       #
       trace-message('Initialize command collection $cmd');
-      $!cmd-collection .= new(:database(self));
+      $!cmd-collection = self.collection('$cmd');
     }
 
     #---------------------------------------------------------------------------
@@ -31,7 +30,7 @@ package MongoDB {
     #
     method collection ( Str:D $name --> MongoDB::Collection ) {
 
-      trace-message('create collection $name');
+      trace-message("create collection $name");
       return MongoDB::Collection.new: :database(self), :name($name);
     }
 

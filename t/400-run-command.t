@@ -1,28 +1,18 @@
 use v6;
-use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';
 use Test-support;
 use Test;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
 
-#`{{
-  Testing: Query and Write Operation Commands
-    insert
-    findAndModify
-
-  Testing: Diagnostic Commands
-    listDatabases
-    buildInfo not tested
-
-  Testing: Instance Administration Commands
-    listCollections
-    dropDatabase
-}}
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
 my BSON::Document $doc;
 
@@ -173,6 +163,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE start");
 done-testing();
 exit(0);
 

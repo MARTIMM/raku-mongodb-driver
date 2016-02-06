@@ -5,10 +5,9 @@ use Test;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
-use MongoDB::AdminDB;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Trace);
+set-exception-process-level(MongoDB::Severity::Info);
 info-message("Test $?FILE start");
 
 my BSON::Document $req;

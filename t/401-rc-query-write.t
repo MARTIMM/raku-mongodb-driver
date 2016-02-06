@@ -2,24 +2,16 @@ use v6;
 use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
 
-#`{{
-  Testing: Query and Write Operation Commands
-    insert
-    update
-    delete
-    findAndModify
-    getLastError
-    getLastError, getPrevError and resetError are not much needed because
-      after 2.6 the write operation commands return error information
-    eval is deprecated
-    parallelCollectionScan
-}}
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
 my BSON::Document $doc;
 
@@ -195,6 +187,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE start");
 done-testing();
 exit(0);
 

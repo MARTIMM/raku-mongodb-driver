@@ -17,7 +17,6 @@
     "MongoDB::ClientIF":                "lib/MongoDB/ClientIF.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
     "MongoDB::CollectionIF":            "lib/MongoDB/CollectionIF.pm6",
-    "MongoDB::CommandCll":              "lib/MongoDB/CommandCll.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
     "MongoDB::DatabaseIF":              "lib/MongoDB/DatabaseIF.pm6",

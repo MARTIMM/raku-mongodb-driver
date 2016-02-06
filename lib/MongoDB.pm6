@@ -100,15 +100,6 @@ package MongoDB:ver<0.26.6> {
       $log-fh.print($etxt);
     }
 
-    #---------------------------------------------------------------------------
-    #
-    method test-severity (  ) {
-      return unless ($do-check and (self.severity >= $severity-throw-level));
-
-$control-logging.release;
-      die self;
-    }
-
     #-----------------------------------------------------------------------------
     # Absolute methods. Must be defined by user of this role
     #
@@ -150,7 +141,7 @@ $control-logging.release;
 
       $control-logging.acquire;
 
-say "Severity $severity, $message";
+#say "Severity $severity, $message";
       my CallFrame $cf = self!search-callframe(Method);
       $cf = self!search-callframe(Submethod) unless $cf.defined;
       $cf = self!search-callframe(Sub) unless $cf.defined;
@@ -177,11 +168,16 @@ say "Severity $severity, $message";
       $!date-time         .= now;
 
       self.mlog;
-      self.test-severity;
 
+      # Must release the lock here because after a catched message the software
+      # can again call log(). We clone this object so that a waiting thread is not
+      # messing up the data
+      #
+      my $copy = self.clone;
       $control-logging.release;
 
-      return self;
+      return $copy unless ($do-check and (self.severity >= $severity-throw-level));
+      die $copy;
     }
 
     #-----------------------------------------------------------------------------
@@ -212,8 +208,8 @@ say "Severity $severity, $message";
           last;
         }
 
-say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name,
-', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
+#say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name,
+#', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
 
         # Try to find a better place instead of dispatch:...
         #

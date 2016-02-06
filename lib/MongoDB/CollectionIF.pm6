@@ -48,15 +48,15 @@ package MongoDB {
 
       # Check for the CommandCll because of $name is $cmd
       #
-      unless self.^name eq 'MongoDB::CommandCll' {
+#      unless self.^name eq 'MongoDB::CommandCll' {
 
         # This should be possible: 'admin.$cmd' which is used by run-command
         # https://docs.mongodb.org/manual/reference/limits/
         #
-        if $name !~~ m/^ <[_ A..Z a..z]> <[\w _ \-]>* $/ {
-          return error-message("Illegal collection name: '$name'");
-        }
-      }
+#        if $name !~~ m/^ <[_ A..Z a..z]> <[\w _ \-]>* $/ {
+#          return error-message("Illegal collection name: '$name'");
+#        }
+#      }
 
       $!name = $name;
       self._set-full-collection-name;

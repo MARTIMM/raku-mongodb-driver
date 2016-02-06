@@ -2,7 +2,6 @@ use v6;
 
 use BSON::Document;
 use MongoDB;
-use MongoDB::ClientIF;
 use MongoDB::Header;
 use MongoDB::Object-store;
 
@@ -10,47 +9,10 @@ package MongoDB {
 
   class Wire {
 
-    has MongoDB::ClientIF $.client;
-
-    #---------------------------------------------------------------------------
-    # Wire must be a singleton, new() must throw an exception, instance()
-    # is the way to get this classes object
-    #
-    my MongoDB::Wire $wire-object;
-
-    method new ( ) {
-
-      fatal-message("This is a singleton, Please use instance()");
-    }
-
-    submethod instance ( --> MongoDB::Wire ) {
-
-      state Semaphore $control-instance .= new(1);
-      trace-message(:message("wire instance acquire"));
-      $control-instance.acquire;
-
-      unless $wire-object.defined {
-        $wire-object = MongoDB::Wire.bless;
-        debug-message(:message("wire created"));
-      }
-
-      trace-message(:message("wire instance release"));
-      $control-instance.release;
-
-      return $wire-object;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-#TODO must come again via client database collection (cursor)
-#    method set-client ( MongoDB::ClientIF:D $client-object! ) {
-#      $!client = $client-object;
-#    }
-
     #---------------------------------------------------------------------------
     #
     method query (
-      $collection! where .^name ~~ any(<MongoDB::Collection MongoDB::CommandCll>),
+      $collection! where .^name eq 'MongoDB::Collection',
       BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
       :$number-to-return, Str:D :$server-ticket
       --> BSON::Document
@@ -78,8 +40,6 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-#      my $server = $collection.database.client.select-server;
-#      my $socket = $server.get-socket;
       my $socket = get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-query);
 

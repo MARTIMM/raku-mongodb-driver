@@ -38,11 +38,6 @@ package MongoDB {
 
       unless $initialized {
 
-        # Wire is a Singleton and needs this object to get a Server
-        # using select-server()
-        #
-#        MongoDB::Wire.instance.set-client(self);
-
         # The admin database is given to each server to get server data
         #
         $db-admin = self.database('admin');
@@ -97,7 +92,7 @@ package MongoDB {
     #
     method database ( Str:D $name --> MongoDB::Database ) {
 
-      trace-message('create database $name');
+      trace-message("create database $name");
       return MongoDB::Database.new( :client(self), :name($name));
     }
 

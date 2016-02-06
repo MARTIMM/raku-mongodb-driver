@@ -24,7 +24,7 @@ package MongoDB {
       --> MongoDB::Cursor
     ) {
 
-      my $wire = MongoDB::Wire.instance;
+      my MongoDB::Wire $wire .= new;
       my BSON::Document $rc .= new: $read-concern;
       my Str $server-ticket = $.database.client.select-server(
         :read-concern($rc)
@@ -55,7 +55,7 @@ package MongoDB {
       --> MongoDB::Cursor
     ) {
 
-      my $wire = MongoDB::Wire.instance;
+      my MongoDB::Wire $wire .= new;
       my Str $server-ticket = $.database.client.select-server(
         :read-concern($read-concern)
       );

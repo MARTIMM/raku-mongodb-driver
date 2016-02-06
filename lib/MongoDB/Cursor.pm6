@@ -97,7 +97,7 @@ package MongoDB {
         # Request next batch of documents
         #
         my BSON::Document $server-reply =
-          MongoDB::Wire.instance.get-more( self, :$!server-ticket);
+          MongoDB::Wire.new.get-more( self, :$!server-ticket);
 
         # Get cursor id, It may change to "0" if there are no more
         # documents to fetch.
@@ -120,7 +120,7 @@ package MongoDB {
       # Invalidate cursor on database only if id is valid
       #
       if [+] @$.id {
-        MongoDB::Wire.instance.kill-cursors( (self,), :$!server-ticket);
+        MongoDB::Wire.new.kill-cursors( (self,), :$!server-ticket);
 
         # Invalidate cursor id with 8 0x00 bytes
         #

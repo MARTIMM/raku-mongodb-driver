@@ -6,17 +6,12 @@ use MongoDB;
 use MongoDB::Database;
 use MongoDB::Client;
 
-#`{{
-  Testing;
-    database.collection()               Create collection
-    database.create-collection()        Create collection explicitly
-    collection.drop()                   Drop collection
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
-    MongoDB::Message                    Catch exceptions
-}}
-
-my MongoDB::Client $connection = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Client $client = get-connection();
+my MongoDB::Database $database = $client.database('test');
 
 # Create collection and insert data in it!
 #
@@ -169,5 +164,6 @@ is $cursor.count, 10, 'Only 10 records in collection';
 $req .= new: ( dropDatabase => 1 );
 $doc = $database.run-command($req);
 
+info-message("Test $?FILE end");
 done-testing();
 exit(0);
