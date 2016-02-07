@@ -37,6 +37,10 @@ package MongoDB {
         :$number-to-return, :$server-ticket
       );
 
+#      return MongoDB::Cursor.new(
+#        :collection(self), :$server-reply,
+#        :read-concern($rc), :$server-ticket
+#      );
       return MongoDB::Cursor.new(
         :collection(self), :$server-reply,
         :read-concern($rc), :$server-ticket

@@ -1,5 +1,8 @@
 use v6;
 use BSON::Document;
+use MongoDB;
+use MongoDB::CollectionIF;
+use MongoDB::ClientIF;
 use MongoDB::Wire;
 use MongoDB::Object-store;
 
@@ -11,7 +14,7 @@ package MongoDB {
   #
   class Cursor {
 
-    has $.collection;
+#    has $.collection;
     has $.full-collection-name;
 
     # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
@@ -29,13 +32,13 @@ package MongoDB {
     # Support for the newer BSON::Document
     #
     multi submethod BUILD (
-      :$collection!,
+      MongoDB::CollectionIF :$collection!,
       BSON::Document:D :$server-reply,
       Str :$server-ticket
     ) {
 
-      $!collection = $collection;
-      $!full-collection-name = $!collection.full-collection-name;
+#      $!collection = $collection;
+      $!full-collection-name = $collection.full-collection-name;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
       # batches left on the server to retrieve. Documents may be present in
@@ -60,14 +63,15 @@ package MongoDB {
     # This can be set with data received from a command e.g. listDocuments
     #
     multi submethod BUILD (
+      MongoDB::ClientIF:D :$client!,
       BSON::Document:D :$cursor-doc!,
-#      BSON::Document :$read-concern = BSON::Document.new
+      BSON::Document :$read-concern = BSON::Document.new
     ) {
 
-#TODO :$server-ticket
+      $!server-ticket = $client.select-server(:$read-concern);
 #TODO Check provided structure for the fields.
 
-      $!collection = $cursor-doc<ns>;
+#      $!collection = $cursor-doc<ns>;
       $!full-collection-name = $cursor-doc<ns>;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more

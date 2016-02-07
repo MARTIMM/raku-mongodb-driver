@@ -7,7 +7,7 @@ use MongoDB::Client;
 use MongoDB::Database;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Info);
+set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
@@ -125,8 +125,8 @@ subtest {
 
   $doc = $database.run-command: (listCollections => 1);
   is $doc<ok>, 1, 'list collections request ok';
-say "LC: ", $doc.perl;
-  my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
+#say "LC: ", $doc.perl;
+  my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
   my Bool $f-cl1 = False;
   my Bool $f-cl2 = False;
   while $c.fetch -> BSON::Document $d {
@@ -163,7 +163,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-info-message("Test $?FILE start");
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 

@@ -127,7 +127,7 @@ package MongoDB:ver<0.26.6> {
     has MongoDB::Severity $.severity;   # Severity level
     has DateTime $.date-time;           # Date and time of creation.
 
-    state Semaphore $control-logging .= new(1);
+    my Semaphore $control-logging .= new(1) unless $control-logging.defined;
 
     #-----------------------------------------------------------------------------
     #
@@ -139,8 +139,9 @@ package MongoDB:ver<0.26.6> {
       MongoDB::Severity :$severity = MongoDB::Severity::Warn,
     ) {
 
+say "l1: {callframe(3).line} {callframe(3).file}";
       $control-logging.acquire;
-
+say "l2";
 #say "Severity $severity, $message";
       my CallFrame $cf = self!search-callframe(Method);
       $cf = self!search-callframe(Submethod) unless $cf.defined;
@@ -174,9 +175,11 @@ package MongoDB:ver<0.26.6> {
       # messing up the data
       #
       my $copy = self.clone;
+say "l3";
       $control-logging.release;
 
-      return $copy unless ($do-check and (self.severity >= $severity-throw-level));
+      return $copy
+        unless ($do-check and (self.severity >= $severity-throw-level));
       die $copy;
     }
 

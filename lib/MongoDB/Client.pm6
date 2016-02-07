@@ -34,7 +34,11 @@ package MongoDB {
     my Bool $initialized = False;
 
     #---------------------------------------------------------------------------
-    submethod BUILD ( Str :$uri --> MongoDB::Client ) {
+    submethod BUILD (
+      Str :$uri,
+      BSON::Document :$read-concern
+      --> MongoDB::Client
+    ) {
 
       unless $initialized {
 
@@ -75,7 +79,7 @@ package MongoDB {
                 :$server-data
               );
 
-              info-message("Server $sdata<host>:$sdata<port> connected");
+              info-message("Server $sdata<host>:$sdata<port> discovered");
 
               # Return server object
               #
@@ -132,20 +136,17 @@ package MongoDB {
               #
               $server = $promise.result;
               $!servers.push: $server;
-              
-              # Start server monitoring
-              #
-              $server.monitor-server;
-              
+
               # Cleanup promise entry
               #
               $!server-discovery[$pi] = Nil;
               $!server-discovery.splice( $pi, 1);
 
-              info-message(
-                [~] "Server $pi ", $server.server-name,
-                ':', $server.server-port, " saved"
-              );
+              # Start server monitoring
+              #
+              $server.monitor-server;
+
+              info-message( "Server {$server.name} saved");
             }
 
             # When broken throw away result
@@ -176,7 +177,7 @@ package MongoDB {
           trace-message("server select release");
           $!control-select.release;
         }
-        
+
         else {
           trace-message("server select try_acquire denied");
         }
@@ -185,17 +186,17 @@ package MongoDB {
         #
         $server = Nil;
 
-        loop ( my $si = 0; $si < $!servers.elems; $si++) {
-          trace-message("loop through discovered servers entry $si");
-
-          my $s = $!servers[$si];
-          $master-found = $s.is-master unless $master-found;
+        for @$!servers -> $s {
+          debug-message( "Server is master 1?: {$s.is-master}");
 
           if !$need-master or ($need-master and $s.is-master) {
+say "2";
+            debug-message( "Server is master 2?: {$s.is-master}");
+say "3";
+            $master-found = True if $s.is-master;
             $server = $s;
-            info-message(
-              [~] "Server $si ", $server.server-name,
-              ':', $server.server-port, " selected"
+            debug-message(
+              "Server {$server.name} selected, is master?: $master-found"
             );
 
             last;
@@ -203,19 +204,21 @@ package MongoDB {
         }
 
         unless $server.defined {
+#say "discover: {$!server-discovery.elems}";
           if $!server-discovery.elems {
             warn-message("No server found yet, wait for running discovery");
             sleep 1;
           }
-          
+
           elsif $!servers.elems and !$master-found {
             # Try again a bit later to give the servers monitoring some time
             #
+            warn-message("No master server found yet, wait for server monitoringy");
             sleep 1;
           }
 
           else {
-            error-message("No server found, discovery data exhausted, stopping");
+            error-message("No server found, discovery data exhausted");
             last;
           }
         }

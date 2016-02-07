@@ -164,6 +164,6 @@ is $cursor.count, 10, 'Only 10 records in collection';
 $req .= new: ( dropDatabase => 1 );
 $doc = $database.run-command($req);
 
-info-message("Test $?FILE end");
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

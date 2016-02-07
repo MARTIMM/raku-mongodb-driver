@@ -2,6 +2,7 @@ use v6;
 
 use BSON::Document;
 use MongoDB;
+use MongoDB::CollectionIF;
 use MongoDB::Header;
 use MongoDB::Object-store;
 
@@ -12,7 +13,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method query (
-      $collection! where .^name eq 'MongoDB::Collection',
+      MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
       BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
       :$number-to-return, Str:D :$server-ticket
       --> BSON::Document
@@ -47,12 +48,13 @@ package MongoDB {
         # Read 4 bytes for int32 response size
         #
         my Buf $size-bytes = $socket.receive(4);
-        return fatal-message("No response from server") if $size-bytes.elems < 4;
+        return fatal-message("No response from server")
+               if $size-bytes.elems < 4;
 
         my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
-        # Receive remaining response bytes from socket. Prefix it with the already
-        # read bytes and decode. Return the resulting document.
+        # Receive remaining response bytes from socket. Prefix it with the
+        # already read bytes and decode. Return the resulting document.
         #
         my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
 

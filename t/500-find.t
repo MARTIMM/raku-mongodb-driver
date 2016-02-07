@@ -7,6 +7,10 @@ use MongoDB::Client;
 use MongoDB::Cursor;
 use BSON::ObjectId;
 
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Debug);
+info-message("Test $?FILE start");
+
 my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
@@ -40,16 +44,17 @@ for ^200 -> $i {
   );
 }
 
-say "RTT modify array: ", now - $t0;
-
 $req .= new: (
   insert => $collection.name,
   documents => $docs
 );
 
-#say "RP:\n", $req.perl;
+say "Time create request: ", now - $t0;
 
 $doc = $database.run-command($req);
+
+say "Time insert in database: ", now - $t0;
+
 is $doc<ok>, 1, 'insert ok';
 is $doc<n>, 200, 'inserted 200 docs';
 say $doc<errmsg> unless $doc<ok>;
@@ -57,9 +62,14 @@ say $doc<errmsg> unless $doc<ok>;
 # Request to get all documents listed to generate a get-more request
 #
 $cursor = $collection.find(:projection(_id => 0,));
+
+say "Time to get cursor with some docs: ", now - $t0;
+
 while $cursor.fetch -> BSON::Document $document {
 #  say $document.perl;
 }
+
+say "Time after reading all docs: ", now - $t0;
 
 #------------------------------------------------------------------------------
 subtest {
@@ -190,6 +200,12 @@ subtest {
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
 }, "Testing explain and performance using hint";
 
+
+
+
+
+
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 
@@ -260,6 +276,7 @@ subtest {
 #
 #$collection.database.drop;
 
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 

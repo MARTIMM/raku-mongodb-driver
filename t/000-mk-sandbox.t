@@ -4,12 +4,6 @@ use Test-support;
 use MongoDB::Server;
 use Test;
 
-#`{{
-  Setup sandbox
-  Generate mongo config
-  Start mongo daemon
-  Test Server
-}}
 
 #TODO Checks for windows environment
 
@@ -41,9 +35,8 @@ elsif $*KERNEL.name eq 'linux' {
 # user keeps the default installation directory.
 #
 elsif $*KERNEL.name eq 'win32' {
-  for 'C:/Program Files/MongoDB/Server/3.0/bin/mongod.exe',
-      'C:/Program Files/MongoDB/Server/3.2/bin/mongod.exe'
-      -> $path {
+  for 2.6, 2.8 ... 10 -> $vn {
+    my Str $path = "C:/Program Files/MongoDB/Server/$vn/bin/mongod.exe";
     if $path.IO ~~ :e {
       $mongodb-server-path = $path;
       last;

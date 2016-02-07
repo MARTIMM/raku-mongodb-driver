@@ -105,6 +105,6 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-info-message("Test $?FILE end");
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

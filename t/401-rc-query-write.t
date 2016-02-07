@@ -6,11 +6,13 @@ use MongoDB;
 use MongoDB::Client;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Info);
+set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
+say '0';
 my MongoDB::Database $database = $client.database('test');
+say '1';
 my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
 my BSON::Document $doc;
@@ -160,25 +162,27 @@ subtest {
 
   $doc = $database.run-command: (
     parallelCollectionScan => 'names',
-    numCursors => 2
+    numCursors => 1
   );
   is $doc<ok>, 1, 'parallelCollectionScan request ok';
   ok $doc<cursors> ~~ Array, 'found array of cursors';
-  ok $doc<cursors>.elems > 0, "returned {$doc<cursors>.elems} cursors";
+  is $doc<cursors>.elems, 1, "returned {$doc<cursors>.elems} cursor";
 #say "\nDoc: ", $doc.perl, "\n";
+
 
   for $doc<cursors>.list -> $cdoc {
 #say 'C doc: ', $cdoc.perl;
 
     is $cdoc<ok>, True, 'returned cursor ok';
     if $cdoc<ok> {
-      my MongoDB::Cursor $c .= new(:cursor-doc($cdoc<cursor>));
-      $c.kill;
+      my MongoDB::Cursor $c .= new( :$client, :cursor-doc($cdoc<cursor>));
+      my BSON::Document $d = $c.fetch;
+      is $d<name>, 'Larry', "First name $d<name>";
+      is $d<surname>, 'Wall', "Last name $d<surname>";
+      is $d<type>, "men with 'y' in name", $d<type>;
+#say 'D doc: ', $d.perl;
 
-#      while $c.fetch -> BSON::Document $d {
-#        
-#say 'C doc: ', $d.perl;
-#      }
+      $c.kill;
     }
   }
 
@@ -187,7 +191,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-info-message("Test $?FILE start");
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 

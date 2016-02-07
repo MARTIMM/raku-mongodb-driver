@@ -139,6 +139,8 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
 * Other items to [check](https://docs.mongodb.org/manual/reference/limits/)
 * Table to map mongo status codes to severity level. This will modify the default severity when an error code from the server is received. Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
 
+* There is bug which locks the program on a semaphore in logging module.
+
 ## CHANGELOG
 
 See [semantic versioning](http://semver.org/). Please note point 4. on
