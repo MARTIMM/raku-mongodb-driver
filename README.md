@@ -2,6 +2,91 @@
 
 ![Leaf](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/logotype/logo_32x32.png) [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver)
 
+## Synopsis
+
+```
+use Test;
+use BSON::Document;
+use MongoDB::Client;
+use MongoDB::Database;
+use MongoDB::Collection;
+
+my MongoDB::Client $client .= new(:uri('mongodb://'));
+my MongoDB::Database $database = $client.database('myPetProject');
+my MongoDB::Collection $collection = $database.collection('famous-people');
+
+# Inserting data
+#
+my BSON::Document $req .= new: (
+  insert => $collection.name,
+  documents => [
+    BSON::Document.new((
+      name => 'Larry',
+      surname => 'Walll',
+      languages => BSON::Document.new((
+        Perl0 => 'introduced Perl to my officemates.',
+        Perl1 => 'introduced Perl to the world',
+        Perl2 => "introduced Henry Spencer's regular expression package.",
+        Perl3 => 'introduced the ability to handle binary data.',
+        Perl4 => 'introduced the first Camel book.',
+        Perl5 => 'introduced everything else, including the ability to introduce everything else.',
+        Perl6 => 'A perl changing perl event, Dec 12,2015'
+      )),
+    )),
+  ]
+);
+
+my BSON::Document $doc = $database.run-command($req);
+is $doc<ok>, 1, "insert request ok";
+is $doc<n>, 1, "inserted 1 document";
+
+# Inserting more data
+#
+$req .= new: (
+  insert => 'names',
+  documents => [ (
+      name => 'Larry',
+      surname => 'Wall',
+    ), (
+      name => 'Damian',
+      surname => 'Conway',
+    ), (
+      name => 'Jonathan',
+      surname => 'Worthington',
+    ), (
+      name => 'Moritz',
+      surname => 'Lenz',
+    ), (
+      name => 'Many',
+      surname => 'More',
+    ), (
+      name => 'Someone',
+      surname => 'Unknown',
+    ),
+  ]
+);
+
+$doc = $database.run-command($req);
+is $doc<ok>, 1, "insert request ok";
+is $doc<n>, 6, "inserted 6 documents";
+
+# Remove a record from the names collection
+#
+$req .= new: (
+  delete => 'names',
+  deletes => [ (
+      q => ( surname => ('Unknown'),),
+      limit => 1,
+    ),
+  ],
+);
+
+$doc = $database.run-command($req);
+is $doc<ok>, 1, "delete request ok";
+is $doc<n>, 1, "deleted 1 doc";
+
+```
+
 ## NOTE
 
 As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup.
@@ -139,7 +224,6 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
 * Other items to [check](https://docs.mongodb.org/manual/reference/limits/)
 * Table to map mongo status codes to severity level. This will modify the default severity when an error code from the server is received. Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
 
-* There is bug which locks the program on a semaphore in logging module.
 
 ## CHANGELOG
 
@@ -151,7 +235,7 @@ change at any time. The public API should not be considered stable.*
   * Shuffeling classes again. Wire and Client are no singletons anymore. Now databases are created the old way ```$client.database('name')```. Back then it was a Connection instead of Client. The reason that I have chosen to change it is because of the way read concerns should be processed. It could work with a replicaset or sharded systems but not with a mix of these. Now a uri can be provided to a client with some hosts and the Client will create several Server objects which will monitor the mongo server and find all the other servers in a replica set. Then a second Client can used with am other server independent of the first set of servers. Now the idea is that a read concern can be set at the Client, Database or Collection creation or even at the individual command run-command() and find().
   * Need to drop the class AdminDB too because of the above.
   * The CommandCll is also dropped because it does not add much to the system.
-  *
+  * There was a bug which locks the program. First run mostly ok but the second will go faster and locks. First I thought it happened in the logging part caused by occupying the semaphore but that is not the case because eventualy the logging ends and will free the semaphore. It looks like a problem when the server must still determine if the server is a master server. This monitoring uses run-command() and in the end needs to select a server for its socket. The default is that the selection searches for a master server. That selection process is also protected with a semaphore which locks the process. Solved!
 * 0.26.7
   * Documentation changes
   * Use request-id and response-to used in client request and server response to check if returned responses are responses to the proper request.

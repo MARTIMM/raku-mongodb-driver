@@ -37,7 +37,6 @@ package MongoDB {
     submethod BUILD (
       Str :$uri,
       BSON::Document :$read-concern
-      --> MongoDB::Client
     ) {
 
       unless $initialized {
@@ -69,6 +68,7 @@ package MongoDB {
         # Background process to discover hosts only if there are new servers
         # to be discovered or that new non default cases are presnted.
         #
+#TODO Check relation of servers otherwise refuse
         for @($uri-obj.server-data<servers>) -> Hash $sdata {
           $!server-discovery.push: Promise.start( {
             my MongoDB::Server $server;
@@ -79,15 +79,31 @@ package MongoDB {
                 :$server-data
               );
 
-              info-message("Server $sdata<host>:$sdata<port> discovered");
-
               # Return server object
               #
+              self!add-server($server);
               $server;
             }
           );
         }
       }
+    }
+
+    #---------------------------------------------------------------------------
+    # Called from thread above where Server object is created.
+    #
+    method !add-server ( MongoDB::Server:D $server ) {
+
+      # Read all Kept promises and store Server objects in $!servers array
+      #
+      trace-message("server select try_acquire");
+      $!control-select.acquire;
+
+      info-message( "Server {$server.name} saved");
+      $!servers.push: $server;
+
+      trace-message("server select release");
+      $!control-select.release;
     }
 
     #---------------------------------------------------------------------------
@@ -116,84 +132,19 @@ package MongoDB {
       #
       while !$server.defined {
 
-        if $!control-select.try_acquire {
-          trace-message("server select try_acquire");
+        my Bool $still-planned = self!cleanup-promises;
 
-          # First go through all Promises to see if there are still
-          # Server objects in the making
-          #
-          loop ( my $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
-            my $promise = $!server-discovery[$pi];
-            trace-message("discover server $pi");
-
-            # If promise is kept, the Server object has been created 
-            #
-            if $promise.status ~~ Kept {
-
-              # Get the Server object from the promise result and check
-              # its status. When True, the Server object could make a
-              # proper connection to the mongo server.
-              #
-              $server = $promise.result;
-              $!servers.push: $server;
-
-              # Cleanup promise entry
-              #
-              $!server-discovery[$pi] = Nil;
-              $!server-discovery.splice( $pi, 1);
-
-              # Start server monitoring
-              #
-              $server.monitor-server;
-
-              info-message( "Server {$server.name} saved");
-            }
-
-            # When broken throw away result
-            #
-            elsif $promise.status == Broken {
-
-              try {
-                $!server-discovery[$pi].result;
-
-                CATCH {
-                  default {
-                    warn-message(.message);
-
-                    $!server-discovery[$pi] = Nil;
-                    $!server-discovery.splice( $pi, 1);
-                  }
-                }
-              }
-            }
-
-            # When planned look at it in next while cycle
-            #
-            elsif $promise.status == Planned {
-              info-message("Promise $pi still running");
-            }
-          }
-
-          trace-message("server select release");
-          $!control-select.release;
-        }
-
-        else {
-          trace-message("server select try_acquire denied");
-        }
-
-        # Walk through $!servers array and return server
-        #
-        $server = Nil;
+#say "Nbr servers: {$!servers.elems}";
 
         for @$!servers -> $s {
-          debug-message( "Server is master 1?: {$s.is-master}");
+#          debug-message( "Server is master 1?: {$s.is-master}");
+#say "ss: {$s.name}";
 
-          if !$need-master or ($need-master and $s.is-master) {
-say "2";
-            debug-message( "Server is master 2?: {$s.is-master}");
-say "3";
-            $master-found = True if $s.is-master;
+          $master-found = True if $s.is-master;
+          if !$need-master or ($need-master and $master-found) {
+#say "ss 1";
+#            debug-message( "Server is master 2?: $master-found");
+#say "ss 2";
             $server = $s;
             debug-message(
               "Server {$server.name} selected, is master?: $master-found"
@@ -202,30 +153,95 @@ say "3";
             last;
           }
         }
+#say "ss 3";
 
-        unless $server.defined {
+        last if $server.defined;
+
 #say "discover: {$!server-discovery.elems}";
-          if $!server-discovery.elems {
-            warn-message("No server found yet, wait for running discovery");
-            sleep 1;
-          }
+        if $still-planned {
+          warn-message("No server found yet, wait for running discovery");
+          sleep 1;
+        }
 
-          elsif $!servers.elems and !$master-found {
-            # Try again a bit later to give the servers monitoring some time
-            #
-            warn-message("No master server found yet, wait for server monitoringy");
-            sleep 1;
-          }
+        elsif $!servers.elems and !$master-found {
+          # Try again a bit later to give the servers monitoring some time
+          #
+          warn-message("No master server found yet, wait for server monitoringy");
+          sleep 1;
+        }
 
-          else {
-            error-message("No server found, discovery data exhausted");
-            last;
-          }
+        else {
+          error-message("No server found, discovery data exhausted");
+          last;
         }
       }
 
       $server-ticket = store-object($server) if $server.defined;
+#say "ss 4 $server-ticket";
       return $server-ticket;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method !cleanup-promises ( ) {
+
+#say "Nbr promises: {$!server-discovery.elems}";
+
+      my Bool $still-planned = False;
+
+      loop ( my $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
+
+        my $promise = $!server-discovery[$pi];
+
+        # If promise is kept, the Server object has been created and
+        # stored in $!servers.
+        #
+        if $promise.status ~~ Kept {
+#say "cp 2k";
+          my $server = $!server-discovery[$pi].result;
+
+          # Cleanup promise entry
+          #
+          $!server-discovery[$pi] = Nil;
+          $!server-discovery.splice( $pi, 1);
+
+          # Start server monitoring
+          #
+          $server.monitor-server;
+        }
+
+        # When broken throw away result
+        #
+        elsif $promise.status == Broken {
+#say "cp 2b";
+
+          # When broken, it is caused by a thrown exception
+          # so catch it here.
+          #
+          try {
+            $!server-discovery[$pi].result;
+
+            CATCH {
+              default {
+                warn-message(.message);
+
+                $!server-discovery[$pi] = Nil;
+                $!server-discovery.splice( $pi, 1);
+              }
+            }
+          }
+        }
+
+        # When planned look at it in next while cycle
+        #
+        elsif $promise.status == Planned {
+#say "cp 2p";
+          info-message("Promise $pi still running");
+          $still-planned = True;
+        }
+      }
+
+      return $still-planned;
     }
 
     #---------------------------------------------------------------------------

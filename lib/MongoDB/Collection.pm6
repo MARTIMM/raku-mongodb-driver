@@ -19,16 +19,16 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0, List :$read-concern = ()
+      Int :$flags = 0, List :$read-concern = (),
+      Str :$server-ticket is copy
 
       --> MongoDB::Cursor
     ) {
 
       my MongoDB::Wire $wire .= new;
       my BSON::Document $rc .= new: $read-concern;
-      my Str $server-ticket = $.database.client.select-server(
-        :read-concern($rc)
-      );
+      $server-ticket = $.database.client.select-server(:read-concern($rc))
+        unless ?$server-ticket;
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
@@ -37,10 +37,6 @@ package MongoDB {
         :$number-to-return, :$server-ticket
       );
 
-#      return MongoDB::Cursor.new(
-#        :collection(self), :$server-reply,
-#        :read-concern($rc), :$server-ticket
-#      );
       return MongoDB::Cursor.new(
         :collection(self), :$server-reply,
         :read-concern($rc), :$server-ticket
@@ -55,14 +51,14 @@ package MongoDB {
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0,
-      BSON::Document :$read-concern = BSON::Document.new
+      BSON::Document :$read-concern = BSON::Document.new,
+      Str :$server-ticket is copy
       --> MongoDB::Cursor
     ) {
 
       my MongoDB::Wire $wire .= new;
-      my Str $server-ticket = $.database.client.select-server(
-        :read-concern($read-concern)
-      );
+      $server-ticket = $.database.client.select-server(:$read-concern)
+        unless ?$server-ticket;
 
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,

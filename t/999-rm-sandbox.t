@@ -2,17 +2,24 @@ use v6;
 use lib 't';
 use Test;
 use Test-support;
+use MongoDB;
+use MongoDB::Object-store;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Socket;
 
+#-------------------------------------------------------------------------------
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
+info-message("Test $?FILE start");
+
 #-----------------------------------------------------------------------------
 #
+#my MongoDB::Client $client = get-connection();
 my Int $port-number = slurp('Sandbox/port-number').Int;
-
-
-my MongoDB::Client $client .= new( :host<localhost>, :port($port-number));
-my MongoDB::Server $server = $client.select-server;
+my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
+my Str $server-ticket = $client.select-server;
+my MongoDB::Server $server = get-stored-object($server-ticket);
 ok $server.defined, 'Server defined';
 #my MongoDB::Socket $socket = $server.get-socket;
 
@@ -46,19 +53,14 @@ rmdir "Sandbox";
 }}
 
 try {
-  $client .= new(:uri('mongodb://localhost:' ~ $port-number));
-  $server = $client.select-server;
-  nok $server.defined, 'Server defined';
-  CATCH {
-    default {
-      ok .message ~~ m:s/Failed to connect\: connection refused/,
-         'Failed to connect: connection refused';
-    }
-  }
+  $client .= new(:uri("mongodb://localhost:$port-number"));
+  $server-ticket = $client.select-server;
+  nok $server-ticket.defined, 'No servers selected';
 }
 
 #-----------------------------------------------------------------------------
 # Cleanup and close
 #
+info-message("Test $?FILE start");
 done-testing();
 exit(0);

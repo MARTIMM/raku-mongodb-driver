@@ -4,15 +4,15 @@ use Test-support;
 use Test;
 use MongoDB;
 use MongoDB::Client;
+use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Debug);
+#set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Info);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
-say '0';
 my MongoDB::Database $database = $client.database('test');
-say '1';
 my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
 my BSON::Document $doc;
@@ -182,7 +182,9 @@ subtest {
       is $d<type>, "men with 'y' in name", $d<type>;
 #say 'D doc: ', $d.perl;
 
+say "Number of stored objects: {nbr-stored-objects}";
       $c.kill;
+say "Number of stored objects: {nbr-stored-objects}";
     }
   }
 
@@ -191,6 +193,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+say "Number of stored objects: {nbr-stored-objects}";
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);

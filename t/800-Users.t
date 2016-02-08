@@ -21,8 +21,12 @@ use MongoDB::Collection;
 }}
 
 #-------------------------------------------------------------------------------
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
+
 my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Database $database = $client.database('test');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $doc;
 my MongoDB::Users $users .= new(:$database);
@@ -201,5 +205,6 @@ subtest {
 #
 $database.run-command: (dropDatabase => 1);
 
+info-message("Test $?FILE start");
 done-testing();
 exit(0);

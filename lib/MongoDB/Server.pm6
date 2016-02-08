@@ -1,5 +1,6 @@
 use v6;
 use MongoDB;
+use MongoDB::Object-store;
 use MongoDB::Socket;
 use MongoDB::ClientIF;
 use MongoDB::DatabaseIF;
@@ -19,7 +20,6 @@ package MongoDB {
 
     has MongoDB::Socket @!sockets;
     has Int $.max-sockets is rw where $_ >= 3;
-#    has Bool $.status = False;
 
     has Bool $.is-master = False;
     has Int $.max-bson-object-size;
@@ -51,35 +51,18 @@ package MongoDB {
 
       $!server-monitor-control .= new(1);
 
-      # Try block used because IO::Socket::INET throws an exception when things
-      # go wrong. This is not nessesary because there is no risc of data loss
+      # IO::Socket::INET throws an exception when things go wrong. Need to
+      # catch this higher up.
       #
-#      try {
-#        $!status = False;
+      my IO::Socket::INET $sock .= new(
+        :host($!server-name),
+        :port($!server-port)
+      );
 
-        my IO::Socket::INET $sock .= new(
-          :host($!server-name),
-          :port($!server-port)
-        );
-
-#        $!status = True;
-
-        # Must close this because of thread errors when reading the socket
-        # Besides the sockets are encapsulated in Socket and kept in an array.
-        #
-        $sock.close;
-
-        # IO::Socket::INET throws an exception when there is no server response.
-        # So we catch it here and set the status to False to show there is no
-        # server found.
-        #
-#        CATCH {
-#          default {
-#            $!status = False;
-#            
-#          }
-#        }
-#      }
+      # Must close this because of thread errors when reading the socket
+      # Besides the sockets are encapsulated in Socket and kept in an array.
+      #
+      $sock.close;
     }
 
     #---------------------------------------------------------------------------
@@ -126,7 +109,7 @@ package MongoDB {
     method monitor-server ( ) {
 
       # Set the lock so the code will only be started once. When server or
-      # program stops, the code is terminated via a channel.
+      # program stops(controlled), the code is terminated via a channel.
       #
       return unless $!server-monitor-control.try_acquire;
 
@@ -134,36 +117,56 @@ package MongoDB {
           my Instant $t0;
           my BSON::Document $doc;
           my Duration $rtt;
+
+          # As long as the server lives test it. Changes are possible when 
+          # master changes servers.
+          #
           while 1 {
 
-            # Calculation of mean Return Trip Time
-            #
-            $t0 = now;
-            $doc = $!db-admin.run-command: (isMaster => 1);
-            $rtt = now - $t0;
-            $!weighted-mean-rtt .= new(0.2 * $rtt + 0.8 * $!weighted-mean-rtt);
-            debug-message(
-              "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
-            );
+#            try {
+              my Str $server-ticket = store-object(self);
 
-            # Set master type
-            #
-            $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+              # Calculation of mean Return Trip Time
+              #
+              $t0 = now;
+#say "\nRun isMaster, $server-ticket";
+              $doc = $!db-admin._internal-run-command(
+                BSON::Document.new((isMaster => 1)),
+                :$server-ticket
+              );
+#say "Done isMaster";
+              $rtt = now - $t0;
+              $!weighted-mean-rtt .= new(0.2 * $rtt + 0.8 * $!weighted-mean-rtt);
+              debug-message(
+                "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
+              );
+
+              # Set master type
+              #
+              $!is-master = $doc<ismaster> if ?$doc<ismaster>;
 #say $doc.perl;
 
-            # When not defined set these too
-            #
-            unless ?$!max-bson-object-size {
-              $!max-bson-object-size = $doc<maxBsonObjectSize>;
-              $!max-write-batch-size = $doc<maxWriteBatchSize>;
-            }
+              # When not defined set these too
+              #
+              unless ?$!max-bson-object-size {
+                $!max-bson-object-size = $doc<maxBsonObjectSize>;
+                $!max-write-batch-size = $doc<maxWriteBatchSize>;
+              }
 
-            # Then check the channel to see if there is a stop command. If so
-            # exit the while loop. Take a nap otherwise.
-            #
-            my $cmd = $!channel.poll;
-            last if ?$cmd and $cmd eq 'stop';
-            sleep 10;
+              # Then check the channel to see if there is a stop command. If so
+              # exit the while loop. Take a nap otherwise.
+              #
+              my $cmd = $!channel.poll;
+              last if ?$cmd and $cmd eq 'stop';
+              sleep 10;
+
+#              CATCH {
+#
+#                default {
+#                  .say;
+#                }
+#              }
+#            }
           }
         }
       );

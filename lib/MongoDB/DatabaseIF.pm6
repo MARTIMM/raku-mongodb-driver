@@ -15,7 +15,7 @@ package MongoDB {
     #
     submethod BUILD ( MongoDB::ClientIF :$client, Str :$name ) {
 
-      self._set-name($name);
+      self!set-name($name);
       $!client = $client;
     }
 
@@ -27,7 +27,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     multi method run-command (
       $command where (.defined and .^name eq 'BSON::Document'),
-      :$read-concern where (!.defined or .^name eq 'BSON::Document')
+      :$read-concern where (!.defined or .^name eq 'BSON::Document'),
     ) {
       ...
     }
@@ -37,7 +37,7 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    method _set-name ( Str $name = '' ) {
+    method !set-name ( Str $name = '' ) {
 
       # Check special database first. Should be empty and is set later
       #

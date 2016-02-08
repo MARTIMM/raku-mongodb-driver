@@ -15,7 +15,7 @@ package MongoDB {
     #
     submethod BUILD ( MongoDB::DatabaseIF :$database!, Str :$name ) {
       $!database = $database;
-      self._set-name($name) if ?$name;
+      self!set-name($name) if ?$name;
     }
 
     #---------------------------------------------------------------------------
@@ -25,7 +25,8 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0
+      Int :$flags = 0,
+      Str :$server-ticket is copy
     ) {
       ...
     }
@@ -34,7 +35,8 @@ package MongoDB {
       BSON::Document :$criteria = BSON::Document.new,
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0
+      Int :$flags = 0,
+      Str :$server-ticket is copy
     ) {
       ...
     }
@@ -44,7 +46,7 @@ package MongoDB {
     # collection name to '$cmd'. There are several other names starting with
     # 'system.'.
     #
-    method _set-name ( Str:D $name ) {
+    method !set-name ( Str:D $name ) {
 
       # Check for the CommandCll because of $name is $cmd
       #
@@ -59,14 +61,14 @@ package MongoDB {
 #      }
 
       $!name = $name;
-      self._set-full-collection-name;
+      self!set-full-collection-name;
     }
 
     #---------------------------------------------------------------------------
     # Helper to set full collection name in cases that the name of the database
     # isn't available at BUILD time
     #
-    method _set-full-collection-name ( ) {
+    method !set-full-collection-name ( ) {
 
       return unless !?$.full-collection-name and ?$.database.name and ?$.name;
       $!full-collection-name = [~] $.database.name, '.', $.name;

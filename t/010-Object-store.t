@@ -49,7 +49,7 @@ subtest {
     
     CATCH {
       when MongoDB::Message {
-        ok .message ~~ m:s/Ticket my\-list already in use/,
+        ok .message ~~ m:s/Ticket \'my\-list\' already in use/,
            'Ticket my-list already in use';
       }
     }

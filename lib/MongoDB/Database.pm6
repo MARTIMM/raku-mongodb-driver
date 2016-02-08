@@ -43,7 +43,7 @@ package MongoDB {
     #
     multi method run-command (
       BSON::Document:D $command,
-      BSON::Document :$read-concern = BSON::Document.new
+      BSON::Document :$read-concern = BSON::Document.new,
       --> BSON::Document
     ) {
 
@@ -52,7 +52,7 @@ package MongoDB {
       my MongoDB::Cursor $cursor = $.cmd-collection.find(
         :criteria($command),
         :number-to-return(1),
-        :$read-concern
+        :$read-concern,
       );
       my $doc = $cursor.fetch;
       trace-message('done run-command');
@@ -60,6 +60,7 @@ package MongoDB {
 #TODO throw exception when undefined!!!
       return $doc.defined ?? $doc !! BSON::Document.new;
     }
+
 
     # Run command using List of Pair.
     #
@@ -89,6 +90,30 @@ package MongoDB {
       );
 
       my $doc = $cursor.fetch;
+#TODO throw exception when undefined!!!
+      return $doc.defined ?? $doc !! BSON::Document.new;
+    }
+
+    #---------------------------------------------------------------------------
+    method _internal-run-command (
+      BSON::Document:D $command,
+      BSON::Document :$read-concern = BSON::Document.new,
+      Str :$server-ticket
+      --> BSON::Document
+    ) {
+
+      # And use it to do a find on it, get the doc and return it.
+      #
+#say "idb, ", $server-ticket // '-';
+      my MongoDB::Cursor $cursor = $.cmd-collection.find(
+        :criteria($command),
+        :number-to-return(1),
+        :$read-concern,
+        :$server-ticket
+      );
+      my $doc = $cursor.fetch;
+      trace-message('done run-command');
+
 #TODO throw exception when undefined!!!
       return $doc.defined ?? $doc !! BSON::Document.new;
     }

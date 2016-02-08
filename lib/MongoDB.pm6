@@ -2,7 +2,7 @@ use v6;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.26.6> {
+package MongoDB:ver<0.26.8> {
 
   #-----------------------------------------------------------------------------
   # Definition of all severity types
@@ -138,10 +138,15 @@ package MongoDB:ver<0.26.6> {
       Str :$collection-ns = '',
       MongoDB::Severity :$severity = MongoDB::Severity::Warn,
     ) {
+#say 'l 0';
+      return
+        unless ($do-check and ($severity >= $severity-throw-level))
+        or ($do-log and ($severity >= $severity-process-level));
 
-say "l1: {callframe(3).line} {callframe(3).file}";
+
+#say "l 1: {callframe(3).line} {callframe(3).file}";
       $control-logging.acquire;
-say "l2";
+#say "l 2";
 #say "Severity $severity, $message";
       my CallFrame $cf = self!search-callframe(Method);
       $cf = self!search-callframe(Submethod) unless $cf.defined;
@@ -175,11 +180,11 @@ say "l2";
       # messing up the data
       #
       my $copy = self.clone;
-say "l3";
+#say "l 3";
       $control-logging.release;
 
-      return $copy
-        unless ($do-check and (self.severity >= $severity-throw-level));
+      return unless ($do-check and ($copy.severity >= $severity-throw-level));
+#say "l 4";
       die $copy;
     }
 
@@ -222,6 +227,32 @@ say "l3";
       }
 
       return $cf;
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method dump-callframes ( ) {
+
+      my $fn = 1;
+      while my CallFrame $cf = callframe($fn++) {
+
+        # End loop with the program that starts on line 1 and code object is
+        # a hollow shell.
+        #
+        if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
+          last;
+        }
+
+        # Cannot pass sub THREAD-ENTRY either
+        #
+        if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
+          last;
+        }
+
+        say $fn.fmt('%02d'), ': ' , $cf.line, ', ', $cf.code.WHAT,
+            ', ', $cf.code.^name,
+            ', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
+      }
     }
 
     #-----------------------------------------------------------------------------

@@ -11,6 +11,7 @@ use MongoDB::Socket;
 use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
+#set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Info);
 info-message("Test $?FILE start");
 
