@@ -85,6 +85,48 @@ $doc = $database.run-command($req);
 is $doc<ok>, 1, "delete request ok";
 is $doc<n>, 1, "deleted 1 doc";
 
+
+# Modifying all records where the name has the character 'y' in their name
+#
+$req .= new: (
+  update => 'names',
+  updates => [ (
+      q => ( name => ('$regex' => BSON::Regex.new( :regex<y>, :options<i>),),),
+      u => ('$set' => (type => "men with 'y' in name"),),
+      upsert => True,
+      multi => True,
+    ),
+  ],
+);
+
+$doc = $database.run-command($req);
+is $doc<ok>, 1, "update request ok";
+is $doc<n>, 2, "selected 2 docs";
+is $doc<nModified>, 2, "modified 2 docs";
+
+# And repairing a terrible mistake in the name of Larry Wall
+#
+$doc = $database.run-command: (
+  findAndModify => 'famous_people',
+  query => (surname => 'Walll'),
+  update => ('$set' => surname => 'Wall'),
+);
+
+is $doc<ok>, 1, "findAndModify request ok";
+is $doc<value><surname>, 'Walll', "old data returned";
+is $doc<lastErrorObject><updatedExisting>, True, "existing document updated";
+
+# Trying it again will show that the record is updated.
+#
+$doc = $database.run-command: (
+  findAndModify => 'famous_people',
+  query => (surname => 'Walll'),
+  update => ('$set' => surname => 'Wall'),
+);
+
+is $doc<ok>, 1, "findAndModify request ok";
+is $doc<value>, Any, 'record not found';
+
 ```
 
 ## NOTE
@@ -236,6 +278,7 @@ change at any time. The public API should not be considered stable.*
   * Need to drop the class AdminDB too because of the above.
   * The CommandCll is also dropped because it does not add much to the system.
   * There was a bug which locks the program. First run mostly ok but the second will go faster and locks. First I thought it happened in the logging part caused by occupying the semaphore but that is not the case because eventualy the logging ends and will free the semaphore. It looks like a problem when the server must still determine if the server is a master server. This monitoring uses run-command() and in the end needs to select a server for its socket. The default is that the selection searches for a master server. That selection process is also protected with a semaphore which locks the process. Solved!
+  * Bugfix cleaning up server objects in Object-store object. Happened in Cursor when reading more data from the server. When a null id was returned iy should clear the object too.
 * 0.26.7
   * Documentation changes
   * Use request-id and response-to used in client request and server response to check if returned responses are responses to the proper request.
