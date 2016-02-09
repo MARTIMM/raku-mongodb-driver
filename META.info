@@ -21,7 +21,7 @@
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
     "MongoDB::DatabaseIF":              "lib/MongoDB/DatabaseIF.pm6",
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
-    "MongoDB::Object-store":            "Lib/MongoDB/Object-store.pm6",
+    "MongoDB::Object-store":            "lib/MongoDB/Object-store.pm6",
     "MongoDB::Server":                  "lib/MongoDB/Server.pm6",
     "MongoDB::Socket":                  "lib/MongoDB/Socket.pm6",
     "MongoDB::Uri"  :                   "lib/MongoDB/Uri.pm6",
