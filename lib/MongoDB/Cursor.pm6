@@ -107,6 +107,10 @@ package MongoDB {
         # documents to fetch.
         #
         $!id = $server-reply<cursor-id>;
+        unless [+] @($server-reply<cursor-id>) {
+          clear-stored-object($!server-ticket);
+          $!server-ticket = Nil;
+        }
 
         # Get documents
         #

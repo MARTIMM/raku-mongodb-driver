@@ -182,9 +182,7 @@ subtest {
       is $d<type>, "men with 'y' in name", $d<type>;
 #say 'D doc: ', $d.perl;
 
-say "Number of stored objects: {nbr-stored-objects}";
       $c.kill;
-say "Number of stored objects: {nbr-stored-objects}";
     }
   }
 
@@ -193,7 +191,10 @@ say "Number of stored objects: {nbr-stored-objects}";
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-say "Number of stored objects: {nbr-stored-objects}";
+# Number of stored objects can be one when Server object monitors
+# the mongod server
+#
+ok nbr-stored-objects() < 2, "Number of stored objects < 2";
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
