@@ -13,12 +13,11 @@ use MongoDB::Collection;
 
 my MongoDB::Client $client .= new(:uri('mongodb://'));
 my MongoDB::Database $database = $client.database('myPetProject');
-my MongoDB::Collection $collection = $database.collection('famous-people');
 
 # Inserting data
 #
 my BSON::Document $req .= new: (
-  insert => $collection.name,
+  insert => 'famous-people',
   documents => [
     BSON::Document.new((
       name => 'Larry',
@@ -85,8 +84,8 @@ $doc = $database.run-command($req);
 is $doc<ok>, 1, "delete request ok";
 is $doc<n>, 1, "deleted 1 doc";
 
-
-# Modifying all records where the name has the character 'y' in their name
+# Modifying all records where the name has the character 'y' in their name.
+# Add a new field to the document
 #
 $req .= new: (
   update => 'names',
@@ -127,6 +126,30 @@ $doc = $database.run-command: (
 is $doc<ok>, 1, "findAndModify request ok";
 is $doc<value>, Any, 'record not found';
 
+# Finding things
+#
+my MongoDB::Collection $collection = $database.collection('names');
+my MongoDB::Cursor $cursor = $collection.find: (
+
+), (
+  _id => 0, name => 1, surname => 1, type => 1
+);
+
+for $cursor.fetch -> BSON::Document $d {
+  say "Name and surname: ", $d<name>, ' ', $d<surname>
+      ($d<type> ?? ", $d<type>" !! '');
+
+  if $d<name> eq 'Moritz' {
+    # Just to be sure
+    $cursor.kill;
+    last;
+  }
+}
+# Output is;
+# Larry Wall, men with 'y' in name
+# Damian Conway
+# Jonathan Worthington
+# Moritz Lenz
 ```
 
 ## NOTE
