@@ -1,50 +1,21 @@
 use v6;
 
-#use lib '/home/marcel/Languages/Perl6/Projects/BSON/lib';
-
 use BSON::Document;
 use MongoDB;
-use MongoDB::ClientIF;
+use MongoDB::CollectionIF;
 use MongoDB::Header;
+use MongoDB::Object-store;
 
 package MongoDB {
 
   class Wire {
-  
-    my MongoDB::ClientIF $client;
 
     #---------------------------------------------------------------------------
-    # Wire must be a singleton, new() must throw an exception, instance()
-    # is the way to get this classes object
     #
-    my MongoDB::Wire $wire-object;
-    
-    method new ( ) {
-
-      die X::MongoDB.new(
-        error-text => "This is a singleton, Please use instance()",
-        oper-name => 'MongoDB::Wire.new()',
-        severity => MongoDB::Severity::Fatal
-      );
-    }
-
-    submethod instance ( --> MongoDB::Wire ) {
-
-      $wire-object = MongoDB::Wire.bless unless $wire-object.defined;
-      $wire-object;
-    }
-
-    #---------------------------------------------------------------------------
-    # 
-    method set-client ( MongoDB::ClientIF:D $client-object! ) {
-      $client = $client-object;
-    }
-
-    #---------------------------------------------------------------------------
-    # 
     method query (
-      $collection, BSON::Document:D $qdoc,
-      $projection?, :$flags, :$number-to-skip, :$number-to-return
+      MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
+      BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
+      :$number-to-return, Str:D :$server-ticket
       --> BSON::Document
     ) {
       # Must clone the document otherwise the MongoDB::Header will be added
@@ -60,36 +31,41 @@ package MongoDB {
       my Bool $has-response = True;
       $has-response = False if $d<shutdown>:exists and $d<shutdown> == 1;
 
+      my Bool $need-master = False;
+      $need-master = ($d.find-key(0) ~~ any(<insert update delete>));
+#say "Need master for {$d.find-key(0)} $need-master";
       my $full-collection-name = $collection.full-collection-name;
 
-      my Buf $encoded-query = $d.encode-query(
+      ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
         $full-collection-name, $projection,
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my $socket = $client.select-server.get-socket;
+      my $socket = get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-query);
 
       if $has-response {
         # Read 4 bytes for int32 response size
         #
         my Buf $size-bytes = $socket.receive(4);
-        die X::MongoDB.new(
-          error-text => "No response from server",
-          oper-name => 'MongoDB::Wire.query()',
-          severity => MongoDB::Severity::Fatal
-        ) if $size-bytes.elems < 4;
+        return fatal-message("No response from server")
+               if $size-bytes.elems < 4;
 
         my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
-        # Receive remaining response bytes from socket. Prefix it with the already
-        # read bytes and decode. Return the resulting document.
+        # Receive remaining response bytes from socket. Prefix it with the
+        # already read bytes and decode. Return the resulting document.
         #
         my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
 
         $result = $d.decode-reply($server-reply);
+
+        # Assert that the request-id and response-to are the same
+        #
+        return fatal-message("Id in request is not the same as in the response")
+          unless $request-id == $result<message-header><response-to>;
       }
-      
+
       else {
         $result .= new: (
           ok => 1,
@@ -97,23 +73,23 @@ package MongoDB {
           documents => [  ]
         );
       }
-      
+
       $socket.close;
       return $result;
     }
 
     #---------------------------------------------------------------------------
     #
-    method get-more ( $cursor --> BSON::Document ) {
+    method get-more ( $cursor, Str:D :$server-ticket --> BSON::Document ) {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
 
-      my Buf $encoded-get-more = $d.encode-get-more(
+      ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
         $cursor.full-collection-name, $cursor.id
       );
 
-      my $socket = $client.select-server.get-socket;
+      my $socket = get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -129,12 +105,22 @@ package MongoDB {
 
       $socket.close;
 # TODO check if cursorID matches (if present)
-      return $d.decode-reply($server-reply);
+      my BSON::Document $result = $d.decode-reply($server-reply);
+
+      # Assert that the request-id and response-to are the same
+      #
+      return fatal-message("Id in request is not the same as in the response")
+        unless $request-id == $result<message-header><response-to>;
+
+      return $result;
     }
 
     #---------------------------------------------------------------------------
     #
-    method kill-cursors ( @cursors where $_.elems > 0 ) {
+    method kill-cursors (
+      @cursors where $_.elems > 0,
+      Str:D :$server-ticket
+    ) {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
@@ -148,9 +134,12 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $socket = $client.select-server.get-socket;
+      my $socket = get-stored-object($server-ticket).get-socket;
       if +@cursor-ids {
-        my Buf $encoded-kill-cursors = $d.encode-kill-cursors(@cursor-ids);
+        ( my Buf $encoded-kill-cursors,
+          my Int $request-id
+        ) = $d.encode-kill-cursors(@cursor-ids);
+
         $socket.send($encoded-kill-cursors);
       }
 

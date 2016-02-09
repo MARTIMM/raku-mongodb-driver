@@ -2,19 +2,16 @@ use v6;
 use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
 
-#`{{
-  Testing;
-    count                       Count documents whithout using find.
-    distinct                    Find distinct values
-    list collections            Return collection info in database
-    collection names            Return collectionnames in database
-}}
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
-my MongoDB::Client $connection = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Client $client = get-connection();
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('cl1');
 my BSON::Document $req;
 my BSON::Document $doc;
@@ -69,5 +66,6 @@ subtest {
 #
 $database.run-command: (dropDatabase => 1);
 
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

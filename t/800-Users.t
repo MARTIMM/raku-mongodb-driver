@@ -2,8 +2,11 @@ use v6;
 use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
 use MongoDB::Users;
+use MongoDB::Database;
+use MongoDB::Collection;
 
 #`{{
   Testing;
@@ -18,22 +21,14 @@ use MongoDB::Users;
 }}
 
 #-------------------------------------------------------------------------------
-# No sandboxing therefore administration will not be tested as a precaution.
-#
-if %*ENV<NOSANDBOX> {
-  plan 1;
-  skip-rest('No sand-boxing requested, administration tests are skipped');
-  exit(0);
-}
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
-#-------------------------------------------------------------------------------
 my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Database $database = $client.database('test');
 my MongoDB::Collection $collection = $database.collection('testf');
-my BSON::Document $req;
 my BSON::Document $doc;
-my MongoDB::Cursor $cursor;
 my MongoDB::Users $users .= new(:$database);
 
 $database.run-command: (dropDatabase => 1);
@@ -79,7 +74,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .error-text eq 'Username too short, must be >= 5', .error-text;
       }
     }
@@ -93,7 +88,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .error-text eq 'Password too short, must be >= 6', .error-text;
       }
     }
@@ -107,7 +102,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .error-text eq 'Password does not have the right properties',
            .error-text;
       }
@@ -210,5 +205,6 @@ subtest {
 #
 $database.run-command: (dropDatabase => 1);
 
+info-message("Test $?FILE start");
 done-testing();
 exit(0);

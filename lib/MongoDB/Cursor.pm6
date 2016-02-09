@@ -1,6 +1,10 @@
 use v6;
 use BSON::Document;
+use MongoDB;
+use MongoDB::CollectionIF;
+use MongoDB::ClientIF;
 use MongoDB::Wire;
+use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
 #
@@ -10,7 +14,7 @@ package MongoDB {
   #
   class Cursor {
 
-    has $.collection;
+#    has $.collection;
     has $.full-collection-name;
 
     # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
@@ -22,32 +26,52 @@ package MongoDB {
     #
     has @.documents;
 
+    has Str $!server-ticket;
+
     #-----------------------------------------------------------------------------
     # Support for the newer BSON::Document
     #
-    multi submethod BUILD ( :$collection!, BSON::Document:D :$server-reply ) {
+    multi submethod BUILD (
+      MongoDB::CollectionIF :$collection!,
+      BSON::Document:D :$server-reply,
+      Str :$server-ticket
+    ) {
 
-      $!collection = $collection;
-      $!full-collection-name = $!collection.full-collection-name;
+#      $!collection = $collection;
+      $!full-collection-name = $collection.full-collection-name;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
       # batches left on the server to retrieve. Documents may be present in
       # this reply.
       #
       $!id = $server-reply<cursor-id>;
+      if [+] @($server-reply<cursor-id>) {
+        $!server-ticket = $server-ticket;
+      }
+      
+      else {
+        clear-stored-object($server-ticket);
+        $!server-ticket = Nil;
+      }
 
       # Get documents from the reply.
       #
       @!documents = $server-reply<documents>.list;
+
     }
 
     # This can be set with data received from a command e.g. listDocuments
     #
-    multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
+    multi submethod BUILD (
+      MongoDB::ClientIF:D :$client!,
+      BSON::Document:D :$cursor-doc!,
+      BSON::Document :$read-concern = BSON::Document.new
+    ) {
 
+      $!server-ticket = $client.select-server(:$read-concern);
 #TODO Check provided structure for the fields.
 
-      $!collection = $cursor-doc<ns>;
+#      $!collection = $cursor-doc<ns>;
       $!full-collection-name = $cursor-doc<ns>;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
@@ -62,6 +86,8 @@ package MongoDB {
       # Get documents from the reply.
       #
       @!documents = @($cursor-doc<firstBatch>);
+
+#      $!read-concern = $read-concern;
     }
 
     #-----------------------------------------------------------------------------
@@ -75,12 +101,16 @@ package MongoDB {
         # Request next batch of documents
         #
         my BSON::Document $server-reply =
-          MongoDB::Wire.instance.get-more(self);
+          MongoDB::Wire.new.get-more( self, :$!server-ticket);
 
         # Get cursor id, It may change to "0" if there are no more
         # documents to fetch.
         #
         $!id = $server-reply<cursor-id>;
+        unless [+] @($server-reply<cursor-id>) {
+          clear-stored-object($!server-ticket);
+          $!server-ticket = Nil;
+        }
 
         # Get documents
         #
@@ -95,13 +125,18 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     method kill ( --> Nil ) {
 
-      # invalidate cursor on database
-      MongoDB::Wire.instance.kill-cursors((self,));
+      # Invalidate cursor on database only if id is valid
+      #
+      if [+] @$.id {
+        MongoDB::Wire.new.kill-cursors( (self,), :$!server-ticket);
 
-      # invalidate cursor id
-      $!id = Buf.new( 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+        # Invalidate cursor id with 8 0x00 bytes
+        #
+        $!id = Buf.new(0x00 xx 8);
 
-      return;
+        clear-stored-object($!server-ticket);
+        $!server-ticket = Nil;
+      }
     }
   }
 }

@@ -2,20 +2,16 @@ use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use v6;
 use Test;
+use MongoDB;
 use MongoDB::Database;
 use MongoDB::Client;
 
-#`{{
-  Testing;
-    database.collection()               Create collection
-    database.create-collection()        Create collection explicitly
-    collection.drop()                   Drop collection
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
-    X::MongoDB                          Catch exceptions
-}}
-
-my MongoDB::Client $connection = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Client $client = get-connection();
+my MongoDB::Database $database = $client.database('test');
 
 # Create collection and insert data in it!
 #
@@ -104,7 +100,7 @@ is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 try {
   $doc = $database.run-command($req);
   CATCH {
-    when X::MongoDB {
+    when MongoDB::Message {
       ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
     }
   }
@@ -120,7 +116,7 @@ exit(0);
 try {
   $database.create-collection('abc-def and a space');
   CATCH {
-    when X::MongoDB {
+    when MongoDB::Message {
       ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
     }
   }
@@ -168,5 +164,6 @@ is $cursor.count, 10, 'Only 10 records in collection';
 $req .= new: ( dropDatabase => 1 );
 $doc = $database.run-command($req);
 
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

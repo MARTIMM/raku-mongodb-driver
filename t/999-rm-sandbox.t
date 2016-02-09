@@ -2,26 +2,24 @@ use v6;
 use lib 't';
 use Test;
 use Test-support;
+use MongoDB;
+use MongoDB::Object-store;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Socket;
 
-#-----------------------------------------------------------------------------
-# Stop mongodb unless sandbox isn't found, no sandbox requested
-#
-if %*ENV<NOSANDBOX> or 'Sandbox/port-number'.IO !~~ :e {
-  plan 1;
-  skip-rest('No sand-boxing requested');
-  exit(0);
-}
+#-------------------------------------------------------------------------------
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
+info-message("Test $?FILE start");
 
 #-----------------------------------------------------------------------------
 #
+#my MongoDB::Client $client = get-connection();
 my Int $port-number = slurp('Sandbox/port-number').Int;
-
-
-my MongoDB::Client $client .= instance( :host<localhost>, :port($port-number));
-my MongoDB::Server $server = $client.select-server;
+my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
+my Str $server-ticket = $client.select-server;
+my MongoDB::Server $server = get-stored-object($server-ticket);
 ok $server.defined, 'Server defined';
 #my MongoDB::Socket $socket = $server.get-socket;
 
@@ -34,6 +32,7 @@ sleep 2;
 diag "Server stopped";
 diag "Remove sandbox data";
 
+#`{{    TEMPORARY INHIBIT THE REMOVAL OF THE SANDBOX
 for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
   next unless $path.IO ~~ :d;
   for dir($path) -> $dir-entry {
@@ -51,21 +50,17 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 
 diag "delete directory Sandbox";
 rmdir "Sandbox";
+}}
 
 try {
-  $client .= instance( :host<localhost>, :port($port-number));
-  $server = $client.select-server;
-  nok $server.defined, 'Server defined';
-  CATCH {
-    default {
-      ok .message ~~ m:s/Failed to connect\: connection refused/,
-         'Failed to connect: connection refused';
-    }
-  }
+  $client .= new(:uri("mongodb://localhost:$port-number"));
+  $server-ticket = $client.select-server;
+  nok $server-ticket.defined, 'No servers selected';
 }
 
 #-----------------------------------------------------------------------------
 # Cleanup and close
 #
+info-message("Test $?FILE start");
 done-testing();
 exit(0);

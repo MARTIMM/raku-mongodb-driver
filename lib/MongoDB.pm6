@@ -2,7 +2,7 @@ use v6;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.26.6> {
+package MongoDB:ver<0.26.8> {
 
   #-----------------------------------------------------------------------------
   # Definition of all severity types
@@ -22,14 +22,20 @@ package MongoDB:ver<0.26.6> {
   our $log-fn = 'MongoDB.log';
 
   #-----------------------------------------------------------------------------
+  # Exceptions only thrown at Error or Fatal
   #
-  sub set-exception-throw-level ( Severity:D $s ) is export {
+  sub set-exception-throw-level (
+    Severity:D $s where Error <= $s <= Fatal
+  ) is export {
     $severity-throw-level = $s;
   }
 
   #-----------------------------------------------------------------------------
+  # Logging always for Errors and Fatal
   #
-  sub set-exception-process-level ( Severity:D $s ) is export {
+  sub set-exception-process-level (
+    Severity:D $s where Trace <= $s <= Warn
+  ) is export {
     $severity-process-level = $s;
   }
 
@@ -70,27 +76,28 @@ package MongoDB:ver<0.26.6> {
 
     #---------------------------------------------------------------------------
     #
-    method log (  ) {
-      return unless $do-log and self.severity >= $severity-process-level;
+    method mlog ( ) {
+
+#note "Mlog: {self.severity} >= $severity-process-level: ",
+#    self.severity >= $severity-process-level;
+
+      return unless ($do-log and (self.severity >= $severity-process-level));
+#note "log message: {self.message}";
+
       # Check if file is open.
+      #
       open-logfile() unless ? $log-fh;
 
       # Define log text. If severity > Info insert empty line
       #
-      my Str $etxt;
-      $etxt ~= "\n" if self.severity > Info;
-      $etxt ~= [~] self.date-time.Str,
+      my Str $dt-str = $.date-time.utc.Str;
+      $dt-str ~~ s/\.\d+Z$//;
+      $dt-str ~~ s/T/ /;
+      my Str $etxt ~= [~] $dt-str,
                    " [{uc self.severity}]",
-                   self."{lc(self.severity)}"();
+                   self."{lc(self.severity)}"(),
+                   "\n";
       $log-fh.print($etxt);
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method test-severity (  ) {
-      return unless $do-check and self.severity >= $severity-throw-level;
-
-      die self;
     }
 
     #-----------------------------------------------------------------------------
@@ -108,135 +115,181 @@ package MongoDB:ver<0.26.6> {
 
   #-------------------------------------------------------------------------------
   #
-  class X::MongoDB is Exception does MongoDB::Logging {
-    has Str $.error-text;         # Error text and error code are data mostly
-    has Str $.error-code;         # originated from the mongod server
-    has Str $.oper-name;          # Used operation or server request
+  class Message is Exception does MongoDB::Logging {
+    has Str $.message;            # Error text and error code are data mostly
+    has Str $.code;               # originated from the mongod server
     has Str $.oper-data;          # Operation data are items sent to the server
     has Str $.collection-ns;      # Collection name space == dbname.clname
     has Str $.method;             # Method or routine name
-    has Int $.line;               # Line number where X::MongoDB is created
+    has Int $.line;               # Line number where Message is called
     has Str $.file;               # File in which that happened
 
-    has MongoDB::Severity $.severity;
-                                  # Severity level
-    has DateTime $.date-time;
-                                  # Date and time of creation.
+    has MongoDB::Severity $.severity;   # Severity level
+    has DateTime $.date-time;           # Date and time of creation.
+
+    my Semaphore $control-logging .= new(1) unless $control-logging.defined;
 
     #-----------------------------------------------------------------------------
     #
-    submethod BUILD (
-      Str:D :$error-text,
-      :$error-code where $_ ~~ any(Int|Str) = '',
-      Str:D :$oper-name,
-      Str :$oper-data,
-      Str :$collection-ns,
+    method log (
+      Str:D :$message,
+      :$code where $_ ~~ any(Int|Str) = '',
+      Str :$oper-data = '',
+      Str :$collection-ns = '',
       MongoDB::Severity :$severity = MongoDB::Severity::Warn,
     ) {
+#say 'l 0';
+      return
+        unless ($do-check and ($severity >= $severity-throw-level))
+        or ($do-log and ($severity >= $severity-process-level));
 
-      my $fn = 0;
-      while my $cf = callframe($fn++) {
 
-        # End loop with the program that starts on line 1
-        #
-        last if $cf.line == 1;
+#say "l 1: {callframe(3).line} {callframe(3).file}";
+      $control-logging.acquire;
+#say "l 2";
+#say "Severity $severity, $message";
+      my CallFrame $cf = self!search-callframe(Method);
+      $cf = self!search-callframe(Submethod) unless $cf.defined;
+      $cf = self!search-callframe(Sub) unless $cf.defined;
+      $cf = self!search-callframe(Block) unless $cf.defined;
 
-        # Skip all in between modules of perl
-        # THIS DEPENDS ON MOARVM OR JVM INSTALLED IN 'gen/' !!
-        #
-        next if $cf.file ~~ m/ ^ 'gen/' [ 'moar' || 'jvm' ] /;
-
-        # Skip this module too
-        #
-        next if $cf.file ~~ m/ 'MongoDB.pm6' $ /;
-
-        # Get info when we see a Sub, Method or Submethod. Other types are
-        # skipped. This will get us to the calling function.
-        #
-        if $cf.code.^name ~~ m/ [ 'Sub' | 'Method' | 'Submethod' ] / {
-          $!line = +$cf.line;
-          $!file = $cf.file;
-
-          # Problem is that the callframe here is not the same as the callframe
-          # above because of adding new blocks (if, for, while etc) to the stack.
-          # It is however extended, so look first for the entry found above and
-          # then search for the method/sub/submethod below it.
-          #
-          # We can start at least at level $fn.
-          #
-          my Bool $found-entry = False;
-          while my $cfx = callframe($fn++) {
-
-            # If we find the entry then go to the next frame to check for the
-            # Routine we need to know.
-            #
-            if $!line == $cfx.line and $!file eq $cfx.file {
-              $found-entry = True;
-              next;
-            }
-
-            if $found-entry
-               and $cfx.code.^name ~~ m/ [ 'Sub' | 'Method' | 'Submethod' ] / {
-              $!method = $cfx.code.name;
-              last;
-            }
-          }
-
-          # When we have our info then stop
-          #
-          last if ? $!method;
-        }
+      if $cf.defined {
+        $!line = $cf.line.Int // 1;
+        $!file = $cf.file // '';
+        $!file ~~ s/$*CWD/\./;
+        $!method = $cf.code.name // '';
       }
 
-      $!error-text        = $error-text;
-      $!error-code        = ~$error-code;
-      $!oper-name         = $oper-name;
+      else {
+        $!line = 0;
+        $!file = $!method = '';
+      }
+
+      $!message           = $message;
+      $!code              = ~$code;
       $!oper-data         = $oper-data;
       $!collection-ns     = $collection-ns;
 
       $!severity          = $severity;
       $!date-time         .= now;
 
-      self.log( );
-      self.test-severity( );
+      self.mlog;
+
+      # Must release the lock here because after a catched message the software
+      # can again call log(). We clone this object so that a waiting thread is not
+      # messing up the data
+      #
+      my $copy = self.clone;
+#say "l 3";
+      $control-logging.release;
+
+      return unless ($do-check and ($copy.severity >= $severity-throw-level));
+#say "l 4";
+      die $copy;
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method !search-callframe ( $type --> CallFrame ) {
+
+      # Skip callframes for
+      # 0  search-callframe(method)
+      # 1  log(method)
+      # 2  *-message(sub) helper functions
+      #    Can be bypassed by using $MongoDB::logger.log() directly.
+      #
+      my $fn = 3;
+      while my CallFrame $cf = callframe($fn++) {
+
+        # End loop with the program that starts on line 1 and code object is
+        # a hollow shell.
+        #
+        if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
+          $cf = Nil;
+          last;
+        }
+
+        # Cannot pass sub THREAD-ENTRY either
+        #
+        if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
+          $cf = Nil;
+          last;
+        }
+
+#say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name,
+#', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
+
+        # Try to find a better place instead of dispatch:...
+        #
+        next if $cf.code ~~ $type and $cf.code.name ~~ m/dispatch/;
+
+        last if $cf.code ~~ $type;
+      }
+
+      return $cf;
+    }
+
+    #-----------------------------------------------------------------------------
+    #
+    method dump-callframes ( ) {
+
+      my $fn = 1;
+      while my CallFrame $cf = callframe($fn++) {
+
+        # End loop with the program that starts on line 1 and code object is
+        # a hollow shell.
+        #
+        if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
+          last;
+        }
+
+        # Cannot pass sub THREAD-ENTRY either
+        #
+        if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
+          last;
+        }
+
+        say $fn.fmt('%02d'), ': ' , $cf.line, ', ', $cf.code.WHAT,
+            ', ', $cf.code.^name,
+            ', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
+      }
     }
 
     #-----------------------------------------------------------------------------
     #
     method trace ( --> Str ) {
-      return [~] ? $!method ?? " Method $!method" !! '',
-                 " at $!file\:$!line\n"
+      return [~] " $!message.",
+                 ? $!method ?? " From method $!method" !! '',
+#                 " at $!file\:$!line",
                  ;
     }
 
     #-----------------------------------------------------------------------------
     #
     method debug ( --> Str ) {
-      return [~] " {$!oper-name}\() $!error-text",
-                 ? $!error-code ?? " \({$!error-code})" !! '',
+      return [~] " $!message.",
+                 ? $!code ?? " \({$!code})" !! '',
                  ? $!collection-ns ?? "c-ns=$!collection-ns" !! '',
-                 " at $!file\:$!line\n"
+                 ? $!method ?? " From method $!method" !! '',
+#                 " at $!file\:$!line"
                  ;
     }
 
     #-----------------------------------------------------------------------------
     #
     method info ( --> Str ) {
-      return [~] " {$!oper-name}\() $!error-text",
-                 ? $!error-code ?? " \({$!error-code})" !! '',
-                 " at $!file\:$!line\n"
+      return [~] " $!message.",
+                 ? $!code ?? " \({$!code})" !! '',
+                 ? $!collection-ns ?? " Collection namespace $!collection-ns." !! '',
+                 ? $!method ?? " From method $!method" !! '',
+                 " at $!file\:$!line"
                  ;
     }
 
     #-----------------------------------------------------------------------------
     #
     method warn ( --> Str ) {
-      return [~] "\n  {$!oper-name}\() $!error-text",
-                 ? $!error-code ?? " \({$!error-code})" !! '',
-                 ? $!collection-ns ?? "\n  Collection namespace $!collection-ns" !! '',
-                 ? $!method ?? "\n  In method $!method" !! '',
-                 " at $!file\:$!line\n"
-                 ;
+      return self.message;
     }
 
     #-----------------------------------------------------------------------------
@@ -254,14 +307,56 @@ package MongoDB:ver<0.26.6> {
     #-----------------------------------------------------------------------------
     #
     method message ( --> Str ) {
-      return [~] "\n  $!oper-name\(): $!error-text",
-                 ? $!error-code ?? " \({$!error-code})" !! '',
-                 ? $!oper-data ?? "\n  Request data $!oper-data" !! '',
-                 ? $!collection-ns ?? "\n  Collection namespace $!collection-ns" !! '',
-                 ? $!method ?? "\n  In method $!method" !! '',
-                 " at $!file\:$!line\n"
+      return [~] "\n  $!message.",
+                 ? $!code ?? " \({$!code})" !! '',
+                 ? $!oper-data ?? "\n  Request data: $!oper-data" !! '',
+                 ? $!collection-ns
+                   ?? "\n  Collection namespace $!collection-ns" !! '',
+                 ? $!method ?? "\n  From method $!method" !! '',
+                 " at $!file\:$!line"
                  ;
     }
+  }
+
+#TODO Make a singleton exception processor
+#TODO Make a singleton logger
+
+  # Declare a message object to be used anywhere
+  #
+  state MongoDB::Message $logger .= new;
+
+  sub combine-args ( $c, $s) {
+    my %args = $c.kv;
+    if $c.elems and $c<message>:!exists {
+      my Str $msg = $c[0] // '';
+      %args<message> = $msg;
+    }
+    %args<severity> = $s;
+    return %args;
+  }
+
+  sub trace-message ( |c ) is export {
+    $logger.log(|combine-args( c, Severity::Trace));
+  }
+
+  sub debug-message ( |c ) is export {
+    $logger.log(|combine-args( c, Severity::Debug));
+  }
+
+  sub info-message ( |c ) is export {
+    $logger.log(|combine-args( c, Severity::Info));
+  }
+
+  sub warn-message ( |c ) is export {
+    $logger.log(|combine-args( c, Severity::Warn));
+  }
+
+  sub error-message ( |c ) is export {
+    $logger.log(|combine-args( c, Severity::Error));
+  }
+
+  sub fatal-message ( |c ) is export {
+    $logger.log(|combine-args( c, Severity::Fatal));
   }
 }
 

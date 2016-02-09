@@ -1,36 +1,21 @@
 use v6;
 use MongoDB;
+use MongoDB::DatabaseIF;
 use BSON::Document;
 
 package MongoDB {
 
   class CollectionIF {
 
-    has $.database;
+    has MongoDB::DatabaseIF $.database;
     has Str $.name;
     has Str $.full-collection-name;
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( :$database!, Str:D :$name ) {
+    submethod BUILD ( MongoDB::DatabaseIF :$database!, Str :$name ) {
       $!database = $database;
-      $!name = $name;
-      $!full-collection-name = [~] $!database.name, '.', $!name
-        if $database.name.defined;
-
-      # This should be possible: 'admin.$cmd' which is used by run-command
-      #
-      if $name ~~ m/^ <[\$ _ A..Z a..z]> <[\$ . \w _]>+ $/ {
-        $!name = $name;
-      }
-
-      else {
-        die X::MongoDB.new(
-          error-text => "Illegal collection name: '$name'",
-          oper-name => 'MongoDB::Collection.new()',
-          severity => MongoDB::Severity::Error
-        );
-      }
+      self!set-name($name) if ?$name;
     }
 
     #---------------------------------------------------------------------------
@@ -40,7 +25,8 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0
+      Int :$flags = 0,
+      Str :$server-ticket is copy
     ) {
       ...
     }
@@ -49,7 +35,8 @@ package MongoDB {
       BSON::Document :$criteria = BSON::Document.new,
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0
+      Int :$flags = 0,
+      Str :$server-ticket is copy
     ) {
       ...
     }
@@ -59,18 +46,32 @@ package MongoDB {
     # collection name to '$cmd'. There are several other names starting with
     # 'system.'.
     #
-    method _set_name ( Str:D $name ) {
+    method !set-name ( Str:D $name ) {
+
+      # Check for the CommandCll because of $name is $cmd
+      #
+#      unless self.^name eq 'MongoDB::CommandCll' {
+
+        # This should be possible: 'admin.$cmd' which is used by run-command
+        # https://docs.mongodb.org/manual/reference/limits/
+        #
+#        if $name !~~ m/^ <[_ A..Z a..z]> <[\w _ \-]>* $/ {
+#          return error-message("Illegal collection name: '$name'");
+#        }
+#      }
+
       $!name = $name;
-say "Set cll name: $!name";
+      self!set-full-collection-name;
     }
 
     #---------------------------------------------------------------------------
     # Helper to set full collection name in cases that the name of the database
     # isn't available at BUILD time
     #
-    method _set-full-collection-name ( ) {
-      $!full-collection-name = [~] $.database.name, '.', $.name
-        unless $.full-collection-name.defined;
+    method !set-full-collection-name ( ) {
+
+      return unless !?$.full-collection-name and ?$.database.name and ?$.name;
+      $!full-collection-name = [~] $.database.name, '.', $.name;
     }
   }
 }

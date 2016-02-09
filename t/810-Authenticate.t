@@ -2,6 +2,7 @@ use v6;
 use lib 't';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Database;
 use MongoDB::Users;
 use MongoDB::Authenticate;
@@ -10,15 +11,6 @@ use MongoDB::Authenticate;
   Testing;
     Authentication of a user
 }}
-
-#-------------------------------------------------------------------------------
-# No sandboxing therefore authentication will not be tested as a precaution.
-#
-if %*ENV<NOSANDBOX> {
-  plan 1;
-  skip-rest('No sand-boxing requested, so authentication tests are skipped');
-  exit(0);
-}
 
 plan 1;
 skip-rest "Some modules needed for authentication are not yet supported in perl 6";
@@ -29,7 +21,7 @@ my Int $exit_code;
 
 my MongoDB::Client $client = get-connection();
 my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
 my BSON::Document $doc;
@@ -102,7 +94,7 @@ subtest {
     ok $doc<ok>, 'All users dropped';
     
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message ~~ m:s/not authorized on test to execute/, .error-text;
       }
     }
@@ -112,7 +104,7 @@ subtest {
     $doc = $auth.authenticate( :user('mt'), :password('mt++'));
 
     CATCH {
-      when X::MongoDB {
+      when MongoDB::Message {
         ok .message ~~ m:s/\w/, .error-text;
       }
     }

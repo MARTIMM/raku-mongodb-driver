@@ -2,24 +2,18 @@ use v6;
 use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
+use MongoDB::Object-store;
 
-#`{{
-  Testing: Query and Write Operation Commands
-    insert
-    update
-    delete
-    findAndModify
-    getLastError
-    getLastError, getPrevError and resetError are not much needed because
-      after 2.6 the write operation commands return error information
-    eval is deprecated
-    parallelCollectionScan
-}}
+#-------------------------------------------------------------------------------
+#set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
 my BSON::Document $doc;
 
@@ -168,25 +162,27 @@ subtest {
 
   $doc = $database.run-command: (
     parallelCollectionScan => 'names',
-    numCursors => 2
+    numCursors => 1
   );
   is $doc<ok>, 1, 'parallelCollectionScan request ok';
   ok $doc<cursors> ~~ Array, 'found array of cursors';
-  ok $doc<cursors>.elems > 0, "returned {$doc<cursors>.elems} cursors";
+  is $doc<cursors>.elems, 1, "returned {$doc<cursors>.elems} cursor";
 #say "\nDoc: ", $doc.perl, "\n";
 
+
   for $doc<cursors>.list -> $cdoc {
-say 'C doc: ', $cdoc.perl;
+#say 'C doc: ', $cdoc.perl;
 
     is $cdoc<ok>, True, 'returned cursor ok';
     if $cdoc<ok> {
-      my MongoDB::Cursor $c .= new(:cursor-doc($cdoc<cursor>));
-      $c.kill;
+      my MongoDB::Cursor $c .= new( :$client, :cursor-doc($cdoc<cursor>));
+      my BSON::Document $d = $c.fetch;
+      is $d<name>, 'Larry', "First name $d<name>";
+      is $d<surname>, 'Wall', "Last name $d<surname>";
+      is $d<type>, "men with 'y' in name", $d<type>;
+#say 'D doc: ', $d.perl;
 
-#      while $c.fetch -> BSON::Document $d {
-#        
-#say 'C doc: ', $d.perl;
-#      }
+      $c.kill;
     }
   }
 
@@ -195,6 +191,11 @@ say 'C doc: ', $cdoc.perl;
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+# Number of stored objects can be one when Server object monitors
+# the mongod server
+#
+ok nbr-stored-objects() < 2, "Number of stored objects < 2";
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 
@@ -205,7 +206,7 @@ exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {
-  
+
 }, '';
 
 say "\nReq: ", $req.perl, "\n";

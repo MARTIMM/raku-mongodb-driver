@@ -1,26 +1,18 @@
 use v6;
-use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
+use MongoDB::Database;
 
-#`{{
-  Testing: Query and Write Operation Commands
-    insert
-    findAndModify
-
-  Testing: Diagnostic Commands
-    listDatabases
-    buildInfo not tested
-
-  Testing: Instance Administration Commands
-    listCollections
-    dropDatabase
-}}
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Debug);
+info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
 my BSON::Document $doc;
 
@@ -133,8 +125,8 @@ subtest {
 
   $doc = $database.run-command: (listCollections => 1);
   is $doc<ok>, 1, 'list collections request ok';
-
-  my MongoDB::Cursor $c .= new(:cursor-doc($doc<cursor>));
+#say "LC: ", $doc.perl;
+  my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
   my Bool $f-cl1 = False;
   my Bool $f-cl2 = False;
   while $c.fetch -> BSON::Document $d {
@@ -171,6 +163,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 

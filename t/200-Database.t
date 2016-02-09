@@ -1,23 +1,20 @@
 use v6;
-use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';
 use Test-support;
 use Test;
+use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
-use MongoDB::AdminDB;
 
-#`{{
-  Testing;
-    database.run-command()              Run command
-    database.drop()                     Drop database
-    database.create-collection()        Create collection explicitly
-}}
+#-------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Info);
+info-message("Test $?FILE start");
 
 my BSON::Document $req;
 my BSON::Document $doc;
 my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::AdminDB $db-admin .= new;
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 
 # Drop database first then create new databases
 #
@@ -55,7 +52,6 @@ subtest {
   $doc = $database.run-command: (resetError => 1);
   is $doc<ok>, 1, 'Rest errors ok';
 }, "Error checking";
-
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -109,5 +105,6 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

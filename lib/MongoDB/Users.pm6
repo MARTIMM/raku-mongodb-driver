@@ -1,5 +1,6 @@
 use v6;
 use Digest::MD5;
+use MongoDB;
 use MongoDB::Database;
 use BSON::Document;
 
@@ -74,9 +75,8 @@ package MongoDB {
       # Check if username is too short
       #
       if $user.chars < $!min-un-length {
-        die X::MongoDB.new(
-          error-text => "Username too short, must be >= $!min-un-length",
-          oper-name => 'create-user',
+        return warn-message(
+          "Username too short, must be >= $!min-un-length",
           oper-data => $user,
           collection-ns => $!database.name
         );
@@ -85,9 +85,8 @@ package MongoDB {
       # Check if password is too short
       #
       elsif $password.chars < $!min-pw-length {
-        die X::MongoDB.new(
-          error-text => "Password too short, must be >= $!min-pw-length",
-          oper-name => 'create-user',
+        return warn-message(
+          "Password too short, must be >= $!min-pw-length",
           oper-data => $password,
           collection-ns => $!database.name
         );
@@ -126,9 +125,9 @@ package MongoDB {
             ).Bool;
           }
         }
-        die X::MongoDB.new(
-          error-text => "Password does not have the right properties",
-          oper-name => 'create-user',
+
+        return warn-message(
+          "Password does not have the right properties",
           oper-data => $password,
           collection-ns => $!database.name
         ) unless $pw-ok;
@@ -163,9 +162,8 @@ package MongoDB {
 
       if ?$password {
         if $password.chars < $!min-pw-length {
-          die X::MongoDB.new(
+          return warn-message(
             error-text => "Password too short, must be >= $!min-pw-length",
-            oper-name => 'update-user',
             oper-data => $password,
             collection-ns => $!database.name
           );
@@ -207,9 +205,8 @@ package MongoDB {
         }
 
         else {
-          die X::MongoDB.new(
-            error-text => "Password does not have the proper elements",
-            oper-name => 'update-user',
+          return warn-message(
+            "Password does not have the proper elements",
             oper-data => $password,
             collection-ns => $!database.name
           );
@@ -237,9 +234,8 @@ package MongoDB {
 
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'drop-user',
+        return warn-message(
+          $doc<errmsg>,
           oper-data => @req.perl,
           collection-ns => $!database.name
         );
@@ -259,9 +255,8 @@ package MongoDB {
 
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'drop_all_users_from_database',
+        return warn-message(
+          $doc<errmsg>,
           oper-data => @req.perl,
           collection-ns => $!database.name
         );
@@ -285,9 +280,8 @@ package MongoDB {
 
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'grant_roles_to_user',
+        return warn-message(
+          $doc<errmsg>,
           oper-data => @req.perl,
           collection-ns => $!database.name
         );
@@ -311,11 +305,9 @@ package MongoDB {
 
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'revoke-roles-from-user',
+        return warn-message(
+          $doc<errmsg>,
           oper-data => @req.perl,
-#          oper-doc => $doc.perl,
           collection-ns => $!database.name
         );
       }
@@ -341,9 +333,8 @@ package MongoDB {
 
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'users-info',
+        return warn-message(
+          $doc<errmsg>,
           oper-data => @req.perl,
           collection-ns => $database // $!database.name
         );
@@ -362,9 +353,8 @@ package MongoDB {
 
       my Hash $doc = $!database.run-command(@req);
       if $doc<ok>.Bool == False {
-        die X::MongoDB.new(
-          error-text => $doc<errmsg>,
-          oper-name => 'get-users',
+        return warn-message(
+          $doc<errmsg>,
           oper-data => @req.perl,
           collection-ns => $!database.name
         );

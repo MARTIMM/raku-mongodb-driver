@@ -15,11 +15,7 @@ package Test-support
     # Skip sandbox setup if testing on TRAVIS-CI or no sandboxing is requested,
     # just return default port.
     #
-    if %*ENV<NOSANDBOX> {
-      return 27017;
-    }
-
-    elsif 'Sandbox/port-number'.IO !~~ :e {
+    if 'Sandbox/port-number'.IO !~~ :e {
       plan 1;
       flunk('No port number found, Sandbox cleaned up?');
       skip-rest('No port number found, Sandbox cleaned up?');
@@ -43,10 +39,7 @@ package Test-support
     }
 
     my Int $port-number = get-port-number();
-    my MongoDB::Client $client .= instance(
-      :host('localhost'),
-      :port($port-number)
-    );
+    my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
 
     return $client;
   }
@@ -58,7 +51,7 @@ package Test-support
     my Int $port-number = get-port-number();
     my MongoDB::Client $client;
     for ^10 {
-      $client .= instance( :host<localhost>, :port($port-number));
+      $client .= new(:uri("mongodb://localhost:$port-number"));
       if ? $client.status {
         diag [~] "Error: ",
                  $client.status.error-text,
@@ -98,34 +91,6 @@ package Test-support
       say $document.perl;
     }
   }
-
-#`{{
-  #-----------------------------------------------------------------------------
-  # Display a document
-  #
-  sub show-document ( BSON::Document $document ) is export {
-
-    print "Document: ";
-    my $indent = '';
-    for $document.keys -> $k {
-      say sprintf( "%s%-20.20s: %s", $indent, $k, $document{$k});
-      $indent = ' ' x 10 unless $indent;
-    }
-    say "";
-  }
-
-
-  #-----------------------------------------------------------------------------
-  # Drop database
-  #
-  sub drop-database (
-    MongoDB::Database $database
-    --> BSON::Document
-  ) is export {
-
-    return $database.run-command(BSON::Document.new: (dropDatabase => 1));
-  }
-}}
 }
 
 
