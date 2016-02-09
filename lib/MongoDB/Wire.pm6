@@ -15,9 +15,11 @@ package MongoDB {
     method query (
       MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
       BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
-      :$number-to-return, Str:D :$server-ticket
+      :$number-to-return, Str :$server-ticket
       --> BSON::Document
     ) {
+      fatal-message("No server available") unless ?$server-ticket;
+
       # Must clone the document otherwise the MongoDB::Header will be added
       # to the $qdoc even when is copy trait is used.
       #

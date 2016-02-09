@@ -52,18 +52,17 @@ package MongoDB {
       $!server-discovery = [];
 
       if ?$uri {
-        # Parse the uri and get info in $uri-obj.server-data;
+        # Parse the uri and get info in $uri-obj.uri-data;
         # Fields are protocol, username, password, servers, database and options
         #
         my MongoDB::Uri $uri-obj .= new(:$uri);
 
-        # Copy some fields into a local $server-data hash which is handed over
+        # Copy some fields into a local $uri-data hash which is handed over
         # to the server object. Then add some more.
         #
         my @item-list = <username password database options>;
-        my Hash $server-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
-        $server-data<client> = self;
-        $server-data<db-admin> = $db-admin;
+        my Hash $uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+#        $uri-data<client> = self;
 
         # Background process to discover hosts only if there are new servers
         # to be discovered or that new non default cases are presnted.
@@ -74,15 +73,19 @@ package MongoDB {
             my MongoDB::Server $server;
 
               $server .= new(
-                :host($sdata<host>),
-                :port($sdata<port>),
-                :$server-data
+                :host($sdata<host>), :port($sdata<port>),
+                :$uri-data, :$db-admin, :client(self)
               );
+
+              # Initial test for server data
+              #
+              my Bool $accept-server = $server.initial-poll;
 
               # Return server object
               #
-              self!add-server($server);
-              $server;
+              self!add-server($server) if $accept-server;
+
+              ?$accept-server ?? $server !! Any;
             }
           );
         }
@@ -104,6 +107,15 @@ package MongoDB {
 
       trace-message("server select release");
       $!control-select.release;
+    }
+
+    #---------------------------------------------------------------------------
+    # Return number of servers
+    #
+    method nbr-servers ( --> Int ) {
+
+      self.select-server(:!need-master);
+      return $!servers.elems;
     }
 
     #---------------------------------------------------------------------------
@@ -205,9 +217,9 @@ package MongoDB {
           $!server-discovery[$pi] = Nil;
           $!server-discovery.splice( $pi, 1);
 
-          # Start server monitoring
+          # Start server monitoring if server is accepted from initial poll
           #
-          $server.monitor-server;
+          $server.monitor-server if $server.defined;
         }
 
         # When broken throw away result

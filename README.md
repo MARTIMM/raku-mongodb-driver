@@ -273,6 +273,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.27.0
+  * Uri option replicaSet processed.
 * 0.26.8
   * Shuffeling classes again. Wire and Client are no singletons anymore. Now databases are created the old way ```$client.database('name')```. Back then it was a Connection instead of Client. The reason that I have chosen to change it is because of the way read concerns should be processed. It could work with a replicaset or sharded systems but not with a mix of these. Now a uri can be provided to a client with some hosts and the Client will create several Server objects which will monitor the mongo server and find all the other servers in a replica set. Then a second Client can used with am other server independent of the first set of servers. Now the idea is that a read concern can be set at the Client, Database or Collection creation or even at the individual command run-command() and find().
   * Need to drop the class AdminDB too because of the above.

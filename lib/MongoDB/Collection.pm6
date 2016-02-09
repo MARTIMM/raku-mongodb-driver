@@ -20,7 +20,7 @@ package MongoDB {
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0, List :$read-concern = (),
-      Str :$server-ticket is copy
+      Str :$server-ticket is copy = ''
 
       --> MongoDB::Cursor
     ) {
@@ -28,7 +28,7 @@ package MongoDB {
       my MongoDB::Wire $wire .= new;
       my BSON::Document $rc .= new: $read-concern;
       $server-ticket = $.database.client.select-server(:read-concern($rc))
-        unless ?$server-ticket;
+        unless $server-ticket.chars > 0;
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
@@ -52,13 +52,13 @@ package MongoDB {
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0,
       BSON::Document :$read-concern = BSON::Document.new,
-      Str :$server-ticket is copy
+      Str :$server-ticket is copy = ''
       --> MongoDB::Cursor
     ) {
 
       my MongoDB::Wire $wire .= new;
       $server-ticket = $.database.client.select-server(:$read-concern)
-        unless ?$server-ticket;
+        unless $server-ticket.chars > 0;
 
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
