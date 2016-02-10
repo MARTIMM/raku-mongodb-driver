@@ -37,10 +37,13 @@ sleep 2;
 diag "Servers stopped";
 diag "Remove sandbox data";
 
+#`{{
 my $dir = 'Sandbox';
 my $cleanup-dir = sub ( ) {
   
 }
+
+
 
     if $dir-entry.IO ~~ :d {
 #      diag "delete directory $dir-entry";
@@ -51,16 +54,17 @@ my $cleanup-dir = sub ( ) {
 #      diag "delete file $dir-entry";
       unlink $dir-entry;
     }
-  }
-}
 
 diag "delete directory Sandbox";
 rmdir "Sandbox";
+}}
+
 
 try {
-  $client .= new(:uri("mongodb://localhost:$port-number"));
-  $server-ticket = $client.select-server;
-  nok $server-ticket.defined, 'No servers selected';
+  $client1 .= new(:uri("mongodb://localhost:$port-number1"));
+  ok $client1.nbr-servers, 0, "No servers for localhost:$port-number1";
+  $client2 .= new(:uri("mongodb://localhost:$port-number2"));
+  ok $client2.nbr-servers, 0, "No servers for localhost:$port-number2";
 }
 
 #-----------------------------------------------------------------------------
