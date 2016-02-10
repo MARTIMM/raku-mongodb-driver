@@ -274,6 +274,9 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.27.1
+  * Sandbox setup now for two servers to prepare for replica set processing. To speedup the startup of a new server, journaling is turned off.
+  * The Object-store class is now with methods instead of exported subs. The object is stored in Client.
 * 0.27.0
   * Uri option replicaSet processed.
 * 0.26.8
