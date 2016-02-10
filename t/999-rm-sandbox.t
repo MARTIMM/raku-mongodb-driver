@@ -15,27 +15,33 @@ info-message("Test $?FILE start");
 
 #-----------------------------------------------------------------------------
 #
-#my MongoDB::Client $client = get-connection();
-my Int $port-number = slurp('Sandbox/port-number').Int;
-my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
-my Str $server-ticket = $client.select-server;
-my MongoDB::Server $server = get-stored-object($server-ticket);
-ok $server.defined, 'Server defined';
-#my MongoDB::Socket $socket = $server.get-socket;
+my Int $port-number1 = slurp('Sandbox/Server1/port-number').Int;
+my MongoDB::Client $client1 .= new(:uri("mongodb://localhost:$port-number1"));
+my Str $server-ticket1 = $client1.select-server;
+my MongoDB::Server $server1 = $client1.store.get-stored-object($server-ticket1);
+ok $server1.defined, 'Server 1 defined';
 
-diag "Wait for server to stop";
-$server.shutdown; #(:force);
+my Int $port-number2 = slurp('Sandbox/Server2/port-number').Int;
+my MongoDB::Client $client2 .= new(:uri("mongodb://localhost:$port-number2"));
+my Str $server-ticket2 = $client2.select-server;
+my MongoDB::Server $server2 = $client2.store.get-stored-object($server-ticket2);
+ok $server2.defined, 'Server 2 defined';
+
+diag "Wait for servers to stop";
+$server1.shutdown; #(:force);
+$server2.shutdown; #(:force);
 
 #my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
 #diag $exit_code ?? "Server already stopped" !! "Server stopped";
 sleep 2;
-diag "Server stopped";
+diag "Servers stopped";
 diag "Remove sandbox data";
 
-#`{{    TEMPORARY INHIBIT THE REMOVAL OF THE SANDBOX
-for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
-  next unless $path.IO ~~ :d;
-  for dir($path) -> $dir-entry {
+my $dir = 'Sandbox';
+my $cleanup-dir = sub ( ) {
+  
+}
+
     if $dir-entry.IO ~~ :d {
 #      diag "delete directory $dir-entry";
       rmdir $dir-entry;
@@ -50,7 +56,6 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 
 diag "delete directory Sandbox";
 rmdir "Sandbox";
-}}
 
 try {
   $client .= new(:uri("mongodb://localhost:$port-number"));

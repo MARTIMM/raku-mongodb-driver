@@ -14,7 +14,7 @@ package MongoDB {
   #
   class Cursor {
 
-#    has $.collection;
+    has $.client;
     has $.full-collection-name;
 
     # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
@@ -37,7 +37,7 @@ package MongoDB {
       Str :$server-ticket
     ) {
 
-#      $!collection = $collection;
+      $!client = $collection.database.client;
       $!full-collection-name = $collection.full-collection-name;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
@@ -50,7 +50,7 @@ package MongoDB {
       }
       
       else {
-        clear-stored-object($server-ticket);
+        $!client.store.clear-stored-object($server-ticket);
         $!server-ticket = Nil;
       }
 
@@ -68,10 +68,8 @@ package MongoDB {
       BSON::Document :$read-concern = BSON::Document.new
     ) {
 
-      $!server-ticket = $client.select-server(:$read-concern);
-#TODO Check provided structure for the fields.
-
-#      $!collection = $cursor-doc<ns>;
+      $!client = $client;
+      
       $!full-collection-name = $cursor-doc<ns>;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
@@ -82,6 +80,13 @@ package MongoDB {
       $d does MongoDB::Header;
 
       $!id = $d.encode-cursor-id($cursor-doc<id>);
+      if [+] @$!id {
+        $!server-ticket = $!client.select-server(:$read-concern);
+      }
+
+      else {
+        $!server-ticket = Nil;
+      }
 
       # Get documents from the reply.
       #
@@ -107,8 +112,8 @@ package MongoDB {
         # documents to fetch.
         #
         $!id = $server-reply<cursor-id>;
-        unless [+] @($server-reply<cursor-id>) {
-          clear-stored-object($!server-ticket);
+        unless [+] @$!id {
+          $!client.store.clear-stored-object($!server-ticket);
           $!server-ticket = Nil;
         }
 
@@ -134,7 +139,7 @@ package MongoDB {
         #
         $!id = Buf.new(0x00 xx 8);
 
-        clear-stored-object($!server-ticket);
+        $!client.store.clear-stored-object($!server-ticket);
         $!server-ticket = Nil;
       }
     }

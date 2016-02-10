@@ -52,7 +52,12 @@ diag "\n\nSetting up involves initializing mongodb data files which takes time";
 # Check directory Sandbox
 #
 mkdir( 'Sandbox', 0o700) unless 'Sandbox'.IO ~~ :d;
-mkdir( 'Sandbox/m.data', 0o700) unless 'Sandbox/m.data'.IO ~~ :d;
+
+mkdir( 'Sandbox/Server1', 0o700) unless 'Sandbox/Server1'.IO ~~ :d;
+mkdir( 'Sandbox/Server1/m.data', 0o700) unless 'Sandbox/Server1/m.data'.IO ~~ :d;
+
+mkdir( 'Sandbox/Server2', 0o700) unless 'Sandbox/Server2'.IO ~~ :d;
+mkdir( 'Sandbox/Server2/m.data', 0o700) unless 'Sandbox/Server2/m.data'.IO ~~ :d;
 
 #`{{
   Test for usable port number
@@ -88,35 +93,51 @@ mkdir( 'Sandbox/m.data', 0o700) unless 'Sandbox/m.data'.IO ~~ :d;
 # port. this will be configured in the mongodb config file. At least one
 # should be found here.
 #
-my $port-number;
+my $port-number1;
 for 65000 ..^ 2**16 -> $p {
   my $s = IO::Socket::INET.new( :host('localhost'), :port($p));
   $s.close;
 
   CATCH {
     default {
-      $port-number = $p;
+      $port-number1 = $p;
       last;
     }
   }
 }
 
-ok $port-number >= 65000, 'Portnumber found';
+my $port-number2;
+for $port-number1 ^..^ 2**16 -> $p {
+  my $s = IO::Socket::INET.new( :host('localhost'), :port($p));
+  $s.close;
+
+  CATCH {
+    default {
+      $port-number2 = $p;
+      last;
+    }
+  }
+}
+
+ok $port-number1 >= 65000, "Portnumber for server1 $port-number1";
+ok $port-number2 >= $port-number1, "Portnumber for server2 $port-number2";
 
 # Save portnumber for later tests
 #
-spurt 'Sandbox/port-number', $port-number;
+spurt 'Sandbox/Server1/port-number', $port-number1;
+spurt 'Sandbox/Server2/port-number', $port-number2;
 
-# Generate mongodb config in Sandbox using YAML
+# Generate mongodb config in Sandbox using YAML. Journalling is turned off
+# for quicker startup.
 #
-my $config = qq:to/EOCNF/;
+my $config1 = qq:to/EOCNF/;
 
   systemLog:
     verbosity:                  0
     quiet:                      false
     traceAllExceptions:         true
   #  syslogFacility:             user
-    path:                       $*CWD/Sandbox/m.log
+    path:                       $*CWD/Sandbox/Server1/m.log
     logAppend:                  true
     logRotate:                  rename
     destination:                file
@@ -149,28 +170,35 @@ my $config = qq:to/EOCNF/;
 
   processManagement:
     fork:                       true
-    pidFilePath:                $*CWD/Sandbox/m.pid
+    pidFilePath:                $*CWD/Sandbox/Server1/m.pid
 
   net:
   #  bindIp:                     localhost
-    port:                       $port-number
+    port:                       $port-number1
     wireObjectCheck:            true
     http:
       enabled:                  false
 
   storage:
-    dbPath:                     $*CWD/Sandbox/m.data
+    dbPath:                     $*CWD/Sandbox/Server1/m.data
     journal:
-      enabled:                  true
+      enabled:                  false
     directoryPerDB:             false
 
   EOCNF
 
-spurt 'Sandbox/m.conf', $config;
+spurt 'Sandbox/Server1/m.conf', $config1;
 
-# Generate mongodb config in Sandbox using YAML with authentication turned on
+# Generate config for second server
 #
-spurt 'Sandbox/m-auth.conf', $config ~ qq:to/EOCNF/;
+my $config2 = $config1;
+$config2 ~~ s:g/Server1/Server2/;
+$config2 ~~ s:g/$port-number1/$port-number2/;
+spurt 'Sandbox/Server2/m.conf', $config2;
+
+# Generate mongodb config with authentication turned on
+#
+my $auth-config = qq:to/EOCNF/;
 
   security:
   #  keyFile:                    m.key-file
@@ -182,42 +210,16 @@ spurt 'Sandbox/m-auth.conf', $config ~ qq:to/EOCNF/;
 
   EOCNF
 
-if 0 {
-spurt 'Sandbox/m-repl.conf', $config ~ qq:to/EOCNF/;
-
-  # Replication Options
-
-  # in replicated mongo databases, specify here whether this is a slave or master
-  #slave = true
-  #source = master.example.com
-  # Slave only: specify a single database to replicate
-  #only = master.example.com
-  # or
-  #master = true
-  #source = slave.example.com
-
-  # Address of a server to pair with.
-  #pairwith = <server:port>
-  # Address of arbiter server.
-  #arbiter = <server:port>
-  # Automatically resync if slave data is stale
-  #autoresync
-  # Custom size for replication operation log.
-  #oplogSize = <MB>
-  # Size limit for in-memory storage of op ids.
-  #opIdMem = <bytes>
-
-  EOCNF
-}
+spurt 'Sandbox/Server1/m-auth.conf', $config1 ~ $auth-config;
+spurt 'Sandbox/Server2/m-auth.conf', $config2 ~ $auth-config;
 
 # Start mongodb
 #
-diag "Wait for server to start up using port $port-number";
-say "Starting \"$mongodb-server-path --config '$*CWD/Sandbox/m.conf'\"";
-my Proc $proc = shell("$mongodb-server-path --config '$*CWD/Sandbox/m.conf'");
-
-if $proc.exitcode != 0 {
-  spurt 'Sandbox/NO-MONGODB-SEFVER', '' unless $proc.exitcode == 0;
+diag "Wait for servers to start up using port $port-number1 and $port-number2";
+say "Starting \"$mongodb-server-path --config '$*CWD/Sandbox/Server*/m.conf'\"";
+my Proc $proc1 = shell("$mongodb-server-path --config '$*CWD/Sandbox/Server1/m.conf'");
+if $proc1.exitcode != 0 {
+  spurt 'Sandbox/Server1/NO-MONGODB-SERVER', '' unless $proc1.exitcode == 0;
   plan 1;
   flunk('No database server started!');
   skip-rest('No database server started!');
@@ -227,8 +229,26 @@ if $proc.exitcode != 0 {
 else {
   # Remove the file if still there
   #
-  if 'Sandbox/NO-MONGODB-SEFVER'.IO ~~ :e {
-    unlink 'Sandbox/NO-MONGODB-SEFVER';
+  if 'Sandbox/Server1/NO-MONGODB-SERVER'.IO ~~ :e {
+    unlink 'Sandbox/Server1NO-MONGODB-SERVER';
+  }
+}
+
+my Proc $proc2 = shell("$mongodb-server-path --config '$*CWD/Sandbox/Server2/m.conf'");
+
+if $proc2.exitcode != 0 {
+  spurt 'Sandbox/Server2/NO-MONGODB-SERVER', '' unless $proc2.exitcode == 0;
+  plan 1;
+  flunk('No database server started!');
+  skip-rest('No database server started!');
+  exit(0);
+}
+
+else {
+  # Remove the file if still there
+  #
+  if 'Sandbox/Server2/NO-MONGODB-SERVER'.IO ~~ :e {
+    unlink 'Sandbox/Server1NO-MONGODB-SERVER';
   }
 }
 

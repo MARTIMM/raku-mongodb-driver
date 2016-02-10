@@ -16,6 +16,7 @@ package MongoDB {
 
     has Array $!servers;
     has Array $!server-discovery;
+    has MongoDB::Object-store $.store;
 
     # Semaphore to control the use of select-server. This call can come
     # from different threads.
@@ -31,7 +32,6 @@ package MongoDB {
     # These are shared among other Clients
     #
     my MongoDB::Database $db-admin;
-    my Bool $initialized = False;
 
     #---------------------------------------------------------------------------
     submethod BUILD (
@@ -39,14 +39,13 @@ package MongoDB {
       BSON::Document :$read-concern
     ) {
 
-      unless $initialized {
+      # Init store
+      #
+      $!store .= new;
 
-        # The admin database is given to each server to get server data
-        #
-        $db-admin = self.database('admin');
-
-        $initialized = True;
-      }
+      # The admin database is given to each server to get server data
+      #
+      $db-admin = self.database('admin');
 
       $!servers = [];
       $!server-discovery = [];
@@ -188,8 +187,8 @@ package MongoDB {
         }
       }
 
-      $server-ticket = store-object($server) if $server.defined;
-#say "ss 4 $server-ticket";
+      $server-ticket = $.store.store-object($server) if $server.defined;
+#say "ss 4 $server, $server-ticket";
       return $server-ticket;
     }
 

@@ -25,6 +25,8 @@ package MongoDB {
       --> MongoDB::Cursor
     ) {
 
+#TODO Check provided structure for the fields.
+
       my MongoDB::Wire $wire .= new;
       my BSON::Document $rc .= new: $read-concern;
       $server-ticket = $.database.client.select-server(:read-concern($rc))
@@ -55,6 +57,8 @@ package MongoDB {
       Str :$server-ticket is copy = ''
       --> MongoDB::Cursor
     ) {
+
+#TODO Check provided structure for the fields.
 
       my MongoDB::Wire $wire .= new;
       $server-ticket = $.database.client.select-server(:$read-concern)

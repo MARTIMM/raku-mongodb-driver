@@ -108,7 +108,7 @@ package MongoDB {
     #
     method initial-poll ( --> Bool ) {
 
-      my Str $server-ticket = store-object(self);
+      my Str $server-ticket = $!client.store.store-object(self);
 
       # Calculation of mean Return Trip Time
       #
@@ -172,7 +172,7 @@ package MongoDB {
               #
               sleep 10;
 
-              my Str $server-ticket = store-object(self);
+              my Str $server-ticket = $!client.store.store-object(self);
 
               # Calculation of mean Return Trip Time
               #
