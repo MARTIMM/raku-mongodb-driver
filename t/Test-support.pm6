@@ -8,37 +8,43 @@ package Test-support
 {
   state $empty-document = BSON::Document.new();
 
+  # Two servers started
+  #
+  our $server-range = (^3 + 1);
+
   #-----------------------------------------------------------------------------
   # Get selected port number. When file is not there the process fails.
   #
-  sub get-port-number ( --> Int ) is export {
-    # Skip sandbox setup if testing on TRAVIS-CI or no sandboxing is requested,
-    # just return default port.
-    #
-    if 'Sandbox/port-number'.IO !~~ :e {
+  sub get-port-number ( Int :$server = 1 --> Int ) is export {
+
+    $server = 1 unless  $server ~~ any $server-range;
+
+    if "Sandbox/Server$server/port-number".IO !~~ :e {
       plan 1;
       flunk('No port number found, Sandbox cleaned up?');
       skip-rest('No port number found, Sandbox cleaned up?');
       exit(0);
     }
 
-    my $port-number = slurp('Sandbox/port-number').Int;
+    my $port-number = slurp("Sandbox/Server$server/port-number").Int;
     return $port-number;
   }
 
   #-----------------------------------------------------------------------------
   # Get a connection.
   #
-  sub get-connection ( --> MongoDB::Client ) is export {
+  sub get-connection ( Int :$server = 1 --> MongoDB::Client ) is export {
 
-    if 'Sandbox/NO-MONGODB-SEFVER'.IO ~~ :e {
+    $server = 1 unless  $server ~~ any $server-range;
+
+    if "Sandbox/Server$server/NO-MONGODB-SERVER".IO ~~ :e {
       plan 1;
       flunk('No database server started!');
       skip-rest('No database server started!');
       exit(0);
     }
 
-    my Int $port-number = get-port-number();
+    my Int $port-number = get-port-number(:$server);
     my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
 
     return $client;
@@ -47,8 +53,11 @@ package Test-support
   #-----------------------------------------------------------------------------
   # Test communication after starting up db server
   #
-  sub get-connection-try10 ( --> MongoDB::Client ) is export {
-    my Int $port-number = get-port-number();
+  sub get-connection-try10 ( Int :$server = 1 --> MongoDB::Client ) is export {
+
+    $server = 1 unless  $server ~~ any $server-range;
+
+    my Int $port-number = get-port-number(:$server);
     my MongoDB::Client $client;
     for ^10 {
       $client .= new(:uri("mongodb://localhost:$port-number"));

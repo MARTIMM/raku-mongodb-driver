@@ -15,9 +15,11 @@ package MongoDB {
     method query (
       MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
       BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
-      :$number-to-return, Str:D :$server-ticket
+      :$number-to-return, Str :$server-ticket
       --> BSON::Document
     ) {
+      fatal-message("No server available") unless ?$server-ticket;
+
       # Must clone the document otherwise the MongoDB::Header will be added
       # to the $qdoc even when is copy trait is used.
       #
@@ -41,7 +43,8 @@ package MongoDB {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      my $socket = get-stored-object($server-ticket).get-socket;
+      my $client = $collection.database.client;
+      my $socket = $client.store.get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-query);
 
       if $has-response {
@@ -89,7 +92,8 @@ package MongoDB {
         $cursor.full-collection-name, $cursor.id
       );
 
-      my $socket = get-stored-object($server-ticket).get-socket;
+      my $client = $cursor.client;
+      my $socket = $client.store.get-stored-object($server-ticket).get-socket;
       $socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -134,7 +138,8 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $socket = get-stored-object($server-ticket).get-socket;
+      my $client = @cursors[0].client;
+      my $socket = $client.store.get-stored-object($server-ticket).get-socket;
       if +@cursor-ids {
         ( my Buf $encoded-kill-cursors,
           my Int $request-id

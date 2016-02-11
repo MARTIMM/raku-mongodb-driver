@@ -5,25 +5,36 @@ use Test;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
-use MongoDB::Collection;
+#use MongoDB::Collection;
 
-#`{{
-  Testing;
-    Replication using mongodb at localhost:27017
-}}
-
+#-------------------------------------------------------------------------------
 set-exception-process-level(MongoDB::Severity::Trace);
-#open-logfile();
+info-message("Test $?FILE start");
 
-my MongoDB::Client $client .= instance(:url('mongodb:///'));
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::AdminDB $db-admin .= new;
-my MongoDB::Collection $collection = $database.collection('repl-test');
+my MongoDB::Client $client;
+my MongoDB::Database $database;
+my MongoDB::Database $db-admin;
+#my MongoDB::Collection $collection;
 my BSON::Document $req;
 my BSON::Document $doc;
 
 #-------------------------------------------------------------------------------
 subtest {
+
+   $client .= new(:uri('mongodb://'));
+   is $client.nbr-servers, 0, 'No servers found';
+
+}, "Matching server test";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $client .= new(:uri('mongodb:///?replicaSet=myreplset'));
+  is $client.nbr-servers, 1, 'One server found';
+
+  $database = $client.database('test');
+  $db-admin = $client.database('admin');
+#  $collection = $database.collection('repl-test');
 
   $doc = $database.run-command: (isMaster => 1);
   if $doc<setName>:exists and $doc<setName> eq 'myreplset' {
@@ -45,7 +56,7 @@ subtest {
       force => False
     );
 
-say "Doc: ", $doc.perl unless $doc<ok>;
+#say "Doc: ", $doc.perl unless $doc<ok>;
   }
 
   else {
@@ -64,19 +75,19 @@ say "Doc: ", $doc.perl unless $doc<ok>;
       )
     );
 
-say "Doc: ", $doc.perl unless $doc<ok>;
+#say "Doc: ", $doc.perl unless $doc<ok>;
   }
 
-  $doc = $database.run-command: (isMaster => 1);
-say "Doc: ", $doc.perl;
+  $doc = $db-admin.run-command: (isMaster => 1);
+#say "Doc: ", $doc.perl;
   is $doc<ok>, 1, 'is master request ok';
   is $doc<setName>, 'myreplset', "replication name = $doc<setName>";
-
 
 }, "replication";
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

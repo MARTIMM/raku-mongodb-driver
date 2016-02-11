@@ -1,21 +1,14 @@
 use v6.c;
-use lib 't';
-use Test-support;
+#use lib 't';
+#use Test-support;
 use Test;
 use MongoDB;
 use MongoDB::Uri;
 
-#`{{
-my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
-my MongoDB::Database $db-admin .= new(:name<admin>);
-my BSON::Document $req;
-my BSON::Document $doc;
-
-# Drop database first, not checked for success.
-#
-$database.run-command(BSON::Document.new: (dropDatabase => 1));
-}}
+#-------------------------------------------------------------------------------
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
+info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -149,6 +142,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 

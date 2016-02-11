@@ -15,27 +15,39 @@ info-message("Test $?FILE start");
 
 #-----------------------------------------------------------------------------
 #
-#my MongoDB::Client $client = get-connection();
-my Int $port-number = slurp('Sandbox/port-number').Int;
-my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
-my Str $server-ticket = $client.select-server;
-my MongoDB::Server $server = get-stored-object($server-ticket);
-ok $server.defined, 'Server defined';
-#my MongoDB::Socket $socket = $server.get-socket;
+for @$Test-support::server-range -> $server-number {
 
-diag "Wait for server to stop";
-$server.shutdown; #(:force);
+  my Str $server-dir = "Sandbox/Server$server-number";
 
-#my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
-#diag $exit_code ?? "Server already stopped" !! "Server stopped";
+  my Int $port-number = slurp("$server-dir/port-number").Int;
+  my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
+  ok $client.nbr-servers > 0, "One or more servers via localhost:$port-number";
+
+  if $client.nbr-servers {
+    my Str $server-ticket = $client.select-server;
+    my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
+    ok $server.defined, "Server $server-number defined";
+
+    diag "Wait for server $server-number to stop";
+    $server.shutdown; #(:force);
+  }
+
+  $client .= new(:uri("mongodb://localhost:$port-number"));
+  is $client.nbr-servers, 0, "No servers for localhost:$port-number";
+}
+
 sleep 2;
-diag "Server stopped";
-diag "Remove sandbox data";
+diag "Servers stopped";
 
-#`{{    TEMPORARY INHIBIT THE REMOVAL OF THE SANDBOX
-for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
-  next unless $path.IO ~~ :d;
-  for dir($path) -> $dir-entry {
+#`{{
+diag "Remove sandbox data";
+my $dir = 'Sandbox';
+my $cleanup-dir = sub ( ) {
+  
+}
+
+
+
     if $dir-entry.IO ~~ :d {
 #      diag "delete directory $dir-entry";
       rmdir $dir-entry;
@@ -45,18 +57,10 @@ for <Sandbox/m.data/journal Sandbox/m.data Sandbox> -> $path {
 #      diag "delete file $dir-entry";
       unlink $dir-entry;
     }
-  }
-}
 
 diag "delete directory Sandbox";
 rmdir "Sandbox";
 }}
-
-try {
-  $client .= new(:uri("mongodb://localhost:$port-number"));
-  $server-ticket = $client.select-server;
-  nok $server-ticket.defined, 'No servers selected';
-}
 
 #-----------------------------------------------------------------------------
 # Cleanup and close

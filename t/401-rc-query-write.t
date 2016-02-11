@@ -145,12 +145,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  $doc = $database.run-command: (
-    getLastError => 1,
-    j => True,
-    w => 1,
-    wtimeout => 1000
-  );
+  $doc = $database.run-command: (getLastError => 1,);
   is $doc<ok>, 1, 'getLastError request ok';
   is $doc<err>, Any, 'no errors';
   is $doc<errmsg>, Any, 'No message';
@@ -194,7 +189,7 @@ subtest {
 # Number of stored objects can be one when Server object monitors
 # the mongod server
 #
-ok nbr-stored-objects() < 2, "Number of stored objects < 2";
+ok $client.store.nbr-stored-objects() < 2, "Number of stored objects < 2";
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);

@@ -16,14 +16,13 @@ package MongoDB {
     # As in MongoDB::Uri without servers key. So there are
     # database, username, password and options
     #
-    has Hash $!server-data;
+    has Hash $!uri-data;
 
     has MongoDB::Socket @!sockets;
     has Int $.max-sockets is rw where $_ >= 3;
 
     has Bool $.is-master = False;
-    has Int $.max-bson-object-size;
-    has Int $.max-write-batch-size;
+    has BSON::Document $!monitor-doc;
     has Duration $!weighted-mean-rtt .= new(0);
 
     has MongoDB::DatabaseIF $!db-admin;
@@ -39,14 +38,16 @@ package MongoDB {
       Str:D :$host!,
       Int:D :$port! where (0 <= $_ <= 65535),
       Int :$max-sockets where $_ >= 3 = 3,
-      Hash :$server-data
+      Hash :$uri-data,
+      MongoDB::DatabaseIF:D :$db-admin,
+      MongoDB::ClientIF:D :$client
     ) {
-      $!db-admin = $server-data<db-admin>;
-      $!client = $server-data<client>;
+      $!db-admin = $db-admin;
+      $!client = $client;
       $!server-name = $host;
       $!server-port = $port;
       $!max-sockets = $max-sockets;
-      $!server-data = $server-data;
+      $!uri-data = $uri-data;
       $!channel = Channel.new;
 
       $!server-monitor-control .= new(1);
@@ -103,6 +104,47 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    # Is called from Client in a separate thread. This is no user facility!
+    #
+    method initial-poll ( --> Bool ) {
+
+      my Str $server-ticket = $!client.store.store-object(self);
+
+      # Calculation of mean Return Trip Time
+      #
+#say "\nPoll isMaster, $server-ticket";
+      my BSON::Document $doc = $!db-admin._internal-run-command(
+        BSON::Document.new((isMaster => 1)),
+        :$server-ticket
+      );
+#say "Done polling isMaster";
+#say $doc.perl;
+
+      # Set master type and store whole doc
+      #
+      $!monitor-doc = $doc;
+      $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+
+      # Test if this server fits the bill
+      #
+      my Bool $accept-server = False;
+      if $!uri-data<options><replicaSet>:exists
+         and $doc<setName>:exists
+         and $doc<setName> eq $!uri-data<options><replicaSet> {
+
+        $accept-server = True;
+      }
+
+      elsif $!uri-data<options><replicaSet>:!exists
+            and $doc<setName>:!exists {
+
+        $accept-server = True;
+      }
+
+      return $accept-server;
+    }
+
+    #---------------------------------------------------------------------------
     # Run this on a separate thread because it lasts until this program
     # atops or the server shuts down.
     #
@@ -123,8 +165,14 @@ package MongoDB {
           #
           while 1 {
 
-#            try {
-              my Str $server-ticket = store-object(self);
+            # Temporary try block to catch typos
+            try {
+
+              # First things first Zzzz...
+              #
+              sleep 10;
+
+              my Str $server-ticket = $!client.store.store-object(self);
 
               # Calculation of mean Return Trip Time
               #
@@ -141,32 +189,25 @@ package MongoDB {
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
 
-              # Set master type
+              # Set master type and store whole doc
               #
+              $!monitor-doc = $doc;
               $!is-master = $doc<ismaster> if ?$doc<ismaster>;
 #say $doc.perl;
-
-              # When not defined set these too
-              #
-              unless ?$!max-bson-object-size {
-                $!max-bson-object-size = $doc<maxBsonObjectSize>;
-                $!max-write-batch-size = $doc<maxWriteBatchSize>;
-              }
 
               # Then check the channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
               #
               my $cmd = $!channel.poll;
               last if ?$cmd and $cmd eq 'stop';
-              sleep 10;
 
-#              CATCH {
-#
-#                default {
-#                  .say;
-#                }
-#              }
-#            }
+              CATCH {
+
+                default {
+                  .say;
+                }
+              }
+            }
           }
         }
       );

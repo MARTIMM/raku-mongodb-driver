@@ -7,16 +7,16 @@ package MongoDB {
   class Object-store {
 
     my Hash $store = {};
-    state Semaphore $handle-store .= new(1);
+    has Semaphore $!handle-store .= new(1);
 
     #---------------------------------------------------------------------------
     #
-    sub store-object(
+    method store-object(
       Any $object, Str :$use-my-ticket = '', Bool :$replace = False --> Str
-    ) is export {
+    ) {
 
 #      trace-message(:message("store object acquire"));
-      $handle-store.acquire;
+      $!handle-store.acquire;
 
       my Str $ticket;
       if ?$use-my-ticket {
@@ -39,52 +39,52 @@ package MongoDB {
 
       else {
 #        trace-message("store object release");
-        $handle-store.release;
+        $!handle-store.release;
 
         return fatal-message("Ticket '$ticket' already in use");
       }
 
 #      trace-message("store object release");
-      $handle-store.release;
+      $!handle-store.release;
 
       return $ticket;
     }
 
     #---------------------------------------------------------------------------
     #
-    sub get-stored-object ( Str:D $ticket --> Any ) is export {
+    method get-stored-object ( Str:D $ticket --> Any ) {
       return ($store{$ticket}:exists) ?? $store{$ticket} !! Any;
     }
 
     #---------------------------------------------------------------------------
     #
-    sub clear-stored-object ( Str:D $ticket --> Any ) is export {
+    method clear-stored-object ( Str:D $ticket --> Any ) {
 
 #      trace-message(:message("store clear acquire"));
-      $handle-store.acquire;
+      $!handle-store.acquire;
 
       my $object = ($store{$ticket}:exists) ?? ($store{$ticket}:delete) !! Any;
 
 #      trace-message("store clear release");
-      $handle-store.release;
+      $!handle-store.release;
       return $object;
     }
 
     #---------------------------------------------------------------------------
     #
-    sub nbr-stored-objects ( --> Int ) is export {
+    method nbr-stored-objects ( --> Int ) {
       return $store.elems;
     }
 
     #---------------------------------------------------------------------------
     #
-    sub stored-object-exists ( Str:D $ticket --> Bool ) is export {
+    method stored-object-exists ( Str:D $ticket --> Bool ) {
       return $store{$ticket}:exists;
     }
 
     #---------------------------------------------------------------------------
     #
-    sub stored-object-defined ( Str:D $ticket --> Bool ) is export {
+    method stored-object-defined ( Str:D $ticket --> Bool ) {
       return $store{$ticket}.defined;
     }
   }
