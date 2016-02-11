@@ -8,9 +8,10 @@ package Test-support
 {
   state $empty-document = BSON::Document.new();
 
-  # Two servers started
+  # N servers started
   #
-  our $server-range = (^3 + 1);
+  my $nbr-of-servers = 3;
+  our $server-range = (^$nbr-of-servers + 1);
 
   #-----------------------------------------------------------------------------
   # Get selected port number. When file is not there the process fails.
