@@ -113,7 +113,7 @@ for @$Test-support::server-range -> $server-number {
   }
 
   ok $port-number >= $start-portnbr, "Portnumber for server $server-number $port-number";
-  $start-portnbr = $port-number;
+  $start-portnbr = $port-number + 1;
 
   # Save portnumber for later tests
   #
