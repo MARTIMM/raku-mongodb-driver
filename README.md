@@ -266,7 +266,9 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
 * While we can add users to the database we cannot authenticate due to the lack of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to authenticate with.
 * Other items to [check](https://docs.mongodb.org/manual/reference/limits/)
 * Table to map mongo status codes to severity level. This will modify the default severity when an error code from the server is received. Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
-
+* I am not satisfied with logging. A few changes are;
+  * send the output to a separate class of which the object of it is in a thread. The information is then sent via a channel. This way it will always be synchronised (need to check that though).
+  * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of *-message() function.
 
 ## CHANGELOG
 
@@ -275,7 +277,7 @@ that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
 * 0.27.1
-  * Sandbox setup now for two servers to prepare for replica set processing. To speedup the startup of a new server, journaling is turned off.
+  * Sandbox setup now for two servers to prepare for replica set processing. To speedup the startup of a new server, journaling is turned off. It is now possible to start any number of servers.
   * The Object-store class is now with methods instead of exported subs. The object is stored in Client.
 * 0.27.0
   * Uri option replicaSet processed.

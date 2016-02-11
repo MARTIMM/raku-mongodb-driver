@@ -10,7 +10,7 @@ package Test-support
 
   # Two servers started
   #
-  state Range $server-range = ^2 + 1;
+  our $server-range = (^3 + 1);
 
   #-----------------------------------------------------------------------------
   # Get selected port number. When file is not there the process fails.

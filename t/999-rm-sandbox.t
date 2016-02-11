@@ -15,29 +15,32 @@ info-message("Test $?FILE start");
 
 #-----------------------------------------------------------------------------
 #
-my Int $port-number1 = slurp('Sandbox/Server1/port-number').Int;
-my MongoDB::Client $client1 .= new(:uri("mongodb://localhost:$port-number1"));
-my Str $server-ticket1 = $client1.select-server;
-my MongoDB::Server $server1 = $client1.store.get-stored-object($server-ticket1);
-ok $server1.defined, 'Server 1 defined';
+for @$Test-support::server-range -> $server-number {
 
-my Int $port-number2 = slurp('Sandbox/Server2/port-number').Int;
-my MongoDB::Client $client2 .= new(:uri("mongodb://localhost:$port-number2"));
-my Str $server-ticket2 = $client2.select-server;
-my MongoDB::Server $server2 = $client2.store.get-stored-object($server-ticket2);
-ok $server2.defined, 'Server 2 defined';
+  my Str $server-dir = "Sandbox/Server$server-number";
 
-diag "Wait for servers to stop";
-$server1.shutdown; #(:force);
-$server2.shutdown; #(:force);
+  my Int $port-number = slurp("$server-dir/port-number").Int;
+  my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
+  ok $client.nbr-servers > 0, "One or more servers via localhost:$port-number";
 
-#my $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
-#diag $exit_code ?? "Server already stopped" !! "Server stopped";
+  if $client.nbr-servers {
+    my Str $server-ticket = $client.select-server;
+    my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
+    ok $server.defined, "Server $server-number defined";
+
+    diag "Wait for server $server-number to stop";
+    $server.shutdown; #(:force);
+  }
+
+  $client .= new(:uri("mongodb://localhost:$port-number"));
+  is $client.nbr-servers, 0, "No servers for localhost:$port-number";
+}
+
 sleep 2;
 diag "Servers stopped";
-diag "Remove sandbox data";
 
 #`{{
+diag "Remove sandbox data";
 my $dir = 'Sandbox';
 my $cleanup-dir = sub ( ) {
   
@@ -58,14 +61,6 @@ my $cleanup-dir = sub ( ) {
 diag "delete directory Sandbox";
 rmdir "Sandbox";
 }}
-
-
-try {
-  $client1 .= new(:uri("mongodb://localhost:$port-number1"));
-  ok $client1.nbr-servers, 0, "No servers for localhost:$port-number1";
-  $client2 .= new(:uri("mongodb://localhost:$port-number2"));
-  ok $client2.nbr-servers, 0, "No servers for localhost:$port-number2";
-}
 
 #-----------------------------------------------------------------------------
 # Cleanup and close
