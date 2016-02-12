@@ -34,9 +34,19 @@ for @$Test-support::server-range -> $server-number {
 
   $client .= new(:uri("mongodb://localhost:$port-number"));
   is $client.nbr-servers, 0, "No servers for localhost:$port-number";
+
+  undefine $client;
+  my @a = (^20).list;
+  for  ^10 {
+    @a.push: (^20).list;
+    say 'sleep 1';
+    sleep 1;
+  }
 }
 
-sleep 2;
+
+
+#sleep 2;
 diag "Servers stopped";
 
 #`{{

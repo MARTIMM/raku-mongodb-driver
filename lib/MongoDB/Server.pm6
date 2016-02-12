@@ -172,6 +172,12 @@ package MongoDB {
               #
               sleep 10;
 
+              # Check the channel to see if there is a stop command. If so
+              # exit the while loop. Take a nap otherwise.
+              #
+              my $cmd = $!channel.poll;
+              last if ?$cmd and $cmd eq 'stop';
+
               my Str $server-ticket = $!client.store.store-object(self);
 
               # Calculation of mean Return Trip Time
@@ -195,16 +201,13 @@ package MongoDB {
               $!is-master = $doc<ismaster> if ?$doc<ismaster>;
 #say $doc.perl;
 
-              # Then check the channel to see if there is a stop command. If so
-              # exit the while loop. Take a nap otherwise.
+              # Capture errors. When there are any stop monitoring
               #
-              my $cmd = $!channel.poll;
-              last if ?$cmd and $cmd eq 'stop';
-
               CATCH {
 
                 default {
-                  .say;
+                  warn-message("Server {self.name} caught an error while monitoring, quit");
+                  last;
                 }
               }
             }
@@ -225,7 +228,7 @@ package MongoDB {
       # Suppose that there is only an answer when the server didn't shutdown
       # so what are we doing here ...
       #
-      if $doc<ok> {
+      if $doc.defined and $doc<ok> {
         $!client.remove-server(self);
       }
     }
@@ -249,23 +252,27 @@ package MongoDB {
 
       # Send a stop code to the monitor code thread and wait for it to finish
       #
-      $!channel.send('stop');
-      $!promise-monitor.await;
-      undefine $!promise-monitor;
+      $!channel.send('stop') if $!channel.defined;
+      if $!promise-monitor.defined {
+        $!promise-monitor.await;
+        undefine $!promise-monitor;
+      }
 
       # Release the lock
       #
-      $!server-monitor-control.release;
+      $!server-monitor-control.release if $!server-monitor-control.defined;
 
       # Clear all sockets
       #
-      for @!sockets -> $s {
-        undefine $s;
-      }
+      if @!sockets.defined {
+        for @!sockets -> $s {
+          undefine $s;
+        }
 
-      # and channel
-      #
-      undefine $!channel;
+        # and channel
+        #
+        undefine $!channel;
+      }
     }
   }
 }

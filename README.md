@@ -299,6 +299,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.27.3
+  * Bugfixes when servers are take down while processing. Travis showed a subtle case which I didn't notice locally. It was about using things from a destroyed object. Other locations in Wire, Server, Socket and Client to handle problems are taken care of.
 * 0.27.2
   * bugfix in tests
 * 0.27.1

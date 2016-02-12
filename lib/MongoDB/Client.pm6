@@ -5,6 +5,7 @@ use MongoDB::Uri;
 use MongoDB::ClientIF;
 use MongoDB::Server;
 use MongoDB::Database;
+use MongoDB::Collection;
 use MongoDB::Wire;
 use BSON::Document;
 
@@ -16,6 +17,8 @@ package MongoDB {
 
     has Array $!servers;
     has Array $!server-discovery;
+    has Str $!uri;
+
     has MongoDB::Object-store $.store;
 
     # Semaphore to control the use of select-server. This call can come
@@ -34,10 +37,8 @@ package MongoDB {
     my MongoDB::Database $db-admin;
 
     #---------------------------------------------------------------------------
-    submethod BUILD (
-      Str :$uri,
-      BSON::Document :$read-concern
-    ) {
+    #
+    submethod BUILD ( Str:D :$uri!, BSON::Document :$read-concern ) {
 
       # Init store
       #
@@ -49,45 +50,43 @@ package MongoDB {
 
       $!servers = [];
       $!server-discovery = [];
+      $!uri = $uri;
 
-      if ?$uri {
-        # Parse the uri and get info in $uri-obj.uri-data;
-        # Fields are protocol, username, password, servers, database and options
-        #
-        my MongoDB::Uri $uri-obj .= new(:$uri);
+      # Parse the uri and get info in $uri-obj.uri-data;
+      # Fields are protocol, username, password, servers, database and options
+      #
+      my MongoDB::Uri $uri-obj .= new(:$uri);
 
-        # Copy some fields into a local $uri-data hash which is handed over
-        # to the server object. Then add some more.
-        #
-        my @item-list = <username password database options>;
-        my Hash $uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
-#        $uri-data<client> = self;
+      # Copy some fields into a local $uri-data hash which is handed over
+      # to the server object..
+      #
+      my @item-list = <username password database options>;
+      my Hash $uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
-        # Background process to discover hosts only if there are new servers
-        # to be discovered or that new non default cases are presnted.
-        #
+      # Background process to discover hosts only if there are new servers
+      # to be discovered or that new non default cases are presnted.
+      #
 #TODO Check relation of servers otherwise refuse
-        for @($uri-obj.server-data<servers>) -> Hash $sdata {
-          $!server-discovery.push: Promise.start( {
-            my MongoDB::Server $server;
+      for @($uri-obj.server-data<servers>) -> Hash $sdata {
+        $!server-discovery.push: Promise.start( {
+          my MongoDB::Server $server;
 
-              $server .= new(
-                :host($sdata<host>), :port($sdata<port>),
-                :$uri-data, :$db-admin, :client(self)
-              );
+            $server .= new(
+              :host($sdata<host>), :port($sdata<port>),
+              :$uri-data, :$db-admin, :client(self)
+            );
 
-              # Initial test for server data
-              #
-              my Bool $accept-server = $server.initial-poll;
+            # Initial test for server data
+            #
+            my Bool $accept-server = $server.initial-poll;
 
-              # Return server object
-              #
-              self!add-server($server) if $accept-server;
+            # Return server object
+            #
+            self!add-server($server) if $accept-server;
 
-              ?$accept-server ?? $server !! Any;
-            }
-          );
-        }
+            ?$accept-server ?? $server !! Any;
+          }
+        );
       }
     }
 
@@ -118,13 +117,23 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # Select a collection. When it is new it comes into existence only
-    # after inserting data
     #
     method database ( Str:D $name --> MongoDB::Database ) {
 
       trace-message("create database $name");
       return MongoDB::Database.new( :client(self), :name($name));
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method collection ( Str:D $full-collection-name --> MongoDB::Collection ) {
+#TODO check for dot in the name
+
+      ( my $db-name, my $cll-name) = $full-collection-name.split('.');
+      trace-message("create database $db-name");
+      my MongoDB::Database $db .= new( :client(self), :name($db-name));
+      trace-message("create collection $cll-name");
+      return $db.collection($cll-name);
     }
 
     #---------------------------------------------------------------------------
@@ -170,19 +179,19 @@ package MongoDB {
 
 #say "discover: {$!server-discovery.elems}";
         if $still-planned {
-          warn-message("No server found yet, wait for running discovery");
+          warn-message("No server found yet with $!uri, wait for running discovery");
           sleep 1;
         }
 
         elsif $!servers.elems and !$master-found {
           # Try again a bit later to give the servers monitoring some time
           #
-          warn-message("No master server found yet, wait for server monitoringy");
+          warn-message("No master server found yet with $!uri, wait for server monitoringy");
           sleep 1;
         }
 
         else {
-          error-message("No server found, discovery data exhausted");
+          error-message("No server found with $!uri, discovery data exhausted");
           last;
         }
       }
@@ -247,7 +256,7 @@ package MongoDB {
         #
         elsif $promise.status == Planned {
 #say "cp 2p";
-          info-message("Promise $pi still running");
+          info-message("Thread $pi still running");
           $still-planned = True;
         }
       }
@@ -257,7 +266,16 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method remove-server ( MongoDB::Server $server ) {
+    method take-out-server ( Str $server-ticket ) {
+      if ?$server-ticket {
+        my MongoDB::Server $server = $!store.clear-stored-object($server-ticket);
+        self.remove-server($server);
+      }
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method remove-server ( MongoDB::Server $server is rw ) {
 
       trace-message("server select acquire");
       $!control-select.acquire;
