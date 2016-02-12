@@ -39,6 +39,8 @@ package MongoDB {
         :$number-to-return, :$server-ticket
       );
 
+      return Any unless $server-reply.defined;
+
       return MongoDB::Cursor.new(
         :collection(self), :$server-reply,
         :read-concern($rc), :$server-ticket
@@ -68,6 +70,8 @@ package MongoDB {
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return, :$server-ticket
       );
+
+      return MongoDB::Cursor unless $server-reply.defined;
 
       return MongoDB::Cursor.new(
         :collection(self), :$server-reply

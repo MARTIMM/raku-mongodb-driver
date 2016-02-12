@@ -18,8 +18,6 @@ package MongoDB {
       :$number-to-return, Str :$server-ticket
       --> BSON::Document
     ) {
-      fatal-message("No server available") unless ?$server-ticket;
-
       # Must clone the document otherwise the MongoDB::Header will be added
       # to the $qdoc even when is copy trait is used.
       #
@@ -27,32 +25,47 @@ package MongoDB {
       $d does MongoDB::Header;
       my BSON::Document $result;
 
-      # Special test for shutdown command for which the server doesn't respond
-      # when going down
-      #
-      my Bool $has-response = True;
-      $has-response = False if $d<shutdown>:exists and $d<shutdown> == 1;
+      my Bool $write-operation = False;
+      my $client;
+      my $socket;
 
-      my Bool $need-master = False;
-      $need-master = ($d.find-key(0) ~~ any(<insert update delete>));
-#say "Need master for {$d.find-key(0)} $need-master";
-      my $full-collection-name = $collection.full-collection-name;
+      try {
+        $client = $collection.database.client;
 
-      ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
-        $full-collection-name, $projection,
-        :$flags, :$number-to-skip, :$number-to-return
-      );
+        # Check if the server ticket is defined and thus a server is reserved
+        # for this communication.
+        #
+        fatal-message("No server available") unless ?$server-ticket;
 
-      my $client = $collection.database.client;
-      my $socket = $client.store.get-stored-object($server-ticket).get-socket;
-      $socket.send($encoded-query);
+        $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
+#say "Need master for {$d.find-key(0)} $write-operation";
+        my $full-collection-name = $collection.full-collection-name;
 
-      if $has-response {
+        ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
+          $full-collection-name, $projection,
+          :$flags, :$number-to-skip, :$number-to-return
+        );
+
+        $socket = $client.store.get-stored-object($server-ticket).get-socket;
+
+        $socket.send($encoded-query);
+
         # Read 4 bytes for int32 response size
         #
         my Buf $size-bytes = $socket.receive(4);
-        return fatal-message("No response from server")
-               if $size-bytes.elems < 4;
+        if $size-bytes.elems == 0 {
+          # Try again
+          #
+          $size-bytes = $socket.receive(4);
+          fatal-message("No response from server") if $size-bytes.elems == 0;
+        }
+
+        if $size-bytes.elems < 4 {
+          # Try to get the rest of it
+          #
+          $size-bytes.push($socket.receive(4 - $size-bytes.elems));
+          fatal-message("Response corrupted") if $size-bytes.elems < 4;
+        }
 
         my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
@@ -60,24 +73,38 @@ package MongoDB {
         # already read bytes and decode. Return the resulting document.
         #
         my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
+        if $server-reply.elems < $response-size + 4 {
+          $server-reply.push($socket.receive($response-size));
+          fatal-message("Response corrupted") if $server-reply.elems < $response-size + 4;
+        }
 
         $result = $d.decode-reply($server-reply);
 
         # Assert that the request-id and response-to are the same
         #
-        return fatal-message("Id in request is not the same as in the response")
+        fatal-message("Id in request is not the same as in the response")
           unless $request-id == $result<message-header><response-to>;
+
+        CATCH {
+          when MongoDB::Message {
+#            warn-message(.message);
+          }
+
+          default {
+            when Str {
+              warn-message($_);
+            }
+            
+            when Exception {
+              warn-message(.message);
+            }
+          }
+
+          $client.take-out-server($server-ticket);
+        }
       }
 
-      else {
-        $result .= new: (
-          ok => 1,
-          cursor-id => Buf.new(0x00 xx 8),
-          documents => [  ]
-        );
-      }
-
-      $socket.close;
+      $socket.close if $socket.defined;
       return $result;
     }
 

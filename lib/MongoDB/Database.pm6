@@ -54,10 +54,12 @@ package MongoDB {
         :number-to-return(1),
         :$read-concern,
       );
+
+      return BSON::Document unless $cursor.defined;
+
       my $doc = $cursor.fetch;
       trace-message('done run-command');
 
-#TODO throw exception when undefined!!!
       return $doc.defined ?? $doc !! BSON::Document.new;
     }
 
@@ -76,7 +78,7 @@ package MongoDB {
       if c<read-concern>.defined {
         $read-concern .= new: c<read-concern>;
       }
-      
+
       else {
         $read-concern .= new;
       }
@@ -88,6 +90,8 @@ package MongoDB {
         :number-to-return(1)
         :$read-concern
       );
+
+      return BSON::Document unless $cursor.defined;
 
       my $doc = $cursor.fetch;
 #TODO throw exception when undefined!!!
