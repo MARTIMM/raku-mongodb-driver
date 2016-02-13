@@ -20,7 +20,7 @@ package MongoDB {
 
       # Create a collection $cmd to be used with run-command()
       #
-      trace-message('Initialize command collection $cmd');
+      debug-message('create command collection $cmd');
       $!cmd-collection = self.collection('$cmd');
     }
 
@@ -30,7 +30,7 @@ package MongoDB {
     #
     method collection ( Str:D $name --> MongoDB::Collection ) {
 
-      trace-message("create collection $name");
+      debug-message("create collection $name");
       return MongoDB::Collection.new: :database(self), :name($name);
     }
 
@@ -46,6 +46,8 @@ package MongoDB {
       BSON::Document :$read-concern = BSON::Document.new,
       --> BSON::Document
     ) {
+
+      debug-message("run command {$command.find-key(0)}");
 
       # And use it to do a find on it, get the doc and return it.
       #
@@ -82,6 +84,8 @@ package MongoDB {
       else {
         $read-concern .= new;
       }
+
+      debug-message("run command {$command.find-key(0)}");
 
       # And use it to do a find on it, get the doc and return it.
       #

@@ -47,7 +47,6 @@ package MongoDB {
         );
 
         $socket = $client.store.get-stored-object($server-ticket).get-socket;
-
         $socket.send($encoded-query);
 
         # Read 4 bytes for int32 response size
@@ -85,22 +84,26 @@ package MongoDB {
         fatal-message("Id in request is not the same as in the response")
           unless $request-id == $result<message-header><response-to>;
 
+
+        # Catch all thrown exceptions and take out the server if needed
+        #
         CATCH {
           when MongoDB::Message {
-#            warn-message(.message);
+            $client.take-out-server($server-ticket);
           }
 
           default {
             when Str {
               warn-message($_);
+              $client.take-out-server($server-ticket);
             }
-            
+
             when Exception {
               warn-message(.message);
+              $client.take-out-server($server-ticket);
             }
           }
 
-          $client.take-out-server($server-ticket);
         }
       }
 
@@ -114,35 +117,81 @@ package MongoDB {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
+      my $client;
+      my $socket;
+      my BSON::Document $result;
 
-      ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
-        $cursor.full-collection-name, $cursor.id
-      );
+      try {
 
-      my $client = $cursor.client;
-      my $socket = $client.store.get-stored-object($server-ticket).get-socket;
-      $socket.send($encoded-get-more);
+        ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
+          $cursor.full-collection-name, $cursor.id
+        );
 
-      # Read 4 bytes for int32 response size
-      #
-      my Buf $size-bytes = $socket.receive(4);
-      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+        $client = $cursor.client;
 
-      # Receive remaining response bytes from socket. Prefix it with the already
-      # read bytes and decode. Return the resulting document.
-      #
-      my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
-# TODO check if requestID matches responseTo
+        fatal-message("No server available") unless ?$server-ticket;
+        $socket = $client.store.get-stored-object($server-ticket).get-socket;
+        $socket.send($encoded-get-more);
 
-      $socket.close;
-# TODO check if cursorID matches (if present)
-      my BSON::Document $result = $d.decode-reply($server-reply);
+        # Read 4 bytes for int32 response size
+        #
+        my Buf $size-bytes = $socket.receive(4);
+        if $size-bytes.elems == 0 {
+          # Try again
+          #
+          $size-bytes = $socket.receive(4);
+          fatal-message("No response from server") if $size-bytes.elems == 0;
+        }
 
-      # Assert that the request-id and response-to are the same
-      #
-      return fatal-message("Id in request is not the same as in the response")
-        unless $request-id == $result<message-header><response-to>;
+        if $size-bytes.elems < 4 {
+          # Try to get the rest of it
+          #
+          $size-bytes.push($socket.receive(4 - $size-bytes.elems));
+          fatal-message("Response corrupted") if $size-bytes.elems < 4;
+        }
 
+        my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+
+        # Receive remaining response bytes from socket. Prefix it with the already
+        # read bytes and decode. Return the resulting document.
+        #
+        my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
+        if $server-reply.elems < $response-size + 4 {
+          $server-reply.push($socket.receive($response-size));
+          fatal-message("Response corrupted") if $server-reply.elems < $response-size + 4;
+        }
+
+        $result = $d.decode-reply($server-reply);
+  # TODO check if cursorID matches (if present)
+
+        # Assert that the request-id and response-to are the same
+        #
+        fatal-message("Id in request is not the same as in the response")
+          unless $request-id == $result<message-header><response-to>;
+
+
+        # Catch all thrown exceptions and take out the server if needed
+        #
+        CATCH {
+          when MongoDB::Message {
+            $client.take-out-server($server-ticket);
+          }
+
+          default {
+            when Str {
+              warn-message($_);
+              $client.take-out-server($server-ticket);
+            }
+
+            when Exception {
+              warn-message(.message);
+              $client.take-out-server($server-ticket);
+            }
+          }
+        }
+      }
+
+      $socket.close if $socket.defined;
       return $result;
     }
 
@@ -155,6 +204,8 @@ package MongoDB {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
+      my $client;
+      my $socket;
 
       # Gather the ids only when they are non-zero.i.e. still active.
       #
@@ -165,17 +216,43 @@ package MongoDB {
 
       # Kill the cursors if found any
       #
-      my $client = @cursors[0].client;
-      my $socket = $client.store.get-stored-object($server-ticket).get-socket;
-      if +@cursor-ids {
-        ( my Buf $encoded-kill-cursors,
-          my Int $request-id
-        ) = $d.encode-kill-cursors(@cursor-ids);
+      $client = @cursors[0].client;
 
-        $socket.send($encoded-kill-cursors);
+      try {
+        fatal-message("No server available") unless ?$server-ticket;
+        $socket = $client.store.get-stored-object($server-ticket).get-socket;
+
+        if +@cursor-ids {
+          ( my Buf $encoded-kill-cursors,
+            my Int $request-id
+          ) = $d.encode-kill-cursors(@cursor-ids);
+
+          $socket.send($encoded-kill-cursors);
+        }
+
+
+        # Catch all thrown exceptions and take out the server if needed
+        #
+        CATCH {
+          when MongoDB::Message {
+            $client.take-out-server($server-ticket);
+          }
+
+          default {
+            when Str {
+              warn-message($_);
+              $client.take-out-server($server-ticket);
+            }
+
+            when Exception {
+              warn-message(.message);
+              $client.take-out-server($server-ticket);
+            }
+          }
+        }
       }
 
-      $socket.close;
+      $socket.close if $socket.defined;
     }
   }
 }

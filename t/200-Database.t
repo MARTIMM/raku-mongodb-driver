@@ -8,23 +8,25 @@ use MongoDB::Database;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my BSON::Document $req;
 my BSON::Document $doc;
-my MongoDB::Client $client1 = get-connection(:1server);
 
+my MongoDB::Client $client1 = get-connection(:1server);
 my MongoDB::Database $database1 = $client1.database('test');
 my MongoDB::Database $db-admin1 = $client1.database('admin');
 
 my MongoDB::Client $client2 = get-connection(:2server);
+my MongoDB::Database $database2 = $client2.database('test');
 my MongoDB::Database $db-admin2 = $client2.database('admin');
 
 # Drop database first then create new databases
 #
 $req .= new: ( dropDatabase => 1 );
-$doc = $database1.run-command($req);
+$database1.run-command($req);
+$database2.run-command($req);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -99,11 +101,11 @@ subtest {
 subtest {
 
   $doc = $db-admin2.run-command: (listDatabases => 1);
-#say $doc.perl;
   ok $doc<ok>.Bool, 'Run command ran ok';
   ok $doc<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
 
   my %db-names;
+#say $doc<databases>.perl;
   my Array $db-docs = $doc<databases>;
   my $idx = 0;
   for $db-docs[*] -> $d {
