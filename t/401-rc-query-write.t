@@ -8,7 +8,7 @@ use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Info);
+#set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();

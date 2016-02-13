@@ -15,7 +15,6 @@ package MongoDB {
       Any $object, Str :$use-my-ticket = '', Bool :$replace = False --> Str
     ) {
 
-#      trace-message(:message("store object acquire"));
       $!handle-store.acquire;
 
       my Str $ticket;
@@ -33,20 +32,16 @@ package MongoDB {
 #        $ticket ~~ s:g/\s//;
       }
 
+      trace-message(:message("store object under '$ticket'"));
       if $replace or !$store{$ticket}.defined {
         $store{$ticket} = $object;
       }
 
       else {
-#        trace-message("store object release");
-        $!handle-store.release;
-
-        return fatal-message("Ticket '$ticket' already in use");
+        warn-message("Ticket '$ticket' already in use");
       }
 
-#      trace-message("store object release");
       $!handle-store.release;
-
       return $ticket;
     }
 
@@ -60,12 +55,11 @@ package MongoDB {
     #
     method clear-stored-object ( Str:D $ticket --> Any ) {
 
-#      trace-message(:message("store clear acquire"));
+      trace-message(:message("remove object for '$ticket' from store"));
       $!handle-store.acquire;
 
       my $object = ($store{$ticket}:exists) ?? ($store{$ticket}:delete) !! Any;
 
-#      trace-message("store clear release");
       $!handle-store.release;
       return $object;
     }

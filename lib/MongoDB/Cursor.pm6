@@ -108,23 +108,30 @@ package MongoDB {
         my BSON::Document $server-reply =
           MongoDB::Wire.new.get-more( self, :$!server-ticket);
 
-        # Get cursor id, It may change to "0" if there are no more
-        # documents to fetch.
-        #
-        $!id = $server-reply<cursor-id>;
-        unless [+] @$!id {
-          $!client.store.clear-stored-object($!server-ticket);
-          $!server-ticket = Nil;
-        }
+        if $server-reply.defined {
 
-        # Get documents
-        #
-        @!documents = $server-reply<documents>.list;
+          # Get cursor id, It may change to "0" if there are no more
+          # documents to fetch.
+          #
+          $!id = $server-reply<cursor-id>;
+          unless [+] @$!id {
+            $!client.store.clear-stored-object($!server-ticket);
+            $!server-ticket = Nil;
+          }
+
+          # Get documents
+          #
+          @!documents = $server-reply<documents>.list;
+        }
+        
+        else {
+          @!documents = ();
+        }
       }
 
       # Return a document when there is one. If none left, return Nil
       #
-      return +@!documents ?? @!documents.shift !! Nil;
+      return +@!documents ?? @!documents.shift !! BSON::Document;
     }
 
     #-----------------------------------------------------------------------------

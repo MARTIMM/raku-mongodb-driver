@@ -112,7 +112,11 @@ package MongoDB {
     #
     method nbr-servers ( --> Int ) {
 
-      self.select-server(:!need-master);
+      # Investigate first before getting the nuber of servers. We get a
+      # server ticket and must be removed again.
+      #
+      my $t = self.select-server(:!need-master);
+      $!store.clear-stored-object($t) if ?$t;
       return $!servers.elems;
     }
 
@@ -120,7 +124,7 @@ package MongoDB {
     #
     method database ( Str:D $name --> MongoDB::Database ) {
 
-      trace-message("create database $name");
+      debug-message("create database $name");
       return MongoDB::Database.new( :client(self), :name($name));
     }
 
@@ -130,9 +134,7 @@ package MongoDB {
 #TODO check for dot in the name
 
       ( my $db-name, my $cll-name) = $full-collection-name.split('.');
-      trace-message("create database $db-name");
       my MongoDB::Database $db .= new( :client(self), :name($db-name));
-      trace-message("create collection $cll-name");
       return $db.collection($cll-name);
     }
 
