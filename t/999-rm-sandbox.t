@@ -36,12 +36,12 @@ for @$Test-support::server-range -> $server-number {
   is $client.nbr-servers, 0, "No servers for localhost:$port-number";
 
   undefine $client;
-  my @a = (^100).list;
-  for  ^5 {
-    @a.push: (^100).list;
-    say 'sleep 1';
-    sleep 1;
-  }
+#  my @a = (^100).list;
+#  for  ^5 {
+#    @a.push: (^100).list;
+#    say 'sleep 1';
+#    sleep 1;
+#  }
 }
 
 
