@@ -1,5 +1,7 @@
 use v6;
 
+use MongoDB;
+use MongoDB::DatabaseIF;
 use MongoDB::CollectionIF;
 use MongoDB::Wire;
 use MongoDB::Cursor;
@@ -10,6 +12,28 @@ package MongoDB {
 
   class Collection is MongoDB::CollectionIF {
 
+    has MongoDB::DatabaseIF $.database;
+    has Str $.name;
+    has Str $.full-collection-name;
+    has BSON::Document $.read-concern;
+
+    #---------------------------------------------------------------------------
+    #
+    submethod BUILD (
+      MongoDB::DatabaseIF:D :$database,
+      Str:D :$name,
+      BSON::Document :$read-concern
+    ) {
+
+      debug-message("create collection $name");
+
+      $!read-concern =
+        $read-concern.defined ?? $read-concern !! $database.read-concern;
+
+      $!database = $database;
+      self!set-name($name) if ?$name;
+    }
+
     #---------------------------------------------------------------------------
     # Find record in a collection. One of the few left to use the wire protocol.
     #
@@ -19,7 +43,7 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0, List :$read-concern = (),
+      Int :$flags = 0, List :$read-concern,
       Str :$server-ticket is copy = ''
 
       --> MongoDB::Cursor
@@ -28,7 +52,11 @@ package MongoDB {
 #TODO Check provided structure for the fields.
 
       my MongoDB::Wire $wire .= new;
-      my BSON::Document $rc .= new: $read-concern;
+
+      my BSON::Document $rc =
+         $read-concern.defined ?? BSON::Document.new: $read-concern
+                               !! $!read-concern;
+
       $server-ticket = $.database.client.select-server(:read-concern($rc))
         unless $server-ticket.chars > 0;
 
@@ -39,11 +67,12 @@ package MongoDB {
         :$number-to-return, :$server-ticket
       );
 
-      return Any unless $server-reply.defined;
+      return MongoDB::Cursor unless $server-reply.defined;
 
       return MongoDB::Cursor.new(
-        :collection(self), :$server-reply,
-        :read-concern($rc), :$server-ticket
+        :collection(self),
+        :$server-reply,
+        :$server-ticket
       );
     }
 
@@ -55,15 +84,18 @@ package MongoDB {
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0,
-      BSON::Document :$read-concern = BSON::Document.new,
+      BSON::Document :$read-concern,
       Str :$server-ticket is copy = ''
       --> MongoDB::Cursor
     ) {
 
 #TODO Check provided structure for the fields.
 
+      my BSON::Document $rc =
+        $read-concern.defined ?? $read-concern !! $!read-concern;
+
       my MongoDB::Wire $wire .= new;
-      $server-ticket = $.database.client.select-server(:$read-concern)
+      $server-ticket = $.database.client.select-server(:read-concern($rc))
         unless $server-ticket.chars > 0;
 
       my BSON::Document $server-reply = $wire.query(
@@ -74,9 +106,43 @@ package MongoDB {
       return MongoDB::Cursor unless $server-reply.defined;
 
       return MongoDB::Cursor.new(
-        :collection(self), :$server-reply
-        :$read-concern, :$server-ticket
+        :collection(self),
+        :$server-reply,
+        :$server-ticket
       );
+    }
+
+    #---------------------------------------------------------------------------
+    # Set the name of the collection. Used by command collection to set
+    # collection name to '$cmd'. There are several other names starting with
+    # 'system.'.
+    #
+    method !set-name ( Str:D $name ) {
+
+      # Check for the CommandCll because of $name is $cmd
+      #
+#      unless self.^name eq 'MongoDB::CommandCll' {
+
+        # This should be possible: 'admin.$cmd' which is used by run-command
+        # https://docs.mongodb.org/manual/reference/limits/
+        #
+#        if $name !~~ m/^ <[_ A..Z a..z]> <[\w _ \-]>* $/ {
+#          return error-message("Illegal collection name: '$name'");
+#        }
+#      }
+
+      $!name = $name;
+      self!set-full-collection-name;
+    }
+
+    #---------------------------------------------------------------------------
+    # Helper to set full collection name in cases that the name of the database
+    # isn't available at BUILD time
+    #
+    method !set-full-collection-name ( ) {
+
+      return unless !?$.full-collection-name and ?$.database.name and ?$.name;
+      $!full-collection-name = [~] $.database.name, '.', $.name;
     }
   }
 }
