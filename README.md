@@ -300,6 +300,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.27.5
+  * read concern arguments can be accepted on Client, Database and Collection level as well as methods run-command() and find(). While this is in place it is not yet acted upon.
 * 0.27.4
   * More tests on server down events added to get-more() and kill-cursors() in Wire and fetch() in Cursor.
 * 0.27.3

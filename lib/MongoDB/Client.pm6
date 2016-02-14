@@ -34,7 +34,9 @@ package MongoDB {
 
     # These are shared among other Clients
     #
-    my MongoDB::Database $db-admin;
+    has MongoDB::Database $db-admin;
+
+    has BSON::Document $.read-concern;
 
     #---------------------------------------------------------------------------
     #
@@ -56,6 +58,11 @@ package MongoDB {
       # Fields are protocol, username, password, servers, database and options
       #
       my MongoDB::Uri $uri-obj .= new(:$uri);
+
+      # Store read concern
+      #
+      $!read-concern =
+        $read-concern.defined ?? $read-concern !! BSON::Document.new;
 
       # Copy some fields into a local $uri-data hash which is handed over
       # to the server object..
@@ -122,29 +129,48 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method database ( Str:D $name --> MongoDB::Database ) {
+    method database (
+      Str:D $name,
+      BSON::Document :$read-concern
+      --> MongoDB::Database
+    ) {
 
-      debug-message("create database $name");
-      return MongoDB::Database.new( :client(self), :name($name));
+      my BSON::Document $rc =
+         $read-concern.defined ?? $read-concern !! $!read-concern;
+
+      return MongoDB::Database.new(
+        :client(self),
+        :name($name),
+        :read-concern($rc)
+      );
     }
 
     #---------------------------------------------------------------------------
     #
-    method collection ( Str:D $full-collection-name --> MongoDB::Collection ) {
+    method collection (
+      Str:D $full-collection-name,
+      BSON::Document :$read-concern
+      --> MongoDB::Collection
+    ) {
 #TODO check for dot in the name
 
+      my BSON::Document $rc =
+         $read-concern.defined ?? $read-concern !! $!read-concern;
+
       ( my $db-name, my $cll-name) = $full-collection-name.split('.');
-      my MongoDB::Database $db .= new( :client(self), :name($db-name));
-      return $db.collection($cll-name);
+
+      my MongoDB::Database $db .= new(
+        :client(self),
+        :name($db-name),
+        :read-concern($rc)
+      );
+
+      return $db.collection( $cll-name, :read-concern($rc));
     }
 
     #---------------------------------------------------------------------------
     #
-    method select-server (
-      Bool :$need-master = False,
-      BSON::Document :$read-concern = BSON::Document.new
-      --> Str
-    ) {
+    method select-server ( Bool :$need-master = False, --> Str ) {
 
       my MongoDB::Server $server;
       my Str $server-ticket;

@@ -216,6 +216,8 @@ for @$Test-support::server-range -> $server-number {
       unlink "$server-dir/NO-MONGODB-SERVER";
     }
   }
+
+  sleep 1;
 }
 
 #-------------------------------------------------------------------------------
