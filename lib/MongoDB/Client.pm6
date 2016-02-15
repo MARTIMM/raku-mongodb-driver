@@ -19,8 +19,6 @@ package MongoDB {
     has Array $!server-discovery;
     has Str $!uri;
 
-    has MongoDB::Object-store $.store;
-
     # Semaphore to control the use of select-server. This call can come
     # from different threads.
     #
@@ -32,23 +30,17 @@ package MongoDB {
     #
     has Hash $!server-reservations;
 
-    # These are shared among other Clients
-    #
-    has MongoDB::Database $db-admin;
+    has MongoDB::Object-store $.store;
 
     has BSON::Document $.read-concern;
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( Str:D :$uri!, BSON::Document :$read-concern ) {
+    submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern ) {
 
       # Init store
       #
       $!store .= new;
-
-      # The admin database is given to each server to get server data
-      #
-      $db-admin = self.database('admin');
 
       $!servers = [];
       $!server-discovery = [];
@@ -80,7 +72,8 @@ package MongoDB {
 
             $server .= new(
               :host($sdata<host>), :port($sdata<port>),
-              :$uri-data, :$db-admin, :client(self)
+              :$uri-data, :db-admin(self.database('admin')),
+              :client(self)
             );
 
             # Initial test for server data
@@ -170,7 +163,9 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method select-server ( Bool :$need-master = False, --> Str ) {
+    method select-server ( BSON::Document :$read-concern --> Str ) {
+
+      my Bool $need-master = False;
 
       my MongoDB::Server $server;
       my Str $server-ticket;
