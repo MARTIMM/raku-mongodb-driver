@@ -34,7 +34,7 @@ package MongoDB {
     multi submethod BUILD (
       MongoDB::CollectionIF:D :$collection!,
       BSON::Document:D :$server-reply!,
-      Str :$server-ticket
+      Str:D :$server-ticket
     ) {
 
       $!client = $collection.database.client;
