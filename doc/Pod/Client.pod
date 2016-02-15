@@ -149,7 +149,7 @@ defined, the structure of the client is taken.
 
 =head2 method select-server
 
-  method select-server ( BSON::Document :read-concern, --> Str )
+  method select-server ( BSON::Document :$read-concern, --> Str )
 
 Select a server for operations. It returns a ticket with which the Server object
 can be retrieved. I<This call is for internal use only>.
