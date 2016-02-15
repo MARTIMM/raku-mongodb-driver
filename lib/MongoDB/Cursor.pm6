@@ -32,8 +32,8 @@ package MongoDB {
     # Support for the newer BSON::Document
     #
     multi submethod BUILD (
-      MongoDB::CollectionIF :$collection!,
-      BSON::Document:D :$server-reply,
+      MongoDB::CollectionIF:D :$collection!,
+      BSON::Document:D :$server-reply!,
       Str :$server-ticket
     ) {
 
@@ -65,12 +65,15 @@ package MongoDB {
     multi submethod BUILD (
       MongoDB::ClientIF:D :$client!,
       BSON::Document:D :$cursor-doc!,
-      BSON::Document :$read-concern = BSON::Document.new
+      BSON::Document :$read-concern
     ) {
 
       $!client = $client;
 
       $!full-collection-name = $cursor-doc<ns>;
+
+      my BSON::Document $rc =
+         $read-concern.defined ?? $read-concern !! $client.read-concern;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
       # batches left on the server to retrieve. Documents may be present in
