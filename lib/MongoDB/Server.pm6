@@ -70,6 +70,7 @@ package MongoDB {
     # Search in the array for a closed Socket.
     #
     method get-socket ( --> MongoDB::Socket ) {
+#TODO place semaphores using $!max-sockets
 
       my MongoDB::Socket $s;
 
