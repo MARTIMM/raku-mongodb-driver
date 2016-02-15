@@ -286,15 +286,19 @@ exit(0);
 #
 sub check-document ( $criteria, $field-list, $projection = ())
 {
-  $cursor = $collection.find( :$criteria, :$projection);
-  while $cursor.fetch() -> BSON::Document $document {
+#  $cursor = $collection.find( :$criteria, :$projection);
+#  while $cursor.fetch() -> BSON::Document $document {
+
+  for $collection.find( :$criteria, :$projection) -> BSON::Document $document {
     for @$field-list -> $pair {
       if $pair.value == 1 {
         is( $document{$pair.key}:exists, True, "Key '{$pair.key}' exists");
       }
 
       else {
-        is( $document{$pair.key}:exists, False, "Key '{$pair.key}' does not exist");
+        is( $document{$pair.key}:exists,
+            False, "Key '{$pair.key}' does not exist"
+        );
       }
     }
 

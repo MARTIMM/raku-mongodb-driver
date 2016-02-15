@@ -10,9 +10,9 @@ use MongoDB::Object-store;
 #
 package MongoDB {
 
-  #-------------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   #
-  class Cursor {
+  class Cursor does Iterable {
 
     has $.client;
     has $.full-collection-name;
@@ -28,7 +28,7 @@ package MongoDB {
 
     has Str $!server-ticket;
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     # Support for the newer BSON::Document
     #
     multi submethod BUILD (
@@ -48,7 +48,7 @@ package MongoDB {
       if [+] @($server-reply<cursor-id>) {
         $!server-ticket = $server-ticket;
       }
-      
+
       else {
         $!client.store.clear-stored-object($server-ticket);
         $!server-ticket = Nil;
@@ -69,7 +69,7 @@ package MongoDB {
     ) {
 
       $!client = $client;
-      
+
       $!full-collection-name = $cursor-doc<ns>;
 
       # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
@@ -95,7 +95,28 @@ package MongoDB {
 #      $!read-concern = $read-concern;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    # Iterator to be used in for {} statements
+    #
+    method iterator ( ) {
+      # Save object to be used in Iterator object
+      #
+      my $cursor-object = self;
+
+      # Create anonymous class which does the Iterator role
+      #
+      class :: does Iterator {
+        method pull-one ( --> Mu ) {
+          my BSON::Document $doc = $cursor-object.fetch;
+          return $doc.defined ?? $doc !! IterationEnd;
+        }
+
+      # Create the object for this class and return it
+      #
+      }.new();
+    }
+
+    #---------------------------------------------------------------------------
     method fetch ( --> BSON::Document ) {
 
       # If there are no more documents in last response batch but there is
@@ -123,7 +144,7 @@ package MongoDB {
           #
           @!documents = $server-reply<documents>.list;
         }
-        
+
         else {
           @!documents = ();
         }
@@ -134,7 +155,7 @@ package MongoDB {
       return +@!documents ?? @!documents.shift !! BSON::Document;
     }
 
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     method kill ( --> Nil ) {
 
       # Invalidate cursor on database only if id is valid
