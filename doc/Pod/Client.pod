@@ -1,0 +1,175 @@
+#!/usr/bin/env perl6
+#
+use v6.c;
+
+# Running the pod file will create a pdf using wkhtmltopdf
+#
+my Str $pod = "$*PROGRAM";
+my Str $pdf = $pod;
+$pdf ~~ s/\. <-[.]>+ $/.pdf/;
+shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
+
+#-------------------------------------------------------------------------------
+
+=begin pod
+
+=begin Xhtml
+<style>
+  pre {
+    border-width:       2px;
+    border-style:       solid;
+    border-color:       #060;
+    padding:            10px 0 3px 10px;
+    color:              #060;
+    background-color:   #eaefea;
+    font-family:        FreeMono;
+  }
+  td {
+    vertical-align:     top;
+  }
+</style>
+=end Xhtml
+
+=TITLE class MongoDB::Client
+
+=SUBTITLE Starting point to define connections to servers
+
+  package MongoDB { class Client { ... } }
+
+=head1 Synopsis
+
+  # Initialize
+  #
+  my MongoDB::Client $client .= new(:uri<mongodb://>);
+  if $client.nbr-servers {
+    my MongoDB::Database $d = $client.database('my_db');
+    my MongoDB::Collection $c = $client.collection('my_db.mcll')
+  }
+
+Class to help accessing servers.
+
+=head1 Methods
+
+=head2 method stored
+
+  has MongoDB::Object-store $.store;
+
+A location to store objects. I<For internal use only>. See also
+L<MongoDB::Object-store>.
+
+
+=head2 method read-concern
+
+  has BSON::Document $.read-concern;
+
+The read-concern is a structure to have some control over the read operations
+to which server the operations are directed to. Default is an empty structure.
+The structure will be explained elsewhere.
+
+
+=head2 method new
+
+  submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern )
+
+=head3 uri
+
+Uri defines the servers and control options. The string is like a normal uri
+with mongodb as a protocol name. The difference however lies in the fact that
+more that one server can be defined. The uri definition states that at least a
+servername must be stated in the uri. Here in this package the absence of any
+name defaults to C<localhost>. See also the L<MongoDB page|https://docs.mongodb.org/v3.0/reference/connection-string/> to look for
+options and definition.
+
+=begin table :caption('Uri examples')
+
+  example uri | explanation
+  =|=
+  mongodb:// | most simple specification, localhost using port 27017
+  mongodb://:65000 | localhost on port 65000
+  mongodb://:56,:876  | two servers localhost on port 56 and 876
+  mongodb://example.com | server example.com on port 27017
+  mongodb://pete:mypasswd@ | server localhost:27017 on which pete must login using mypasswd
+  mongodb://pete:mypasswd@/mydb | same as above but login on database mydb
+  mongodb:///?replicaSet=myreplset | localhost:27017 must belong to a replica set named myreplset
+  mongodb://u1:pw1@nsa.us:666,my.datacenter.gov/nsa/?replicaSet=foryoureyesonly | User u1 with password pw1 logging in on database nsa on server nsa.us:666 and my.datacenter.gov:27017 which must both be member of a replica set named foryoureyesonly.
+
+=end table
+
+Note that the servers named in the uri must have something in common such as a
+replica set. When the first server is a master and the second one is also a master
+then the second one will be rejected. In such situations another Client must be
+created.
+
+=head3 read-concern
+
+Read concern will overwrite the default concern. Explanation can be found somewhere else.
+
+
+=head2 method nbr-servers
+
+  method nbr-servers ( --> Int )
+
+Return number of servers found using the uri in new().
+
+
+=head2 method database
+
+  method database (
+    Str:D $name,
+    BSON::Document :$read-concern
+    --> MongoDB::Database
+  )
+
+Example
+
+  my MongoDB::Database $db = $client.database('mydb');
+
+Create a Database object. in mongodb a database and its collectionsare only
+created when data is written in a collection.
+
+The read-concern when defined will overide the one of the Client. If not
+defined, the structure of the client is taken.
+
+
+=head2 method collection
+
+  method collection (
+    Str:D $full-collection-name,
+    BSON::Document :$read-concern
+    --> MongoDB::Collection
+  )
+
+A shortcut to define a database and collection at once. The names for the
+database and collection are given in the string full-collection-name. This is a
+string of two names separated by a dot '.'.
+
+When the read-concern is defined it overides the one from Client. If not
+defined, the structure of the client is taken.
+
+
+=head2 method select-server
+
+  method select-server ( BSON::Document :read-concern, --> Str )
+
+Select a server for operations. It returns a ticket with which the Server object
+can be retrieved. I<This call is for internal use only>.
+
+
+=head2 method take-out-server
+
+  method take-out-server ( Str $server-ticket )
+
+take a server out of service. I<This call is for internal use only>.
+
+
+=head2 method remove-server
+
+  method remove-server ( MongoDB::Server $server is rw )
+
+Remove a server from server pool. I<This call is for internal use only>.
+
+=end pod
+
+
+
+=finish
