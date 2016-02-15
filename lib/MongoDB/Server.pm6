@@ -70,6 +70,7 @@ package MongoDB {
     # Search in the array for a closed Socket.
     #
     method get-socket ( --> MongoDB::Socket ) {
+#TODO place semaphores using $!max-sockets
 
       my MongoDB::Socket $s;
 
@@ -226,7 +227,8 @@ package MongoDB {
 #TODO there is no answer if it succeeds?
 
       # Suppose that there is only an answer when the server didn't shutdown
-      # so what are we doing here ...
+      # so what are we doing here?
+      # Newer versions of the mongodb server will return ok 1 as of version 3.2
       #
       if $doc.defined and $doc<ok> {
         $!client.remove-server(self);

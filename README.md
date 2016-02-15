@@ -300,6 +300,18 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.0
+  * Added role Iterable to Cursor. Now it is possible to do the following;
+    ```
+    for $collection.find() -> BSON::Document $doc {...}
+    ```
+    instead of
+    ```
+    my MongoDB::Cursor $cursor = $collection.find();
+    while $cursor.fetch -> BSON::Document $doc {...}
+    ```
+    The last method will stay possible to do
+  * Pod documentation changes and additions.
 * 0.27.5
   * read concern arguments can be accepted on Client, Database and Collection level as well as methods run-command() and find(). While this is in place it is not yet acted upon.
 * 0.27.4

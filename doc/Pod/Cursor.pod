@@ -16,7 +16,6 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 =begin Xhtml
 <style>
   pre {
-/**/
     border-width:       2px;
     border-style:       solid;
     border-color:       #060;
@@ -25,6 +24,9 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
     background-color:   #eaefea;
     font-family:        FreeMono;
   }
+  td {
+    vertical-align:     top;
+  }
 </style>
 =end Xhtml
 
@@ -32,35 +34,19 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =SUBTITLE Cursor to iterate a set of documents
 
-Defined as
+  package MongoDB { class Cursor does Iterable {...} }
 
-  package MongoDB { class Cursor {...} }
+=head1 Synopsis
 
-After calling find to query the collection for data, a cursor object is
-returned. With this cursor it is possible to modify the query or ask information
-from the server about the query. A cursor can also be returned from other calls
-using run-command. See second example;
-
-=head1 METHODS
-
-=head2 new
-
-Defined as
-
-  multi submethod BUILD ( :$collection!, BSON::Document:D :$server-reply ) {
-  multi submethod BUILD ( BSON::Document:D :$cursor-doc! ) {
-
-Create a new Cursor object. the find() method in Collection will return
-a cursor. 
 
 First example using find().
 
-  use MongoDB;
-
-  my MongoDB::Connection $connection .= new;
-  my MongoDB::Database $database .= new(:name<contacts>);
+  my MongoDB::Client $client .= new(:uri<mongodb://>);
+  my MongoDB::Database $database = $client.database('contacts');
   my MongoDB::Collection $collection = $database.collection('perl_users');
 
+  # Prepare array of documents with nonsensical data
+  #
   my Array $docs = [];
   for ^10 -> $i {
     $docs.push: (
@@ -71,6 +57,8 @@ First example using find().
     );
   }
 
+  # Insert documents in cllection 'perl_users'
+  #
   my BSON::Document $d = $database.run-command(
     insert => $collection.name,
     documents => $docs,
@@ -85,7 +73,6 @@ First example using find().
   my MongoDB::Cursor $cursor = $collection.find;
   while $cursor.fetch -> BSON::Document $document { $document.perl.say; }
 
-
 Second example using run-command to get information about collections
 
   $doc = $database.run-command: (listCollections => 1);
@@ -96,44 +83,90 @@ Second example using run-command to get information about collections
     ...
   }
 
+In both examples find()/new() and the following C<while> can be combined with
+C<for> because of the iterable role used on class Cursor.
 
-=head2 method collection
+  ...
+  for $collection.find -> BSON::Document $document { $document.perl.say; }
+  ...
 
-Defined as
+and
 
-  has $.collection;
+  $doc = $database.run-command: (listCollections => 1);
+  for MongoDB::Cursor.new(:cursor-doc($doc<cursor>)) -> BSON::Document $d {
+    ...
+  }
 
-This is the MongoDB::Collection on which the fetch() has been executed.
+After calling find (in the Collection module) to query the collection for data,
+a Cursor object is returned. With this cursor it is possible to iterate over
+the documents returned from the server. Cursor documents can be returned from
+specific calls to run-command. These documents must be converted to Cursor
+objects. See examples above.
+
+
+=head1 Methods
+
+=head2 method client
+
+  has $.client;
+
+Client object defined for this cursor.
+
 
 =head2 method full-collection-name
-
-Defined as 
 
   has $.full-collection-name;
 
 This is the same as B<<[~] $database.name, '.', $collection.name>>.
 
-=head2 method fetch
 
-Defined as
+=head2 method new
+
+  multi submethod BUILD (
+    MongoDB::Collection:D :$collection!,
+    BSON::Document:D :$server-reply
+    Str:D :$server-ticket
+  )
+
+  multi submethod BUILD (
+    MongoDB::Client:D :$client!,
+    BSON::Document:D :$cursor-doc!,
+    BSON::Document :$read-concern
+  )
+
+Create a new Cursor object. the find() method in MongoDB::Collection will return
+a MongoDB::Cursor object. The first method is used by find() and second can be
+used by you using cursor information returned from a server.
+
+Read-concern is by default taken from the client. When defined, it must be the
+same as used for the run-command returning the cursor information.
+
+
+=head2 method iterator
+
+  method iterator ( )
+
+Method needed for the Iterable role placed on this Cursor class. I<not to be
+used directly>. Instead the following is possible;
+
+  for $collection.find -> BSON::Document $d { ... }
+
+
+=head2 method fetch
 
   method fetch ( --> BSON::Document )
 
-Get the document from the query. The method returns a document or Nil
-when no (more) documents are found.
+Get the document from the query. The method returns a document or the undefined
+type object when no (more) documents are found.
+
 
 =head2 method kill
-
-Defined as
 
   method kill ( --> Nil )
 
 Delete the cursor when it is no longer needed. By default the server will delete
 the cursor after a non-usage period of 10 minutes. See also find() flags
-described in Collection.
+described in Collection. The flag MongoDB::C-QF-NOCURSORTIMOUT for example will
+prevent the deletion of the cursor.
 
 =end pod
-
-
-
-

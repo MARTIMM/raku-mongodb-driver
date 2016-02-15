@@ -137,6 +137,19 @@ subtest {
   ok $f-cl1, 'Collection cl1 listed';
   ok $f-cl2, 'Collection cl2 listed';
 
+  # Second attempt using iteratable role
+  #
+  $f-cl1 = False;
+  $f-cl2 = False;
+  $doc = $database.run-command: (listCollections => 1);
+  for MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>)) -> BSON::Document $d {
+    $f-cl1 = True if $d<name> eq 'cl1';
+    $f-cl2 = True if $d<name> eq 'cl2';
+  }
+
+  ok $f-cl1, 'Collection cl1 listed';
+  ok $f-cl2, 'Collection cl2 listed';
+
 }, "Diagnostic Commands";
 
 #-------------------------------------------------------------------------------

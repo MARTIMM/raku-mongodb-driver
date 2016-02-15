@@ -16,7 +16,6 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 =begin Xhtml
 <style>
   pre {
-/**/
     border-width:       2px;
     border-style:       solid;
     border-color:       #060;
@@ -25,78 +24,106 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
     background-color:   #eaefea;
     font-family:        FreeMono;
   }
+  td {
+    vertical-align:     top;
+  }
 </style>
 =end Xhtml
 
 =TITLE class MongoDB::Collection
 
-=SUBTITLE CRUD and other operations on collections in a MongoDB database
-
-Defined as
+=SUBTITLE Operations on collections in a MongoDB database
 
   package MongoDB { class Collection { ... } }
 
-Use as
+=head1 Synopsis
 
   # Initialize
   #
-  my MongoDB::Connection $connection .= new;
-  my MongoDB::Database $database .= new(:name<contacts>);
-  my $collection = $database.collection('perl_users');
+  my MongoDB::Client $client .= new(:uri('mongodb://'));
+  my MongoDB::Database $database = $client.database('contacts');
+  my MongoDB:Collection $collection = $database.collection('perl_users');
 
   # Find everything
   #
-  my $cursor = $collection.find;
-  while $cursor.fetch -> BSON::Document $document {
+  for $collection.find -> BSON::Document $document {
     $document.perl.say;
   }
 
   # Or narrow down using conditions.
   #
-  $cursor = $collection.find((nick => 'ph'),);
+  $cursor = $collection.find( (nick => 'camelia'), :$number-to-return(1));
   $cursor.fetch.perl.say;
-
 
 Class to help accessing and manipulating collections in MongoDB databases.
 
-=head1 METHODS
+
+=head1 Methods
 
 =head2 method new
 
-Defined as
+  submethod BUILD (
+    MongoDB::Database:D :$database,
+    Str:D :$name,
+    BSON::Document $read-concern
+  )
 
-  submethod BUILD ( :$database!, Str:D :$name )
+Example
 
-Creates a new Collection object. However, it is easier to call collection on
-the database object as shown in the examples above.
+  my MongoDB:Collection $collection .= new( $database, 'perl_users');
+
+Creates a new Collection object. However, it is better to call collection on
+the database or client object as shown here;
+
+  my MongoDB:Collection $collection = $database.collection('perl_users');
+
+or
+
+  my MongoDB:Collection $collection = $client.collection('contacts.perl_users');
+
 
 =head2 method database
 
-Defined as
-
   has $.database;
 
-Get the name of the current database. It is set by MongoDB::Database when a
-collection object is created.
+Get the name of the database of this collection. It is set by
+MongoDB::Database when a collection object is created.
+
 
 =head2 method name
 
-Defined as
-
   has Str $.name;
 
-Get the name of the current collection. It is set by MongoDB::Database when a
+Get the name of the current collection. It is set by C<MongoDB::Database> when a
 collection object is created.
 
-=head2 method find
 
-Defined as
+=head2 method full-collection-name
+
+  has Str $.full-collection-name;
+
+Get the full representation of this collection. This is a string composed of
+the database name and collection name separated by a dot. E.g. I<person.address>
+means collection I<address> in database I<person>.
+
+
+=head2 method read-concern
+
+  has BSON::Document $.read-concern;
+
+The read-concern is a structure to have some control over the read operations
+to which server the operations are directed to. Default is taken from the
+database. The structure will be explained elsewhere.
+
+
+=head2 method find
 
   multi method find (
     List :$criteria where all(@$criteria) ~~ Pair = (),
     List :$projection where all(@$criteria) ~~ Pair = (),
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    Int :$flags = 0
+    Int :$flags = 0, List :$read-concern,
+    Str :$server-ticket is copy = ''
     --> MongoDB::Cursor
   )
 
@@ -104,30 +131,33 @@ Defined as
     BSON::Document :$criteria = BSON::Document.new,
     BSON::Document :$projection?,
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    Int :$flags = 0
+    Int :$flags = 0,
+    BSON::Document :$read-concern,
+    Str :$server-ticket is copy = ''
     --> MongoDB::Cursor
   )
 
-Find documents in the database. When $criteria is empty all documents are
+Find documents in the database. When C<$criteria> is empty all documents are
 returned, There are 2 options and a flag to control the search. $projection is
 used to select the fields to be returned. It looks like B<<(field => 1,)>> or
-B<<(field => 0,)>>. When 1 it is included, when 0 it will be excluded. The _id
-field is always included unless explicitly excluded like B<<(_id => 0,)>>. The
-method returns a MongoDB::Cursor.
+B<<(field => 0,)>>. When 1 the field is included, when 0 it will be excluded.
+The _id field is always included unless explicitly excluded like B<<(_id => 0,)>>.
+The method returns a C<MongoDB::Cursor>.
 
 =for item1
-B<:number-to-skip> is used to skip a number of documents. By defaultt 0 meaning
-all documents of the found set is to be returned.
+B<:number-to-skip> is used to skip a number of documents. By default 0 meaning
+all documents of the found set are to be returned.
 
 =for item1
-B<:number-to-return> is used to ask for a specific number of documents. By defaultt 0 meaning
-that none of the documents from the found set should be skipped first.
+B<:number-to-return> is used to ask for a specific number of documents. By
+default 0 meaning that none of the documents from the found set should be
+skipped first.
 
 
 =begin item1
 
 C<:flags>. This ia a bit variable which can be set using the mask values below.
-An example
+An example;
 
   my $c = $collection.find(
    :flags(MongoDB::C-QF-SLAVEOK +| MongoDB::C-QF-NOCURSORTIMOUT)
@@ -137,7 +167,7 @@ An example
   }
   $c.kill;
 
-=for item2 
+=for item2
 B<MongoDB::C-QF-TAILABLECURSOR>: corresponds to TailableCursor. Tailable means
 cursor is not closed when the last data is retrieved. Rather, the cursor marks
 the final object's position. You can resume using the cursor later, from
@@ -145,33 +175,33 @@ where it was located, if more data were received. Like any 'latent
 cursor', the cursor may become invalid at some point (CursorNotFound)
 for example if the final object it references were deleted.
 
-=for item2 
+=for item2
 B<MongoDB::C-QF-SLAVEOK>: corresponds to SlaveOk.Allow query of replica slave.
 Normally these return an error except for namespace 'local'.
 
-=for item2 
+=for item2
 B<MongoDB::C-QF-OPLOGREPLAY>: corresponds to OplogReplay. Internal replication
 use only - driver should not set.
 
-=for item2 
+=for item2
 B<MongoDB::C-QF-NOCURSORTIMOUT>: corresponds to NoCursorTimeout. The server
 normally times out idle cursors after an inactivity period (10 minutes) to
 prevent excess memory use. Set this option to prevent that. When used, the
 cursor must be removed explicitly using C<$cursor.kill()>.
 
-=for item2 
+=for item2
 B<MongoDB::C-QF-AWAITDATA>: corresponds to AwaitData. Use with TailableCursor.
 If we are at the end of the data, block for a while rather than returning no
 data. After a timeout period, we do return as normal.
 
-=for item2 
+=for item2
 B<MongoDB::C-QF-EXHAUST>: corresponds to Exhaust. Stream the data down full
 blast in multiple 'more' packages, on the assumption that the client will fully
 read all data queried. Faster when you are pulling a lot of data and know you
 want to pull it all down. Note: the client is not allowed to not read all the
 data unless it closes the connection.
 
-=for item2 
+=for item2
 B<MongoDB::C-QF-PORTAIL>: corresponds to Partial. Get partial results from a
 mongos if some shards are down (instead of throwing an error)
 
