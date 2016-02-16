@@ -14,8 +14,8 @@ package MongoDB {
 
     has Str $.name;
     has MongoDB::ClientIF $.client;
-    has MongoDB::Collection $.cmd-collection;
     has BSON::Document $.read-concern;
+    has MongoDB::Collection $!cmd-collection;
 
     #---------------------------------------------------------------------------
     #
@@ -47,7 +47,14 @@ package MongoDB {
       BSON::Document :$read-concern
       --> MongoDB::Collection ) {
 
-      return MongoDB::Collection.new: :database(self), :name($name);
+      $!read-concern =
+        $read-concern.defined ?? $read-concern !! $!read-concern;
+
+      return MongoDB::Collection.new(
+        :database(self),
+        :name($name),
+        :$read-concern
+      );
     }
 
     #---------------------------------------------------------------------------
@@ -70,7 +77,7 @@ package MongoDB {
 
       # And use it to do a find on it, get the doc and return it.
       #
-      my MongoDB::Cursor $cursor = $.cmd-collection.find(
+      my MongoDB::Cursor $cursor = $!cmd-collection.find(
         :criteria($command),
         :number-to-return(1),
         :read-concern($rc),
@@ -100,7 +107,7 @@ package MongoDB {
 
       # And use it to do a find on it, get the doc and return it.
       #
-      my MongoDB::Cursor $cursor = $.cmd-collection.find(
+      my MongoDB::Cursor $cursor = $!cmd-collection.find(
         :criteria($command),
         :number-to-return(1)
         :read-concern($rc)
@@ -130,7 +137,7 @@ package MongoDB {
 
       # And use it to do a find on it, get the doc and return it.
       #
-      my MongoDB::Cursor $cursor = $.cmd-collection.find(
+      my MongoDB::Cursor $cursor = $!cmd-collection.find(
         :criteria($command),
         :number-to-return(1),
         :read-concern($rc),
