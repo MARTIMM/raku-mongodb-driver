@@ -32,6 +32,7 @@ my BSON::Document $doc;
 my MongoDB::Users $users .= new(:$database);
 
 $database.run-command: (dropDatabase => 1);
+$database.run-command: (dropAllUsersFromDatabase => 1);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -63,7 +64,7 @@ subtest {
   $users.set-pw-security(
     :min-un-length(5),
     :min-pw-length(6),
-    :pw_attribs(MongoDB::Users::C-PW-OTHER-CHARS)
+    :pw_attribs(MongoDB::C-PW-OTHER-CHARS)
   );
 
   try {
@@ -75,7 +76,8 @@ subtest {
 
     CATCH {
       when MongoDB::Message {
-        ok .error-text eq 'Username too short, must be >= 5', .error-text;
+        ok .message ~~ m:s/Username too 'short,' must be '>= 5'/,
+           'Username too short';
       }
     }
   }
@@ -89,7 +91,8 @@ subtest {
 
     CATCH {
       when MongoDB::Message {
-        ok .error-text eq 'Password too short, must be >= 6', .error-text;
+        ok .message ~~ m:s/Password too 'short,' must be '>= 6'/,
+           'Password too short';
       }
     }
   }
@@ -103,8 +106,8 @@ subtest {
 
     CATCH {
       when MongoDB::Message {
-        ok .error-text eq 'Password does not have the right properties',
-           .error-text;
+        ok .message ~~ m:s/Password does not have the right properties/,
+           'Password does not have the right properties';
       }
     }
   }
@@ -115,7 +118,9 @@ subtest {
     :roles(['readWrite'])
   );
 
+say $doc.perl;
   ok $doc<ok>, 'User mt-and-another-few-chars created';
+
 
   $doc = $database.run-command: (dropUser => 'mt-and-another-few-chars');
   ok $doc<ok>, 'User mt-and-another-few-chars deleted';

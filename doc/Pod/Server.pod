@@ -16,7 +16,6 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 =begin Xhtml
 <style>
   pre {
-/**/
     border-width:       2px;
     border-style:       solid;
     border-color:       #060;
@@ -25,6 +24,9 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
     background-color:   #eaefea;
     font-family:        FreeMono;
   }
+  td {
+    vertical-align:     top;
+  }
 </style>
 =end Xhtml
 
@@ -32,129 +34,130 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =SUBTITLE Mongod server object and info
 
-Defined as
-
   package MongoDB { class Server { ... } }
 
-The class is provides methods to provvide info about a mongod or mongos server.
-The class is loaded and controlled by the MongoDB::Client module. Users should
-not use this class but ask for a server using methods from Client. And even that
-users should not do. All I/O is controlled internally.
+=head1 Synopsis
 
-=begin code
+  my MongoDB::Client $client .= new(:uri<mongodb://>);
+  my Str $server-ticket = $client.select-server;
+  my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
+  my MongoDB::Socket $socket = $server.get-socket;
 
-use v6;
-use MongoDB::Client;
-use MongoDB::Server;
-
-# Get a server object
-#
-my MongoDB::Client $client .= instance;
-my MongoDB::Server $server = $client.select-server;
-
-=end code
+This class is used to provide sockets for communication with a mongo database
+server. The class is loaded and controlled by the C<MongoDB::Client> module.
+I<Users should not use this class directly but ask for a server using methods
+from a Client object. And even that users should not do. All server
+communication is controlled internally>.
 
 
+=head1 Readonly attributes
 
-=head1 ATTRIBUTES
-
-=head2 server-name
-
-Defined as
+=head2 attribute server-name
 
   has Str $.server-name;
 
-Server name of this object
+Server name or ip of this object.
 
-=head2 server-port
 
-Defined as
+=head2 attribute server-port
 
   has Int $.server-port;
 
-Server port of this object
+Server port of this object.
 
-=head2 max-sockets
 
-Defined as
+=head2 attribute max-sockets
 
-  has Int $.max-sockets is rw where $_ >= 3;
+  has Int $.max-sockets;
 
 Maximum number of open sockets per server object
 Can be changed by user of Server object. New values must >= 3.
 
-=head2 status
 
-Defined as
-
-  has Bool $.status = False;
-
-Status of server. True means that server is active and accepts connections.
-
-=head2 is-master
+=head2 attribute is-master
 
   has Bool $.is-master = False;
 
-Server is a master server.
+Server is a master server. A background process monitors the mongodb server to
+check for server changes. This attribute is set by this process.
 
 
-=head1 METHODS
+=head1 Methods
 
 =head2 method new
 
 Defined as:
 
   submethod BUILD (
-    MongoDB::ClientIF :$client!,
     Str:D :$host!,
     Int:D :$port! where (0 <= $_ <= 65535),
-    MongoDB::DatabaseIF:D :$db-admin!,
-    Int :$max-sockets where $_ >= 3 = 3
+    Int :$max-sockets where $_ >= 3 = 3,
+    Hash :$uri-data,
+    MongoDB::Database:D :$db-admin,
+    MongoDB::Client:D :$client
   )
 
-Creates a new C<Server> object. When all is ok the server status will
-be True. Otherwise it will be False if a socket could not be opened. You see
-that this must be created by a Client object to provide its address to the new()
-method.
-
-Example:
-
-  my MongoDB::Server $s .= new(:host<non-existent-host.gov>);
-  if !?$s.status {
-    note 'Oh oh not good, try something else';
-
-    # Try default or die
-    $s .= new;
-    die $s.status unless ?$s.status;
-  }
+Creates a new C<MongoDB::Server> object. The object tries to establish a
+connection to the server. The IO::Socket::INET class is used for that
+and will throw an exception when it fails. C<MongoDB::Client> creates the
+Server object normally and catches the exception on failure.
+I<Do not use this method directly!>.
 
 =head2 method get-socket
-
-Defined as
 
   method get-socket ( --> MongoDB::Socket )
 
 Get a MongoDB::Socket object. By default there can be only 3 open socket per
-server object.
+server object. See also set-max-sockets() below.
 
-=head2 method check-is-master
 
-Defined as
+=head2 method initial-poll
 
-  method check-is-master ( --> Bool )
+  method initial-poll ( --> Bool )
 
-Check if server is a master server. This method will also set the is-master
-attribute.
+First time check on the mongodb server. Called in Client object after the Server
+object is created. This process is needed to reject the server on ground of its
+information. I<Do not use this method directly!>.
+
+
+=head2 method monitor-server
+
+  method monitor-server ( )
+
+Server monitoring procedures. This starts a background process which runs
+as long as the Server object lives. This method is called from the Client
+object when the server is accepted for duty.
+I<Do not use this method directly!>.
+
 
 =head2 method shutdown
 
-Defined as
-
    method shutdown ( Bool :$force = False )
 
-Shutdown mongod server.
+Shutdown mongod server. I<Do not use this method directly!>.
 
-=pod
+
+=head2 method perl
+
+  method perl ( --> Str )
+
+Simple string representation of this object.
+
+
+=head2 method name
+
+  method name ( --> Str )
+
+Returns a string in the format <servername> ':' <port number>.
+
+
+=head2 method set-max-sockets
+
+  method set-max-sockets ( Int $max-sockets where $_ >= 3 )
+
+Modifies the maximum number of sockets.
+
+=end pod
 
 
 

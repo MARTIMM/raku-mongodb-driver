@@ -58,6 +58,42 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 Class to help accessing and manipulating collections in MongoDB databases.
 
 
+=head1 Readonly attributes
+
+=head2 attribute database
+
+  has $.database;
+
+Get the name of the database of this collection. It is set by
+MongoDB::Database when a collection object is created.
+
+
+=head2 attribute name
+
+  has Str $.name;
+
+Get the name of the current collection. It is set by C<MongoDB::Database> when a
+collection object is created.
+
+
+=head2 attribute full-collection-name
+
+  has Str $.full-collection-name;
+
+Get the full representation of this collection. This is a string composed of
+the database name and collection name separated by a dot. E.g. I<person.address>
+means collection I<address> in database I<person>.
+
+
+=head2 attribute read-concern
+
+  has BSON::Document $.read-concern;
+
+The read-concern is a structure to have some control over the read operations
+to which server the operations are directed to. Default is taken from the
+database. The structure will be explained elsewhere.
+
+
 =head1 Methods
 
 =head2 method new
@@ -80,40 +116,6 @@ the database or client object as shown here;
 or
 
   my MongoDB:Collection $collection = $client.collection('contacts.perl_users');
-
-
-=head2 method database
-
-  has $.database;
-
-Get the name of the database of this collection. It is set by
-MongoDB::Database when a collection object is created.
-
-
-=head2 method name
-
-  has Str $.name;
-
-Get the name of the current collection. It is set by C<MongoDB::Database> when a
-collection object is created.
-
-
-=head2 method full-collection-name
-
-  has Str $.full-collection-name;
-
-Get the full representation of this collection. This is a string composed of
-the database name and collection name separated by a dot. E.g. I<person.address>
-means collection I<address> in database I<person>.
-
-
-=head2 method read-concern
-
-  has BSON::Document $.read-concern;
-
-The read-concern is a structure to have some control over the read operations
-to which server the operations are directed to. Default is taken from the
-database. The structure will be explained elsewhere.
 
 
 =head2 method find

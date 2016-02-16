@@ -18,11 +18,12 @@ package MongoDB {
     #
     has Hash $!uri-data;
 
+    has Int $.max-sockets;
     has MongoDB::Socket @!sockets;
-    has Int $.max-sockets is rw where $_ >= 3;
 
     has Bool $.is-master = False;
     has BSON::Document $!monitor-doc;
+
     has Duration $!weighted-mean-rtt .= new(0);
 
     has MongoDB::DatabaseIF $!db-admin;
@@ -246,6 +247,12 @@ package MongoDB {
     #
     method name ( --> Str ) {
       return [~] $.server-name, ':', $.server-port;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method set-max-sockets ( Int $max-sockets where $_ >= 3 ) {
+      $!max-sockets = $max-sockets;
     }
 
     #---------------------------------------------------------------------------

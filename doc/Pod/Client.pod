@@ -38,19 +38,18 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =head1 Synopsis
 
-  # Initialize
-  #
   my MongoDB::Client $client .= new(:uri<mongodb://>);
   if $client.nbr-servers {
-    my MongoDB::Database $d = $client.database('my_db');
-    my MongoDB::Collection $c = $client.collection('my_db.mcll')
+    my MongoDB::Database $d1 = $client.database('my_db1');
+    my MongoDB::Collection $c1 = $d1.collection('my_cll1');
+    my MongoDB::Collection $c2 = $client.collection('my_db2.my_cll2');
   }
 
 Class to help accessing servers.
 
-=head1 Methods
+=head1 Readonly attributes
 
-=head2 method stored
+=head2 attribute stored
 
   has MongoDB::Object-store $.store;
 
@@ -58,7 +57,7 @@ A location to store objects. I<For internal use only>. See also
 L<MongoDB::Object-store>.
 
 
-=head2 method read-concern
+=head2 attribute read-concern
 
   has BSON::Document $.read-concern;
 
@@ -66,6 +65,8 @@ The read-concern is a structure to have some control over the read operations
 to which server the operations are directed to. Default is an empty structure.
 The structure will be explained elsewhere.
 
+
+=head1 Methods
 
 =head2 method new
 
