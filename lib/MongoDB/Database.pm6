@@ -66,7 +66,7 @@ package MongoDB {
     #
     multi method run-command (
       BSON::Document:D $command,
-      BSON::Document :$read-concern,
+      BSON::Document :$read-concern
       --> BSON::Document
     ) {
 
