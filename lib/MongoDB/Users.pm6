@@ -76,7 +76,7 @@ package MongoDB {
       # Check if username is too short
       #
       if $user.chars < $!min-un-length {
-        warn-message(
+        fatal-message(
           "Username too short, must be >= $!min-un-length",
           oper-data => $user,
           collection-ns => $!database.name
@@ -86,7 +86,7 @@ package MongoDB {
       # Check if password is too short
       #
       elsif $password.chars < $!min-pw-length {
-        warn-message(
+        fatal-message(
           "Password too short, must be >= $!min-pw-length",
           oper-data => $password,
           collection-ns => $!database.name
@@ -127,7 +127,7 @@ package MongoDB {
           }
         }
 
-        warn-message(
+        fatal-message(
           "Password does not have the right properties",
           oper-data => $password,
           collection-ns => $!database.name
@@ -164,8 +164,8 @@ package MongoDB {
 
       if ?$password {
         if $password.chars < $!min-pw-length {
-          warn-message(
-            error-text => "Password too short, must be >= $!min-pw-length",
+          fatal-message(
+            "Password too short, must be >= $!min-pw-length",
             oper-data => $password,
             collection-ns => $!database.name
           );
@@ -207,7 +207,7 @@ package MongoDB {
         }
 
         else {
-          warn-message(
+          fatal-message(
             "Password does not have the proper elements",
             oper-data => $password,
             collection-ns => $!database.name
