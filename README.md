@@ -172,7 +172,7 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
 ## API CHANGES
 
 There has been a lot of changes in the API.
-* All methods which had underscores ('_') are converted to dashed ones ('-').
+* All methods which had underscores ('\_') are converted to dashed ones ('-').
 * Many helper functions are removed, see change log
 * The way to get a database is changed. One doesn't use a connection for that anymore.
 * Connection module is gone. The Client module has come in its place.
@@ -277,6 +277,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.1
+  * More pod document changes
 * 0.28.0
   * Added role Iterable to Cursor. Now it is possible to do the following;
     ```
