@@ -34,11 +34,12 @@ subtest {
 
   $client1 = get-connection();
   my Str $server-ticket = $client1.select-server;
-say "st: $server-ticket";
+
   my MongoDB::Server $server = $client1.store.get-stored-object($server-ticket);
   ok $server.defined, 'Connection server 1 available';
   is $client1.nbr-servers, 1, 'Indeed one servers';
-  is $server.max-sockets, 3, "Maximum sockets on {$server.name} is $server.max-sockets()";
+  is $server.max-sockets,
+     3, "Maximum sockets on {$server.name} is $server.max-sockets()";
 
   my MongoDB::Socket $socket = $server.get-socket;
   ok $socket.is-open, 'Socket is open';
@@ -67,7 +68,7 @@ say "st: $server-ticket";
   }
 
   try {
-    $server.max-sockets = 5;
+    $server.set-max-sockets(5);
     is $server.max-sockets, 5, "Maximum socket $server.max-sockets()";
 
     my @skts;
@@ -91,12 +92,13 @@ say "st: $server-ticket";
   }
 
   try {
-    $server.max-sockets = 2;
+    $server.set-max-sockets(2);
 
     CATCH {
       default {
-        ok .message ~~ m:s/Type check failed in assignment to '$!max-sockets'/,
-           "Type check failed in assignment to \$!max-sockets";
+        is .message,
+           "Constraint type check failed for parameter '\$max-sockets'",
+           .message;
       }
     }
   }
@@ -112,34 +114,6 @@ say "st: $server-ticket";
   is $server.max-sockets, 3, "Maximum sockets on {$server.name} is $server.max-sockets()";
 
 }, 'Client, Server, Socket tests';
-
-#`{{
-#-------------------------------------------------------------------------------
-subtest {
-
-  # Create databases with a collection and data to make sure the databases are
-  # there
-  #
-  $client1 = get-connection();
-  my MongoDB::Database $database .= $client1.database(:name<test>);
-  isa-ok( $database, 'MongoDB::Database');
-
-  my MongoDB::Collection $collection = $database.collection('abc');
-  $req .= new: (
-    insert => $collection.name,
-    documents => [ (:name('MT'),), ]
-  );
-
-  $doc = $database.run-command($req);
-  is $doc<ok>, 1, "Result is ok";
-
-  # Drop database db2
-  #
-  $doc = $database.run-command: (dropDatabase => 1);
-  is $doc<ok>, 1, 'Drop request ok';
-
-}, "Create database, collection. Collect database info, drop data";
-}}
 
 #-------------------------------------------------------------------------------
 # Cleanup
