@@ -118,7 +118,6 @@ package MongoDB {
       return BSON::Document unless $cursor.defined;
 
       my $doc = $cursor.fetch;
-#TODO throw exception when undefined!!!
       return $doc.defined ?? $doc !! BSON::Document.new;
     }
 
@@ -143,9 +142,12 @@ package MongoDB {
         :read-concern($rc),
         :$server-ticket
       );
-      my $doc = $cursor.fetch;
 
-#TODO throw exception when undefined!!!
+      # Return undefined on server problems
+      #
+      return BSON::Document unless $cursor.defined;
+
+      my $doc = $cursor.fetch;
       return $doc.defined ?? $doc !! BSON::Document.new;
     }
 
