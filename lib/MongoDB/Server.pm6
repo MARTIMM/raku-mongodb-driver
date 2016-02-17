@@ -29,11 +29,16 @@ package MongoDB {
     has MongoDB::DatabaseIF $!db-admin;
     has MongoDB::ClientIF $!client;
 
-    # Variables to control infinit monitoring actions
+    # Variables to control infinite monitoring actions
     #
     has Channel $!channel;
     has Promise $!promise-monitor;
     has Semaphore $!server-monitor-control;
+
+    # Socket selection protection
+    #
+    has Semaphore $!server-socket-selection;
+#    has Semaphore $!server-socket-max-guard;
 
     submethod BUILD (
       Str:D :$host!,
@@ -65,6 +70,11 @@ package MongoDB {
       # Besides the sockets are encapsulated in Socket and kept in an array.
       #
       $sock.close;
+
+      # Initialize semaphores
+      #
+      $!server-socket-selection .= new(1);
+#      $!server-socket-max-guard .= new($!max-sockets);
     }
 
     #---------------------------------------------------------------------------
@@ -73,36 +83,52 @@ package MongoDB {
     method get-socket ( --> MongoDB::Socket ) {
 #TODO place semaphores using $!max-sockets
 
-      my MongoDB::Socket $s;
+      my MongoDB::Socket $sock;
+      $!server-socket-selection.acquire;
 
-      for @!sockets -> $sock {
-        if ! $sock.is-open {
-          $s = $sock;
+      # Setup a try block to catch unknown exceptions
+      #
+      try {
+        for @!sockets -> $s {
+
+          # Skip all active sockets
+          #
+          next if $s.is-open;
+
+          $sock = $s;
           last;
         }
-      }
 
-      # If none is found insert a new Socket in the array
-      #
-      if ! $s.defined {
-
-        # Protect against too many open sockets.
+        # If none is found insert a new Socket in the array
         #
-        if @!sockets.elems >= $!max-sockets {
-          return fatal-message("Too many sockets opened, max is $!max-sockets");
+        if ! $sock.defined {
+
+          # Protect against too many open sockets.
+          #
+          if @!sockets.elems >= $!max-sockets {
+            fatal-message("Too many sockets opened, max is $!max-sockets");
+          }
+
+          $sock .= new(:server(self));
+          @!sockets.push($sock);
         }
 
-        $s .= new( :$!server-port, :$!server-name);
-        @!sockets.push($s);
+        # Return a usable socket which is opened. The user has the responsibility
+        # to close the socket. Otherwise there will be new sockets created every
+        # time get-socket() is called.
+        #
+        $sock.open();
+
+        CATCH {
+          default {
+            $!server-socket-selection.release;
+            .throw;
+          }
+        }
       }
 
-      # Return a usable socket which is opened. The user has the responsibility
-      # to close the socket. Otherwise there will be new sockets created every
-      # time get-socket() is called.
-      #
-      $s.open();
-
-      return $s;
+      $!server-socket-selection.release;
+      return $sock;
     }
 
     #---------------------------------------------------------------------------
@@ -161,6 +187,7 @@ package MongoDB {
           my Instant $t0;
           my BSON::Document $doc;
           my Duration $rtt;
+          my Str $server-ticket = $!client.store.store-object(self);
 
           # As long as the server lives test it. Changes are possible when 
           # master changes servers.
@@ -172,7 +199,7 @@ package MongoDB {
 
               # First things first Zzzz...
               #
-              sleep 10;
+              sleep 5;
 
               # Check the channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
@@ -180,19 +207,20 @@ package MongoDB {
               my $cmd = $!channel.poll;
               last if ?$cmd and $cmd eq 'stop';
 
-              my Str $server-ticket = $!client.store.store-object(self);
+#say "\nRun isMaster, {self.name}, $server-ticket";
 
               # Calculation of mean Return Trip Time
               #
               $t0 = now;
-#say "\nRun isMaster, $server-ticket";
               $doc = $!db-admin._internal-run-command(
                 BSON::Document.new((isMaster => 1)),
                 :$server-ticket
               );
-#say "Done isMaster";
               $rtt = now - $t0;
-              $!weighted-mean-rtt .= new(0.2 * $rtt + 0.8 * $!weighted-mean-rtt);
+              $!weighted-mean-rtt .= new(
+                0.2 * $rtt + 0.8 * $!weighted-mean-rtt
+              );
+#say "Done isMaster";
               debug-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
@@ -203,12 +231,16 @@ package MongoDB {
               $!is-master = $doc<ismaster> if ?$doc<ismaster>;
 #say $doc.perl;
 
-              # Capture errors. When there are any stop monitoring
+              # Capture errors. When there are any, stop monitoring. On older
+              # servers before version 3.2 the server just stops communicating
+              # when a shutdown command was given. Opening a socket will then
+              # bring us here.
               #
               CATCH {
-
                 default {
-                  warn-message("Server {self.name} caught an error while monitoring, quit");
+                  warn-message(
+                    "Server {self.name} caught error while monitoring, quitting"
+                  );
                   last;
                 }
               }
@@ -216,24 +248,8 @@ package MongoDB {
           }
         }
       );
-    }
 
-    #---------------------------------------------------------------------------
-    #
-    method shutdown ( Bool :$force = False ) {
-      my BSON::Document $doc = $!db-admin.run-command: (
-        shutdown => 1,
-        :$force
-      );
-#TODO there is no answer if it succeeds?
-
-      # Suppose that there is only an answer when the server didn't shutdown
-      # so what are we doing here?
-      # Newer versions of the mongodb server will return ok 1 as of version 3.2
-      #
-      if $doc.defined and $doc<ok> {
-        $!client.remove-server(self);
-      }
+      $!server-monitor-control.release;
     }
 
     #---------------------------------------------------------------------------

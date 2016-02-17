@@ -25,11 +25,11 @@ for @$Test-support::server-range -> $server-number {
 
   if $client.nbr-servers {
     my Str $server-ticket = $client.select-server;
-    my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
-    ok $server.defined, "Server $server-number defined";
+#    my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
+#    ok $server.defined, "Server $server-number defined";
 
     diag "Wait for server $server-number to stop";
-    $server.shutdown; #(:force);
+    $client.shutdown-server(:$server-ticket); #(:force);
   }
 
   $client .= new(:uri("mongodb://localhost:$port-number"));

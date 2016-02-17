@@ -8,7 +8,8 @@ use MongoDB::Cursor;
 use BSON::ObjectId;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Debug);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client = get-connection();
