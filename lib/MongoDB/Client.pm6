@@ -171,6 +171,9 @@ package MongoDB {
       my Str $server-ticket;
       my Bool $master-found = False;
 
+      my BSON::Document $rc =
+        $read-concern.defined ?? $read-concern !! $!read-concern;
+
       # Read all Kept promises and store Server objects in $!servers array
       #
       while !$server.defined {
@@ -289,10 +292,37 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
+    method shutdown-server ( Bool :$force = False, Str :$server-ticket ) {
+      my BSON::Document $doc = self.database('admin')._internal-run-command(
+        BSON::Document.new((
+          shutdown => 1,
+          :$force
+        )),
+
+        :$server-ticket
+      );
+
+      # Suppose that there is only an answer when the server didn't shutdown
+      # so what are we doing here?
+      # Update: Newer versions of the mongodb server will return ok 1 as of
+      # version 3.2.
+      #
+      if !$doc.defined or ($doc.defined and $doc<ok>) {
+        self.take-out-server($server-ticket);
+      }
+    }
+
+    #---------------------------------------------------------------------------
+    #
     method take-out-server ( Str $server-ticket ) {
       if ?$server-ticket {
-        my MongoDB::Server $server = $!store.clear-stored-object($server-ticket);
-        self.remove-server($server);
+        my $server = $!store.clear-stored-object($server-ticket);
+
+        # Server can be taken out before when a failure takes place in the
+        # Wire module. Especially when shutdown-server() is called on
+        # servers before version 3.2. Those servers just stop communicating.
+        #
+        self.remove-server($server) if $server.defined;
       }
     }
 
@@ -300,7 +330,7 @@ package MongoDB {
     #
     method remove-server ( MongoDB::Server $server is rw ) {
 
-      trace-message("server select acquire");
+#      trace-message("server select acquire");
       $!control-select.acquire;
       loop ( my $si = 0; $si < $!servers.elems; $si++) {
         if $!servers[$si] === $server {
@@ -309,7 +339,7 @@ package MongoDB {
         }
       }
 
-      trace-message("server remove release");
+#      trace-message("server remove release");
       $!control-select.release;
     }
   }
