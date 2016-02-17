@@ -6,15 +6,15 @@ package MongoDB {
 
     has IO::Socket::INET $!sock;
 
-    has Str $.server-name;
-    has Int $.server-port;
     has Bool $.is-open;
+    has $!server where .^name eq 'MongoDB::Server';
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD ( Str:D :$server-name!, Int:D :$server-port!) {
-      $!server-port = $server-port;
-      $!server-name = $server-name;
+    submethod BUILD (
+      :$server! where .^name eq 'MongoDB::Server',
+    ) {
+      $!server = $server;
       $!is-open = False;
     };
 
@@ -27,8 +27,8 @@ package MongoDB {
       # we can start something of our own before returning the connection.
       #
       $!sock .= new(
-        :host($!server-name),
-        :port($!server-port)
+        :host($!server.server-name),
+        :port($!server.server-port)
       ) unless $!sock.defined;
       $!is-open = True;
     }
