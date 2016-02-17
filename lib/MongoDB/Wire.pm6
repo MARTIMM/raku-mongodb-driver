@@ -19,7 +19,7 @@ package MongoDB {
       --> BSON::Document
     ) {
       # Must clone the document otherwise the MongoDB::Header will be added
-      # to the $qdoc even when is copy trait is used.
+      # to the $qdoc even when the copy trait is used.
       #
       my BSON::Document $d = $qdoc.clone;
       $d does MongoDB::Header;
