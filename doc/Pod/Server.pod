@@ -130,13 +130,6 @@ object when the server is accepted for duty.
 I<Do not use this method directly!>.
 
 
-=head2 method shutdown
-
-   method shutdown ( Bool :$force = False )
-
-Shutdown mongod server. I<Do not use this method directly!>.
-
-
 =head2 method perl
 
   method perl ( --> Str )
