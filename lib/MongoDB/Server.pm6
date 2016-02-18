@@ -38,7 +38,6 @@ package MongoDB {
     # Socket selection protection
     #
     has Semaphore $!server-socket-selection;
-#    has Semaphore $!server-socket-max-guard;
 
     submethod BUILD (
       Str:D :$host!,
@@ -74,7 +73,6 @@ package MongoDB {
       # Initialize semaphores
       #
       $!server-socket-selection .= new(1);
-#      $!server-socket-max-guard .= new($!max-sockets);
     }
 
     #---------------------------------------------------------------------------
