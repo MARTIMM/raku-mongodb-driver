@@ -36,41 +36,33 @@ for @$Test-support::server-range -> $server-number {
   is $client.nbr-servers, 0, "No servers for localhost:$port-number";
 
   undefine $client;
-#  my @a = (^100).list;
-#  for  ^5 {
-#    @a.push: (^100).list;
-#    say 'sleep 1';
-#    sleep 1;
-#  }
 }
 
-
-
-#sleep 2;
 diag "Servers stopped";
 
-#`{{
-diag "Remove sandbox data";
-my $dir = 'Sandbox';
-my $cleanup-dir = sub ( ) {
-  
-}
 
-
-
-    if $dir-entry.IO ~~ :d {
-#      diag "delete directory $dir-entry";
-      rmdir $dir-entry;
+my $cleanup-dir = sub ( Str $dir-entry ) {
+  for dir($dir-entry) -> $entry {
+    if $entry ~~ :d {
+      $cleanup-dir(~$entry);
+#say "delete directory $entry";
+      rmdir ~$entry;
     }
 
     else {
-#      diag "delete file $dir-entry";
-      unlink $dir-entry;
+#say "delete file $entry";
+      unlink ~$entry;
     }
+  }
+}
 
-diag "delete directory Sandbox";
+#say "Remove sandbox data";
+$cleanup-dir('Sandbox');
+
 rmdir "Sandbox";
-}}
+
+diag "Sandbox data deleted";
+
 
 #-----------------------------------------------------------------------------
 # Cleanup and close
