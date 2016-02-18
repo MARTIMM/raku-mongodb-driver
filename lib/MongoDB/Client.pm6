@@ -24,15 +24,12 @@ package MongoDB {
     #
     has Semaphore $!control-select .= new(1);
 
-    # Reserved servers. select-server finds a server using some directions
-    # such as read concerns or even direct host:port string. Structure is
-    # MD5 code => servers[$server entry]
-    #
-    has Hash $!server-reservations;
-
     has MongoDB::Object-store $.store;
-
     has BSON::Document $.read-concern;
+    has Bool $!found-master = False;
+    has Str $!replica-set;
+
+    has Hash $!uri-data;
 
     #---------------------------------------------------------------------------
     #
@@ -46,8 +43,8 @@ package MongoDB {
       $!server-discovery = [];
       $!uri = $uri;
 
-      # Parse the uri and get info in $uri-obj.uri-data;
-      # Fields are protocol, username, password, servers, database and options
+      # Parse the uri and get info in $uri-obj. Fields are protocol, username,
+      # password, servers, database and options.
       #
       my MongoDB::Uri $uri-obj .= new(:$uri);
 
@@ -56,14 +53,14 @@ package MongoDB {
       $!read-concern =
         $read-concern.defined ?? $read-concern !! BSON::Document.new;
 
-      # Copy some fields into a local $uri-data hash which is handed over
+      # Copy some fields into $!uri-data hash which is handed over
       # to the server object..
       #
       my @item-list = <username password database options>;
-      my Hash $uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+      $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
       # Background process to discover hosts only if there are new servers
-      # to be discovered or that new non default cases are presnted.
+      # to be discovered or that new non default cases are presented.
       #
 #TODO Check relation of servers otherwise refuse
       for @($uri-obj.server-data<servers>) -> Hash $sdata {
@@ -72,19 +69,56 @@ package MongoDB {
 
             $server .= new(
               :host($sdata<host>), :port($sdata<port>),
-              :$uri-data, :db-admin(self.database('admin')),
+              :$!uri-data, :db-admin(self.database('admin')),
               :client(self)
             );
+say $server.name;
 
-            # Initial test for server data
+            # Initial tests on server data
             #
-            my Bool $accept-server = $server.initial-poll;
+            my $accept-server = True;
+            $server.initial-poll;
+
+            # No two masters, then set if server is a master
+            #
+            $accept-server = False if $!found-master and $server.is-master;
+            $!found-master = $server.is-master if $server.is-master;
+say "{$server.name} Acc srv, found m: $accept-server,$!found-master";
+
+            # Test replica set name if it is a replica set server
+            #
+            # replicaSet option in uri is same as replica set name from server
+            #
+            if $!uri-data<options><replicaSet>:exists
+               and $server.monitor-doc<setName>:exists
+               and $server.monitor-doc<setName>
+                   ne $!uri-data<options><replicaSet> {
+
+              $accept-server = False;
+say "{$server.name} 1, Acc srv $accept-server";
+            }
+
+            # No replicaSet option on uri found and server isn't a repl server
+            #
+            elsif $!uri-data<options><replicaSet>:!exists
+                  and $server.monitor-doc<setName>:exists {
+
+              $accept-server = False;
+say "{$server.name} 2, Acc srv $accept-server";
+            }
+
+say "{$server.name} 3, Acc srv $accept-server";
+            # All else accept
+            #
+#            else {
+#              $accept-server = False;
+#            }
 
             # Return server object
             #
             self!add-server($server) if $accept-server;
 
-            ?$accept-server ?? $server !! Any;
+            $accept-server ?? $server !! Any;
           }
         );
       }
@@ -97,13 +131,11 @@ package MongoDB {
 
       # Read all Kept promises and store Server objects in $!servers array
       #
-      trace-message("server select try_acquire");
       $!control-select.acquire;
 
       info-message( "Server {$server.name} saved");
       $!servers.push: $server;
 
-      trace-message("server select release");
       $!control-select.release;
     }
 
@@ -169,7 +201,7 @@ package MongoDB {
 
       my MongoDB::Server $server;
       my Str $server-ticket;
-      my Bool $master-found = False;
+      my Bool $server-is-master = False;
 
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
@@ -186,14 +218,14 @@ package MongoDB {
 #          debug-message( "Server is master 1?: {$s.is-master}");
 #say "ss: {$s.name}";
 
-          $master-found = True if $s.is-master;
-          if !$need-master or ($need-master and $master-found) {
+          $server-is-master = True if $s.is-master;
+          if !$need-master or ($need-master and $server-is-master) {
 #say "ss 1";
-#            debug-message( "Server is master 2?: $master-found");
+#            debug-message( "Server is master 2?: $server-is-master");
 #say "ss 2";
             $server = $s;
             debug-message(
-              "Server {$server.name} selected, is master?: $master-found"
+              "Server {$server.name} selected, is master?: $server-is-master"
             );
 
             last;
@@ -209,7 +241,7 @@ package MongoDB {
           sleep 1;
         }
 
-        elsif $!servers.elems and !$master-found {
+        elsif $!servers.elems and !$server-is-master {
           # Try again a bit later to give the servers monitoring some time
           #
           warn-message("No master server found yet with $!uri, wait for server monitoringy");

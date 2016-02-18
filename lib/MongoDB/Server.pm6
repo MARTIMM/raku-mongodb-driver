@@ -22,7 +22,7 @@ package MongoDB {
     has MongoDB::Socket @!sockets;
 
     has Bool $.is-master = False;
-    has BSON::Document $!monitor-doc;
+    has BSON::Document $.monitor-doc;
 
     has Duration $!weighted-mean-rtt .= new(0);
 
@@ -37,6 +37,7 @@ package MongoDB {
 
     # Socket selection protection
     #
+#    has Semaphore $!server-init-poll;
     has Semaphore $!server-socket-selection;
 
     submethod BUILD (
@@ -72,6 +73,7 @@ package MongoDB {
 
       # Initialize semaphores
       #
+#      $!server-init-poll .= new(1);
       $!server-socket-selection .= new(1);
     }
 
@@ -132,7 +134,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Is called from Client in a separate thread. This is no user facility!
     #
-    method initial-poll ( --> Bool ) {
+    method initial-poll ( ) {
 
       my Str $server-ticket = $!client.store.store-object(self);
 
@@ -150,24 +152,6 @@ package MongoDB {
       #
       $!monitor-doc = $doc;
       $!is-master = $doc<ismaster> if ?$doc<ismaster>;
-
-      # Test if this server fits the bill
-      #
-      my Bool $accept-server = False;
-      if $!uri-data<options><replicaSet>:exists
-         and $doc<setName>:exists
-         and $doc<setName> eq $!uri-data<options><replicaSet> {
-
-        $accept-server = True;
-      }
-
-      elsif $!uri-data<options><replicaSet>:!exists
-            and $doc<setName>:!exists {
-
-        $accept-server = True;
-      }
-
-      return $accept-server;
     }
 
     #---------------------------------------------------------------------------
