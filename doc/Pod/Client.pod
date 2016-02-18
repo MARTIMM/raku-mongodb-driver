@@ -163,21 +163,20 @@ can be retrieved. If read-concern is not defined, it is taken from this Client.
 Shutdown mongod server.
 
 
-=head2 method take-out-server
+=head2 method _take-out-server
 
   method take-out-server ( Str $server-ticket )
 
 take a server out of service. I<This call is for internal use only>.
 
 
-=head2 method remove-server
+=head2 method _remove-server
 
   method remove-server ( MongoDB::Server $server is rw )
 
 Remove a server from server pool. I<This call is for internal use only>.
 
 =end pod
-
 
 
 =finish
