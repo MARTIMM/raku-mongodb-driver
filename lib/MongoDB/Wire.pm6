@@ -89,18 +89,18 @@ package MongoDB {
         #
         CATCH {
           when MongoDB::Message {
-            $client.take-out-server($server-ticket);
+            $client._take-out-server($server-ticket);
           }
 
           default {
             when Str {
               warn-message($_);
-              $client.take-out-server($server-ticket);
+              $client._take-out-server($server-ticket);
             }
 
             when Exception {
               warn-message(.message);
-              $client.take-out-server($server-ticket);
+              $client._take-out-server($server-ticket);
             }
           }
 
@@ -174,18 +174,18 @@ package MongoDB {
         #
         CATCH {
           when MongoDB::Message {
-            $client.take-out-server($server-ticket);
+            $client._take-out-server($server-ticket);
           }
 
           default {
             when Str {
               warn-message($_);
-              $client.take-out-server($server-ticket);
+              $client._take-out-server($server-ticket);
             }
 
             when Exception {
               warn-message(.message);
-              $client.take-out-server($server-ticket);
+              $client._take-out-server($server-ticket);
             }
           }
         }
@@ -235,18 +235,18 @@ package MongoDB {
         #
         CATCH {
           when MongoDB::Message {
-            $client.take-out-server($server-ticket);
+            $client._take-out-server($server-ticket);
           }
 
           default {
             when Str {
               warn-message($_);
-              $client.take-out-server($server-ticket);
+              $client._take-out-server($server-ticket);
             }
 
             when Exception {
               warn-message(.message);
-              $client.take-out-server($server-ticket);
+              $client._take-out-server($server-ticket);
             }
           }
         }

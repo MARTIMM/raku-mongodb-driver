@@ -302,19 +302,18 @@ package MongoDB {
         :$server-ticket
       );
 
-      # Suppose that there is only an answer when the server didn't shutdown
-      # so what are we doing here?
+      # Servers do not return an answer when going down.
       # Update: Newer versions of the mongodb server will return ok 1 as of
       # version 3.2.
       #
       if !$doc.defined or ($doc.defined and $doc<ok>) {
-        self.take-out-server($server-ticket);
+        self._take-out-server($server-ticket);
       }
     }
 
     #---------------------------------------------------------------------------
     #
-    method take-out-server ( Str $server-ticket ) {
+    method _take-out-server ( Str $server-ticket ) {
       if ?$server-ticket {
         my $server = $!store.clear-stored-object($server-ticket);
 
@@ -322,13 +321,13 @@ package MongoDB {
         # Wire module. Especially when shutdown-server() is called on
         # servers before version 3.2. Those servers just stop communicating.
         #
-        self.remove-server($server) if $server.defined;
+        self._remove-server($server) if $server.defined;
       }
     }
 
     #---------------------------------------------------------------------------
     #
-    method remove-server ( MongoDB::Server $server is rw ) {
+    method _remove-server ( MongoDB::Server $server is rw ) {
 
 #      trace-message("server select acquire");
       $!control-select.acquire;
