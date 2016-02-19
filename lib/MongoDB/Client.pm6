@@ -62,28 +62,28 @@ package MongoDB {
       # Background process to discover hosts only if there are new servers
       # to be discovered or that new non default cases are presented.
       #
-#TODO Check relation of servers otherwise refuse
       for @($uri-obj.server-data<servers>) -> Hash $sdata {
         $!server-discovery.push: Promise.start( {
-          my MongoDB::Server $server;
 
-            $server .= new(
+            my MongoDB::Server $server .= new(
               :host($sdata<host>), :port($sdata<port>),
               :$!uri-data, :db-admin(self.database('admin')),
               :client(self)
             );
-say $server.name;
+#say "Server: ", $server.name;
 
+#TODO Check relation of servers otherwise refuse, not yet complete
             # Initial tests on server data
             #
             my $accept-server = True;
-            $server.initial-poll;
+
+            $server._initial-poll;
 
             # No two masters, then set if server is a master
             #
             $accept-server = False if $!found-master and $server.is-master;
             $!found-master = $server.is-master if $server.is-master;
-say "{$server.name} Acc srv, found m: $accept-server,$!found-master";
+#say "{$server.name} Acc srv, found m: $accept-server,$!found-master";
 
             # Test replica set name if it is a replica set server
             #
@@ -95,7 +95,7 @@ say "{$server.name} Acc srv, found m: $accept-server,$!found-master";
                    ne $!uri-data<options><replicaSet> {
 
               $accept-server = False;
-say "{$server.name} 1, Acc srv $accept-server";
+#say "{$server.name} 1, Acc srv $accept-server";
             }
 
             # No replicaSet option on uri found and server isn't a repl server
@@ -104,10 +104,10 @@ say "{$server.name} 1, Acc srv $accept-server";
                   and $server.monitor-doc<setName>:exists {
 
               $accept-server = False;
-say "{$server.name} 2, Acc srv $accept-server";
+#say "{$server.name} 2, Acc srv $accept-server";
             }
 
-say "{$server.name} 3, Acc srv $accept-server";
+#say "{$server.name} 3, Acc srv $accept-server";
             # All else accept
             #
 #            else {
@@ -118,7 +118,9 @@ say "{$server.name} 3, Acc srv $accept-server";
             #
             self!add-server($server) if $accept-server;
 
-            $accept-server ?? $server !! Any;
+            # Return a Server object or an empty type object
+            #
+            $accept-server ?? $server !! MongoDB::Server;
           }
         );
       }
@@ -285,7 +287,7 @@ say "{$server.name} 3, Acc srv $accept-server";
 
           # Start server monitoring if server is accepted from initial poll
           #
-          $server.monitor-server if $server.defined;
+          $server._monitor-server if $server.defined;
         }
 
         # When broken throw away result

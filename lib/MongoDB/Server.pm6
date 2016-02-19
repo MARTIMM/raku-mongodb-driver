@@ -78,64 +78,12 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # Search in the array for a closed Socket.
+    # Is called from Client in same thread as server creation. This is no user
+    # facility!
     #
-    method get-socket ( --> MongoDB::Socket ) {
-#TODO place semaphores using $!max-sockets
+    method _initial-poll ( ) {
 
-      my MongoDB::Socket $sock;
-      $!server-socket-selection.acquire;
-
-      # Setup a try block to catch unknown exceptions
-      #
-      try {
-        for @!sockets -> $s {
-
-          # Skip all active sockets
-          #
-          next if $s.is-open;
-
-          $sock = $s;
-          last;
-        }
-
-        # If none is found insert a new Socket in the array
-        #
-        if ! $sock.defined {
-
-          # Protect against too many open sockets.
-          #
-          if @!sockets.elems >= $!max-sockets {
-            fatal-message("Too many sockets opened, max is $!max-sockets");
-          }
-
-          $sock .= new(:server(self));
-          @!sockets.push($sock);
-        }
-
-        # Return a usable socket which is opened. The user has the responsibility
-        # to close the socket. Otherwise there will be new sockets created every
-        # time get-socket() is called.
-        #
-        $sock.open();
-
-        CATCH {
-          default {
-            $!server-socket-selection.release;
-            .throw;
-          }
-        }
-      }
-
-      $!server-socket-selection.release;
-      return $sock;
-    }
-
-    #---------------------------------------------------------------------------
-    # Is called from Client in a separate thread. This is no user facility!
-    #
-    method initial-poll ( ) {
-
+#say "\nPoll";
       my Str $server-ticket = $!client.store.store-object(self);
 
       # Calculation of mean Return Trip Time
@@ -146,7 +94,7 @@ package MongoDB {
         :$server-ticket
       );
 #say "Done polling isMaster";
-#say $doc.perl;
+#say "Init poll: ", $doc.perl;
 
       # Set master type and store whole doc
       #
@@ -158,7 +106,7 @@ package MongoDB {
     # Run this on a separate thread because it lasts until this program
     # atops or the server shuts down.
     #
-    method monitor-server ( ) {
+    method _monitor-server ( ) {
 
       # Set the lock so the code will only be started once. When server or
       # program stops(controlled), the code is terminated via a channel.
@@ -211,7 +159,7 @@ package MongoDB {
               #
               $!monitor-doc = $doc;
               $!is-master = $doc<ismaster> if ?$doc<ismaster>;
-#say $doc.perl;
+say "Monitor: ", $doc.perl;
 
               # Capture errors. When there are any, stop monitoring. On older
               # servers before version 3.2 the server just stops communicating
@@ -235,6 +183,61 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
+    # Search in the array for a closed Socket.
+    #
+    method get-socket ( --> MongoDB::Socket ) {
+#TODO place semaphores using $!max-sockets
+
+      $!server-socket-selection.acquire;
+
+      my MongoDB::Socket $sock;
+
+      # Setup a try block to catch unknown exceptions
+      #
+      try {
+        for @!sockets -> $s {
+
+          # Skip all active sockets
+          #
+          next if $s.is-open;
+
+          $sock = $s;
+          last;
+        }
+
+        # If none is found insert a new Socket in the array
+        #
+        if ! $sock.defined {
+
+          # Protect against too many open sockets.
+          #
+          if @!sockets.elems >= $!max-sockets {
+            fatal-message("Too many sockets opened, max is $!max-sockets");
+          }
+
+          $sock .= new(:server(self));
+          @!sockets.push($sock);
+        }
+
+        # Return a usable socket which is opened. The user has the responsibility
+        # to close the socket. Otherwise there will be new sockets created every
+        # time get-socket() is called.
+        #
+        $sock.open();
+
+        CATCH {
+          default {
+            $!server-socket-selection.release;
+            .throw;
+          }
+        }
+      }
+
+      $!server-socket-selection.release;
+      return $sock;
+    }
+
+    #---------------------------------------------------------------------------
     #
     method perl ( --> Str ) {
       return [~] 'MongoDB::Server.new(', ':host(', $.server-name, '), :port(',
@@ -253,6 +256,7 @@ package MongoDB {
       $!max-sockets = $max-sockets;
     }
 
+#`{{
     #---------------------------------------------------------------------------
     #
     submethod DESTROY {
@@ -281,5 +285,6 @@ package MongoDB {
         undefine $!channel;
       }
     }
+}}
   }
 }
