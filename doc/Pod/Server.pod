@@ -111,7 +111,7 @@ Get a MongoDB::Socket object. By default there can be only 3 open socket per
 server object. See also set-max-sockets() below.
 
 
-=head2 method initial-poll
+=head2 method _initial-poll
 
   method initial-poll ( --> Bool )
 
@@ -120,7 +120,7 @@ object is created. This process is needed to reject the server on ground of its
 information. I<Do not use this method directly!>.
 
 
-=head2 method monitor-server
+=head2 method _monitor-server
 
   method monitor-server ( )
 
