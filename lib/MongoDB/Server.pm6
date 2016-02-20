@@ -22,7 +22,7 @@ package MongoDB {
     has MongoDB::Socket @!sockets;
 
     has Bool $.is-master = False;
-    has BSON::Document $!monitor-doc;
+    has BSON::Document $.monitor-doc;
 
     has Duration $!weighted-mean-rtt .= new(0);
 
@@ -37,8 +37,8 @@ package MongoDB {
 
     # Socket selection protection
     #
+#    has Semaphore $!server-init-poll;
     has Semaphore $!server-socket-selection;
-#    has Semaphore $!server-socket-max-guard;
 
     submethod BUILD (
       Str:D :$host!,
@@ -73,8 +73,106 @@ package MongoDB {
 
       # Initialize semaphores
       #
+#      $!server-init-poll .= new(1);
       $!server-socket-selection .= new(1);
-#      $!server-socket-max-guard .= new($!max-sockets);
+    }
+
+    #---------------------------------------------------------------------------
+    # Is called from Client in same thread as server creation. This is no user
+    # facility!
+    #
+    method _initial-poll ( ) {
+
+      my Str $server-ticket = $!client.store.store-object(self);
+
+      # Calculation of mean Return Trip Time
+      #
+      my BSON::Document $doc = $!db-admin._internal-run-command(
+        BSON::Document.new((isMaster => 1)),
+        :$server-ticket
+      );
+
+      # Set master type and store whole doc
+      #
+      $!monitor-doc = $doc;
+      $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+    }
+
+    #---------------------------------------------------------------------------
+    # Run this on a separate thread because it lasts until this program
+    # atops or the server shuts down.
+    #
+    method _monitor-server ( ) {
+
+      # Set the lock so the code will only be started once. When server or
+      # program stops(controlled), the code is terminated via a channel.
+      #
+      return unless $!server-monitor-control.try_acquire;
+
+      $!promise-monitor .= start( {
+          my Instant $t0;
+          my BSON::Document $doc;
+          my Duration $rtt;
+          my Str $server-ticket = $!client.store.store-object(self);
+
+          # As long as the server lives test it. Changes are possible when 
+          # master changes servers.
+          #
+          while 1 {
+
+            # Temporary try block to catch typos
+            try {
+
+              # First things first Zzzz...
+              #
+              sleep 5;
+
+              # Check the channel to see if there is a stop command. If so
+              # exit the while loop. Take a nap otherwise.
+              #
+              my $cmd = $!channel.poll;
+              last if ?$cmd and $cmd eq 'stop';
+
+              # Calculation of mean Return Trip Time
+              #
+              $t0 = now;
+              $doc = $!db-admin._internal-run-command(
+                BSON::Document.new((isMaster => 1)),
+                :$server-ticket
+              );
+              $rtt = now - $t0;
+              $!weighted-mean-rtt .= new(
+                0.2 * $rtt + 0.8 * $!weighted-mean-rtt
+              );
+
+              debug-message(
+                "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
+              );
+
+              # Set master type and store whole doc
+              #
+              $!monitor-doc = $doc;
+              $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+
+              # Capture errors. When there are any, stop monitoring. On older
+              # servers before version 3.2 the server just stops communicating
+              # when a shutdown command was given. Opening a socket will then
+              # bring us here.
+              #
+              CATCH {
+                default {
+                  warn-message(
+                    "Server {self.name} caught error while monitoring, quitting"
+                  );
+                  last;
+                }
+              }
+            }
+          }
+        }
+      );
+
+      $!server-monitor-control.release;
     }
 
     #---------------------------------------------------------------------------
@@ -83,19 +181,20 @@ package MongoDB {
     method get-socket ( --> MongoDB::Socket ) {
 #TODO place semaphores using $!max-sockets
 
-      my MongoDB::Socket $sock;
       $!server-socket-selection.acquire;
+
+      my MongoDB::Socket $sock;
 
       # Setup a try block to catch unknown exceptions
       #
       try {
-        for @!sockets -> $s {
+        for ^(@!sockets.elems) -> $si {
 
           # Skip all active sockets
           #
-          next if $s.is-open;
+          next if @!sockets[$si].is-open;
 
-          $sock = $s;
+          $sock = @!sockets[$si];
           last;
         }
 
@@ -132,127 +231,6 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # Is called from Client in a separate thread. This is no user facility!
-    #
-    method initial-poll ( --> Bool ) {
-
-      my Str $server-ticket = $!client.store.store-object(self);
-
-      # Calculation of mean Return Trip Time
-      #
-#say "\nPoll isMaster, $server-ticket";
-      my BSON::Document $doc = $!db-admin._internal-run-command(
-        BSON::Document.new((isMaster => 1)),
-        :$server-ticket
-      );
-#say "Done polling isMaster";
-#say $doc.perl;
-
-      # Set master type and store whole doc
-      #
-      $!monitor-doc = $doc;
-      $!is-master = $doc<ismaster> if ?$doc<ismaster>;
-
-      # Test if this server fits the bill
-      #
-      my Bool $accept-server = False;
-      if $!uri-data<options><replicaSet>:exists
-         and $doc<setName>:exists
-         and $doc<setName> eq $!uri-data<options><replicaSet> {
-
-        $accept-server = True;
-      }
-
-      elsif $!uri-data<options><replicaSet>:!exists
-            and $doc<setName>:!exists {
-
-        $accept-server = True;
-      }
-
-      return $accept-server;
-    }
-
-    #---------------------------------------------------------------------------
-    # Run this on a separate thread because it lasts until this program
-    # atops or the server shuts down.
-    #
-    method monitor-server ( ) {
-
-      # Set the lock so the code will only be started once. When server or
-      # program stops(controlled), the code is terminated via a channel.
-      #
-      return unless $!server-monitor-control.try_acquire;
-
-      $!promise-monitor .= start( {
-          my Instant $t0;
-          my BSON::Document $doc;
-          my Duration $rtt;
-          my Str $server-ticket = $!client.store.store-object(self);
-
-          # As long as the server lives test it. Changes are possible when 
-          # master changes servers.
-          #
-          while 1 {
-
-            # Temporary try block to catch typos
-            try {
-
-              # First things first Zzzz...
-              #
-              sleep 5;
-
-              # Check the channel to see if there is a stop command. If so
-              # exit the while loop. Take a nap otherwise.
-              #
-              my $cmd = $!channel.poll;
-              last if ?$cmd and $cmd eq 'stop';
-
-#say "\nRun isMaster, {self.name}, $server-ticket";
-
-              # Calculation of mean Return Trip Time
-              #
-              $t0 = now;
-              $doc = $!db-admin._internal-run-command(
-                BSON::Document.new((isMaster => 1)),
-                :$server-ticket
-              );
-              $rtt = now - $t0;
-              $!weighted-mean-rtt .= new(
-                0.2 * $rtt + 0.8 * $!weighted-mean-rtt
-              );
-#say "Done isMaster";
-              debug-message(
-                "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
-              );
-
-              # Set master type and store whole doc
-              #
-              $!monitor-doc = $doc;
-              $!is-master = $doc<ismaster> if ?$doc<ismaster>;
-#say $doc.perl;
-
-              # Capture errors. When there are any, stop monitoring. On older
-              # servers before version 3.2 the server just stops communicating
-              # when a shutdown command was given. Opening a socket will then
-              # bring us here.
-              #
-              CATCH {
-                default {
-                  warn-message(
-                    "Server {self.name} caught error while monitoring, quitting"
-                  );
-                  last;
-                }
-              }
-            }
-          }
-        }
-      );
-
-      $!server-monitor-control.release;
-    }
-
-    #---------------------------------------------------------------------------
     #
     method perl ( --> Str ) {
       return [~] 'MongoDB::Server.new(', ':host(', $.server-name, '), :port(',
@@ -269,35 +247,6 @@ package MongoDB {
     #
     method set-max-sockets ( Int $max-sockets where $_ >= 3 ) {
       $!max-sockets = $max-sockets;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    submethod DESTROY {
-
-      # Send a stop code to the monitor code thread and wait for it to finish
-      #
-      $!channel.send('stop') if $!channel.defined;
-      if $!promise-monitor.defined {
-        $!promise-monitor.await;
-        undefine $!promise-monitor;
-      }
-
-      # Release the lock
-      #
-      $!server-monitor-control.release if $!server-monitor-control.defined;
-
-      # Clear all sockets
-      #
-      if @!sockets.defined {
-        for @!sockets -> $s {
-          undefine $s;
-        }
-
-        # and channel
-        #
-        undefine $!channel;
-      }
     }
   }
 }

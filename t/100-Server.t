@@ -13,33 +13,19 @@ use MongoDB::Object-store;
 #set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client1;
-my MongoDB::Client $client2;
+my MongoDB::Client $client;
+my MongoDB::Server $server;
 my BSON::Document $req;
 my BSON::Document $doc;
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client1 .= new(:uri('mongodb://localhost:' ~ 65535));
-  is $client1.^name, 'MongoDB::Client', "Client isa {$client1.^name}";
-  my Str $server-ticket = $client1.select-server;
-  nok $server-ticket.defined, 'No servers selected';
-  is $client1.nbr-servers, 0, 'Indeed no servers';
+  $client = get-connection();
+  my Str $server-ticket = $client.select-server;
 
-}, "Connect failure testing";
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  $client1 = get-connection();
-  my Str $server-ticket = $client1.select-server;
-
-  my MongoDB::Server $server = $client1.store.get-stored-object($server-ticket);
-  ok $server.defined, 'Connection server 1 available';
-  is $client1.nbr-servers, 1, 'Indeed one servers';
-  is $server.max-sockets,
-     3, "Maximum sockets on {$server.name} is $server.max-sockets()";
+  my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
+  ok $server.defined, 'Connection server available';
 
   my MongoDB::Socket $socket = $server.get-socket;
   ok $socket.is-open, 'Socket is open';
@@ -103,15 +89,7 @@ subtest {
     }
   }
 
-  $client1.store.clear-stored-object($server-ticket);
-
-  # Try second server
-  #
-  $client2 = get-connection(:2server);
-  $server-ticket = $client2.select-server;
-  $server = $client2.store.get-stored-object($server-ticket);
-  ok $server.defined, 'Connection server 2 available';
-  is $server.max-sockets, 3, "Maximum sockets on {$server.name} is $server.max-sockets()";
+  $client.store.clear-stored-object($server-ticket);
 
 }, 'Client, Server, Socket tests';
 

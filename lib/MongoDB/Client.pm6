@@ -24,15 +24,12 @@ package MongoDB {
     #
     has Semaphore $!control-select .= new(1);
 
-    # Reserved servers. select-server finds a server using some directions
-    # such as read concerns or even direct host:port string. Structure is
-    # MD5 code => servers[$server entry]
-    #
-    has Hash $!server-reservations;
-
     has MongoDB::Object-store $.store;
-
     has BSON::Document $.read-concern;
+    has Bool $!found-master = False;
+    has Str $!replica-set;
+
+    has Hash $!uri-data;
 
     #---------------------------------------------------------------------------
     #
@@ -46,8 +43,8 @@ package MongoDB {
       $!server-discovery = [];
       $!uri = $uri;
 
-      # Parse the uri and get info in $uri-obj.uri-data;
-      # Fields are protocol, username, password, servers, database and options
+      # Parse the uri and get info in $uri-obj. Fields are protocol, username,
+      # password, servers, database and options.
       #
       my MongoDB::Uri $uri-obj .= new(:$uri);
 
@@ -56,35 +53,69 @@ package MongoDB {
       $!read-concern =
         $read-concern.defined ?? $read-concern !! BSON::Document.new;
 
-      # Copy some fields into a local $uri-data hash which is handed over
+      # Copy some fields into $!uri-data hash which is handed over
       # to the server object..
       #
       my @item-list = <username password database options>;
-      my Hash $uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+      $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
       # Background process to discover hosts only if there are new servers
-      # to be discovered or that new non default cases are presnted.
+      # to be discovered or that new non default cases are presented.
       #
-#TODO Check relation of servers otherwise refuse
       for @($uri-obj.server-data<servers>) -> Hash $sdata {
         $!server-discovery.push: Promise.start( {
-          my MongoDB::Server $server;
 
-            $server .= new(
+            my MongoDB::Server $server .= new(
               :host($sdata<host>), :port($sdata<port>),
-              :$uri-data, :db-admin(self.database('admin')),
+              :$!uri-data, :db-admin(self.database('admin')),
               :client(self)
             );
 
-            # Initial test for server data
+#TODO Check relation of servers otherwise refuse, not yet complete
+            # Initial tests on server data
             #
-            my Bool $accept-server = $server.initial-poll;
+            my $accept-server = True;
+
+            $server._initial-poll;
+
+            # No two masters, then set if server is a master
+            #
+            $accept-server = False if $!found-master and $server.is-master;
+            $!found-master = $server.is-master if $server.is-master;
+
+            # Test replica set name if it is a replica set server
+            #
+            # replicaSet option in uri is same as replica set name from server
+            #
+            if $!uri-data<options><replicaSet>:exists
+               and $server.monitor-doc<setName>:exists
+               and $server.monitor-doc<setName>
+                   ne $!uri-data<options><replicaSet> {
+
+              $accept-server = False;
+            }
+
+            # No replicaSet option on uri found and server isn't a repl server
+            #
+            elsif $!uri-data<options><replicaSet>:!exists
+                  and $server.monitor-doc<setName>:exists {
+
+              $accept-server = False;
+            }
+
+            # All else accept
+            #
+#            else {
+#              $accept-server = False;
+#            }
 
             # Return server object
             #
             self!add-server($server) if $accept-server;
 
-            ?$accept-server ?? $server !! Any;
+            # Return a Server object or an empty type object
+            #
+            $accept-server ?? $server !! MongoDB::Server;
           }
         );
       }
@@ -97,13 +128,11 @@ package MongoDB {
 
       # Read all Kept promises and store Server objects in $!servers array
       #
-      trace-message("server select try_acquire");
       $!control-select.acquire;
 
       info-message( "Server {$server.name} saved");
       $!servers.push: $server;
 
-      trace-message("server select release");
       $!control-select.release;
     }
 
@@ -169,7 +198,7 @@ package MongoDB {
 
       my MongoDB::Server $server;
       my Str $server-ticket;
-      my Bool $master-found = False;
+      my Bool $server-is-master = False;
 
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
@@ -180,36 +209,26 @@ package MongoDB {
 
         my Bool $still-planned = self!cleanup-promises;
 
-#say "Nbr servers: {$!servers.elems}";
-
         for @$!servers -> $s {
-#          debug-message( "Server is master 1?: {$s.is-master}");
-#say "ss: {$s.name}";
-
-          $master-found = True if $s.is-master;
-          if !$need-master or ($need-master and $master-found) {
-#say "ss 1";
-#            debug-message( "Server is master 2?: $master-found");
-#say "ss 2";
+          $server-is-master = True if $s.is-master;
+          if !$need-master or ($need-master and $server-is-master) {
             $server = $s;
             debug-message(
-              "Server {$server.name} selected, is master?: $master-found"
+              "Server {$server.name} selected, is master?: $server-is-master"
             );
 
             last;
           }
         }
-#say "ss 3";
 
         last if $server.defined;
 
-#say "discover: {$!server-discovery.elems}";
         if $still-planned {
           warn-message("No server found yet with $!uri, wait for running discovery");
           sleep 1;
         }
 
-        elsif $!servers.elems and !$master-found {
+        elsif $!servers.elems and !$server-is-master {
           # Try again a bit later to give the servers monitoring some time
           #
           warn-message("No master server found yet with $!uri, wait for server monitoringy");
@@ -223,15 +242,13 @@ package MongoDB {
       }
 
       $server-ticket = $.store.store-object($server) if $server.defined;
-#say "ss 4 $server, $server-ticket";
+
       return $server-ticket;
     }
 
     #---------------------------------------------------------------------------
     #
     method !cleanup-promises ( ) {
-
-#say "Nbr promises: {$!server-discovery.elems}";
 
       my Bool $still-planned = False;
 
@@ -243,7 +260,6 @@ package MongoDB {
         # stored in $!servers.
         #
         if $promise.status ~~ Kept {
-#say "cp 2k";
           my $server = $!server-discovery[$pi].result;
 
           # Cleanup promise entry
@@ -253,13 +269,12 @@ package MongoDB {
 
           # Start server monitoring if server is accepted from initial poll
           #
-          $server.monitor-server if $server.defined;
+          $server._monitor-server if $server.defined;
         }
 
         # When broken throw away result
         #
         elsif $promise.status == Broken {
-#say "cp 2b";
 
           # When broken, it is caused by a thrown exception
           # so catch it here.
@@ -281,7 +296,6 @@ package MongoDB {
         # When planned look at it in next while cycle
         #
         elsif $promise.status == Planned {
-#say "cp 2p";
           info-message("Thread $pi still running");
           $still-planned = True;
         }
@@ -302,19 +316,18 @@ package MongoDB {
         :$server-ticket
       );
 
-      # Suppose that there is only an answer when the server didn't shutdown
-      # so what are we doing here?
+      # Servers do not return an answer when going down.
       # Update: Newer versions of the mongodb server will return ok 1 as of
       # version 3.2.
       #
       if !$doc.defined or ($doc.defined and $doc<ok>) {
-        self.take-out-server($server-ticket);
+        self._take-out-server($server-ticket);
       }
     }
 
     #---------------------------------------------------------------------------
     #
-    method take-out-server ( Str $server-ticket ) {
+    method _take-out-server ( Str $server-ticket ) {
       if ?$server-ticket {
         my $server = $!store.clear-stored-object($server-ticket);
 
@@ -322,13 +335,13 @@ package MongoDB {
         # Wire module. Especially when shutdown-server() is called on
         # servers before version 3.2. Those servers just stop communicating.
         #
-        self.remove-server($server) if $server.defined;
+        self._remove-server($server) if $server.defined;
       }
     }
 
     #---------------------------------------------------------------------------
     #
-    method remove-server ( MongoDB::Server $server is rw ) {
+    method _remove-server ( MongoDB::Server $server is rw ) {
 
 #      trace-message("server select acquire");
       $!control-select.acquire;

@@ -67,7 +67,15 @@ package MongoDB {
         return fatal-message("Port number out of range ")
           unless 0 <= $p <= 65535;
 
-        $!host-ports.push: %( host => $h, port => $p);
+        my Bool $found-hp = False;
+        for @$!host-ports -> $hp {
+          if $hp<host> eq $h and $hp<port> ~~ $p {
+            $found-hp = True;
+            last;
+          }
+        }
+
+        $!host-ports.push: %( host => $h, port => $p) unless $found-hp;
       }
 
       method database (Match $m) {
