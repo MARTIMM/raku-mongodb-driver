@@ -157,8 +157,7 @@ This BSON::Document is now available in the BSON package and many inserting acti
 
 * In the future, host/port arguments to Client must be replaced by using a URI in the format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```. See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/).
 
-This is done now. The Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The supported options are;
-  * replicaSet
+This is done now. The Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The supported options are; *replicaSet*.
 
 * Authentication of users. Users can be administered in the database but authentication needs some encryption techniques which are not implemented yet. Might be me to write those using the modules from the perl5 driver which have been offered to use by David Golden.
 
@@ -179,7 +178,7 @@ There has been a lot of changes in the API.
 
 ## DOCUMENTATION
 
-Plenty of documents can be found on the MongoDB site
+Plenty documents can be found on the MongoDB site
 
 * [MongoDB Driver Requirements](http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/)
 * [Feature Checklist for MongoDB Drivers](http://docs.mongodb.org/meta-driver/latest/legacy/feature-checklist-for-mongodb-drivers/)
@@ -277,6 +276,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.3
+  in test 999 sandbox cleanup done
 * 0.28.2
   * Attempts to tackle the hangups and broken tests seen on Travis. One step was to shorten the loop time while monitoring. At least this gave me the opportunity to see the problems myself on the local system. It has probably something to do with that process getting a Socket at the same time another process wanted also to get a Socket for another I/O task. The socket selection is now guarded by semaphores and it looks like it working properly.
   * shutdown() is moved from Server to Client class and renamed to shutdown-server. There were some problems here too caused by shutting down the mongo server which just stops communicating. Newer versions (> v3.2) are returning something before going down.
