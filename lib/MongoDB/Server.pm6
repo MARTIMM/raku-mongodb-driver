@@ -83,18 +83,14 @@ package MongoDB {
     #
     method _initial-poll ( ) {
 
-#say "\nPoll";
       my Str $server-ticket = $!client.store.store-object(self);
 
       # Calculation of mean Return Trip Time
       #
-#say "\nPoll isMaster, $server-ticket";
       my BSON::Document $doc = $!db-admin._internal-run-command(
         BSON::Document.new((isMaster => 1)),
         :$server-ticket
       );
-#say "Done polling isMaster";
-#say "Init poll: ", $doc.perl;
 
       # Set master type and store whole doc
       #
@@ -137,8 +133,6 @@ package MongoDB {
               my $cmd = $!channel.poll;
               last if ?$cmd and $cmd eq 'stop';
 
-#say "\nRun isMaster, {self.name}, $server-ticket";
-
               # Calculation of mean Return Trip Time
               #
               $t0 = now;
@@ -150,7 +144,7 @@ package MongoDB {
               $!weighted-mean-rtt .= new(
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
-#say "Done isMaster";
+
               debug-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
@@ -159,7 +153,6 @@ package MongoDB {
               #
               $!monitor-doc = $doc;
               $!is-master = $doc<ismaster> if ?$doc<ismaster>;
-say "Monitor: ", $doc.perl;
 
               # Capture errors. When there are any, stop monitoring. On older
               # servers before version 3.2 the server just stops communicating
@@ -195,13 +188,13 @@ say "Monitor: ", $doc.perl;
       # Setup a try block to catch unknown exceptions
       #
       try {
-        for @!sockets -> $s {
+        for ^(@!sockets.elems) -> $si {
 
           # Skip all active sockets
           #
-          next if $s.is-open;
+          next if @!sockets[$si].is-open;
 
-          $sock = $s;
+          $sock = @!sockets[$si];
           last;
         }
 
@@ -255,36 +248,5 @@ say "Monitor: ", $doc.perl;
     method set-max-sockets ( Int $max-sockets where $_ >= 3 ) {
       $!max-sockets = $max-sockets;
     }
-
-#`{{
-    #---------------------------------------------------------------------------
-    #
-    submethod DESTROY {
-
-      # Send a stop code to the monitor code thread and wait for it to finish
-      #
-      $!channel.send('stop') if $!channel.defined;
-      if $!promise-monitor.defined {
-        $!promise-monitor.await;
-        undefine $!promise-monitor;
-      }
-
-      # Release the lock
-      #
-      $!server-monitor-control.release if $!server-monitor-control.defined;
-
-      # Clear all sockets
-      #
-      if @!sockets.defined {
-        for @!sockets -> $s {
-          undefine $s;
-        }
-
-        # and channel
-        #
-        undefine $!channel;
-      }
-    }
-}}
   }
 }
