@@ -70,7 +70,6 @@ package MongoDB {
               :$!uri-data, :db-admin(self.database('admin')),
               :client(self)
             );
-#say "Server: ", $server.name;
 
 #TODO Check relation of servers otherwise refuse, not yet complete
             # Initial tests on server data
@@ -83,7 +82,6 @@ package MongoDB {
             #
             $accept-server = False if $!found-master and $server.is-master;
             $!found-master = $server.is-master if $server.is-master;
-#say "{$server.name} Acc srv, found m: $accept-server,$!found-master";
 
             # Test replica set name if it is a replica set server
             #
@@ -95,7 +93,6 @@ package MongoDB {
                    ne $!uri-data<options><replicaSet> {
 
               $accept-server = False;
-#say "{$server.name} 1, Acc srv $accept-server";
             }
 
             # No replicaSet option on uri found and server isn't a repl server
@@ -104,10 +101,8 @@ package MongoDB {
                   and $server.monitor-doc<setName>:exists {
 
               $accept-server = False;
-#say "{$server.name} 2, Acc srv $accept-server";
             }
 
-#say "{$server.name} 3, Acc srv $accept-server";
             # All else accept
             #
 #            else {
@@ -214,17 +209,9 @@ package MongoDB {
 
         my Bool $still-planned = self!cleanup-promises;
 
-#say "Nbr servers: {$!servers.elems}";
-
         for @$!servers -> $s {
-#          debug-message( "Server is master 1?: {$s.is-master}");
-#say "ss: {$s.name}";
-
           $server-is-master = True if $s.is-master;
           if !$need-master or ($need-master and $server-is-master) {
-#say "ss 1";
-#            debug-message( "Server is master 2?: $server-is-master");
-#say "ss 2";
             $server = $s;
             debug-message(
               "Server {$server.name} selected, is master?: $server-is-master"
@@ -233,11 +220,9 @@ package MongoDB {
             last;
           }
         }
-#say "ss 3";
 
         last if $server.defined;
 
-#say "discover: {$!server-discovery.elems}";
         if $still-planned {
           warn-message("No server found yet with $!uri, wait for running discovery");
           sleep 1;
@@ -257,15 +242,13 @@ package MongoDB {
       }
 
       $server-ticket = $.store.store-object($server) if $server.defined;
-#say "ss 4 $server, $server-ticket";
+
       return $server-ticket;
     }
 
     #---------------------------------------------------------------------------
     #
     method !cleanup-promises ( ) {
-
-#say "Nbr promises: {$!server-discovery.elems}";
 
       my Bool $still-planned = False;
 
@@ -277,7 +260,6 @@ package MongoDB {
         # stored in $!servers.
         #
         if $promise.status ~~ Kept {
-#say "cp 2k";
           my $server = $!server-discovery[$pi].result;
 
           # Cleanup promise entry
@@ -293,7 +275,6 @@ package MongoDB {
         # When broken throw away result
         #
         elsif $promise.status == Broken {
-#say "cp 2b";
 
           # When broken, it is caused by a thrown exception
           # so catch it here.
@@ -315,7 +296,6 @@ package MongoDB {
         # When planned look at it in next while cycle
         #
         elsif $promise.status == Planned {
-#say "cp 2p";
           info-message("Thread $pi still running");
           $still-planned = True;
         }

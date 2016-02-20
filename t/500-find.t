@@ -97,7 +97,7 @@ subtest {
   $req .= new: ( count => $collection.name);
 #  $cursor = $collection.find();
 #  ok $cursor.count == 50.0, 'Counting fifty documents';
-  $req<query> = ();
+#  $req<query> = ();
   $doc = $database.run-command($req);
   is $doc<n>, 200, '200 records';
 
@@ -157,7 +157,6 @@ subtest {
   is $doc<numIndexesBefore>, 1, 'Only 1 index before call';
   is $doc<numIndexesAfter>, 2, 'Now there are 2';
 
-#say $doc.perl;
   $doc = $database.run-command($req);
   $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found';
@@ -178,6 +177,7 @@ subtest {
     ),
     :number-to-return(1)
   );
+
   $doc = $cursor.fetch;
   my $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found, explain via bad hint';
@@ -195,7 +195,6 @@ subtest {
     :number-to-return(1)
   );
   $doc = $cursor.fetch;
-#say "Doc: ", $doc.perl;
   $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found, explain via a good hint';
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
@@ -209,6 +208,11 @@ subtest {
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
+=finish
+
+
+
+
 
 #-------------------------------------------------------------------------------
 subtest {
