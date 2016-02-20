@@ -57,11 +57,5 @@ package MongoDB {
 
       $!is-open = False;
     }
-
-    #---------------------------------------------------------------------------
-    #
-    submethod DESTROY {
-      $!sock.close;
-    }
   }
 }
