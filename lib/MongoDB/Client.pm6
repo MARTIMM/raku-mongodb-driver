@@ -109,13 +109,17 @@ package MongoDB {
 #              $accept-server = False;
 #            }
 
-            # Return server object
+            # Throw an error when not accepted. It wil caught when processing
+            # broken promises in cleanup-promises
             #
-            self!add-server($server) if $accept-server;
+#            self!add-server($server) if $accept-server;
+            fatal-message("Server $server.name() not accepted")
+              unless $accept-server;
 
-            # Return a Server object or an empty type object
+            # Return a Server object when server is accepted
             #
-            $accept-server ?? $server !! MongoDB::Server;
+            info-message("Server $server.name() accepted");
+            $server;
           }
         );
       }
@@ -147,6 +151,17 @@ package MongoDB {
       my $t = self.select-server(:!need-master);
       $!store.clear-stored-object($t) if ?$t;
       return $!servers.elems;
+    }
+
+    #---------------------------------------------------------------------------
+    # Return number of actions left
+    #
+    method nbr-left-actions ( --> Int ) {
+
+      # Investigate first before getting the nuber of servers. We get a
+      # server ticket and must be removed again.
+      #
+      return $!server-discovery.elems;
     }
 
     #---------------------------------------------------------------------------
@@ -213,6 +228,7 @@ package MongoDB {
           $server-is-master = True if $s.is-master;
           if !$need-master or ($need-master and $server-is-master) {
             $server = $s;
+            $server-ticket = $.store.store-object($server);
             debug-message(
               "Server {$server.name} selected, is master?: $server-is-master"
             );
@@ -241,7 +257,6 @@ package MongoDB {
         }
       }
 
-      $server-ticket = $.store.store-object($server) if $server.defined;
 
       return $server-ticket;
     }
@@ -261,15 +276,16 @@ package MongoDB {
         #
         if $promise.status ~~ Kept {
           my $server = $!server-discovery[$pi].result;
-
           # Cleanup promise entry
           #
           $!server-discovery[$pi] = Nil;
           $!server-discovery.splice( $pi, 1);
 
-          # Start server monitoring if server is accepted from initial poll
+          # Save server and start server monitoring if server is accepted
+          # after initial poll
           #
-          $server._monitor-server if $server.defined;
+          self!add-server($server);
+          $server._monitor-server;
         }
 
         # When broken throw away result
