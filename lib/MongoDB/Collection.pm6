@@ -44,7 +44,7 @@ package MongoDB {
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0, List :$read-concern,
-      Str :$server-ticket is copy = ''
+      :$server is copy #`{{where .^name eq 'MongoDB::Server'}} = Nil
 
       --> MongoDB::Cursor
     ) {
@@ -57,14 +57,14 @@ package MongoDB {
          $read-concern.defined ?? BSON::Document.new: $read-concern
                                !! $!read-concern;
 
-      $server-ticket = $.database.client.select-server(:read-concern($rc))
-        unless $server-ticket.chars > 0;
+      $server = $.database.client.select-server(:read-concern($rc))
+        unless $server.defined;
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
       my BSON::Document $server-reply = $wire.query(
         self, $cr, $pr, :$flags, :$number-to-skip,
-        :$number-to-return, :$server-ticket
+        :$number-to-return, :$server
       );
 
       return MongoDB::Cursor unless $server-reply.defined;
@@ -72,7 +72,7 @@ package MongoDB {
       return MongoDB::Cursor.new(
         :collection(self),
         :$server-reply,
-        :$server-ticket
+        :$server
       );
     }
 
@@ -85,7 +85,8 @@ package MongoDB {
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0,
       BSON::Document :$read-concern,
-      Str :$server-ticket is copy = ''
+      :$server is copy #`{{where .^name eq 'MongoDB::Server'}} = Nil
+
       --> MongoDB::Cursor
     ) {
 
@@ -95,12 +96,12 @@ package MongoDB {
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
       my MongoDB::Wire $wire .= new;
-      $server-ticket = $.database.client.select-server(:read-concern($rc))
-        unless $server-ticket.chars > 0;
+      $server = $.database.client.select-server(:read-concern($rc))
+        unless $server.defined;
 
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
-        :$number-to-return, :$server-ticket
+        :$number-to-return, :$server
       );
 
       return MongoDB::Cursor unless $server-reply.defined;
@@ -108,7 +109,7 @@ package MongoDB {
       return MongoDB::Cursor.new(
         :collection(self),
         :$server-reply,
-        :$server-ticket
+        :$server
       );
     }
 

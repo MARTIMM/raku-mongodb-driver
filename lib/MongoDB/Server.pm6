@@ -1,6 +1,5 @@
 use v6;
 use MongoDB;
-use MongoDB::Object-store;
 use MongoDB::Socket;
 use MongoDB::ClientIF;
 use MongoDB::DatabaseIF;
@@ -89,13 +88,11 @@ package MongoDB {
     #
     method _initial-poll ( ) {
 
-      my Str $server-ticket = $!client.store.store-object(self);
-
       # Calculation of mean Return Trip Time
       #
       my BSON::Document $doc = $!db-admin._internal-run-command(
         BSON::Document.new((isMaster => 1)),
-        :$server-ticket
+        :server(self)
       );
 
       # Set master type and store whole doc
@@ -119,7 +116,6 @@ package MongoDB {
           my Instant $t0;
           my BSON::Document $doc;
           my Duration $rtt;
-          my Str $server-ticket = $!client.store.store-object(self);
 
           # As long as the server lives test it. Changes are possible when 
           # master changes servers.
@@ -144,7 +140,7 @@ package MongoDB {
               $t0 = now;
               $doc = $!db-admin._internal-run-command(
                 BSON::Document.new((isMaster => 1)),
-                :$server-ticket
+                :server(self)
               );
               $rtt = now - $t0;
               $!weighted-mean-rtt .= new(

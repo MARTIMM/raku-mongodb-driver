@@ -4,7 +4,6 @@ use BSON::Document;
 use MongoDB;
 use MongoDB::CollectionIF;
 use MongoDB::Header;
-use MongoDB::Object-store;
 
 package MongoDB {
 
@@ -15,7 +14,7 @@ package MongoDB {
     method query (
       MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
       BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
-      :$number-to-return, Str :$server-ticket
+      :$number-to-return, :$server where .^name eq 'MongoDB::Server'
       --> BSON::Document
     ) {
       # Must clone the document otherwise the MongoDB::Header will be added
@@ -35,7 +34,7 @@ package MongoDB {
         # Check if the server ticket is defined and thus a server is reserved
         # for this communication.
         #
-        fatal-message("No server available") unless ?$server-ticket;
+        fatal-message("No server available") unless $server.defined;
 
         $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
 #say "Need master for {$d.find-key(0)} $write-operation";
@@ -46,7 +45,7 @@ package MongoDB {
           :$flags, :$number-to-skip, :$number-to-return
         );
 
-        $socket = $client.store.get-stored-object($server-ticket).get-socket;
+        $socket = $server.get-socket;
         $socket.send($encoded-query);
 
         # Read 4 bytes for int32 response size
@@ -89,18 +88,18 @@ package MongoDB {
         #
         CATCH {
           when MongoDB::Message {
-            $client._take-out-server($server-ticket);
+            $client._take-out-server($server);
           }
 
           default {
             when Str {
               warn-message($_);
-              $client._take-out-server($server-ticket);
+              $client._take-out-server($server);
             }
 
             when Exception {
               warn-message(.message);
-              $client._take-out-server($server-ticket);
+              $client._take-out-server($server);
             }
           }
 
@@ -113,7 +112,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method get-more ( $cursor, Str:D :$server-ticket --> BSON::Document ) {
+    method get-more (
+      $cursor,
+      :$server where .^name eq 'MongoDB::Server'
+      --> BSON::Document
+    ) {
 
       my BSON::Document $d .= new;
       $d does MongoDB::Header;
@@ -129,8 +132,8 @@ package MongoDB {
 
         $client = $cursor.client;
 
-        fatal-message("No server available") unless ?$server-ticket;
-        $socket = $client.store.get-stored-object($server-ticket).get-socket;
+        fatal-message("No server available") unless $server.defined;
+        $socket = $server.get-socket;
         $socket.send($encoded-get-more);
 
         # Read 4 bytes for int32 response size
@@ -174,18 +177,18 @@ package MongoDB {
         #
         CATCH {
           when MongoDB::Message {
-            $client._take-out-server($server-ticket);
+            $client._take-out-server($server);
           }
 
           default {
             when Str {
               warn-message($_);
-              $client._take-out-server($server-ticket);
+              $client._take-out-server($server);
             }
 
             when Exception {
               warn-message(.message);
-              $client._take-out-server($server-ticket);
+              $client._take-out-server($server);
             }
           }
         }
@@ -198,8 +201,8 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method kill-cursors (
-      @cursors where $_.elems > 0,
-      Str:D :$server-ticket
+      @cursors where .elems > 0,
+      :$server! where .^name eq 'MongoDB::Server'
     ) {
 
       my BSON::Document $d .= new;
@@ -219,8 +222,8 @@ package MongoDB {
       $client = @cursors[0].client;
 
       try {
-        fatal-message("No server available") unless ?$server-ticket;
-        $socket = $client.store.get-stored-object($server-ticket).get-socket;
+        fatal-message("No server available") unless $server.defined;
+        $socket = $server.get-socket;
 
         if +@cursor-ids {
           ( my Buf $encoded-kill-cursors,
@@ -235,18 +238,18 @@ package MongoDB {
         #
         CATCH {
           when MongoDB::Message {
-            $client._take-out-server($server-ticket);
+            $client._take-out-server($server);
           }
 
           default {
             when Str {
               warn-message($_);
-              $client._take-out-server($server-ticket);
+              $client._take-out-server($server);
             }
 
             when Exception {
               warn-message(.message);
-              $client._take-out-server($server-ticket);
+              $client._take-out-server($server);
             }
           }
         }

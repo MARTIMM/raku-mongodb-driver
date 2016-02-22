@@ -1,6 +1,5 @@
 use v6;
 use MongoDB;
-use MongoDB::Object-store;
 use MongoDB::Uri;
 use MongoDB::ClientIF;
 use MongoDB::Server;
@@ -24,9 +23,8 @@ package MongoDB {
     #
     has Semaphore $!control-select .= new(1);
 
-    has MongoDB::Object-store $.store;
     has BSON::Document $.read-concern;
-    has Bool $!found-master = False;
+    has Bool $.found-master = False;
     has Str $!replica-set;
 
     has Hash $!uri-data;
@@ -34,10 +32,6 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern ) {
-
-      # Init store
-      #
-      $!store .= new;
 
       $!servers = [];
       $!server-discovery = [];
@@ -136,7 +130,6 @@ package MongoDB {
 
       info-message( "Server {$server.name} saved");
       $!servers.push: $server;
-
       $!control-select.release;
     }
 
@@ -149,7 +142,6 @@ package MongoDB {
       # server ticket and must be removed again.
       #
       my $t = self.select-server(:!need-master);
-      $!store.clear-stored-object($t) if ?$t;
       return $!servers.elems;
     }
 
@@ -207,12 +199,11 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method select-server ( BSON::Document :$read-concern --> Str ) {
+    method select-server ( BSON::Document :$read-concern --> MongoDB::Server ) {
 
       my Bool $need-master = False;
 
       my MongoDB::Server $server;
-      my Str $server-ticket;
       my Bool $server-is-master = False;
 
       my BSON::Document $rc =
@@ -228,7 +219,6 @@ package MongoDB {
           $server-is-master = True if $s.is-master;
           if !$need-master or ($need-master and $server-is-master) {
             $server = $s;
-            $server-ticket = $.store.store-object($server);
             debug-message(
               "Server {$server.name} selected, is master?: $server-is-master"
             );
@@ -258,7 +248,7 @@ package MongoDB {
       }
 
 
-      return $server-ticket;
+      return $server;
     }
 
     #---------------------------------------------------------------------------
@@ -276,6 +266,7 @@ package MongoDB {
         #
         if $promise.status ~~ Kept {
           my $server = $!server-discovery[$pi].result;
+
           # Cleanup promise entry
           #
           $!server-discovery[$pi] = Nil;
@@ -322,14 +313,17 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method shutdown-server ( Bool :$force = False, Str :$server-ticket ) {
+    method shutdown-server (
+      MongoDB::Server $server is copy,
+      Bool :$force = False
+    ) {
       my BSON::Document $doc = self.database('admin')._internal-run-command(
         BSON::Document.new((
           shutdown => 1,
           :$force
         )),
 
-        :$server-ticket
+        :$server
       );
 
       # Servers do not return an answer when going down.
@@ -337,15 +331,14 @@ package MongoDB {
       # version 3.2.
       #
       if !$doc.defined or ($doc.defined and $doc<ok>) {
-        self._take-out-server($server-ticket);
+        self._take-out-server($server);
       }
     }
 
     #---------------------------------------------------------------------------
     #
-    method _take-out-server ( Str $server-ticket ) {
-      if ?$server-ticket {
-        my $server = $!store.clear-stored-object($server-ticket);
+    method _take-out-server ( MongoDB::Server:D $server is copy ) {
+      if $server.defined {
 
         # Server can be taken out before when a failure takes place in the
         # Wire module. Especially when shutdown-server() is called on
@@ -357,7 +350,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method _remove-server ( MongoDB::Server $server is rw ) {
+    method _remove-server ( MongoDB::Server $server is copy ) {
 
 #      trace-message("server select acquire");
       $!control-select.acquire;

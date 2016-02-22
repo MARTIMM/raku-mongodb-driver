@@ -125,7 +125,7 @@ package MongoDB {
     method _internal-run-command (
       BSON::Document:D $command,
       BSON::Document :$read-concern = BSON::Document.new,
-      Str :$server-ticket
+      :$server where .^name eq 'MongoDB::Server'
       --> BSON::Document
     ) {
 
@@ -140,7 +140,7 @@ package MongoDB {
         :criteria($command),
         :number-to-return(1),
         :read-concern($rc),
-        :$server-ticket
+        :$server
       );
 
       # Return undefined on server problems

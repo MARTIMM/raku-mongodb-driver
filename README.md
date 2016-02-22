@@ -276,8 +276,11 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.4
+  * Factored out Object-store class. Move around Server object now which was stored there mainly. So there is a level of complexity less.
 * 0.28.3
-  in test 999 sandbox cleanup done
+  * in test 999 sandbox directory cleanup
+  * Object-store changes. store
 * 0.28.2
   * Attempts to tackle the hangups and broken tests seen on Travis. One step was to shorten the loop time while monitoring. At least this gave me the opportunity to see the problems myself on the local system. It has probably something to do with that process getting a Socket at the same time another process wanted also to get a Socket for another I/O task. The socket selection is now guarded by semaphores and it looks like it working properly.
   * shutdown() is moved from Server to Client class and renamed to shutdown-server. There were some problems here too caused by shutting down the mongo server which just stops communicating. Newer versions (> v3.2) are returning something before going down.

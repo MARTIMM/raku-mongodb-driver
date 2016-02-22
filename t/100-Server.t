@@ -6,7 +6,6 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Socket;
-use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
@@ -22,9 +21,7 @@ my BSON::Document $doc;
 subtest {
 
   $client = get-connection();
-  my Str $server-ticket = $client.select-server;
-
-  my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
+  my MongoDB::Server $server = $client.select-server;
   ok $server.defined, 'Connection server available';
 
   my MongoDB::Socket $socket = $server.get-socket;
@@ -88,8 +85,6 @@ subtest {
       }
     }
   }
-
-  $client.store.clear-stored-object($server-ticket);
 
 }, 'Client, Server, Socket tests';
 

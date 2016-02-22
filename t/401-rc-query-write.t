@@ -4,7 +4,6 @@ use Test-support;
 use Test;
 use MongoDB;
 use MongoDB::Client;
-use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
@@ -189,7 +188,6 @@ subtest {
 # Number of stored objects can be one when Server object monitors
 # the mongod server
 #
-ok $client.store.nbr-stored-objects() < 2, "Number of stored objects < 2";
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);

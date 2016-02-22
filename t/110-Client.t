@@ -6,11 +6,10 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Socket;
-use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
@@ -22,21 +21,25 @@ subtest {
 
   $client .= new(:uri("mongodb://localhost:65535"));
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
-  my Str $server-ticket = $client.select-server;
-  nok $server-ticket.defined, 'No servers selected';
+  my MongoDB::Server $server = $client.select-server;
+  nok $server.defined, 'No servers selected';
   is $client.nbr-servers, 0, 'No servers found';
-
 
 
   my $p1 = get-port-number(:server(1));
 
   $client .= new(:uri("mongodb://localhost:$p1"));
-  is $client.nbr-servers, 1, 'One server found';
-
+  while !$client.nbr-servers {
+    is $client.nbr-servers, 1, 'One server found';
+  }
+  is $client.nbr-left-actions, 0, 'No actions left';
+  is $client.found-master, True, 'Found a master';
 
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
+  while !$client.nbr-servers { }
   is $client.nbr-servers, 1, 'One server accepted, two were equal';
+
 
 
 #set-logfile($*OUT);
@@ -45,7 +48,9 @@ subtest {
   my $p2 = get-port-number(:server(2));
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p2"));
-  is $client.nbr-servers, 1, 'One server accepted, two servers were master';
+  while !$client.nbr-servers { }
+  is $client.nbr-servers, 1,
+     "Server $client.select-server.name() accepted, two servers were master";
 
 }, 'Independent servers';
 
