@@ -3,7 +3,6 @@ use lib 't';
 use Test;
 use Test-support;
 use MongoDB;
-use MongoDB::Object-store;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Socket;
@@ -24,12 +23,9 @@ for @$Test-support::server-range -> $server-number {
   ok $client.nbr-servers > 0, "One or more servers via localhost:$port-number";
 
   if $client.nbr-servers {
-    my Str $server-ticket = $client.select-server;
-#    my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
-#    ok $server.defined, "Server $server-number defined";
-
-    diag "Wait for server $server-number to stop";
-    $client.shutdown-server(:$server-ticket); #(:force);
+    my MongoDB::Server $server = $client.select-server;
+    diag "Wait for $server.name() to stop";
+    $client.shutdown-server($server); #(:force);
   }
 
   $client .= new(:uri("mongodb://localhost:$port-number"));

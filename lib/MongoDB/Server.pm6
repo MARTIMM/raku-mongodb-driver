@@ -1,6 +1,5 @@
 use v6;
 use MongoDB;
-use MongoDB::Object-store;
 use MongoDB::Socket;
 use MongoDB::ClientIF;
 use MongoDB::DatabaseIF;
@@ -78,18 +77,22 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    # Is called from Client in same thread as server creation. This is no user
-    # facility!
+    # Is called from Client in same thread as server creation. Any run command
+    # will end up in a Wire object which will ask select-server to get a ticket
+    # linked to a Server object. When calling this method no info is yet
+    # available and needs to be retrieved. This causes an endless loop when we
+    # call a run-command to get server info. This is prevented here by storing
+    # the Server object ourselfs and send the ticket with the run-command. When
+    # it arrives ate the Wire object query method it knows not to call for
+    # server-select and get the Server object using the provided ticket.
     #
     method _initial-poll ( ) {
-
-      my Str $server-ticket = $!client.store.store-object(self);
 
       # Calculation of mean Return Trip Time
       #
       my BSON::Document $doc = $!db-admin._internal-run-command(
         BSON::Document.new((isMaster => 1)),
-        :$server-ticket
+        :server(self)
       );
 
       # Set master type and store whole doc
@@ -113,7 +116,6 @@ package MongoDB {
           my Instant $t0;
           my BSON::Document $doc;
           my Duration $rtt;
-          my Str $server-ticket = $!client.store.store-object(self);
 
           # As long as the server lives test it. Changes are possible when 
           # master changes servers.
@@ -125,7 +127,7 @@ package MongoDB {
 
               # First things first Zzzz...
               #
-              sleep 5;
+              sleep 1;
 
               # Check the channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
@@ -138,7 +140,7 @@ package MongoDB {
               $t0 = now;
               $doc = $!db-admin._internal-run-command(
                 BSON::Document.new((isMaster => 1)),
-                :$server-ticket
+                :server(self)
               );
               $rtt = now - $t0;
               $!weighted-mean-rtt .= new(
@@ -149,6 +151,9 @@ package MongoDB {
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
 
+#TODO What happens here when monitor doc is set and an outside process
+# wants to read it? idem for is-master flag!
+# does it need a channel to the Client?
               # Set master type and store whole doc
               #
               $!monitor-doc = $doc;

@@ -199,7 +199,7 @@ for @$Test-support::server-range -> $server-number {
 
   # Start mongodb
   #
-  diag "Wait for server localhost:$port-number to start up";
+  diag "Wait for localhost:$port-number to start";
   my Proc $proc = shell("$mongodb-server-path --config '$*CWD/$server-dir/m.conf'");
   if $proc.exitcode != 0 {
     spurt $server-dir ~ '/NO-MONGODB-SERVER', '' unless $proc.exitcode == 0;

@@ -4,7 +4,6 @@ use MongoDB;
 use MongoDB::CollectionIF;
 use MongoDB::ClientIF;
 use MongoDB::Wire;
-use MongoDB::Object-store;
 
 #-------------------------------------------------------------------------------
 #
@@ -26,7 +25,7 @@ package MongoDB {
     #
     has @.documents;
 
-    has Str $!server-ticket;
+    has $server where .^name eq 'MongoDB::Server';
 
     #---------------------------------------------------------------------------
     # Support for the newer BSON::Document
@@ -34,7 +33,7 @@ package MongoDB {
     multi submethod BUILD (
       MongoDB::CollectionIF:D :$collection!,
       BSON::Document:D :$server-reply!,
-      Str:D :$server-ticket
+      :$server! where .^name eq 'MongoDB::Server'
     ) {
 
       $!client = $collection.database.client;
@@ -46,21 +45,19 @@ package MongoDB {
       #
       $!id = $server-reply<cursor-id>;
       if [+] @($server-reply<cursor-id>) {
-        $!server-ticket = $server-ticket;
+        $!server = $server;
       }
 
       else {
-        $!client.store.clear-stored-object($server-ticket);
-        $!server-ticket = Nil;
+        $!server = Nil;
       }
 
       # Get documents from the reply.
       #
       @!documents = $server-reply<documents>.list;
-
     }
 
-    # This can be set with data received from a command e.g. listDocuments
+    # This can be set with data received from a command e.g. listDatabases
     #
     multi submethod BUILD (
       MongoDB::ClientIF:D :$client!,
@@ -84,11 +81,11 @@ package MongoDB {
 
       $!id = $d.encode-cursor-id($cursor-doc<id>);
       if [+] @$!id {
-        $!server-ticket = $!client.select-server(:$read-concern);
+        $!server = $!client.select-server(:$read-concern);
       }
 
       else {
-        $!server-ticket = Nil;
+        $!server = Nil;
       }
 
       # Get documents from the reply.
@@ -130,7 +127,7 @@ package MongoDB {
         # Request next batch of documents
         #
         my BSON::Document $server-reply =
-          MongoDB::Wire.new.get-more( self, :$!server-ticket);
+          MongoDB::Wire.new.get-more( self, :$!server);
 
         if $server-reply.defined {
 
@@ -139,8 +136,7 @@ package MongoDB {
           #
           $!id = $server-reply<cursor-id>;
           unless [+] @$!id {
-            $!client.store.clear-stored-object($!server-ticket);
-            $!server-ticket = Nil;
+            $!server = Nil;
           }
 
           # Get documents
@@ -164,14 +160,12 @@ package MongoDB {
       # Invalidate cursor on database only if id is valid
       #
       if [+] @$.id {
-        MongoDB::Wire.new.kill-cursors( (self,), :$!server-ticket);
+        MongoDB::Wire.new.kill-cursors( (self,), :$!server);
 
         # Invalidate cursor id with 8 0x00 bytes
         #
         $!id = Buf.new(0x00 xx 8);
-
-        $!client.store.clear-stored-object($!server-ticket);
-        $!server-ticket = Nil;
+        $!server = Nil;
       }
     }
   }
