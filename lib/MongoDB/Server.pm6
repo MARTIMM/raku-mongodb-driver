@@ -20,8 +20,8 @@ package MongoDB {
     has Int $.max-sockets;
     has MongoDB::Socket @!sockets;
 
-    has Bool $.is-master = False;
-    has BSON::Document $.monitor-doc;
+#    has Bool $.is-master = False;
+#    has BSON::Document $.monitor-doc;
 
     has Duration $!weighted-mean-rtt .= new(0);
 
@@ -34,9 +34,6 @@ package MongoDB {
     has Promise $!promise-monitor;
     has Semaphore $!server-monitor-control;
 
-    # Socket selection protection
-    #
-#    has Semaphore $!server-init-poll;
     has Semaphore $!server-socket-selection;
 
     submethod BUILD (
@@ -56,6 +53,7 @@ package MongoDB {
       $!channel = Channel.new;
 
       $!server-monitor-control .= new(1);
+      $!server-socket-selection .= new(1);
 
       # IO::Socket::INET throws an exception when things go wrong. Need to
       # catch this higher up.
@@ -69,11 +67,6 @@ package MongoDB {
       # Besides the sockets are encapsulated in Socket and kept in an array.
       #
       $sock.close;
-
-      # Initialize semaphores
-      #
-#      $!server-init-poll .= new(1);
-      $!server-socket-selection .= new(1);
     }
 
     #---------------------------------------------------------------------------
@@ -97,15 +90,20 @@ package MongoDB {
 
       # Set master type and store whole doc
       #
-      $!monitor-doc = $doc;
-      $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+#      $!monitor-doc = $doc;
+#      $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+
+      return {
+        monitor => $doc,
+        weighted-mean-rtt => 0
+      };
     }
 
     #---------------------------------------------------------------------------
     # Run this on a separate thread because it lasts until this program
     # atops or the server shuts down.
     #
-    method _monitor-server ( ) {
+    method _monitor-server ( Channel $client-channel ) {
 
       # Set the lock so the code will only be started once. When server or
       # program stops(controlled), the code is terminated via a channel.
@@ -156,8 +154,14 @@ package MongoDB {
 # does it need a channel to the Client?
               # Set master type and store whole doc
               #
-              $!monitor-doc = $doc;
-              $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+#              $!monitor-doc = $doc;
+#              $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+              
+              $client-channel.send( {
+                  monitor => $doc,
+                  weighted-mean-rtt => $!weighted-mean-rtt
+                }
+              );
 
               # Capture errors. When there are any, stop monitoring. On older
               # servers before version 3.2 the server just stops communicating

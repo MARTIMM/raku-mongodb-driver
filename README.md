@@ -276,6 +276,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.5
+  * Installing a Channel per Server in Client. Data found while monitoring a server in a trhread in Server is now sent to Client over the Channel. This data is kept in Client using a Hash structure for each Server.
 * 0.28.4
   * Factored out Object-store class. Move around Server object now which was stored there mainly. So there is a level of complexity less.
 * 0.28.3
