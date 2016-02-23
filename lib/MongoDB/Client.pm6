@@ -75,21 +75,21 @@ package MongoDB {
             #
             my $accept-server = True;
 
-            my Hash $srv-data = $server._initial-poll;
+            my BSON::Document $srv-data = $server._initial-poll;
 
             # No two masters, then set if server is a master
             #
-            my Bool $ismaster = $srv-data<monitor><ismaster>;
+            my Bool $ismaster = $srv-data<ismaster>;
             $accept-server = False if $!found-master and $ismaster;
             $!found-master = $ismaster if $ismaster;
-say "IPoll: $srv-data.perl()";
-say "IPoll: $ismaster, $accept-server";
+#say "IPoll: $srv-data.perl()";
+#say "IPoll: $ismaster, $accept-server";
 
             # Test replica set name if it is a replica set server
             #
             # replicaSet option in uri is same as replica set name from server
             #
-            my Str $replsetname = $server.monitor-doc<setName>;
+            my Str $replsetname = $srv-data<setName> // '';
             if $!uri-data<options><replicaSet>:exists
                and ?$replsetname
                and $replsetname ne $!uri-data<options><replicaSet> {
@@ -116,17 +116,20 @@ say "IPoll: $ismaster, $accept-server";
             fatal-message("Server $server.name() not accepted")
               unless $accept-server;
 
-            # Return a Server object when server is accepted
-            #
-            info-message("Server $server.name() accepted");
-            $server;
 CATCH {
-  .say;
+#  .say;
   default {
     .throw;
   }
 }
 
+            # Return mongo server data and Server object when server is accepted
+            #
+            info-message("Server $server.name() accepted");
+
+            { server => $server,
+              initial-poll => $srv-data
+            };
           }
         );
       }
@@ -135,20 +138,23 @@ CATCH {
     #---------------------------------------------------------------------------
     # Called from thread above where Server object is created.
     #
-    method !add-server ( MongoDB::Server:D $server --> Hash ) {
+    method !add-server ( Hash:D $server-data --> Hash ) {
 
-      # Read all Kept promises and store Server objects in $!servers array
-      #
 #      $!control-select.acquire;
 
+      my MongoDB::Server $server = $server-data<server>;
       info-message( "Server {$server.name} saved");
 
       $!servers{$server.name} = {
         object => $server,
-        channel => Channel.new(),
-        server-data => Nil
+        data-channel => Channel.new(),
+        command-channel => Channel.new(),
+        server-data => {
+          monitor => $server-data<initial-poll>,
+          weighted-mean-rtt => 0
+        }
       }
-say "Srv: $server.name(), $!servers{$server.name}.perl()";
+
 #      $!control-select.release;
       return $!servers{$server.name};
     }
@@ -236,7 +242,15 @@ say "Srv: $server.name(), $!servers{$server.name}.perl()";
         my Bool $still-planned = self!cleanup-promises;
 
         for $!servers.values -> Hash $srv-struct {
-          $server-is-master = True if $srv-struct<object>.is-master;
+          my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
+          if $new-monitor-data.defined {
+            info-message("New server data from $srv-struct<object>.name()");
+            $srv-struct<server-data> = $new-monitor-data;
+          }
+
+          $server-is-master = True
+            if $srv-struct<server-data><monitor><is-master>;
+
           if !$need-master or ($need-master and $server-is-master) {
             $server = $srv-struct<object>;
             debug-message(
@@ -285,7 +299,8 @@ say "Srv: $server.name(), $!servers{$server.name}.perl()";
         # stored in $!servers.
         #
         if $promise.status ~~ Kept {
-          my $server = $!server-discovery[$pi].result;
+          my Hash $server-data = $!server-discovery[$pi].result;
+          my MongoDB::Server $server = $server-data<server>;
 
           # Cleanup promise entry
           #
@@ -295,8 +310,11 @@ say "Srv: $server.name(), $!servers{$server.name}.perl()";
           # Save server and start server monitoring if server is accepted
           # after initial poll
           #
-          my Hash $srv-struct = self!add-server($server);
-#          $server._monitor-server($srv-struct<channel>);
+          my Hash $srv-struct = self!add-server($server-data);
+          $server._monitor-server(
+            $srv-struct<data-channel>,
+            $srv-struct<command-channel>
+          );
         }
 
         # When broken throw away result
@@ -311,7 +329,6 @@ say "Srv: $server.name(), $!servers{$server.name}.perl()";
 
             CATCH {
               default {
-.say;
                 warn-message(.message);
 
                 $!server-discovery[$pi] = Nil;
@@ -377,6 +394,12 @@ say "Srv: $server.name(), $!servers{$server.name}.perl()";
 #      $!control-select.acquire;
       for $!servers.values -> Hash $srv-struct {
         if $srv-struct<object> === $server {
+
+          # Stop monitoring on server and wait for it to stop
+          #
+          $srv-struct<command-channel>.send('stop');
+          sleep 1;
+          $srv-struct<command-channel>.receive;
           $!servers{$server.name}:delete;
           undefine $server;
         }
