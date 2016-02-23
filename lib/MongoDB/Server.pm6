@@ -20,9 +20,6 @@ package MongoDB {
     has Int $.max-sockets;
     has MongoDB::Socket @!sockets;
 
-    has Bool $.is-master = False;
-    has BSON::Document $.monitor-doc;
-
     has Duration $!weighted-mean-rtt .= new(0);
 
     has MongoDB::DatabaseIF $!db-admin;
@@ -30,13 +27,9 @@ package MongoDB {
 
     # Variables to control infinite monitoring actions
     #
-    has Channel $!channel;
     has Promise $!promise-monitor;
     has Semaphore $!server-monitor-control;
 
-    # Socket selection protection
-    #
-#    has Semaphore $!server-init-poll;
     has Semaphore $!server-socket-selection;
 
     submethod BUILD (
@@ -53,9 +46,9 @@ package MongoDB {
       $!server-port = $port;
       $!max-sockets = $max-sockets;
       $!uri-data = $uri-data;
-      $!channel = Channel.new;
 
       $!server-monitor-control .= new(1);
+      $!server-socket-selection .= new(1);
 
       # IO::Socket::INET throws an exception when things go wrong. Need to
       # catch this higher up.
@@ -69,11 +62,6 @@ package MongoDB {
       # Besides the sockets are encapsulated in Socket and kept in an array.
       #
       $sock.close;
-
-      # Initialize semaphores
-      #
-#      $!server-init-poll .= new(1);
-      $!server-socket-selection .= new(1);
     }
 
     #---------------------------------------------------------------------------
@@ -86,7 +74,7 @@ package MongoDB {
     # it arrives ate the Wire object query method it knows not to call for
     # server-select and get the Server object using the provided ticket.
     #
-    method _initial-poll ( ) {
+    method _initial-poll ( --> BSON::Document ) {
 
       # Calculation of mean Return Trip Time
       #
@@ -95,17 +83,14 @@ package MongoDB {
         :server(self)
       );
 
-      # Set master type and store whole doc
-      #
-      $!monitor-doc = $doc;
-      $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+      return $doc;
     }
 
     #---------------------------------------------------------------------------
     # Run this on a separate thread because it lasts until this program
     # atops or the server shuts down.
     #
-    method _monitor-server ( ) {
+    method _monitor-server ( Channel $data-channel, Channel $command-channel ) {
 
       # Set the lock so the code will only be started once. When server or
       # program stops(controlled), the code is terminated via a channel.
@@ -129,10 +114,10 @@ package MongoDB {
               #
               sleep 1;
 
-              # Check the channel to see if there is a stop command. If so
+              # Check the input-channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
               #
-              my $cmd = $!channel.poll;
+              my Str $cmd = $command-channel.poll // '';
               last if ?$cmd and $cmd eq 'stop';
 
               # Calculation of mean Return Trip Time
@@ -151,13 +136,11 @@ package MongoDB {
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
 
-#TODO What happens here when monitor doc is set and an outside process
-# wants to read it? idem for is-master flag!
-# does it need a channel to the Client?
-              # Set master type and store whole doc
-              #
-              $!monitor-doc = $doc;
-              $!is-master = $doc<ismaster> if ?$doc<ismaster>;
+              $data-channel.send( {
+                  monitor => $doc,
+                  weighted-mean-rtt => $!weighted-mean-rtt
+                }
+              );
 
               # Capture errors. When there are any, stop monitoring. On older
               # servers before version 3.2 the server just stops communicating
@@ -177,6 +160,9 @@ package MongoDB {
         }
       );
 
+      info-message('Server monitoring stopped');
+      $command-channel.send('stopped');
+#      $data-channel.close();
       $!server-monitor-control.release;
     }
 

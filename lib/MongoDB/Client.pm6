@@ -14,14 +14,18 @@ package MongoDB {
   #
   class Client is MongoDB::ClientIF {
 
-    has Array $!servers;
+    # Store all found servers here. key is the name of the server which is
+    # the server address/ip and its port number. This should be unique.
+    #
+    has Hash $!servers;
+
     has Array $!server-discovery;
     has Str $!uri;
 
     # Semaphore to control the use of select-server. This call can come
     # from different threads.
     #
-    has Semaphore $!control-select .= new(1);
+#    has Semaphore $!control-select .= new(1);
 
     has BSON::Document $.read-concern;
     has Bool $.found-master = False;
@@ -29,11 +33,12 @@ package MongoDB {
 
     has Hash $!uri-data;
 
+
     #---------------------------------------------------------------------------
     #
     submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern ) {
 
-      $!servers = [];
+      $!servers = {};
       $!server-discovery = [];
       $!uri = $uri;
 
@@ -70,29 +75,31 @@ package MongoDB {
             #
             my $accept-server = True;
 
-            $server._initial-poll;
+            my BSON::Document $srv-data = $server._initial-poll;
 
             # No two masters, then set if server is a master
             #
-            $accept-server = False if $!found-master and $server.is-master;
-            $!found-master = $server.is-master if $server.is-master;
+            my Bool $ismaster = $srv-data<ismaster>;
+            $accept-server = False if $!found-master and $ismaster;
+            $!found-master = $ismaster if $ismaster;
+#say "IPoll: $srv-data.perl()";
+#say "IPoll: $ismaster, $accept-server";
 
             # Test replica set name if it is a replica set server
             #
             # replicaSet option in uri is same as replica set name from server
             #
+            my Str $replsetname = $srv-data<setName> // '';
             if $!uri-data<options><replicaSet>:exists
-               and $server.monitor-doc<setName>:exists
-               and $server.monitor-doc<setName>
-                   ne $!uri-data<options><replicaSet> {
+               and ?$replsetname
+               and $replsetname ne $!uri-data<options><replicaSet> {
 
               $accept-server = False;
             }
 
             # No replicaSet option on uri found and server isn't a repl server
             #
-            elsif $!uri-data<options><replicaSet>:!exists
-                  and $server.monitor-doc<setName>:exists {
+            elsif $!uri-data<options><replicaSet>:!exists and ?$replsetname {
 
               $accept-server = False;
             }
@@ -106,14 +113,23 @@ package MongoDB {
             # Throw an error when not accepted. It wil caught when processing
             # broken promises in cleanup-promises
             #
-#            self!add-server($server) if $accept-server;
             fatal-message("Server $server.name() not accepted")
               unless $accept-server;
 
-            # Return a Server object when server is accepted
+CATCH {
+#  .say;
+  default {
+    .throw;
+  }
+}
+
+            # Return mongo server data and Server object when server is accepted
             #
             info-message("Server $server.name() accepted");
-            $server;
+
+            { server => $server,
+              initial-poll => $srv-data
+            };
           }
         );
       }
@@ -122,15 +138,25 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Called from thread above where Server object is created.
     #
-    method !add-server ( MongoDB::Server:D $server ) {
+    method !add-server ( Hash:D $server-data --> Hash ) {
 
-      # Read all Kept promises and store Server objects in $!servers array
-      #
-      $!control-select.acquire;
+#      $!control-select.acquire;
 
+      my MongoDB::Server $server = $server-data<server>;
       info-message( "Server {$server.name} saved");
-      $!servers.push: $server;
-      $!control-select.release;
+
+      $!servers{$server.name} = {
+        object => $server,
+        data-channel => Channel.new(),
+        command-channel => Channel.new(),
+        server-data => {
+          monitor => $server-data<initial-poll>,
+          weighted-mean-rtt => 0
+        }
+      }
+
+#      $!control-select.release;
+      return $!servers{$server.name};
     }
 
     #---------------------------------------------------------------------------
@@ -215,10 +241,18 @@ package MongoDB {
 
         my Bool $still-planned = self!cleanup-promises;
 
-        for @$!servers -> $s {
-          $server-is-master = True if $s.is-master;
+        for $!servers.values -> Hash $srv-struct {
+          my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
+          if $new-monitor-data.defined {
+            info-message("New server data from $srv-struct<object>.name()");
+            $srv-struct<server-data> = $new-monitor-data;
+          }
+
+          $server-is-master = True
+            if $srv-struct<server-data><monitor><is-master>;
+
           if !$need-master or ($need-master and $server-is-master) {
-            $server = $s;
+            $server = $srv-struct<object>;
             debug-message(
               "Server {$server.name} selected, is master?: $server-is-master"
             );
@@ -265,7 +299,8 @@ package MongoDB {
         # stored in $!servers.
         #
         if $promise.status ~~ Kept {
-          my $server = $!server-discovery[$pi].result;
+          my Hash $server-data = $!server-discovery[$pi].result;
+          my MongoDB::Server $server = $server-data<server>;
 
           # Cleanup promise entry
           #
@@ -275,8 +310,11 @@ package MongoDB {
           # Save server and start server monitoring if server is accepted
           # after initial poll
           #
-          self!add-server($server);
-          $server._monitor-server;
+          my Hash $srv-struct = self!add-server($server-data);
+          $server._monitor-server(
+            $srv-struct<data-channel>,
+            $srv-struct<command-channel>
+          );
         }
 
         # When broken throw away result
@@ -353,16 +391,22 @@ package MongoDB {
     method _remove-server ( MongoDB::Server $server is copy ) {
 
 #      trace-message("server select acquire");
-      $!control-select.acquire;
-      loop ( my $si = 0; $si < $!servers.elems; $si++) {
-        if $!servers[$si] === $server {
+#      $!control-select.acquire;
+      for $!servers.values -> Hash $srv-struct {
+        if $srv-struct<object> === $server {
+
+          # Stop monitoring on server and wait for it to stop
+          #
+          $srv-struct<command-channel>.send('stop');
+          sleep 1;
+          $srv-struct<command-channel>.receive;
+          $!servers{$server.name}:delete;
           undefine $server;
-          $!servers.splice( $si, 1);
         }
       }
 
 #      trace-message("server remove release");
-      $!control-select.release;
+#      $!control-select.release;
     }
   }
 }
