@@ -1,6 +1,6 @@
+use v6.c;
 use lib 't';
 use Test-support;
-use v6;
 use Test;
 use MongoDB;
 use MongoDB::Database;
