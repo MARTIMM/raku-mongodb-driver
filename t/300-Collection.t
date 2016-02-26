@@ -1,4 +1,4 @@
-use lib 't';#, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';
 use Test-support;
 use v6;
 use Test;

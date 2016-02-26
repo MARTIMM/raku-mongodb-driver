@@ -1,5 +1,5 @@
 use v6;
-use lib 't'; #, '/home/marcel/Languages/Perl6/Projects/BSON/lib';
+use lib 't';
 use Test-support;
 use Test;
 use MongoDB;
