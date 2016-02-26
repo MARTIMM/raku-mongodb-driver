@@ -1,6 +1,6 @@
 #!/usr/bin/env perl6
 #
-use v6;
+use v6.c;
 
 # Running the pod file will create a pdf using wkhtmltopdf
 #
@@ -18,66 +18,80 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 =SUBTITLE Package using mongod server for storage and retrieval of data
 
 
-=head1 DESCRIPTION
+=head1 Description
 
-This package holds a set of modules which will help you accessing a MongoDB
-server. All primitive functions are installed to insert, update, find and remove
-documents. This package will be continuesly improved to provide more and more
-functionality.
+This package holds a set of modules which will help you accessing MongoDB
+server or servers. The core operations are the methods run-command() from
+MongoDB::Database and find() from MongoDB::Collection.
 
 
-=head1 MODULES
+=head1 Modules
 
-The modules in this package are the following
-
-=head2 Module MongoDB/Authenticate.pm6
+=head2 MongoDB/Authenticate.pm6
 
 Definition of class MongoDB::Authenticate which provides authentication of
 users defined with methods from MongoDB::Users.
-See also L<its pod file|MongoDB/Authenticate.pod>.
 
-=head2 Module MongoDB/Connection.pm
 
-This file defines class C<MongoDB::Connection> and is used to connect to a
-mongod server and to get basic information. See also L<its pod
-file|MongoDB/Connection.pod>.
+=head2 MongoDB/Client.pm6
 
-=head2 Module MongoDB/Collection.pm
+This file defines class C<MongoDB::Client> and is used to connect to
+mongod servers. A database and collection can also be defined using the Client.
 
-Defines class MongoDB::Collection. This is a module to perfoem the standard CRUD
-operations. See also L<its pod file|MongoDB/Collection.pod>.
 
-=head2 Module MongoDB/Cursor.pm
+=head2 MongoDB/Collection.pm6
+
+Defines class MongoDB::Collection. This is a module to find data in a collection.
+
+
+=head2 MongoDB/Cursor.pm6
 
 Defines class MongoDB::Cursor. The module is used to iterate through found data
-search for by methods from the C<MongoDB::Collection> module. See also L<its pod
-file|MongoDB/Cursor.pod>.
+searched for by find() from the C<MongoDB::Collection> module.
 
-=head2 Module MongoDB/DataBase.pm
+
+=head2 MongoDB/DataBase.pm6
 
 Definition of class MongoDB::DataBase which handles specific database tasks.
-See also L<its pod file|MongoDB/DataBase.pod>.
+A collection can be defined using Database.
 
-=head2 Module MongoDB/DBRef.pm
 
-Defines MongoDB::DBRef to handle references between documents.
-See also L<its pod file|MongoDB/DBRef.pod>.
+=head2 MongoDB/Header.pm6
 
-=head2 Module MongoDB/Users.pm6
+Helps MongoDB::Wire to encode and decode data for transport to and from server.
+
+
+=head2 MongoDB/Server.pm6
+
+Class to represent a mongo server. This class can return Socket objects.
+
+
+=head2 MongoDB/Socket.pm6
+
+Class to represent a connection to a server.
+
+
+=head2 MongoDB/Uri.pm6
+
+Class used by Client to parse the uri string.
+
+
+=head2 MongoDB/Users.pm6
 
 Defines class MongoDB::Users to administer user accounts.
-See also L<its pod file|MongoDB/Users.pod>.
 
-=head2 Module MongoDB/Wire.pm
 
-Defines class MongoDB::Wire. Module for which its methods access the C<BSON>
-encoding methods are used before sending and decoding tools after receiving data
-from the server. See also L<its pod file|MongoDB/Wire.pod>.
+=head2 MongoDB/Wire.pm6
 
-=head2 Module MongoDB
+Defines class MongoDB::Wire. Module is used to send and receive data using the
+modules Header, Client, Server and Socket.
+
+
+=head2 MongoDB
 
 Module to hold basic information reachable from other modules. Further it
 defines a role and an Exception class. See for more below.
+
 
 =for COMMENT
 ################################################################################
@@ -194,7 +208,7 @@ The severity in the exception is equal to or higher then the severity processing
 level. This is by default set to C<Info>. So a C<Trace> exception is not logged
 and a C<Warn> is. See also L<set-exception-process-level|#set-exception-process-level>.
 
-Examples of use are shown below when defining the L<X::MongoDB|#X::MongoDB> Exception. 
+Examples of use are shown below when defining the L<X::MongoDB|#X::MongoDB> Exception.
 
 =head3 method test-severity
 
@@ -387,7 +401,7 @@ by a dot ('.'), the first name being the database name.
 
 =head3 method method
 
-Method or routine name where the call to new() took place. Sometimes it is 
+Method or routine name where the call to new() took place. Sometimes it is
 within a block and no name is returned.
 
 =head3 method line
