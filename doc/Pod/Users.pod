@@ -1,6 +1,6 @@
 #!/usr/bin/env perl6
 #
-use v6;
+use v6.c;
 
 # Running the pod file will create a pdf using wkhtmltopdf
 #
@@ -75,28 +75,28 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =head1 Readonly attributes
 
-=head2 attribute database
+=head2 database
 
   has MongoDB::Database $.database;
 
 Database on which a user can be administrated if not global.
 
 
-=head2 attribute min-un-length
+=head2 min-un-length
 
   has Int $.min-un-length = 2;
 
 Minimum username length.
 
 
-=head2 attribute min-pw-length
+=head2 min-pw-length
 
   has Int $.min-pw-length = 2;
 
 Minimum password length.
 
 
-=head2 attribute pw-attribs-code
+=head2 pw-attribs-code
 
   has Int $.pw-attribs-code = MongoDB::C-PW-LOWERCASE;
 
@@ -105,7 +105,7 @@ Password checking attribute. See set-pw-security() below.
 
 =head1 Methods
 
-=head2 method set-pw-security
+=head2 set-pw-security
 
   method set-pw-security (
     Int :$min-un-length where $min-un-length >= 2,
@@ -137,7 +137,7 @@ If e.g. C<MongoDB::C-PW-OTHER-CHARS> and C<$min-pw-length> is set to 2 then when
 using a password of less the 4 characters the call is bound to fail.
 
 
-=head2 method create-user
+=head2 create-user
 
   method create-user (
     Str:D $user, Str:D $password,
@@ -163,7 +163,7 @@ Some examples of the roles option;
   :roles([(role => 'dbAdmin', db => 'test2'),])
 
 
-=head2 method update-user
+=head2 update-user
 
   method update-user (
     Str:D $user, Str :$password,
