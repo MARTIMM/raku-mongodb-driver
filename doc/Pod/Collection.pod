@@ -1,6 +1,6 @@
 #!/usr/bin/env perl6
 #
-use v6;
+use v6.c;
 
 # Running the pod file will create a pdf using wkhtmltopdf
 #
@@ -60,15 +60,15 @@ Class to help accessing and manipulating collections in MongoDB databases.
 
 =head1 Readonly attributes
 
-=head2 attribute database
+=head2 database
 
   has $.database;
 
-Get the name of the database of this collection. It is set by
+Get the database object of this collection. It is set by
 MongoDB::Database when a collection object is created.
 
 
-=head2 attribute name
+=head2 name
 
   has Str $.name;
 
@@ -76,7 +76,7 @@ Get the name of the current collection. It is set by C<MongoDB::Database> when a
 collection object is created.
 
 
-=head2 attribute full-collection-name
+=head2 full-collection-name
 
   has Str $.full-collection-name;
 
@@ -85,7 +85,7 @@ the database name and collection name separated by a dot. E.g. I<person.address>
 means collection I<address> in database I<person>.
 
 
-=head2 attribute read-concern
+=head2 read-concern
 
   has BSON::Document $.read-concern;
 
@@ -96,7 +96,7 @@ database. The structure will be explained elsewhere.
 
 =head1 Methods
 
-=head2 method new
+=head2 new
 
   submethod BUILD (
     MongoDB::Database:D :$database,
@@ -118,7 +118,7 @@ or
   my MongoDB:Collection $collection = $client.collection('contacts.perl_users');
 
 
-=head2 method find
+=head2 find
 
   multi method find (
     List :$criteria where all(@$criteria) ~~ Pair = (),
@@ -154,7 +154,6 @@ all documents of the found set are to be returned.
 B<:number-to-return> is used to ask for a specific number of documents. By
 default 0 meaning that none of the documents from the found set should be
 skipped first.
-
 
 =begin item1
 

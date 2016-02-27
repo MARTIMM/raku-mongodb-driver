@@ -47,17 +47,10 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 Class to help accessing servers.
 
+
 =head1 Readonly attributes
 
-=head2 attribute stored
-
-  has MongoDB::Object-store $.store;
-
-A location to store objects. I<For internal use only>. See also
-L<MongoDB::Object-store>.
-
-
-=head2 attribute read-concern
+=head2 read-concern
 
   has BSON::Document $.read-concern;
 
@@ -66,9 +59,17 @@ to which server the operations are directed to. Default is an empty structure.
 The structure will be explained elsewhere.
 
 
+=head2 found-master
+
+  has Bool $.found-master = False;
+
+While the client is processing the given uri it will set this flag when a master
+server is detected.
+
+
 =head1 Methods
 
-=head2 method new
+=head2 new
 
   submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern )
 
@@ -103,17 +104,26 @@ created.
 
 =head3 read-concern
 
-Read concern will overwrite the default concern. Explanation can be found somewhere else.
+Read concern will overwrite the default concern.
 
 
-=head2 method nbr-servers
+=head2 nbr-servers
 
   method nbr-servers ( --> Int )
 
-Return number of servers found using the uri in new().
+Return number of servers found processing the uri in new(). See also next method.
 
 
-=head2 method database
+=head2 nbr-left-actions
+
+  method nbr-left-actions ( --> Int )
+
+Return number of still to be processed items from the uri. When this is 0 all
+processing is done and nbr-servers() can be used to get the total of servers
+found.
+
+
+=head2 database
 
   method database (
     Str:D $name,
@@ -132,7 +142,7 @@ The read-concern when defined will overide the one of the Client. If not
 defined, the structure of the client is taken.
 
 
-=head2 method collection
+=head2 collection
 
   method collection (
     Str:D $full-collection-name,
@@ -148,35 +158,24 @@ When the read-concern is defined it overides the one from Client. If not
 defined, the structure of the client is taken.
 
 
-=head2 method select-server
+=head2 select-server
 
-  method select-server ( BSON::Document :$read-concern --> Str )
+  method select-server ( BSON::Document :$read-concern --> MongoDB::Server )
 
-Select a server for operations. It returns a ticket with which the Server object
-can be retrieved. If read-concern is not defined, it is taken from this Client.
-
-
-=head2 method shutdown-server
-
-   method shutdown ( Bool :$force = False, Str :$server-ticket )
-
-Shutdown mongod server.
+Select a server for operations. It returns a Server object. In single server
+setups it is always the server you want to have. When however selecting a server
+from a replicaset the server is selected according to several rules such as
+read-concern, operation type (read or write) and round trip time to the server.
+When read-concern is not defined, the data is taken from this Clients
+read-concern.
 
 
-=head2 method _take-out-server
+=head2 shutdown-server
 
-  method take-out-server ( Str $server-ticket )
+   method shutdown ( Bool :$force = False,  MongoDB::Server :$server )
 
-take a server out of service. I<This call is for internal use only>.
+Shutdown a mongod server. Before using this read the text from select-server()
+above because you might end up shutting down the wrong server.
 
-
-=head2 method _remove-server
-
-  method remove-server ( MongoDB::Server $server is rw )
-
-Remove a server from server pool. I<This call is for internal use only>.
 
 =end pod
-
-
-=finish

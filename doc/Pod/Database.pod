@@ -51,21 +51,21 @@ shell("perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =head1 Readonly attributes
 
-=head2 attribute name
+=head2 name
 
   has Str $.name;
 
 Stored name of the database.
 
 
-=head2 attribute client
+=head2 client
 
   has MongoDB::Client $.client;
 
 Client used by database. Set when creating object.
 
 
-=head2 attribute read-concern
+=head2 read-concern
 
   has BSON::Document $.read-concern;
 
@@ -76,7 +76,7 @@ The structure will be explained elsewhere.
 
 =head1 Methods
 
-=head1 method new
+=head1 new
 
   submethod BUILD (
     MongoDB::Client:D :$client,
@@ -84,14 +84,14 @@ The structure will be explained elsewhere.
     BSON::Document :$read-concern
   )
 
-Create a database object. Can be called directly although not often, e.g.
+Create a database object. Can be called directly although not done often, e.g.
 
   my MongoDB::Database $d .= new( $client, 'my_db');
 
 When read-concern is absent it is taken from $client.
 
 
-=head2 method collection
+=head2 collection
 
   method collection (
     Str $name,
@@ -105,7 +105,7 @@ will only be created when data is inserted.
 When read-concern is absent it is taken from its $database.
 
 
-=head2 method run-command
+=head2 run-command
 
   multi method run-command (
     BSON::Document:D $command,
@@ -192,12 +192,13 @@ repair Larry's surname which should be Wall instead of Walll.
 
 =begin code
 
-# Method 2 using List of Pair
+# Method 2 using List of Pair. We need to repair our spelling mistake of
+# mr Walls name
 #
 my BSON::Document $doc = $database.run-command: (
   findAndModify => 'famous_people',
   query => (surname => 'Walll'),
-  update => ('$set' => surname => 'Wall'),
+  update => ('$set' => (surname => 'Wall')),
 );
 
 is $doc<ok>, 1, "Result is ok";

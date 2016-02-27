@@ -1,6 +1,6 @@
 #!/usr/bin/env perl6
 #
-use v6;
+use v6.c;
 
 # Running the pod file will create a pdf using wkhtmltopdf
 #
@@ -52,21 +52,21 @@ communication is controlled internally>.
 
 =head1 Readonly attributes
 
-=head2 attribute server-name
+=head2 server-name
 
   has Str $.server-name;
 
 Server name or ip of this object.
 
 
-=head2 attribute server-port
+=head2 server-port
 
   has Int $.server-port;
 
 Server port of this object.
 
 
-=head2 attribute max-sockets
+=head2 max-sockets
 
   has Int $.max-sockets;
 
@@ -74,17 +74,9 @@ Maximum number of open sockets per server object
 Can be changed by user of Server object. New values must >= 3.
 
 
-=head2 attribute is-master
-
-  has Bool $.is-master = False;
-
-Server is a master server. A background process monitors the mongodb server to
-check for server changes. This attribute is set by this process.
-
-
 =head1 Methods
 
-=head2 method new
+=head2 new
 
 Defined as:
 
@@ -103,48 +95,31 @@ and will throw an exception when it fails. C<MongoDB::Client> creates the
 Server object normally and catches the exception on failure.
 I<Do not use this method directly!>.
 
-=head2 method get-socket
+
+=head2 get-socket
 
   method get-socket ( --> MongoDB::Socket )
 
-Get a MongoDB::Socket object. By default there can be only 3 open socket per
-server object. See also set-max-sockets() below.
+Get a MongoDB::Socket object. By default there can be only 3 open sockets per
+server object. See also set-max-sockets() below. When operations are done the
+socket must be closed to prevent problems.
 
 
-=head2 method _initial-poll
-
-  method initial-poll ( --> Bool )
-
-First time check on the mongodb server. Called in Client object after the Server
-object is created. This process is needed to reject the server on ground of its
-information. I<Do not use this method directly!>.
-
-
-=head2 method _monitor-server
-
-  method monitor-server ( )
-
-Server monitoring procedures. This starts a background process which runs
-as long as the Server object lives. This method is called from the Client
-object when the server is accepted for duty.
-I<Do not use this method directly!>.
-
-
-=head2 method perl
+=head2 perl
 
   method perl ( --> Str )
 
 Simple string representation of this object.
 
 
-=head2 method name
+=head2 name
 
   method name ( --> Str )
 
 Returns a string in the format <servername> ':' <port number>.
 
 
-=head2 method set-max-sockets
+=head2 set-max-sockets
 
   method set-max-sockets ( Int $max-sockets where $_ >= 3 )
 

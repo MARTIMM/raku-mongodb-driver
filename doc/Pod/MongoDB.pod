@@ -1,6 +1,6 @@
 #!/usr/bin/env perl6
 #
-use v6;
+use v6.c;
 
 # Running the pod file will create a pdf using wkhtmltopdf
 #
@@ -18,69 +18,81 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 =SUBTITLE Package using mongod server for storage and retrieval of data
 
 
-=head1 DESCRIPTION
+=head1 Description
 
-This package holds a set of modules which will help you accessing a MongoDB
-server. All primitive functions are installed to insert, update, find and remove
-documents. This package will be continuesly improved to provide more and more
-functionality.
+This package holds a set of modules which will help you accessing MongoDB
+server or servers. The core operations are the methods run-command() from
+MongoDB::Database and find() from MongoDB::Collection.
 
 
-=head1 MODULES
+=head1 Modules
 
-The modules in this package are the following
-
-=head2 Module MongoDB/Authenticate.pm6
+=head2 MongoDB/Authenticate.pm6
 
 Definition of class MongoDB::Authenticate which provides authentication of
 users defined with methods from MongoDB::Users.
-See also L<its pod file|MongoDB/Authenticate.pod>.
 
-=head2 Module MongoDB/Connection.pm
 
-This file defines class C<MongoDB::Connection> and is used to connect to a
-mongod server and to get basic information. See also L<its pod
-file|MongoDB/Connection.pod>.
+=head2 MongoDB/Client.pm6
 
-=head2 Module MongoDB/Collection.pm
+This file defines class C<MongoDB::Client> and is used to connect to
+mongod servers. A database and collection can also be defined using the Client.
 
-Defines class MongoDB::Collection. This is a module to perfoem the standard CRUD
-operations. See also L<its pod file|MongoDB/Collection.pod>.
 
-=head2 Module MongoDB/Cursor.pm
+=head2 MongoDB/Collection.pm6
+
+Defines class MongoDB::Collection. This is a module to find data in a collection.
+
+
+=head2 MongoDB/Cursor.pm6
 
 Defines class MongoDB::Cursor. The module is used to iterate through found data
-search for by methods from the C<MongoDB::Collection> module. See also L<its pod
-file|MongoDB/Cursor.pod>.
+searched for by find() from the C<MongoDB::Collection> module.
 
-=head2 Module MongoDB/DataBase.pm
+
+=head2 MongoDB/DataBase.pm6
 
 Definition of class MongoDB::DataBase which handles specific database tasks.
-See also L<its pod file|MongoDB/DataBase.pod>.
+A collection can be defined using Database.
 
-=head2 Module MongoDB/DBRef.pm
 
-Defines MongoDB::DBRef to handle references between documents.
-See also L<its pod file|MongoDB/DBRef.pod>.
+=head2 MongoDB/Header.pm6
 
-=head2 Module MongoDB/Users.pm6
+Helps MongoDB::Wire to encode and decode data for transport to and from server.
+
+
+=head2 MongoDB/Server.pm6
+
+Class to represent a mongo server. This class can return Socket objects.
+
+
+=head2 MongoDB/Socket.pm6
+
+Class to represent a connection to a server.
+
+
+=head2 MongoDB/Uri.pm6
+
+Class used by Client to parse the uri string.
+
+
+=head2 MongoDB/Users.pm6
 
 Defines class MongoDB::Users to administer user accounts.
-See also L<its pod file|MongoDB/Users.pod>.
 
-=head2 Module MongoDB/Wire.pm
 
-Defines class MongoDB::Wire. Module for which its methods access the C<BSON>
-encoding methods are used before sending and decoding tools after receiving data
-from the server. See also L<its pod file|MongoDB/Wire.pod>.
+=head2 MongoDB/Wire.pm6
 
-=head2 Module MongoDB
+Defines class MongoDB::Wire. Module is used to send and receive data using the
+modules Header, Client, Server and Socket.
+
+
+=head2 MongoDB
 
 Module to hold basic information reachable from other modules. Further it
 defines a role and an Exception class. See for more below.
 
-=for COMMENT
-################################################################################
+
 
 =head1 class MongoDB
 
@@ -100,7 +112,7 @@ Base module to hold basic information. Specify proper version if C<:ver> is
 used.
 
 
-=head1 TYPES
+=head1 Types
 
 =head2 Severity
 
@@ -113,7 +125,7 @@ Used as:
   use MongoDB;
   my $sv = MongoDB::Severity::Warn;
 
-An enumerated type holding names of severity levels. Usage can be like below
+An enumerated type holding names of severity levels. Usage can be like below.
 See L<stackoverflow|http://stackoverflow.com/questions/2031163/when-to-use-log-level-warn-vs-error>
 for more information.
 
@@ -173,13 +185,13 @@ nessesary to add date,time and severity because that will be handled by the
 C<log> method described below.
 
 
-=head2 METHODS
+=head2 Methods
 
-=head3 method log
+=head3 mlog
 
 Defined as:
 
-  method log (  )
+  method mlog (  )
 
 Log the error in the logfile using the message facilities in the exception. A
 file will be opened if it is not opened before. Logging occurs on the following
@@ -194,16 +206,11 @@ The severity in the exception is equal to or higher then the severity processing
 level. This is by default set to C<Info>. So a C<Trace> exception is not logged
 and a C<Warn> is. See also L<set-exception-process-level|#set-exception-process-level>.
 
-Examples of use are shown below when defining the L<X::MongoDB|#X::MongoDB> Exception. 
+Examples of use are shown below when defining the C<MongoDB::Message> Exception.
 
-=head3 method test-severity
-
-Defined as:
-
-  method test-severity (  )
-
-Test severity of the exception and throw when level gets to high (above
-threshold set with L<set-exception-throw-level|#set-exception-throw-level>.
+Furthermore the severity is also tested against the exception trow level and and the
+exception is thrown when level gets to high (above threshold set with
+L<set-exception-throw-level|#set-exception-throw-level>.
 Checking occurs on the following conditions:
 
 =for item1
@@ -216,33 +223,41 @@ level. This is by default set to C<Fatal>. So a C<Trace> exception is not thrown
 but a C<Fatal> is. See also L<set-exception-throw-level|#set-exception-throw-level>.
 
 
-=head1 EXPORTED SUBS
+=head1 Exported subs
 
-=head2 sub set-exception-throw-level
+=head2 set-exception-throw-level
 
 Defined as:
 
-  sub set-exception-throw-level ( Severity:D $s ) is export
+  sub set-exception-throw-level (
+    Severity:D $s where Error <= $s <= Fatal
+  ) is export
 
 use as:
 
-  set-exception-throw-level(MongoDB::Severity::Warn);
+  set-exception-throw-level(MongoDB::Severity::Error);
 
-Set the exception throwing level done in C<test-severity>..
+Set the exception throwing level. Throwing an exception
+can only be done on Error or Fatal.
 
-=head2 sub set-exception-process-level
+
+=head2 set-exception-process-level
 
 Defined as:
 
-  sub set-exception-process-level ( Severity:D $s ) is export
+  sub set-exception-process-level (
+    Severity:D $s where Trace <= $s <= Warn
+  ) is export {
 
 use as:
 
   set-exception-process-level(MongoDB::Severity::Trace);
 
-Set the exception logging level done in L<log|#log>.
+Set the exception logging level done in L<log|#mlog>. It is not possible to
+raise this level higher than MongoDB::Severity::Warn.
 
-=head2 sub set-exception-processing
+
+=head2 set-exception-processing
 
 Defined as:
 
@@ -261,7 +276,8 @@ completely off is not advisable. When a high severity like C<Fatal> is not
 thrown and acted upon, the data may be compromised. Better is to raise the level
 to some point. The default is already at its highest
 
-=head2 sub set-logfile
+
+=head2 set-logfile
 
 Defined as:
 
@@ -284,17 +300,19 @@ logfile.
 If the argument is a file handle, the previous log file will be closed if any.
 This handle will not be closed when it is C<$*err>, C<$*in> or C<$*out>.
 
-=head2 sub open-logfile
+
+=head2 open-logfile
 
 Defined as:
 
-  sub open-logfile (  ) is export
+  sub open-logfile ( ) is export
 
 Use as:
 
   open-logfile();
 
 Open the logfile. Any previously opened logfile is closed.
+
 
 =head2 Absolute methods to be defined by child classes
 
@@ -313,22 +331,63 @@ The first six methods are called for each specific sverity value. The last one
 is shown when exception is thrown and not caught.
 
 
-=head1 class X::MongoDB
+=head1 class MongoDB::Message
 
 Defined as
 
-  class X::MongoDB is Exception does MongoDB::Logging {...}
+  package MongoDB { class Message is Exception does MongoDB::Logging { ... } }
 
-=head2 METHODS
 
-=head3 method new
+=head2 Readonly attributes
+
+=head3 message
+
+This field will always be defined. It holds the 'why something failed'.
+
+
+=head3 code
+
+This code doesn't have to be defined. When the error is returned from the
+server there is also a code.
+
+
+=head3 oper-data
+
+This is the representation of the used data structure sent to the server if any.
+Mostly this is a serialized string using perl() on the object.
+
+
+=head3 collection-ns
+
+Database- and Collection name involved. Its a string where names are separated
+by a dot ('.'), the first name being the database name. It is also known as
+full collection name.
+
+
+=head3 method
+
+Method or routine name where the call to *-message() (see below) took place.
+
+
+=head3 line
+
+Line number where the call to *-message() (see below) took place.
+
+
+=head3 file
+
+File wherein that happened
+
+
+=head2 Methods
+
+=head3 log
 
 Defined as
 
-  submethod BUILD (
-    Str:D :$error-text,
+  method log (
+    Str:D :$message.
     $error-code where $_ ~~ any(Int|Str) = '',
-    Str:D :$oper-name,
     Str :$oper-data,
     Str :$collection-ns,
     MongoDB::Severity :$severity = MongoDB::Severity::Warn
@@ -336,211 +395,45 @@ Defined as
 
 Usage as
 
-  my X::MongoDB $e .= new(
-    :error-text('Oops'),
+  my MongoDB::Message $logger .= new;
+  $logger.log(
+    :Message('Oops'),
     :error-code('oops-code'),
-    :oper-name('return-other-than-oops'),
-    :oper-data({ nooops => True}}.perl),
+    :oper-data({ nooops => True}.perl),
   );
 
-Creates an exception object C<X::MongoDB>. When an error occurrs most of the
-methods will store this object in a local C<$.status> attribute. When the
-severity is too high the exception will be thrown. A part of the data in this
-object is often set with data originating from the server after a request.
-However, it will be set by the method itself when the server did not play a role
-in the action.
-
-Some of the fields can be left undefined. At least the error-text and error-name
-are set. When you think that you cannot handle the exception you can throw the
-exception yourself like so:
-
-  my $collection = $database.collection('persons addresses');
-  die $collection.status if ? $collection.status;
+When the severity is too high the exception will be thrown. A part of the data
+in this object is often set with data originating from the server after a request.
 
 Logging and check of severity will take place automatically if the severity of
 the exception are above the specific treshold levels.
 
-=head3 method error-text
 
-C<$error-text> is set in the call to new(). This field will always be defined.
-It holds the 'why something failed'.
-
-=head3 method error-code
-
-This code doesn't have to be defined. When the error is returned from the
-server there is also a code.
-
-=head3 method oper-name
-
-This is the name of the operation used in the request to the server or when the
-server is not used, the name of the method. This field will always be defined.
-
-=head3 method oper-data
-
-This is the representation of the used data structure sent to the server if any.
-Mostly this is a serialized string using perl() on the object.
-
-=head3 method collection-ns
-
-Database- and Collection name involved. Its a string where names are separated
-by a dot ('.'), the first name being the database name.
-
-=head3 method method
-
-Method or routine name where the call to new() took place. Sometimes it is 
-within a block and no name is returned.
-
-=head3 method line
-
-Line number where X::MongoDB is created
-
-=head3 method file
-
-File wherein that happened
-
-
-=head1 DEPENDENCIES
+=head1 Dependencies
 
 Module MongoDB depends on Module C<BSON> and C<Digest::MD5>.
 
 
-=head1 SEE ALSO
+=head1 See also
 
 The documentation at the L<MongoDB site|http://www.mongodb.org/>
 
 
-=head1 BUGS and TODO
-
-There is a lot still to be implemented. A non exhaustive list of todo's:
-
-=for item1
-Mongo priority recomendations. Following L<priority
-recomendations|http://docs.mongodb.org/meta-driver/latest/legacy/mongodb-driver-requirements/>
-from the mongodb site about writing drivers.
-
-=for item1
-Speed, protocol correctness and clear code.
-
-=for item2
-Speed can be influenced by specifying types on all variables. Also setting
-constraints like (un)definedness etc on parameters. Most of it is already done.
-
-=for item2
-Furthermore the speedup of the language perl6 itself would have more impact than
-the programming of a several month student(me) can accomplish ;-). As of
-september 2015 a great improvement is made.
-
-=for item1
-Keys must be checked for illegal characters when inserting documents.
-
-=for item1
-Test to compare documents
-
-=for item1
-Test group aggregation keyf field and finalize
-
-=for item1
-Test map reduce aggregation more thoroughly.
-
-=for item1
-In method map_reduce the parameter scope is not used.
-
-=for item1
-Explain changed after mongodb 3.0
-
-=for item1
-Testing $mod in queries seems to have problems in version 3.0.5
-
-=for item1
-Get info about multiple accounts instead of one at the time
-
-=for item1
-Need a change in throwing exceptions. Not all errors are unrecoverable. Return
-e.g. a failure instead of throwing an exception. C<MongoDB::Connect> is
-the first module which saves an exception in its c<$.status> attribute.
-
-=for item1
-While we can add users to the database we cannot authenticate due to the lack
-of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to
-authenticate with. There is a HMAC module so maybe I can plodder a bit with
-that following L<rfc5802|http://www.faqs.org/rfcs/rfc5802.html>.
-
-=for item1
-Change method names with an underscore into names with a dash. E.g. map_reduce
-will become then map-reduce. When it will be changed, the old names with an
-underscore will show deprecation warnings. Other names starting with an
-underscore has always been the perl5 notion of being a private variable or
-routine. In perl6 these methods can be initiated with an exclamation mark to
-make it private.
-
-=for item1
-At the moment the package is written to use the latest mongo version 3.* only.
-Perhaps also the latest 2.* version should be supported too.
-
-
-=head1 RELEASE NOTES
-
-This section is partly taken over from the README.md document which is included
-in this package.
-
-=for item1
-Version 0.25
-
-=for item2
-Addition of methods to administer user accounts. These are; create a user,
-drop a user, drop all users, get users info, grant roles, revoke roles and
-update users.
-
-=for item2
-Added document checks to inserts. No dollars on first char of keys and no
-dots in keys. This is checked on all levels. On top level the key C<_id>
-is checked if the value is unique in the collection.
-
-=for item2
-Changes in code caused by upgrading from MongoDB 2.4 to 3.0.5. Many of the
-servers return messages were changed.
-
-
-=for item1
-Version 0.24
-
-=for item2
-Added C<version> and C<build_info> to MongoDB::Connection.
-
-=for item2
-Added error processing in method C<count> in module C<MongoDB::Cursor>. Throws
-C<X::MongoDB::Cursor> exception.
-
-=for item2
-Changes caused by rakudo update in June 2015. BIG PROBLEM!!!!!!!!! Should have
-seen this coming! Its about C<run_command>. A hash needs to be setup with
-therein a command to be processed. With the new rakudo the hash get hashed
-properly and the keys are now in some unpredictable order. One of the
-necessities of run_command is that the command is found at the first key value
-pair. During encoding into a BSON byte array the command can be placed anywhere
-in the string and some other option coming at the first location will be seen
-as the command. SOLVED; mongodb run_command needs command on first key value
-pair. Because of this a few multi methods in several modules are added to
-process Pair arrays instead of hashes.
-
-=for item2
-Added C<find_and_modify>, C<stats>, C<data_size> methods in module
-C<MongoDB::Collection>.
-
-
-=head1 AUTHORS
+=head1 Authors
 
   Paweł Pabian - Creator and maintainer of the modules until january 2015
   Marcel Timmerman - Maintainer since january 2015 (MARTIMM on github)
 
-=head1 LICENSE AND COPYRIGHT
+=head1 License and copyright
 
 Released under L<Artistic License 2.0|http://www.perlfoundation.org/artistic_license_2_0>.
 
 =end pod
 
-#http://unicode-table.com/en/026B/
-#E<51627>
-#E<0xC9AB>
+=finish
+
+http://unicode-table.com/en/026B/
+E<51627>
+E<0xC9AB>
 
 #-------------------------------------------------------------------------------

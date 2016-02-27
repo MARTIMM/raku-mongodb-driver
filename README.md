@@ -13,12 +13,11 @@ use MongoDB::Collection;
 
 my MongoDB::Client $client .= new(:uri('mongodb://'));
 my MongoDB::Database $database = $client.database('myPetProject');
-my MongoDB::Collection $collection = $database.collection('famous-people');
 
 # Inserting data
 #
 my BSON::Document $req .= new: (
-  insert => $collection.name,
+  insert => 'famous-people',
   documents => [
     BSON::Document.new((
       name => 'Larry',
@@ -85,8 +84,8 @@ $doc = $database.run-command($req);
 is $doc<ok>, 1, "delete request ok";
 is $doc<n>, 1, "deleted 1 doc";
 
-
-# Modifying all records where the name has the character 'y' in their name
+# Modifying all records where the name has the character 'y' in their name.
+# Add a new field to the document
 #
 $req .= new: (
   update => 'names',
@@ -127,6 +126,30 @@ $doc = $database.run-command: (
 is $doc<ok>, 1, "findAndModify request ok";
 is $doc<value>, Any, 'record not found';
 
+# Finding things
+#
+my MongoDB::Collection $collection = $database.collection('names');
+my MongoDB::Cursor $cursor = $collection.find: (
+
+), (
+  _id => 0, name => 1, surname => 1, type => 1
+);
+
+for $cursor.fetch -> BSON::Document $d {
+  say "Name and surname: ", $d<name>, ' ', $d<surname>
+      ($d<type> ?? ", $d<type>" !! '');
+
+  if $d<name> eq 'Moritz' {
+    # Just to be sure
+    $cursor.kill;
+    last;
+  }
+}
+# Output is;
+# Larry Wall, men with 'y' in name
+# Damian Conway
+# Jonathan Worthington
+# Moritz Lenz
 ```
 
 ## NOTE
@@ -230,9 +253,9 @@ $ panda install MongoDB
 
 ## Versions of PERL, MOARVM and MongoDB
 
-This is Rakudo version 2015.12-221-gb340ad5 built on MoarVM version 2015.12-29-g8079ca5 implementing Perl 6.c.
+This project is tested with Rakudo built on MoarVM implementing Perl v6.c.
 
-MongoDB versions are supported from 2.6 and up.
+MongoDB versions are supported from 2.6 and up. Versions lower that this are not supported because of not completely implementing the wire protocol.
 
 ## BUGS, KNOWN LIMITATIONS AND TODO
 
@@ -267,8 +290,8 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
 * Table to map mongo status codes to severity level. This will modify the default severity when an error code from the server is received. Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
 * I am not satisfied with logging. A few changes might be;
   * send the output to a separate class of which the object of it is in a thread. The information is then sent via a channel. This way it will always be synchronized (need to check that though).
-  * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of *-message() function.
-  * Use macros to get info at the calling point before sending to *-message(). This will make the search through the stack unnecessary
+  * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of \*-message() function.
+  * Use macros to get info at the calling point before sending to \*-message(). This will make the search through the stack unnecessary
 
 ## CHANGELOG
 
@@ -276,6 +299,9 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.6
+  * All modules are set to 'use v6.c'
+  * Pod documenttation changes because of latest changes
 * 0.28.5
   * Installing a Channel per Server in Client. Data found while monitoring a server in a trhread in Server is now sent to Client over the Channel. This data is kept in Client using a Hash structure for each Server.
 * 0.28.4

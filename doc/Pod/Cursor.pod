@@ -1,6 +1,6 @@
 #!/usr/bin/env perl6
 #
-use v6;
+use v6.c;
 
 # Running the pod file will create a pdf using wkhtmltopdf
 #
@@ -106,14 +106,14 @@ objects. See examples above.
 
 =head1 Readonly attributes
 
-=head2 attribute client
+=head2 client
 
   has $.client;
 
 Client object defined for this cursor.
 
 
-=head2 attribute full-collection-name
+=head2 full-collection-name
 
   has $.full-collection-name;
 
@@ -122,12 +122,12 @@ This is the same as B<<[~] $database.name, '.', $collection.name>>.
 
 =head1 Methods
 
-=head2 method new
+=head2 new
 
   multi submethod BUILD (
     MongoDB::Collection:D :$collection!,
     BSON::Document:D :$server-reply
-    Str:D :$server-ticket
+    :$server! where .^name eq 'MongoDB::Server'
   )
 
   multi submethod BUILD (
@@ -144,7 +144,7 @@ Read-concern is by default taken from the client. When defined, it must be the
 same as used for the run-command returning the cursor information.
 
 
-=head2 method iterator
+=head2 iterator
 
   method iterator ( )
 
@@ -153,16 +153,20 @@ used directly>. Instead the following is possible;
 
   for $collection.find -> BSON::Document $d { ... }
 
+The method fetch() is used to get the next document.
 
-=head2 method fetch
+
+=head2 fetch
 
   method fetch ( --> BSON::Document )
 
 Get the document from the query. The method returns a document or the undefined
-type object when no (more) documents are found.
+type object when no (more) documents are found. The documents are not saved in
+the Cursor object so after using fetch the action is not repeatable to get the
+same document again.
 
 
-=head2 method kill
+=head2 kill
 
   method kill ( --> Nil )
 
