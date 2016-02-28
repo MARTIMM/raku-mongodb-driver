@@ -299,6 +299,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.7
+  * Changes to tests to prepare for start of other types of servers
 * 0.28.6
   * All modules are set to 'use v6.c'
   * Pod documenttation changes because of latest changes
