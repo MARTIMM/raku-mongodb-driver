@@ -34,7 +34,7 @@ for @$Test-support::server-range -> $server-number {
   #
   spurt "$server-dir/port-number", $port-number;
 
-  if !start-mongod( $server-dir, :port($port-number) ) {
+  if !start-mongod( $server-dir, $port-number) {
     plan 1;
     flunk('No database server started!');
     skip-rest('No database server started!');

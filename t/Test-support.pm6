@@ -162,7 +162,7 @@ package Test-support
   #-----------------------------------------------------------------------------
   sub start-mongod (
     Str:D $server-dir,
-    Int:D :$port!,
+    Int:D $port,
     Bool :$auth = False,
     Str :$repl-set,
     --> Bool
@@ -170,9 +170,7 @@ package Test-support
 
     my Bool $started = False;
 
-    my Str $mongodb-server-path = get-mongod-path();
-
-    my Str $cmdstr = $mongodb-server-path;
+    my Str $cmdstr = get-mongod-path();
     $cmdstr ~= " --port $port";
     $cmdstr ~= " --auth" if $auth;
     $cmdstr ~= " --replSet $repl-set" if ?$repl-set;
@@ -204,13 +202,11 @@ package Test-support
   }
 
   #-----------------------------------------------------------------------------
-  sub stop-mongod ( Str:D $server-dir, --> Bool ) is export {
+  sub stop-mongod ( Str:D $server-dir --> Bool ) is export {
 
     my Bool $stopped = False;
 
-    my Str $mongodb-server-path = get-mongod-path();
-
-    my Str $cmdstr = $mongodb-server-path;
+    my Str $cmdstr = get-mongod-path();
     $cmdstr ~= " --shutdown";
     $cmdstr ~= " --dbpath '$*CWD/$server-dir/m.data'";
 
@@ -235,6 +231,31 @@ package Test-support
   #-----------------------------------------------------------------------------
   sub start-mongos ( ) is export {
 
+  }
+
+  #-----------------------------------------------------------------------------
+  sub cleanup-sandbox ( ) is export {
+
+    # Make recursable sub
+    #
+    my $cleanup-dir = sub ( Str $dir-entry ) {
+      for dir($dir-entry) -> $entry {
+        if $entry ~~ :d {
+          $cleanup-dir(~$entry);
+          rmdir ~$entry;
+        }
+
+        else {
+          unlink ~$entry;
+        }
+      }
+    }
+
+    # Run the sub with top directory 'Sandbox'.
+    #
+    $cleanup-dir('Sandbox');
+
+    rmdir "Sandbox";
   }
 
   #-----------------------------------------------------------------------------
@@ -276,31 +297,6 @@ package Test-support
     }
 
     $mongodb-server-path;
-  }
-
-  #-----------------------------------------------------------------------------
-  sub cleanup-sandbox ( ) is export {
-
-    # Make recursable sub
-    #
-    my $cleanup-dir = sub ( Str $dir-entry ) {
-      for dir($dir-entry) -> $entry {
-        if $entry ~~ :d {
-          $cleanup-dir(~$entry);
-          rmdir ~$entry;
-        }
-
-        else {
-          unlink ~$entry;
-        }
-      }
-    }
-
-    # Run the sub with top directory 'Sandbox'.
-    #
-    $cleanup-dir('Sandbox');
-
-    rmdir "Sandbox";
   }
 }
 
