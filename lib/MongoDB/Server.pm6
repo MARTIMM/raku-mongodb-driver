@@ -112,7 +112,7 @@ package MongoDB {
 
               # First things first Zzzz...
               #
-              sleep 1;
+              sleep 10;
 
               # Check the input-channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
@@ -136,6 +136,7 @@ package MongoDB {
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
 
+#TODO only send data on changes
               $data-channel.send( {
                   monitor => $doc,
                   weighted-mean-rtt => $!weighted-mean-rtt
