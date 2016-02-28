@@ -13,8 +13,8 @@ use MongoDB::Socket;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
@@ -45,7 +45,7 @@ subtest {
 
   info-message('shutdown server');
   $db-admin = $client.database('admin');
-  $db-admin.run-command: (shutdown => 1,);
+  $db-admin.run-command: (shutdown => 1);
 
   info-message('insert same records again');
   $doc = $database.run-command($req);
@@ -102,6 +102,12 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+for ^2 + 2 -> $server-number {
+  my $port-number = get-port-number(:server($server-number));
+  my Str $server-dir = "Sandbox/Server$server-number";
+  ok start-mongod( $server-dir, $port-number), "Server $server-number restarted";
+}
+
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
