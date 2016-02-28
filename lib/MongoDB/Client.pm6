@@ -375,7 +375,7 @@ CATCH {
 
     #---------------------------------------------------------------------------
     #
-    method _take-out-server ( MongoDB::Server:D $server is copy ) {
+    method _take-out-server ( MongoDB::Server $server is copy ) {
       if $server.defined {
 
         # Server can be taken out before when a failure takes place in the
