@@ -175,7 +175,11 @@ read-concern.
    method shutdown ( Bool :$force = False,  MongoDB::Server :$server )
 
 Shutdown a mongod server. Before using this read the text from select-server()
-above because you might end up shutting down the wrong server.
+above because you might end up shutting down the wrong server. It is much better
+to use the commandline to shutdown a server when in a replicaset or sharded
+configuration.
+
+  > mongod --shutdown --dbpath <path to database>
 
 
 =end pod

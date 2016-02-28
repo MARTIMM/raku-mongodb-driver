@@ -126,31 +126,3 @@ Returns a string in the format <servername> ':' <port number>.
 Modifies the maximum number of sockets.
 
 =end pod
-
-
-
-
-
-=finish
-=head2 method send
-
-Defined as
-
-  method send ( Buf:D $b --> Nil )
-
-Send encoded data to the mongo server. DO NOT ATTEMPT TO USE IT YOURSELF. Let
-instead the several modules do the sending because they know what to send.
-Besides this, it is subject to change when connection pooling comes into play.
-
-=head2 method receive
-
-Defined as
-
-  method receive ( Int $nbr-bytes --> Buf )
-
-Receive the number of bytes from the server. Again: DO NOT ATTEMPT TO USE IT
-YOURSELF. Let instead the several modules do the receiving because they know
-what to expect.Besides this, it is subject to change when connection pooling
-comes into play.
-
-=end pod
