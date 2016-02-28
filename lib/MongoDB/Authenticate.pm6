@@ -23,65 +23,50 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     method authenticate ( Str:D :$user, Str :$password --> BSON::Document ) {
-      my Pair @req = (getnonce => 1);
-      my Hash $doc = $!database.run-command(@req);
+
+      my BSON::Document $doc = $!database.run-command: (getnonce => 1);
 say "N0: ", $doc.perl;
       if $doc<ok>.Bool == False {
         error-message(
           $doc<errmsg>, :code($doc<code>),
-          oper-data => @req.perl,
+          oper-data => "getnonce => 1",
           collection-ns => $!database.name
         );
       }
 
-      my Buf $b = Digest::MD5::md5(
-        [~] $doc<nonce>, $user,
-        Digest::MD5.md5_hex( [~] $user, ':mongo:', $password)
-      );
+      my $part1a = ([~] $user, ':mongo:', $password).encode;
+      my Buf $b = Digest::MD5::md5($part1a);
+      my Str $part1b = @($b)>>.fmt('%02x').join;
+say "P1: $part1b";
 
-      @req = (
+      my $part2a = ([~] $doc<nonce>, $user, $part1b).encode;
+      $b = Digest::MD5::md5($part2a);
+      my Str $part2b = @($b)>>.fmt('%02x').join;
+
+#      my Str $pw-md5 = Digest::MD5.md5_hex( [~] $user, ':mongo:', $password);
+#      my Buf $b = Digest::MD5::md5( [~] $doc<nonce>, $user, $pw-md5);
+
+      $doc = $!database.run-command: (
         authenticate => 1,
         user => $user,
 #        mechanism => 'MONGODB-CR',
-        mechanism => 'SCRAM-SHA-1',
+#        mechanism => 'SCRAM-SHA-1',
+#        mechanism => 'SCRAM',
         nonce => $doc<nonce>,
-        key => $b>>.fmt('%02x').join;
+#        key => $b>>.fmt('%02x').join;
+        key => $part2b;
       );
 
-      $doc = $!database.run-command(@req);
 say "N2: ", $doc.perl;
       if $doc<ok>.Bool == False {
         error-message(
           $doc<errmsg>, :code($doc<code>),
-          oper-data => @req.perl,
+          oper-data => "user => $user, mechanism => 'SCRAM-SHA-1', nonce => $doc<nonce>",
           collection-ns => $!database.name
         );
       }
 
-      return $doc;
+      $doc;
     }
   }
 }
-
-
-=finish
-#`{{
-
-    #---------------------------------------------------------------------------
-    #
-    method logout ( Str:D :$user --> Hash ) {
-      my Pair @req = (logout => 1);
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        return error-message(
-          $doc<errmsg>, :code($doc<code>),
-          oper-data => @req.perl,
-          collection-ns => $!database.name
-        );
-      }
-
-      return $doc;
-    }
-
-}}
-

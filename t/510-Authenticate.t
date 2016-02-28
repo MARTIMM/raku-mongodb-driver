@@ -17,10 +17,16 @@ skip-rest "Some modules needed for authentication are not yet supported in perl 
 exit(0);
 
 #-------------------------------------------------------------------------------
-my Int $exit_code;
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
+info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
+#-------------------------------------------------------------------------------
+my Int $exit_code;
+my Int $server-number = 1;
+
+my MongoDB::Client $client = get-connection(:server($server-number));
+my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
@@ -37,7 +43,7 @@ subtest {
   $users.set-pw-security(
     :min-un-length(10), 
     :min-pw-length(8),
-    :pw_attribs(MongoDB::Users::C-PW-OTHER-CHARS)
+    :pw_attribs(MongoDB::C-PW-OTHER-CHARS)
   );
 
   $doc = $users.create-user(
@@ -66,33 +72,31 @@ subtest {
   is $doc<users>[1]<user>, 'Dondersteen', 'User Dondersteen';
 }, "User account preparation";
 
-done-testing();
-exit(0);
-
 #---------------------------------------------------------------------------------
 subtest {
-  diag "Change server mode to authenticated mode";
-  $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
-  sleep 2;
 
-  $exit_code = shell("mongod --auth --config '$*CWD/Sandbox/m-auth.conf'");
-  $client = get-connection-try10();
-#  diag "Changed server mode";
+  my Str $server-dir = "Sandbox/Server$server-number";
+  ok stop-mongod($server-dir), "Server from $server-dir stopped";
+
+  my $port-number = get-port-number(:server($server-number));
+  ok start-mongod( $server-dir, $port-number, :auth), "Server 1 in auth mode";
+
 }, "Server changed to authentication mode";
 
 #---------------------------------------------------------------------------------
 subtest {
-  # Must get a new database, users and authentication object because server
+  # Must get a new database, users and authentication objects because server
   # is restarted.
   #
+  $client = get-connection(:server($server-number));
   $database = $client.database('test');
   $users .= new(:$database);
   $auth .= new(:$database);
 
   try {
-    $doc = $users.drop_all_users_from_database();
+    $database.run-command: (dropAllUsersFromDatabase => 1);
     ok $doc<ok>, 'All users dropped';
-    
+
     CATCH {
       when MongoDB::Message {
         ok .message ~~ m:s/not authorized on test to execute/, .error-text;
@@ -113,34 +117,25 @@ subtest {
   $doc = $auth.authenticate( :user('Dondersteen'), :password('w@tD8jeDan'));
   ok $doc<ok>, 'User Dondersteen logged in';
 
-  $doc = $auth.logout(:user('Dondersteen'));
+  $doc = $database.run-command: (logout => 1);
   ok $doc<ok>, 'User Dondersteen logged out';
 
 }, "Authenticate tests";
 
 #---------------------------------------------------------------------------------
 subtest {
-  diag "Change server mode back to normal mode";
-  $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
-  sleep 2;
 
-  $exit_code = shell("mongod --config '$*CWD/Sandbox/m.conf'");
-  $client = get-connection-try10();
-#  diag "Changed server mode";
+  my Str $server-dir = "Sandbox/Server$server-number";
+  ok stop-mongod($server-dir), "Server from $server-dir stopped";
 
-  # Must get a new database and user object because server is restarted.
-  #
-  $database = $client.database('test');
-  $users .= new(:$database);
+  my $port-number = get-port-number(:server($server-number));
+  ok start-mongod( $server-dir, $port-number), "Server 1 in normal mode";
 
-  $doc = $users.drop_all_users_from_database();
-  ok $doc<ok>, 'All users dropped';
 }, "Server changed to normal mode";
 
 #-------------------------------------------------------------------------------
-# Cleanup
+# Cleanup and close
 #
-$client.database('test').drop;
-
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);
