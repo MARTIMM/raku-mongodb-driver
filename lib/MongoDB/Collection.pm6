@@ -25,7 +25,7 @@ package MongoDB {
       BSON::Document :$read-concern
     ) {
 
-      debug-message("create collection $name");
+      debug-message("create collection $database.name()\.$name");
 
       $!read-concern =
         $read-concern.defined ?? $read-concern !! $database.read-concern;
