@@ -3,9 +3,6 @@ use lib 't';
 use Test;
 use Test-support;
 use MongoDB;
-use MongoDB::Client;
-use MongoDB::Server;
-use MongoDB::Socket;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
@@ -17,7 +14,9 @@ info-message("Test $?FILE start");
 for @$Test-support::server-range -> $server-number {
 
   my Str $server-dir = "Sandbox/Server$server-number";
-  ok stop-mongod($server-dir), "Server from $server-dir stopped";
+#  stop-mongod($server-dir);
+  ok 1, (stop-mongod($server-dir) ?? 'Server is stopped' !! 'Server already stopped');
+#  ok stop-mongod($server-dir), "Server from $server-dir stopped";
 }
 
 cleanup-sandbox();
