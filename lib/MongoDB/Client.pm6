@@ -58,6 +58,8 @@ package MongoDB {
       my @item-list = <username password database options>;
       $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
+      info-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
+
       # Background process to discover hosts only if there are new servers
       # to be discovered or that new non default cases are presented.
       #
@@ -76,14 +78,7 @@ package MongoDB {
             my $accept-server = True;
 
             my BSON::Document $srv-data = $server._initial-poll;
-
-            # No two masters, then set if server is a master
-            #
-            my Bool $ismaster = $srv-data<ismaster>;
-            $accept-server = False if $!found-master and $ismaster;
-            $!found-master = $ismaster if $ismaster;
-#say "IPoll: $srv-data.perl()";
-#say "IPoll: $ismaster, $accept-server";
+say "IPoll: $srv-data.perl()";
 
             # Test replica set name if it is a replica set server
             #
@@ -95,6 +90,15 @@ package MongoDB {
                and $replsetname ne $!uri-data<options><replicaSet> {
 
               $accept-server = False;
+say "IPoll 0: $replsetname, $!uri-data<options><replicaSet>";
+            }
+
+            # No replicaSet option on uri found and server isn't a repl server
+            #
+            elsif $!uri-data<options><replicaSet>:exists and !?$replsetname {
+
+              $accept-server = False;
+say "IPoll 1:";
             }
 
             # No replicaSet option on uri found and server isn't a repl server
@@ -102,6 +106,7 @@ package MongoDB {
             elsif $!uri-data<options><replicaSet>:!exists and ?$replsetname {
 
               $accept-server = False;
+say "IPoll 2:";
             }
 
             # All else accept
@@ -110,18 +115,29 @@ package MongoDB {
 #              $accept-server = False;
 #            }
 
-            # Throw an error when not accepted. It wil caught when processing
+            # No two masters, set if server is accepted and is a master
+            #
+            if $accept-server {
+              my Bool $ismaster = $srv-data<ismaster>;
+              $accept-server = False if $!found-master and $ismaster;
+              $!found-master = $ismaster if $ismaster and $accept-server;
+say "IPoll: $ismaster, $accept-server";
+            }
+
+            # Throw an error when not accepted. It wil be caught when processing
             # broken promises in cleanup-promises
             #
             fatal-message("Server $server.name() not accepted")
               unless $accept-server;
 
-CATCH {
-#  .say;
-  default {
-    .throw;
-  }
-}
+#`{{
+            CATCH {
+              .say;
+              default {
+                .throw;
+              }
+            }
+}}
 
             # Return mongo server data and Server object when server is accepted
             #
@@ -167,7 +183,7 @@ CATCH {
       # Investigate first before getting the nuber of servers. We get a
       # server ticket and must be removed again.
       #
-      my $t = self.select-server(:!need-master);
+      self!cleanup-promises;    #self.select-server;
       return $!servers.elems;
     }
 
@@ -179,6 +195,7 @@ CATCH {
       # Investigate first before getting the nuber of servers. We get a
       # server ticket and must be removed again.
       #
+      self!cleanup-promises;    #self.select-server;
       return $!server-discovery.elems;
     }
 

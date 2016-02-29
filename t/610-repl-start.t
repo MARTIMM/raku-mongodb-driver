@@ -5,85 +5,116 @@ use Test;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
-#use MongoDB::Collection;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
 my MongoDB::Database $database;
 my MongoDB::Database $db-admin;
-#my MongoDB::Collection $collection;
 my BSON::Document $req;
 my BSON::Document $doc;
 
+# Stop any left over servers
+#
+for @$Test-support::server-range -> $server-number {
+
+  my Str $server-dir = "Sandbox/Server$server-number";
+  stop-mongod($server-dir);
+#  ok stop-mongod($server-dir), "Server from $server-dir stopped";
+}
+
+my Str $rs1 = 'myreplset';
+my Str $host = 'localhost';
+my Int $p1 = get-port-number(:server(1));
+my Int $p2 = get-port-number(:server(2));
+
 #-------------------------------------------------------------------------------
 subtest {
 
-   $client .= new(:uri('mongodb://'));
-   is $client.nbr-servers, 0, 'No servers found';
+  ok start-mongod( "Sandbox/Server1", $p1), "Server 1 started";
 
-}, "Matching server test";
+  ok start-mongod( "Sandbox/Server2", $p2, :repl-set($rs1)),
+     "Server 2 started in replica set '$rs1'";
+
+}, "Servers start";
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= new(:uri('mongodb:///?replicaSet=myreplset'));
+  # The name is not set yet, so no replicat name found in monitor result!
+  #
+  $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1"));
+  while $client.nbr-left-actions { sleep 1; }
+  is $client.nbr-servers, 0, 'No server found';
+
+  # Get client without option
+  #
+  $client .= new(:uri("mongodb://:$p2"));
+  while $client.nbr-left-actions { sleep 1; }
   is $client.nbr-servers, 1, 'One server found';
 
   $database = $client.database('test');
   $db-admin = $client.database('admin');
-#  $collection = $database.collection('repl-test');
 
   $doc = $database.run-command: (isMaster => 1);
-  if $doc<setName>:exists and $doc<setName> eq 'myreplset' {
-    my Int $new-version = $doc<setVersion> + 1;
-    $doc = $db-admin.run-command: (
-      replSetReconfig => (
-        _id => 'myreplset',
-        version => $new-version,
-        members => [ (
-            _id => 0,
-            host => 'localhost:27017',
-            tags => (
-              name => 'default-server',
-              use => 'testing'
-            )
-          ),
-        ]
-      ),
-      force => False
-    );
+  ok $doc<isreplicaset>, 'Is a replica set server';
+  nok $doc<setName>:exists, 'Name not set';
 
-#say "Doc: ", $doc.perl unless $doc<ok>;
-  }
+  $doc = $db-admin.run-command: (
+    replSetInitiate => (
+      _id => $rs1,
+      members => [ (
+          _id => 0,
+          host => "$host:$p2",
+          tags => (
+            name => 'default-server',
+            use => 'testing'
+          )
+        ),
+      ]
+    )
+  );
 
-  else {
-    $doc = $db-admin.run-command: (
-      replSetInitiate => (
-        _id => 'myreplset',
-        members => [ (
-            _id => 0,
-            host => 'localhost:27017',
-            tags => (
-              name => 'default-server',
-              use => 'testing'
-            )
-          ),
-        ]
-      )
-    );
+  $doc = $database.run-command: (isMaster => 1);
+  ok $doc<setName>:exists, 'Name now set';
+  is $doc<setName>, $rs1, 'Name ok';
+  is $doc<setVersion>, 1, 'Repl set version 1';
 
-#say "Doc: ", $doc.perl unless $doc<ok>;
-  }
 
-  $doc = $db-admin.run-command: (isMaster => 1);
-#say "Doc: ", $doc.perl;
-  is $doc<ok>, 1, 'is master request ok';
-  is $doc<setName>, 'myreplset', "replication name = $doc<setName>";
 
-}, "replication";
+  $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1"));
+  while $client.nbr-left-actions { sleep 1; }
+  is $client.nbr-servers, 1, 'One server found';
+
+  my Int $new-version = $doc<setVersion> + 1;
+  $doc = $db-admin.run-command: (
+    replSetReconfig => (
+      _id => $rs1,
+      version => $new-version,
+      members => [ (
+          _id => 0,
+          host => "$host:$p2",
+          tags => (
+            name => 'still-same-default-server',
+            use => 'testing'
+          )
+        ),
+      ]
+    ),
+    force => False
+  );
+
+  sleep 2;
+  $doc = $database.run-command: (isMaster => 1);
+  is $doc<setVersion>, 2, 'Repl set version 2';
+  ok $doc<ismaster>, 'After some time server should become master';
+  nok $doc<secondary>, 'And not secondary';
+  is $doc<primary>, "$host:$p2", "Primary server name";
+
+}, "Replica servers initialization and modification";
 
 #-------------------------------------------------------------------------------
 # Cleanup
