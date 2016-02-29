@@ -301,6 +301,9 @@ change at any time. The public API should not be considered stable.*
 
 * 0.28.7
   * Changes to tests to prepare for start of other types of servers
+  * Modified test Authentication to use the new way of server start and stop subs.
+  * Added test to test for irregular server stops
+  * Added test to create replicaset servers.
 * 0.28.6
   * All modules are set to 'use v6.c'
   * Pod documenttation changes because of latest changes
