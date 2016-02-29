@@ -1,4 +1,4 @@
-use v6;
+use v6.c;
 use lib 't';
 use Test-support;
 use Test;
@@ -6,10 +6,7 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
-use MongoDB::Object-store;
 use MongoDB::Client;
-use MongoDB::Server;
-use MongoDB::Socket;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
@@ -100,13 +97,23 @@ subtest {
 }, "Shutdown server 2 after find";
 
 #-------------------------------------------------------------------------------
+#subtest {
+#
+#  $client .= new(:uri('mongodb://:' ~ get-port-number(:server(1))));
+#  is $client.nbr-servers, 1, 'One server found';
+#  $client.shutdown-server($client.select-server());
+#  is $client.nbr-servers, 0, 'No server found';
+#
+#}, "Server 1 stopped too";
+
+#-------------------------------------------------------------------------------
 # Cleanup
 #
-for ^2 + 2 -> $server-number {
-  my $port-number = get-port-number(:server($server-number));
-  my Str $server-dir = "Sandbox/Server$server-number";
-  ok start-mongod( $server-dir, $port-number), "Server $server-number restarted";
-}
+#for ^2 + 2 -> $server-number {
+#  my $port-number = get-port-number(:server($server-number));
+#  my Str $server-dir = "Sandbox/Server$server-number";
+#  ok start-mongod( $server-dir, $port-number), "Server $server-number restarted";
+#}
 
 info-message("Test $?FILE stop");
 done-testing();
