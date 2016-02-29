@@ -94,7 +94,7 @@ package MongoDB:ver<0.28.7> {
       $dt-str ~~ s/\.\d+Z$//;
       $dt-str ~~ s/T/ /;
       my Str $etxt ~= [~] $dt-str,
-                   " [{uc self.severity}]",
+                   " [{(uc self.severity).substr(0,1)}] ",
                    self."{lc(self.severity)}"(),
                    "\n";
       $log-fh.print($etxt);
@@ -219,9 +219,11 @@ package MongoDB:ver<0.28.7> {
 #say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name,
 #', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
 
-        # Try to find a better place instead of dispatch:...
+        # Try to find a better place instead of dispatch, BUILDALL etc:...
         #
-        next if $cf.code ~~ $type and $cf.code.name ~~ m/dispatch/;
+        next if $cf.code ~~ $type
+            and $cf.code.name ~~ m/dispatch/;
+#            and $cf.code.name ~~ m/dispatch|BUILDALL|bless/;
 
         last if $cf.code ~~ $type;
       }
@@ -258,19 +260,18 @@ package MongoDB:ver<0.28.7> {
     #-----------------------------------------------------------------------------
     #
     method trace ( --> Str ) {
-      return [~] " $!message.",
-                 ? $!method ?? " From method $!method" !! '',
-#                 " at $!file\:$!line",
-                 ;
+      $!message;
+#      [~] " $!message ", "[{$!method // ''}:$!line]";
     }
 
     #-----------------------------------------------------------------------------
     #
     method debug ( --> Str ) {
-      return [~] " $!message.",
-                 ? $!code ?? " \({$!code})" !! '',
-                 ? $!collection-ns ?? "c-ns=$!collection-ns" !! '',
-                 ? $!method ?? " From method $!method" !! '',
+      $!message
+#      return [~] " $!message ", "[{$!method // ''}:$!line]"
+#                 ? $!code ?? " \({$!code})" !! '',
+#                 ? $!collection-ns ?? "c-ns=$!collection-ns" !! '',
+#                 ? $!method ?? " From method $!method" !! '',
 #                 " at $!file\:$!line"
                  ;
     }
@@ -278,11 +279,11 @@ package MongoDB:ver<0.28.7> {
     #-----------------------------------------------------------------------------
     #
     method info ( --> Str ) {
-      return [~] " $!message.",
-                 ? $!code ?? " \({$!code})" !! '',
-                 ? $!collection-ns ?? " Collection namespace $!collection-ns." !! '',
-                 ? $!method ?? " From method $!method" !! '',
-                 " at $!file\:$!line"
+      return [~] "$!message ", "[{$!method // ''}:$!line]"
+#                 ? $!code ?? " \({$!code})" !! '',
+#                 ? $!collection-ns ?? " Collection namespace $!collection-ns." !! '',
+#                 ? $!method ?? " From method $!method" !! '',
+#                 " at $!file\:$!line"
                  ;
     }
 
