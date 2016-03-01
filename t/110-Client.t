@@ -8,8 +8,8 @@ use MongoDB::Server;
 use MongoDB::Socket;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;

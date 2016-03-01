@@ -105,7 +105,7 @@ package MongoDB {
           # As long as the server lives test it. Changes are possible when 
           # master changes servers.
           #
-          while 1 {
+          loop {
 
             # Temporary try block to catch typos
             try {
@@ -118,6 +118,7 @@ package MongoDB {
               # exit the while loop. Take a nap otherwise.
               #
               my Str $cmd = $command-channel.poll // '';
+              info-message("Receive command $cmd") if ?$cmd;
               last if ?$cmd and $cmd eq 'stop';
 
               # Calculation of mean Return Trip Time
@@ -132,7 +133,7 @@ package MongoDB {
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
 
-              debug-message(
+              info-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
 

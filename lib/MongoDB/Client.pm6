@@ -308,7 +308,6 @@ say "IPoll: $ismaster, $accept-server";
       my Int $still-planned = 0;
 
       loop ( my Int $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
-say "CLP: $pi";
         next unless $!server-discovery[$pi].defined;
 
         my Promise $promise = $!server-discovery[$pi];
@@ -319,7 +318,7 @@ say "CLP: $pi";
         if $promise.status ~~ Kept {
           my Hash $server-data = $!server-discovery[$pi].result;
           my MongoDB::Server $server = $server-data<server>;
-          
+
           info-message("Kept: $server.name()");
 
           # Cleanup promise entry
