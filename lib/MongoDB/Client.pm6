@@ -131,13 +131,13 @@ say "IPoll: $ismaster, $accept-server";
               unless $accept-server;
 
 #`{{
+}}
             CATCH {
               .say;
               default {
                 .throw;
               }
             }
-}}
 
             # Return mongo server data and Server object when server is accepted
             #
@@ -195,8 +195,7 @@ say "IPoll: $ismaster, $accept-server";
       # Investigate first before getting the nuber of servers. We get a
       # server ticket and must be removed again.
       #
-      self!cleanup-promises;    #self.select-server;
-      return $!server-discovery.elems;
+      return self!cleanup-promises;
     }
 
     #---------------------------------------------------------------------------
@@ -256,7 +255,7 @@ say "IPoll: $ismaster, $accept-server";
       #
       while !$server.defined {
 
-        my Bool $still-planned = self!cleanup-promises;
+        my Int $still-planned = self!cleanup-promises;
 
         for $!servers.values -> Hash $srv-struct {
           my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
@@ -304,13 +303,15 @@ say "IPoll: $ismaster, $accept-server";
 
     #---------------------------------------------------------------------------
     #
-    method !cleanup-promises ( ) {
+    method !cleanup-promises ( --> Int ) {
 
-      my Bool $still-planned = False;
+      my Int $still-planned = 0;
 
-      loop ( my $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
+      loop ( my Int $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
+say "CLP: $pi";
+        next unless $!server-discovery[$pi].defined;
 
-        my $promise = $!server-discovery[$pi];
+        my Promise $promise = $!server-discovery[$pi];
 
         # If promise is kept, the Server object has been created and
         # stored in $!servers.
@@ -318,11 +319,12 @@ say "IPoll: $ismaster, $accept-server";
         if $promise.status ~~ Kept {
           my Hash $server-data = $!server-discovery[$pi].result;
           my MongoDB::Server $server = $server-data<server>;
+          
+          info-message("Kept: $server.name()");
 
           # Cleanup promise entry
           #
           $!server-discovery[$pi] = Nil;
-          $!server-discovery.splice( $pi, 1);
 
           # Save server and start server monitoring if server is accepted
           # after initial poll
@@ -346,10 +348,10 @@ say "IPoll: $ismaster, $accept-server";
 
             CATCH {
               default {
-                warn-message(.message);
+                info-message("Broken promise");
+#                warn-message(.message);
 
                 $!server-discovery[$pi] = Nil;
-                $!server-discovery.splice( $pi, 1);
               }
             }
           }
@@ -359,7 +361,7 @@ say "IPoll: $ismaster, $accept-server";
         #
         elsif $promise.status == Planned {
           info-message("Thread $pi still running");
-          $still-planned = True;
+          $still-planned++;
         }
       }
 
