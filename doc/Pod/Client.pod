@@ -106,9 +106,9 @@ Next a table where some processing results are shown for uri. In the table there
 are short names use like n#(=digit): for normal server, r#: a replica server,
 R# for replica names, r1R1 server is server for replicaset R1, i# are replicaset
 servers which must be initialized before they become real servers, a# are arbiters
-and s# mongos servers.
-Port numbers are irrelevant here. When two servers in a replica set R1 are used,
-the table shows 'r1R1, r2R1, R1' and the uri could be something like
+and s# mongos servers. An uninitialized replicaserver (i) is neither master nor
+secondary. Port numbers are irrelevant here. When two servers in a replica set
+R1 are used, the table shows 'r1R1, r2R1, R1' and the uri could be something like
 'mongodb://r1,r2/?replicaSet=R1'.
 
 =begin table
