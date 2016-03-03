@@ -8,7 +8,7 @@ use MongoDB::Database;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
@@ -71,16 +71,13 @@ subtest {
     )
   );
 
+#  sleep 1;
   $doc = $db-admin.run-command: (isMaster => 1);
+say $doc.perl;
+
   ok $doc<setName>:exists, 'Name now set';
   is $doc<setName>, $rs2, "Name $rs2";
   is $doc<setVersion>, 1, 'Repl set version 1';
-
-
-
-#  sleep 2;
-#  $doc = $db-admin.run-command: (isMaster => 1);
-#say $doc.perl;
 
 }, "Replica servers initialization and modification";
 

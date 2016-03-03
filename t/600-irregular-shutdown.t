@@ -25,6 +25,7 @@ my BSON::Document $doc;
 subtest {
 
   $client .= new(:uri('mongodb://:' ~ get-port-number(:server(3))));
+  while $client.nbr-left-actions -> $v {say "Left $v"; sleep 1;}
   is $client.nbr-servers, 1, 'One server found';
 
   info-message('save 2 records');
@@ -55,6 +56,7 @@ subtest {
 subtest {
 
   $client .= new(:uri('mongodb://:' ~ get-port-number(:server(2))));
+  while $client.nbr-left-actions -> $v {say "Left $v"; sleep 1;}
   is $client.nbr-servers, 1, 'One server found';
 
   info-message('insert 200 records');

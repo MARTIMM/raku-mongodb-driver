@@ -129,7 +129,9 @@ package MongoDB {
       --> BSON::Document
     ) {
 
-      debug-message("run internal command {$command.find-key(0)}");
+      debug-message(
+        "run internal command $command.find-key(0) on $server.name()"
+      );
 
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;

@@ -1,7 +1,7 @@
 use v6.c;
 use MongoDB;
 use MongoDB::Socket;
-use MongoDB::ClientIF;
+#use MongoDB::ClientIF;
 use MongoDB::DatabaseIF;
 use BSON::Document;
 
@@ -23,7 +23,6 @@ package MongoDB {
     has Duration $!weighted-mean-rtt .= new(0);
 
     has MongoDB::DatabaseIF $!db-admin;
-    has MongoDB::ClientIF $!client;
 
     # Variables to control infinite monitoring actions
     #
@@ -32,16 +31,19 @@ package MongoDB {
 
     has Semaphore $!server-socket-selection;
 
+
+    #---------------------------------------------------------------------------
+    # Server must make contact first to see if server exists and reacts. This
+    # must be done in the background so Client starts this process in a thread.
+    #
     submethod BUILD (
       Str:D :$host!,
       Int:D :$port! where (0 <= $_ <= 65535),
       Int :$max-sockets where $_ >= 3 = 3,
       Hash :$uri-data,
       MongoDB::DatabaseIF:D :$db-admin,
-      MongoDB::ClientIF:D :$client
     ) {
       $!db-admin = $db-admin;
-      $!client = $client;
       $!server-name = $host;
       $!server-port = $port;
       $!max-sockets = $max-sockets;
@@ -110,10 +112,6 @@ package MongoDB {
             # Temporary try block to catch typos
             try {
 
-              # First things first Zzzz...
-              #
-              sleep 10;
-
               # Check the input-channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
               #
@@ -128,6 +126,7 @@ package MongoDB {
                 BSON::Document.new((isMaster => 1)),
                 :server(self)
               );
+say "Monitor: ", $doc.perl;
               $rtt = now - $t0;
               $!weighted-mean-rtt .= new(
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
@@ -143,6 +142,11 @@ package MongoDB {
                   weighted-mean-rtt => $!weighted-mean-rtt
                 }
               );
+
+
+              # Rest for a while
+              #
+              sleep 10;
 
               # Capture errors. When there are any, stop monitoring. On older
               # servers before version 3.2 the server just stops communicating

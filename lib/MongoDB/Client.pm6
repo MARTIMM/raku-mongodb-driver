@@ -10,6 +10,8 @@ use BSON::Document;
 
 package MongoDB {
 
+  enum Server-state <Unknown Repl-Pre-Init Primary Secondary Rejected>;
+
   #-----------------------------------------------------------------------------
   #
   class Client is MongoDB::ClientIF {
@@ -21,11 +23,6 @@ package MongoDB {
 
     has Array $!server-discovery;
     has Str $!uri;
-
-    # Semaphore to control the use of select-server. This call can come
-    # from different threads.
-    #
-#    has Semaphore $!control-select .= new(1);
 
     has BSON::Document $.read-concern;
     has Bool $.found-master = False;
@@ -64,115 +61,24 @@ package MongoDB {
       # to be discovered or that new non default cases are presented.
       #
       for @($uri-obj.server-data<servers>) -> Hash $sdata {
+        my $db-admin = self.database('admin');
         $!server-discovery.push: Promise.start( {
 
+            # Create Server object. Throws on failure.
+            #
             my MongoDB::Server $server .= new(
               :host($sdata<host>), :port($sdata<port>),
-              :$!uri-data, :db-admin(self.database('admin')),
-              :client(self)
+              :$!uri-data, :$db-admin
             );
 
-#TODO Check relation of servers otherwise refuse, not yet complete
-            # Initial tests on server data
-            #
-            my $accept-server = True;
-
-            my BSON::Document $srv-data = $server._initial-poll;
-say "IPoll: $srv-data.perl()";
-
-            # Test replica set name if it is a replica set server
-            #
-            # replicaSet option in uri is same as replica set name from server
-            #
-            my Str $replsetname = $srv-data<setName> // '';
-            if $!uri-data<options><replicaSet>:exists
-               and ?$replsetname
-               and $replsetname ne $!uri-data<options><replicaSet> {
-
-              $accept-server = False;
-say "IPoll 0: $replsetname, $!uri-data<options><replicaSet>";
-            }
-
-            # No replicaSet option on uri found and server isn't a repl server
-            #
-            elsif $!uri-data<options><replicaSet>:exists and !?$replsetname {
-
-              $accept-server = False;
-say "IPoll 1:";
-            }
-
-            # No replicaSet option on uri found and server isn't a repl server
-            #
-            elsif $!uri-data<options><replicaSet>:!exists and ?$replsetname {
-
-              $accept-server = False;
-say "IPoll 2:";
-            }
-
-            # All else accept
-            #
-#            else {
-#              $accept-server = False;
-#            }
-
-            # No two masters, set if server is accepted and is a master
-            #
-            if $accept-server {
-              my Bool $ismaster = $srv-data<ismaster>;
-              $accept-server = False if $!found-master and $ismaster;
-              $!found-master = $ismaster if $ismaster and $accept-server;
-say "IPoll: $ismaster, $accept-server";
-            }
-
-            # Throw an error when not accepted. It wil be caught when processing
-            # broken promises in cleanup-promises
-            #
-            fatal-message("Server $server.name() not accepted")
-              unless $accept-server;
-
-#`{{
-}}
-            CATCH {
-              .say;
-              default {
-                .throw;
-              }
-            }
-
-            # Return mongo server data and Server object when server is accepted
+            # Return Server object when server could connect
             #
             info-message("Server $server.name() accepted");
 
-            { server => $server,
-              initial-poll => $srv-data
-            };
+            $server;
           }
         );
       }
-    }
-
-    #---------------------------------------------------------------------------
-    # Called from thread above where Server object is created.
-    #
-    method !add-server ( Hash:D $server-data --> Hash ) {
-
-#      $!control-select.acquire;
-
-      my MongoDB::Server $server = $server-data<server>;
-      info-message( "Server {$server.name} saved");
-
-      $!servers{$server.name} = {
-        object => $server,
-        data-channel => Channel.new(),
-        command-channel => Channel.new(),
-        server-data => {
-          monitor => $server-data<initial-poll>,
-          weighted-mean-rtt => 0
-        }
-      }
-
-#      $!control-select.release;
-      return $!servers{$server.name};
     }
 
     #---------------------------------------------------------------------------
@@ -251,24 +157,35 @@ say "IPoll: $ismaster, $accept-server";
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-      # Read all Kept promises and store Server objects in $!servers array
+
+      # As long as we didn't find a server. Break out of the loop
+      # if there is no data left.
       #
       while !$server.defined {
 
+        # Check if there are any promises left.
+        #
         my Int $still-planned = self!cleanup-promises;
 
+        # Loop through the existing set of already found servers
+        #
         for $!servers.values -> Hash $srv-struct {
-          my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
-          if $new-monitor-data.defined {
-            info-message("New server data from $srv-struct<object>.name()");
-            $srv-struct<server-data> = $new-monitor-data;
-          }
+        
+          # Skip all rejected servers
+          #
+          next if $srv-struct<status> ~~ MongoDB::Rejected;
+
+          # Check if server is not conflicting
+          #
+          self!test-server-acceptance($srv-struct);
+
 
           $server-is-master = True
-            if $srv-struct<server-data><monitor><is-master>;
+            if $srv-struct<server-data><monitor><ismaster>;
+
 
           if !$need-master or ($need-master and $server-is-master) {
-            $server = $srv-struct<object>;
+            $server = $srv-struct<server>;
             debug-message(
               "Server {$server.name} selected, is master?: $server-is-master"
             );
@@ -307,17 +224,21 @@ say "IPoll: $ismaster, $accept-server";
 
       my Int $still-planned = 0;
 
+      # Loop through all Promise objects
+      #
       loop ( my Int $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
+
+        # When processed, object is cleared. Skip them if encounter one
+        #
         next unless $!server-discovery[$pi].defined;
 
-        my Promise $promise = $!server-discovery[$pi];
 
-        # If promise is kept, the Server object has been created and
-        # stored in $!servers.
+        # If promise is kept, the Server object is created and
+        # is stored in $!servers.
         #
+        my Promise $promise = $!server-discovery[$pi];
         if $promise.status ~~ Kept {
-          my Hash $server-data = $!server-discovery[$pi].result;
-          my MongoDB::Server $server = $server-data<server>;
+          my MongoDB::Server $server = $!server-discovery[$pi].result;
 
           info-message("Kept: $server.name()");
 
@@ -325,31 +246,27 @@ say "IPoll: $ismaster, $accept-server";
           #
           $!server-discovery[$pi] = Nil;
 
-          # Save server and start server monitoring if server is accepted
-          # after initial poll
+          # Save server and start server monitoring.
           #
-          my Hash $srv-struct = self!add-server($server-data);
-          $server._monitor-server(
-            $srv-struct<data-channel>,
-            $srv-struct<command-channel>
-          );
+          self!add-server($server);
         }
 
         # When broken throw away result
         #
         elsif $promise.status == Broken {
 
-          # When broken, it is caused by a thrown exception
+          # When broken, it is mostly caused by a thrown exception
           # so catch it here.
           #
           try {
             $!server-discovery[$pi].result;
+            info-message("Broken promise");
+            $!server-discovery[$pi] = Nil;
 
             CATCH {
               default {
-                info-message("Broken promise");
-#                warn-message(.message);
-
+#                info-message("Broken promise");
+                warn-message(.message);
                 $!server-discovery[$pi] = Nil;
               }
             }
@@ -365,6 +282,79 @@ say "IPoll: $ismaster, $accept-server";
       }
 
       return $still-planned;
+    }
+
+    #---------------------------------------------------------------------------
+    # Called from thread above where Server object is created.
+    #
+    method !add-server ( MongoDB::Server:D $server ) {
+
+      info-message( "Server {$server.name} saved");
+
+      $!servers{$server.name} = {
+        server => $server,
+        status => MongoDB::Unknown,
+        data-channel => Channel.new(),
+        command-channel => Channel.new(),
+        server-data => {
+          monitor => {},
+          weighted-mean-rtt => 0
+        }
+      }
+
+      # Start server monitoring
+      #
+      $server._monitor-server(
+        $!servers{$server.name}<data-channel>,
+        $!servers{$server.name}<command-channel>
+      );
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method !test-server-acceptance ( Hash $srv-struct ) {
+
+#TODO Check relation of servers otherwise refuse, not yet complete
+
+      # Get new data from the server monitoring process
+      #
+      my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
+      if $new-monitor-data.defined {
+        info-message("New server data from $srv-struct<server>.name()");
+        $srv-struct<server-data> = $new-monitor-data;
+      }
+say "Srv: $srv-struct<server-data>.perl()";
+
+
+      # Initial tests on server data
+      #
+      my Bool $accept-server = True;
+
+      # Is replicaSet option used on uri?
+      #
+      if $!uri-data<options><replicaSet>:exists {
+
+        my Str $replsetname = $srv-struct<srv-data><setName> // '';
+
+        # Server is accepted only if setName is equal to option
+        #
+        $accept-server = $!uri-data<options><replicaSet> eq $replsetname;
+ say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
+      }
+
+      # No two masters, set if server is accepted and is a master
+      #
+      my Bool $ismaster = $srv-struct<srv-data><ismaster> // False;
+      $accept-server = ! ($!found-master and $ismaster);
+
+      if $accept-server {
+        $!found-master = $ismaster if $ismaster;
+        $srv-struct<status> = $ismaster ?? MongoDB::Primary !! MongoDB::Secondary;
+      }
+      
+      else {
+        $srv-struct<status> = MongoDB::Rejected;
+      }
     }
 
     #---------------------------------------------------------------------------
@@ -408,10 +398,8 @@ say "IPoll: $ismaster, $accept-server";
     #
     method _remove-server ( MongoDB::Server $server is copy ) {
 
-#      trace-message("server select acquire");
-#      $!control-select.acquire;
       for $!servers.values -> Hash $srv-struct {
-        if $srv-struct<object> === $server {
+        if $srv-struct<server> === $server {
 
           # Stop monitoring on server and wait for it to stop
           #
@@ -423,8 +411,6 @@ say "IPoll: $ismaster, $accept-server";
         }
       }
 
-#      trace-message("server remove release");
-#      $!control-select.release;
     }
   }
 }
