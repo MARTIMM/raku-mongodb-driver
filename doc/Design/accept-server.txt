@@ -1,0 +1,34 @@
+@startuml
+
+title Select a server
+
+(*) -right-> "check servers"
+-right-> if "server" then
+
+-right-> [next server] "poll server\ndata"
+-right-> "check replica\noption in uri"
+-right-> "check for\nmultiple masters"
+
+
+
+if "server conlicts" then
+--> [True] "Remove server"
+--> "check servers"
+
+else
+
+--> [False] if "usable server" then
+-right-> [True] "set server"
+else
+--> [False] "check servers"
+endif
+
+endif
+
+else
+--> [no servers left] "set server"
+endif
+
+"set server" -right-> (*)
+
+@enduml

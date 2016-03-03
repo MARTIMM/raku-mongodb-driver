@@ -1,0 +1,37 @@
+@startuml
+
+title Classes in this project
+
+set namespaceSeparator ::
+
+hide circle
+hide application members
+
+interface MongoDB::ClientIF
+interface MongoDB::DatabaseIF
+interface MongoDB::CollectionIF
+
+show "MongoDB::ClientIF" circle
+show "MongoDB::DatabaseIF" circle
+show "MongoDB::CollectionIF" circle
+
+application *--> "0..*" MongoDB::Client
+
+MongoDB::ClientIF <|-- MongoDB::Client
+MongoDB::Client *--> "0..*" MongoDB::Server
+
+MongoDB::DatabaseIF <|-- MongoDB::Database
+MongoDB::Database --> MongoDB::ClientIF
+MongoDB::Collection --> MongoDB::DatabaseIF
+MongoDB::CollectionIF <|-- MongoDB::Collection
+
+MongoDB::Server -> MongoDB::DatabaseIF
+MongoDB::Database *-> MongoDB::Collection
+
+MongoDB::Collection --> MongoDB::Wire
+MongoDB::Wire -> MongoDB::Header
+
+MongoDB::Server *--> "0..*" MongoDB::Socket
+MongoDB::Client *-> "1" MongoDB::Uri
+
+@enduml
