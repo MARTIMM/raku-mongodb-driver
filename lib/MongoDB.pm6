@@ -127,7 +127,13 @@ package MongoDB:ver<0.28.7> {
     has MongoDB::Severity $.severity;   # Severity level
     has DateTime $.date-time;           # Date and time of creation.
 
-    my Semaphore $control-logging .= new(1) unless $control-logging.defined;
+    has Semaphore $control-logging;
+
+    #-----------------------------------------------------------------------------
+    #
+    submethod BUILD ( ) {
+      $control-logging .= new(1);
+    }
 
     #-----------------------------------------------------------------------------
     #

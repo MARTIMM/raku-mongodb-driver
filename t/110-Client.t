@@ -5,16 +5,15 @@ use Test;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
-use MongoDB::Socket;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
+my $p1 = get-port-number(:server(1));
+my $p2 = get-port-number(:server(2));
 my MongoDB::Client $client;
-my BSON::Document $req;
-my BSON::Document $doc;
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -26,30 +25,25 @@ subtest {
   is $client.nbr-servers, 0, 'No servers found';
 
 
-  my $p1 = get-port-number(:server(1));
-
   $client .= new(:uri("mongodb://localhost:$p1"));
-  while $client.nbr-left-actions -> $v {say "Left $v"; sleep 1;}
+  $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
   is $client.nbr-left-actions, 0, 'No actions left';
   is $client.found-master, True, 'Found a master';
 
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
-  while $client.nbr-left-actions -> $v {say "Left $v"; sleep 1;}
+  $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server accepted, two were equal';
 
 
-
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
-
-  my $p2 = get-port-number(:server(2));
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Debug);
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p2"));
-  while !$client.nbr-servers { }
+  $server = $client.select-server;
   is $client.nbr-servers, 1,
-     "Server $client.select-server.name() accepted, two servers were master";
+     "Server $server.name() accepted, two servers were master";
 
 }, 'Independent servers';
 

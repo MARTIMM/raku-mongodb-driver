@@ -25,8 +25,6 @@ package MongoDB {
       BSON::Document :$read-concern
     ) {
 
-      debug-message("create database $name");
-
       $!read-concern =
         $read-concern.defined ?? $read-concern !! $client.read-concern;
 
@@ -36,6 +34,8 @@ package MongoDB {
       # Create a collection $cmd to be used with run-command()
       #
       $!cmd-collection = self.collection( '$cmd', :$read-concern);
+
+      debug-message("create database $name");
     }
 
     #---------------------------------------------------------------------------

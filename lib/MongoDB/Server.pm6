@@ -97,7 +97,9 @@ package MongoDB {
       # Set the lock so the code will only be started once. When server or
       # program stops(controlled), the code is terminated via a channel.
       #
+#say "Start {self.name()} monitoring";
       return unless $!server-monitor-control.try_acquire;
+#say "Acquired lock";
 
       $!promise-monitor .= start( {
           my Instant $t0;
@@ -105,7 +107,7 @@ package MongoDB {
           my Duration $rtt;
 
           # As long as the server lives test it. Changes are possible when 
-          # master changes servers.
+          # server conditions change.
           #
           loop {
 
@@ -115,6 +117,7 @@ package MongoDB {
               # Check the input-channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
               #
+#say "Chan {self.name()}: ", $command-channel.perl;
               my Str $cmd = $command-channel.poll // '';
               info-message("Receive command $cmd") if ?$cmd;
               last if ?$cmd and $cmd eq 'stop';
@@ -126,7 +129,7 @@ package MongoDB {
                 BSON::Document.new((isMaster => 1)),
                 :server(self)
               );
-say "Monitor: ", $doc.perl;
+#say "Monitor {self.name()}: ", $doc.perl;
               $rtt = now - $t0;
               $!weighted-mean-rtt .= new(
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
@@ -136,13 +139,13 @@ say "Monitor: ", $doc.perl;
                 "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
 
-#TODO only send data on changes
+              # Send data to Client
+              #
               $data-channel.send( {
                   monitor => $doc,
                   weighted-mean-rtt => $!weighted-mean-rtt
                 }
               );
-
 
               # Rest for a while
               #
@@ -166,7 +169,7 @@ say "Monitor: ", $doc.perl;
         }
       );
 
-      info-message('Server monitoring stopped');
+      info-message("Server monitoring stopped for {self.name()}");
       $command-channel.send('stopped');
 #      $data-channel.close();
       $!server-monitor-control.release;

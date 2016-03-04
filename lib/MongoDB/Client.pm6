@@ -10,11 +10,11 @@ use BSON::Document;
 
 package MongoDB {
 
-  enum Server-state <Unknown Repl-Pre-Init Primary Secondary Rejected>;
-
   #-----------------------------------------------------------------------------
   #
   class Client is MongoDB::ClientIF {
+
+    enum Server-state <Unknown Repl-Pre-Init Primary Secondary Rejected>;
 
     # Store all found servers here. key is the name of the server which is
     # the server address/ip and its port number. This should be unique.
@@ -30,6 +30,15 @@ package MongoDB {
 
     has Hash $!uri-data;
 
+
+    #---------------------------------------------------------------------------
+    # Explicitly create an object using the undefined class name to prevent
+    # changes in the existing class used as an invocant.
+    #
+    method new ( Str:D :$uri, BSON::Document :$read-concern ) {
+
+      MongoDB::Client.bless( :$uri, :$read-concern);
+    }
 
     #---------------------------------------------------------------------------
     #
@@ -66,6 +75,7 @@ package MongoDB {
 
             # Create Server object. Throws on failure.
             #
+say "Try connect to server $sdata<host>, $sdata<port>";
             my MongoDB::Server $server .= new(
               :host($sdata<host>), :port($sdata<port>),
               :$!uri-data, :$db-admin
@@ -152,7 +162,7 @@ package MongoDB {
       my Bool $need-master = False;
 
       my MongoDB::Server $server;
-      my Bool $server-is-master = False;
+#      my Bool $server-is-master = False;
 
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
@@ -170,30 +180,17 @@ package MongoDB {
         # Loop through the existing set of already found servers
         #
         for $!servers.values -> Hash $srv-struct {
-        
+
           # Skip all rejected servers
           #
-          next if $srv-struct<status> ~~ MongoDB::Rejected;
+          next if $srv-struct<status> ~~ Server-state::Rejected;
 
           # Check if server is not conflicting
           #
-          self!test-server-acceptance($srv-struct);
-
-
-          $server-is-master = True
-            if $srv-struct<server-data><monitor><ismaster>;
-
-
-          if !$need-master or ($need-master and $server-is-master) {
-            $server = $srv-struct<server>;
-            debug-message(
-              "Server {$server.name} selected, is master?: $server-is-master"
-            );
-
-            last;
-          }
+          $server = self!test-server-acceptance($srv-struct);
         }
 
+        self!cleanup-rejected;
         last if $server.defined;
 
         if $still-planned {
@@ -201,7 +198,8 @@ package MongoDB {
           sleep 1;
         }
 
-        elsif $!servers.elems and !$server-is-master {
+# and not $server-is-master
+        elsif $!servers.elems {
           # Try again a bit later to give the servers monitoring some time
           #
           warn-message("No master server found yet with $!uri, wait for server monitoringy");
@@ -212,8 +210,8 @@ package MongoDB {
           error-message("No server found with $!uri, discovery data exhausted");
           last;
         }
-      }
 
+      }
 
       return $server;
     }
@@ -231,7 +229,6 @@ package MongoDB {
         # When processed, object is cleared. Skip them if encounter one
         #
         next unless $!server-discovery[$pi].defined;
-
 
         # If promise is kept, the Server object is created and
         # is stored in $!servers.
@@ -289,11 +286,9 @@ package MongoDB {
     #
     method !add-server ( MongoDB::Server:D $server ) {
 
-      info-message( "Server {$server.name} saved");
-
       $!servers{$server.name} = {
         server => $server,
-        status => MongoDB::Unknown,
+        status => Server-state::Unknown,
         data-channel => Channel.new(),
         command-channel => Channel.new(),
         server-data => {
@@ -301,6 +296,8 @@ package MongoDB {
           weighted-mean-rtt => 0
         }
       }
+
+      info-message( "Server {$server.name} saved");
 
       # Start server monitoring
       #
@@ -312,11 +309,14 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method !test-server-acceptance ( Hash $srv-struct ) {
+    method !test-server-acceptance ( Hash $srv-struct --> MongoDB::Server ) {
 
 #TODO Check relation of servers otherwise refuse, not yet complete
 
-      # Get new data from the server monitoring process
+      my MongoDB::Server $server;
+
+      # Get new data from the server monitoring process. Might not yet be
+      # available.
       #
       my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
       if $new-monitor-data.defined {
@@ -325,6 +325,9 @@ package MongoDB {
       }
 say "Srv: $srv-struct<server-data>.perl()";
 
+      # No info yet to test against
+      #
+      return MongoDB::Server unless $srv-struct<server-data><monitor>.keys;
 
       # Initial tests on server data
       #
@@ -339,21 +342,45 @@ say "Srv: $srv-struct<server-data>.perl()";
         # Server is accepted only if setName is equal to option
         #
         $accept-server = $!uri-data<options><replicaSet> eq $replsetname;
- say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
+say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
       }
 
-      # No two masters, set if server is accepted and is a master
-      #
-      my Bool $ismaster = $srv-struct<srv-data><ismaster> // False;
-      $accept-server = ! ($!found-master and $ismaster);
-
-      if $accept-server {
-        $!found-master = $ismaster if $ismaster;
-        $srv-struct<status> = $ismaster ?? MongoDB::Primary !! MongoDB::Secondary;
-      }
-      
       else {
-        $srv-struct<status> = MongoDB::Rejected;
+
+        # No two masters, set if server is accepted and is a master
+        #
+        my Bool $ismaster = $srv-struct<server-data><monitor><ismaster>;
+        $accept-server = not ($!found-master and $ismaster);
+say "Accept: $accept-server, $ismaster";
+
+        if $accept-server {
+          $!found-master = $ismaster if $ismaster;
+          $srv-struct<status> =
+            $ismaster ?? Server-state::Primary !! Server-state::Secondary;
+
+          $server = $srv-struct<server>;
+          debug-message("Server {$server.name} selected");
+        }
+
+        else {
+          $srv-struct<status> = Server-state::Rejected;
+          debug-message("Server {$server.name} rejected");
+        }
+      }
+
+      $server;
+    }
+
+    #---------------------------------------------------------------------------
+    #
+    method !cleanup-rejected ( ) {
+
+      for $!servers.keys -> Str $srv-name {
+say "Status of $srv-name: $!servers{$srv-name}<status>";
+        if $!servers{$srv-name}<status> ~~ Server-state::Rejected {
+          self!remove-server($!servers{$srv-name}<server>);
+          $!servers{$srv-name}:delete;
+        }
       }
     }
 
@@ -390,13 +417,13 @@ say "Srv: $srv-struct<server-data>.perl()";
         # Wire module. Especially when shutdown-server() is called on
         # servers before version 3.2. Those servers just stop communicating.
         #
-        self._remove-server($server) if $server.defined;
+        self!remove-server($server) if $server.defined;
       }
     }
 
     #---------------------------------------------------------------------------
     #
-    method _remove-server ( MongoDB::Server $server is copy ) {
+    method !remove-server ( MongoDB::Server $server is copy ) {
 
       for $!servers.values -> Hash $srv-struct {
         if $srv-struct<server> === $server {
@@ -410,7 +437,17 @@ say "Srv: $srv-struct<server-data>.perl()";
           undefine $server;
         }
       }
+    }
 
+    #---------------------------------------------------------------------------
+    #
+    method DESTROY ( ) {
+
+      for $!servers.values -> Hash $srv-struct {
+        self!remove-server($srv-struct<server>);
+      }
+
+      debug-message("Client destroyed");
     }
   }
 }
