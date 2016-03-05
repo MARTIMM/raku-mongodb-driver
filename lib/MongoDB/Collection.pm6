@@ -60,6 +60,12 @@ package MongoDB {
       $server = $.database.client.select-server(:read-concern($rc))
         unless $server.defined;
 
+      if not $server.defined {
+        error-message("No server object for query");
+        return MongoDB::Cursor;
+      }
+
+
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
       my BSON::Document $server-reply = $wire.query(
@@ -67,7 +73,10 @@ package MongoDB {
         :$number-to-return, :$server
       );
 
-      return MongoDB::Cursor unless $server-reply.defined;
+      if not $server-reply.defined {
+        error-message("No server reply on query");
+        return MongoDB::Cursor;
+      }
 
       return MongoDB::Cursor.new(
         :collection(self),
@@ -92,19 +101,28 @@ package MongoDB {
 
 #TODO Check provided structure for the fields.
 
+      my MongoDB::Wire $wire .= new;
+
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-      my MongoDB::Wire $wire .= new;
       $server = $.database.client.select-server(:read-concern($rc))
         unless $server.defined;
+
+      if not $server.defined {
+        error-message("No server object for query");
+        return MongoDB::Cursor;
+      }
 
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return, :$server
       );
 
-      return MongoDB::Cursor unless $server-reply.defined;
+      if not $server-reply.defined {
+        error-message("No server reply on query");
+        return MongoDB::Cursor;
+      }
 
       return MongoDB::Cursor.new(
         :collection(self),

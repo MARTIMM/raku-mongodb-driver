@@ -85,7 +85,11 @@ package MongoDB {
 
       # Return undefined on server problems
       #
-      return BSON::Document unless $cursor.defined;
+      if not $cursor.defined {
+        error-message("No cursor returned");
+        return BSON::Document;
+      }
+
 
       my $doc = $cursor.fetch;
       return $doc.defined ?? $doc !! BSON::Document.new;
@@ -115,7 +119,10 @@ package MongoDB {
 
       # Return undefined on server problems
       #
-      return BSON::Document unless $cursor.defined;
+      if not $cursor.defined {
+        error-message("No cursor returned");
+        return BSON::Document;
+      }
 
       my $doc = $cursor.fetch;
       return $doc.defined ?? $doc !! BSON::Document.new;
@@ -147,7 +154,10 @@ package MongoDB {
 
       # Return undefined on server problems
       #
-      return BSON::Document unless $cursor.defined;
+      if not $cursor.defined {
+        error-message("No cursor returned");
+        return BSON::Document;
+      }
 
       my $doc = $cursor.fetch;
       return $doc.defined ?? $doc !! BSON::Document.new;
