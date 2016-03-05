@@ -10,23 +10,39 @@ use BSON::Document;
 
 package MongoDB {
 
+  enum Topology-type < Unknown Standalone
+                       Replicaset-with-primary
+                       Replicaset-no-primary
+                     >;
+  enum Server-type < Unknown-server
+                     Replicaset-primary Replicaset-secondary
+                     Replicaset-arbiter
+                     Sharding-server
+                     Master-server Slave-server
+                     Replica-pre-init Recovering-server
+                     Rejected-server Failed-server Ghost-server
+                   >;
+
   #-----------------------------------------------------------------------------
   #
   class Client is MongoDB::ClientIF {
 
-    enum Server-state <Unknown Repl-Pre-Init Primary Secondary Rejected>;
+    has Bool $.found-master = False;
+    has Topology-type $.topology-type = Topology-type::Unknown;
 
     # Store all found servers here. key is the name of the server which is
     # the server address/ip and its port number. This should be unique.
     #
     has Hash $!servers;
 
-    has Array $!server-discovery;
+    # Key is same as for $!servers;
+    #
+    has Hash $!server-discovery;
+
     has Str $!uri;
 
     has BSON::Document $.read-concern;
-    has Bool $.found-master = False;
-    has Str $!replica-set;
+    has Str $!Replicaset;
 
     has Hash $!uri-data;
 
@@ -45,7 +61,7 @@ package MongoDB {
     submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern ) {
 
       $!servers = {};
-      $!server-discovery = [];
+      $!server-discovery = {};
       $!uri = $uri;
 
       # Parse the uri and get info in $uri-obj. Fields are protocol, username,
@@ -71,7 +87,7 @@ package MongoDB {
       #
       for @($uri-obj.server-data<servers>) -> Hash $sdata {
         my $db-admin = self.database('admin');
-        $!server-discovery.push: Promise.start( {
+        $!server-discovery{"$sdata<host>:$sdata<port>"} =  Promise.start( {
 
             # Create Server object. Throws on failure.
             #
@@ -99,7 +115,7 @@ say "Try connect to server $sdata<host>, $sdata<port>";
       # Investigate first before getting the nuber of servers. We get a
       # server ticket and must be removed again.
       #
-      self!cleanup-promises;    #self.select-server;
+      self!cleanup-promises;
       return $!servers.elems;
     }
 
@@ -112,6 +128,16 @@ say "Try connect to server $sdata<host>, $sdata<port>";
       # server ticket and must be removed again.
       #
       return self!cleanup-promises;
+    }
+
+    #---------------------------------------------------------------------------
+    # Called from thread above where Server object is created.
+    #
+    method server-status ( Str:D $server-name --> Server-type ) {
+
+      my Server-type $sts;
+      $sts = $!servers{$server-name}<status> if $!servers{$server-name}.defined;
+      return $sts;
     }
 
     #---------------------------------------------------------------------------
@@ -160,6 +186,7 @@ say "Try connect to server $sdata<host>, $sdata<port>";
     method select-server ( BSON::Document :$read-concern --> MongoDB::Server ) {
 
       my Bool $need-master = False;
+      my Bool $found-other-than-unusable;
 
       my MongoDB::Server $server;
 #      my Bool $server-is-master = False;
@@ -173,6 +200,8 @@ say "Try connect to server $sdata<host>, $sdata<port>";
       #
       while !$server.defined {
 
+        $found-other-than-unusable = False;
+
         # Check if there are any promises left.
         #
         my Int $still-planned = self!cleanup-promises;
@@ -181,16 +210,18 @@ say "Try connect to server $sdata<host>, $sdata<port>";
         #
         for $!servers.values -> Hash $srv-struct {
 
-          # Skip all rejected servers
+          # Skip all Rejected-server servers
           #
-          next if $srv-struct<status> ~~ Server-state::Rejected;
+          next if $srv-struct<status>
+            ~~ any(Server-type::Rejected-server|Server-type::Failed-server);
+          $found-other-than-unusable = True;
 
           # Check if server is not conflicting
           #
           $server = self!test-server-acceptance($srv-struct);
         }
 
-        self!cleanup-rejected;
+        self!cleanup-Rejected-server;
         last if $server.defined;
 
         if $still-planned {
@@ -198,11 +229,11 @@ say "Try connect to server $sdata<host>, $sdata<port>";
           sleep 1;
         }
 
-# and not $server-is-master
-        elsif $!servers.elems {
+        elsif $found-other-than-unusable {
+
           # Try again a bit later to give the servers monitoring some time
           #
-          warn-message("No master server found yet with $!uri, wait for server monitoringy");
+          warn-message("No server found yet with $!uri, wait for server monitoringy");
           sleep 1;
         }
 
@@ -210,7 +241,6 @@ say "Try connect to server $sdata<host>, $sdata<port>";
           error-message("No server found with $!uri, discovery data exhausted");
           last;
         }
-
       }
 
       return $server;
@@ -224,24 +254,23 @@ say "Try connect to server $sdata<host>, $sdata<port>";
 
       # Loop through all Promise objects
       #
-      loop ( my Int $pi = 0; $pi < $!server-discovery.elems; $pi++ ) {
+      for $!server-discovery.keys -> $server-name {
 
         # When processed, object is cleared. Skip them if encounter one
         #
-        next unless $!server-discovery[$pi].defined;
+        next unless $!server-discovery{$server-name}.defined;
 
         # If promise is kept, the Server object is created and
         # is stored in $!servers.
         #
-        my Promise $promise = $!server-discovery[$pi];
-        if $promise.status ~~ Kept {
-          my MongoDB::Server $server = $!server-discovery[$pi].result;
+        if $!server-discovery{$server-name}.status ~~ Kept {
+          my MongoDB::Server $server = $!server-discovery{$server-name}.result;
 
           info-message("Kept: $server.name()");
 
           # Cleanup promise entry
           #
-          $!server-discovery[$pi] = Nil;
+          $!server-discovery{$server-name}:delete;
 
           # Save server and start server monitoring.
           #
@@ -250,21 +279,19 @@ say "Try connect to server $sdata<host>, $sdata<port>";
 
         # When broken throw away result
         #
-        elsif $promise.status == Broken {
+        elsif $!server-discovery{$server-name}.status == Broken {
 
           # When broken, it is mostly caused by a thrown exception
           # so catch it here.
           #
           try {
-            $!server-discovery[$pi].result;
-            info-message("Broken promise");
-            $!server-discovery[$pi] = Nil;
+            $!server-discovery{$server-name}.result;
 
             CATCH {
               default {
-#                info-message("Broken promise");
                 warn-message(.message);
-                $!server-discovery[$pi] = Nil;
+                $!server-discovery{$server-name}:delete;
+                self!add-failed-server($server-name);
               }
             }
           }
@@ -272,8 +299,8 @@ say "Try connect to server $sdata<host>, $sdata<port>";
 
         # When planned look at it in next while cycle
         #
-        elsif $promise.status == Planned {
-          info-message("Thread $pi still running");
+        elsif $!server-discovery{$server-name}.status == Planned {
+          info-message("Thread for $server-name still running");
           $still-planned++;
         }
       }
@@ -288,7 +315,7 @@ say "Try connect to server $sdata<host>, $sdata<port>";
 
       $!servers{$server.name} = {
         server => $server,
-        status => Server-state::Unknown,
+        status => Server-type::Unknown-server,
         data-channel => Channel.new(),
         command-channel => Channel.new(),
         server-data => {
@@ -305,6 +332,18 @@ say "Try connect to server $sdata<host>, $sdata<port>";
         $!servers{$server.name}<data-channel>,
         $!servers{$server.name}<command-channel>
       );
+    }
+
+    #---------------------------------------------------------------------------
+    # Called from thread above where Server object is created.
+    #
+    method !add-failed-server ( Str:D $server-name ) {
+
+      $!servers{$server-name} = {
+        status => Server-type::Failed-server,
+      }
+
+      info-message( "Failed server $server-name saved");
     }
 
     #---------------------------------------------------------------------------
@@ -325,19 +364,21 @@ say "Try connect to server $sdata<host>, $sdata<port>";
       }
 say "Srv: $srv-struct<server-data>.perl()";
 
-      # No info yet to test against
+      # If there is no server data found yet to test against then skip the rest.
       #
       return MongoDB::Server unless $srv-struct<server-data><monitor>.keys;
+
 
       # Initial tests on server data
       #
       my Bool $accept-server = True;
 
+      my Str $replsetname = $srv-struct<srv-data><setName> // '';
+      my Bool $ismaster = $srv-struct<server-data><monitor><ismaster> //False;
+
       # Is replicaSet option used on uri?
       #
       if $!uri-data<options><replicaSet>:exists {
-
-        my Str $replsetname = $srv-struct<srv-data><setName> // '';
 
         # Server is accepted only if setName is equal to option
         #
@@ -349,23 +390,46 @@ say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
 
         # No two masters, set if server is accepted and is a master
         #
-        my Bool $ismaster = $srv-struct<server-data><monitor><ismaster>;
         $accept-server = not ($!found-master and $ismaster);
 say "Accept: $accept-server, $ismaster";
+      }
 
-        if $accept-server {
-          $!found-master = $ismaster if $ismaster;
-          $srv-struct<status> =
-            $ismaster ?? Server-state::Primary !! Server-state::Secondary;
-
-          $server = $srv-struct<server>;
-          debug-message("Server {$server.name} selected");
+      # 
+      if $accept-server {
+        if $ismaster {
+          $!found-master = True;
+          if $replsetname {
+            $srv-struct<status> = Server-type::Replicaset-primary;
+            $!topology-type = Topology-type::Replicaset-with-primary;
+          }
+          
+          else {
+            $srv-struct<status> = Server-type::Master-server;
+            $!topology-type = Topology-type::Standalone;
+          }
         }
 
         else {
-          $srv-struct<status> = Server-state::Rejected;
-          debug-message("Server {$server.name} rejected");
+
+          if $replsetname {
+            $srv-struct<status> = Server-type::Replicaset-secondary;
+            $!topology-type = Topology-type::Replicaset-no-primary
+              unless $!topology-type ~~ Topology-type::Replicaset-with-primary;
+          }
+
+          else {
+            $srv-struct<status> = Server-type::Slave-server;
+            $!topology-type = Topology-type::Standalone;
+          }
         }
+
+        $server = $srv-struct<server>;
+        debug-message("Server {$server.name} selected");
+      }
+
+      else {
+        $srv-struct<status> = Server-type::Rejected-server;
+        debug-message("Server {$server.name} Rejected server");
       }
 
       $server;
@@ -373,11 +437,12 @@ say "Accept: $accept-server, $ismaster";
 
     #---------------------------------------------------------------------------
     #
-    method !cleanup-rejected ( ) {
+    method !cleanup-Rejected-server ( ) {
+return;
 
       for $!servers.keys -> Str $srv-name {
 say "Status of $srv-name: $!servers{$srv-name}<status>";
-        if $!servers{$srv-name}<status> ~~ Server-state::Rejected {
+        if $!servers{$srv-name}<status> ~~ Server-type::Rejected-server {
           self!remove-server($!servers{$srv-name}<server>);
           $!servers{$srv-name}:delete;
         }

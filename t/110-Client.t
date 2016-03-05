@@ -22,7 +22,10 @@ subtest {
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
   my MongoDB::Server $server = $client.select-server;
   nok $server.defined, 'No servers selected';
-  is $client.nbr-servers, 0, 'No servers found';
+  is $client.nbr-servers, 1, 'One server found';
+  is $client.server-status('localhost:65535'),
+     MongoDB::Failed-server,
+     "Status of server is $client.server-status('localhost:65535')";
 
 
   $client .= new(:uri("mongodb://localhost:$p1"));
@@ -30,6 +33,10 @@ subtest {
   is $client.nbr-servers, 1, 'One server found';
   is $client.nbr-left-actions, 0, 'No actions left';
   is $client.found-master, True, 'Found a master';
+  is $client.server-status("localhost:$p1"),
+     MongoDB::Master-server,
+     "Status of server is $client.server-status("localhost:$p1")";
+     
 
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
@@ -42,8 +49,12 @@ set-exception-process-level(MongoDB::Severity::Debug);
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p2"));
   $server = $client.select-server;
-  is $client.nbr-servers, 1,
+  is $client.nbr-servers, 2,
      "Server $server.name() accepted, two servers were master";
+  is $client.server-status($server.name()),
+     MongoDB::Master-server,
+     "Status of server is Master-server";
+
 
 }, 'Independent servers';
 
