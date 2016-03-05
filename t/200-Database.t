@@ -8,7 +8,7 @@ use MongoDB::Database;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+#set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my BSON::Document $req;

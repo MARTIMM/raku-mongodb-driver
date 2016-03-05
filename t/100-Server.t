@@ -14,13 +14,11 @@ info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
 my MongoDB::Server $server;
-my BSON::Document $req;
-my BSON::Document $doc;
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client = get-connection();
+  $client = get-connection(:server(1));
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, 'Connection server available';
 

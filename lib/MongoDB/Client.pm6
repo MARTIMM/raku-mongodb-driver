@@ -91,7 +91,7 @@ package MongoDB {
 
             # Create Server object. Throws on failure.
             #
-say "Try connect to server $sdata<host>, $sdata<port>";
+#say "Try connect to server $sdata<host>, $sdata<port>";
             my MongoDB::Server $server .= new(
               :host($sdata<host>), :port($sdata<port>),
               :$!uri-data, :$db-admin
@@ -353,6 +353,7 @@ say "Try connect to server $sdata<host>, $sdata<port>";
 #TODO Check relation of servers otherwise refuse, not yet complete
 
       my MongoDB::Server $server;
+      my Bool $found-master = False;
 
       # Get new data from the server monitoring process. Might not yet be
       # available.
@@ -362,7 +363,7 @@ say "Try connect to server $sdata<host>, $sdata<port>";
         info-message("New server data from $srv-struct<server>.name()");
         $srv-struct<server-data> = $new-monitor-data;
       }
-say "Srv: $srv-struct<server-data>.perl()";
+#say "Srv: $srv-struct<server-data>.perl()";
 
       # If there is no server data found yet to test against then skip the rest.
       #
@@ -390,14 +391,15 @@ say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
 
         # No two masters, set if server is accepted and is a master
         #
-        $accept-server = not ($!found-master and $ismaster);
+        $accept-server = not ($found-master and $ismaster);
 say "Accept: $accept-server, $ismaster";
       }
 
-      # 
+      # When server can be accepted, set the status values
+      #
       if $accept-server {
         if $ismaster {
-          $!found-master = True;
+          $found-master = True;
           if $replsetname {
             $srv-struct<status> = Server-type::Replicaset-primary;
             $!topology-type = Topology-type::Replicaset-with-primary;
@@ -429,10 +431,11 @@ say "Accept: $accept-server, $ismaster";
 
       else {
         $srv-struct<status> = Server-type::Rejected-server;
-        debug-message("Server {$server.name} Rejected server");
+        debug-message("Server {$srv-struct<server>.name} rejected");
       }
 
-      $server;
+      $!found-master = $found-master;
+      return $server;
     }
 
     #---------------------------------------------------------------------------
