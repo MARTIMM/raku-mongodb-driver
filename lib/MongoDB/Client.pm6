@@ -221,7 +221,6 @@ package MongoDB {
           $server = self!test-server-acceptance($srv-struct);
         }
 
-        self!cleanup-Rejected-server;
         last if $server.defined;
 
         if $still-planned {
@@ -359,11 +358,11 @@ package MongoDB {
       # available.
       #
       my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
-      if $new-monitor-data.defined {
+      if $new-monitor-data.defined and $new-monitor-data<ok> {
         info-message("New server data from $srv-struct<server>.name()");
         $srv-struct<server-data> = $new-monitor-data;
       }
-#say "Srv: $srv-struct<server-data>.perl()";
+say "Srv: $srv-struct<server-data>.perl()";
 
       # If there is no server data found yet to test against then skip the rest.
       #
@@ -375,7 +374,9 @@ package MongoDB {
       my Bool $accept-server = True;
 
       my Str $replsetname = $srv-struct<srv-data><setName> // '';
-      my Bool $ismaster = $srv-struct<server-data><monitor><ismaster> //False;
+      my Bool $ismaster = $srv-struct<server-data><monitor><ismaster> // False;
+      my Bool $issecondary = $srv-struct<server-data><monitor><secondary> // False;
+      my Bool $isreplicaset = $srv-struct<server-data><monitor><isreplicaset> // False;
 
       # Is replicaSet option used on uri?
       #
@@ -398,20 +399,23 @@ say "Accept: $accept-server, $ismaster";
       # When server can be accepted, set the status values
       #
       if $accept-server {
+
         if $ismaster {
+
           $found-master = True;
           if $replsetname {
             $srv-struct<status> = Server-type::Replicaset-primary;
             $!topology-type = Topology-type::Replicaset-with-primary;
           }
-          
+
           else {
             $srv-struct<status> = Server-type::Master-server;
             $!topology-type = Topology-type::Standalone;
           }
         }
 
-        else {
+
+        elsif $issecondary {
 
           if $replsetname {
             $srv-struct<status> = Server-type::Replicaset-secondary;
@@ -425,6 +429,15 @@ say "Accept: $accept-server, $ismaster";
           }
         }
 
+        # The server is neither master nor secondary. If isreplicaset is True
+        # then it is a pre inititialized server
+        #
+        elsif $isreplicaset {
+          $srv-struct<status> = Server-type::Replica-pre-init;
+          $!topology-type = Topology-type::Topology-type::Replicaset-no-primary
+              unless $!topology-type ~~ Topology-type::Replicaset-with-primary;
+        }
+
         $server = $srv-struct<server>;
         debug-message("Server {$server.name} selected");
       }
@@ -436,20 +449,6 @@ say "Accept: $accept-server, $ismaster";
 
       $!found-master = $found-master;
       return $server;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method !cleanup-Rejected-server ( ) {
-return;
-
-      for $!servers.keys -> Str $srv-name {
-say "Status of $srv-name: $!servers{$srv-name}<status>";
-        if $!servers{$srv-name}<status> ~~ Server-type::Rejected-server {
-          self!remove-server($!servers{$srv-name}<server>);
-          $!servers{$srv-name}:delete;
-        }
-      }
     }
 
     #---------------------------------------------------------------------------

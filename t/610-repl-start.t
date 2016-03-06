@@ -44,11 +44,19 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Debug);
+
   # The name is not set yet, so no replicat name found in monitor result!
   #
   $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1"));
   while $client.nbr-left-actions { sleep 1; }
-  is $client.nbr-servers, 0, 'No server found';
+
+say "Type of localhost:$p2: $client.server-status('localhost:$p2')";
+#  is $client.server-status('localhost:65535'),
+#     MongoDB::Failed-server,
+#     "Status of server is $client.server-status('localhost:65535')";
+  
 
   # Get client without option
   #
