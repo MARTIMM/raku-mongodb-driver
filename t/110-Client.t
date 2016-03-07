@@ -24,7 +24,7 @@ subtest {
   nok $server.defined, 'No servers selected';
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status('localhost:65535'),
-     MongoDB::Failed-server,
+     MongoDB::Down-server,
      "Status of server is $client.server-status('localhost:65535')";
 
 

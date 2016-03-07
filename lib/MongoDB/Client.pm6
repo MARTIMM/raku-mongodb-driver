@@ -10,25 +10,25 @@ use BSON::Document;
 
 package MongoDB {
 
-  enum Topology-type < Unknown Standalone
+  enum Topology-type < TUnknown TStandalone
                        Replicaset-with-primary
                        Replicaset-no-primary
                      >;
-  enum Server-type < Unknown-server
-                     Replicaset-primary Replicaset-secondary
-                     Replicaset-arbiter
-                     Sharding-server
-                     Master-server Slave-server
-                     Replica-pre-init Recovering-server
-                     Rejected-server Failed-server Ghost-server
-                   >;
+  enum Server-status < Unknown-server Down-server
+                       Rejected-server Ghost-server
+                       Replicaset-primary Replicaset-secondary
+                       Replicaset-arbiter
+                       Sharding-server
+                       Master-server Slave-server
+                       Replica-pre-init Recovering-server
+                     >;
 
   #-----------------------------------------------------------------------------
   #
   class Client is MongoDB::ClientIF {
 
     has Bool $.found-master = False;
-    has Topology-type $.topology-type = Topology-type::Unknown;
+    has Topology-type $.topology-type = Topology-type::TUnknown;
 
     # Store all found servers here. key is the name of the server which is
     # the server address/ip and its port number. This should be unique.
@@ -133,9 +133,9 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Called from thread above where Server object is created.
     #
-    method server-status ( Str:D $server-name --> Server-type ) {
+    method server-status ( Str:D $server-name --> Server-status ) {
 
-      my Server-type $sts;
+      my Server-status $sts;
       $sts = $!servers{$server-name}<status> if $!servers{$server-name}.defined;
       return $sts;
     }
@@ -213,8 +213,9 @@ package MongoDB {
           # Skip all Rejected-server servers
           #
           next if $srv-struct<status>  ~~ any(
-            Server-type::Rejected-server |
-            Server-type::Failed-server
+            Server-status::Rejected-server |
+            Server-status::Down-server |
+            Server-status::Down-server
           );
           $found-other-than-unusable = True;
 
@@ -292,7 +293,7 @@ package MongoDB {
               default {
                 warn-message(.message);
                 $!server-discovery{$server-name}:delete;
-                self!add-failed-server($server-name);
+                self!add-Down-server($server-name);
               }
             }
           }
@@ -316,7 +317,7 @@ package MongoDB {
 
       $!servers{$server.name} = {
         server => $server,
-        status => Server-type::Unknown-server,
+        status => Server-status::Unknown-server,
         data-channel => Channel.new(),
         command-channel => Channel.new(),
         server-data => {
@@ -338,10 +339,10 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Called from thread above where Server object is created.
     #
-    method !add-failed-server ( Str:D $server-name ) {
+    method !add-Down-server ( Str:D $server-name ) {
 
       $!servers{$server-name} = {
-        status => Server-type::Failed-server,
+        status => Server-status::Down-server,
       }
 
       info-message( "Failed server $server-name saved");
@@ -406,13 +407,13 @@ say "Accept: $accept-server, $ismaster";
 
           $found-master = True;
           if $replsetname {
-            $srv-struct<status> = Server-type::Replicaset-primary;
+            $srv-struct<status> = Server-status::Replicaset-primary;
             $!topology-type = Topology-type::Replicaset-with-primary;
           }
 
           else {
-            $srv-struct<status> = Server-type::Master-server;
-            $!topology-type = Topology-type::Standalone;
+            $srv-struct<status> = Server-status::Master-server;
+            $!topology-type = Topology-type::TStandalone;
           }
         }
 
@@ -420,14 +421,14 @@ say "Accept: $accept-server, $ismaster";
         elsif $issecondary {
 
           if $replsetname {
-            $srv-struct<status> = Server-type::Replicaset-secondary;
+            $srv-struct<status> = Server-status::Replicaset-secondary;
             $!topology-type = Topology-type::Replicaset-no-primary
               unless $!topology-type ~~ Topology-type::Replicaset-with-primary;
           }
 
           else {
-            $srv-struct<status> = Server-type::Slave-server;
-            $!topology-type = Topology-type::Standalone;
+            $srv-struct<status> = Server-status::Slave-server;
+            $!topology-type = Topology-type::TStandalone;
           }
         }
 
@@ -435,7 +436,7 @@ say "Accept: $accept-server, $ismaster";
         # then it is a pre inititialized server
         #
         elsif $isreplicaset {
-          $srv-struct<status> = Server-type::Replica-pre-init;
+          $srv-struct<status> = Server-status::Replica-pre-init;
           $!topology-type = Topology-type::Topology-type::Replicaset-no-primary
               unless $!topology-type ~~ Topology-type::Replicaset-with-primary;
         }
@@ -445,7 +446,7 @@ say "Accept: $accept-server, $ismaster";
       }
 
       else {
-        $srv-struct<status> = Server-type::Rejected-server;
+        $srv-struct<status> = Server-status::Rejected-server;
         debug-message("Server {$srv-struct<server>.name} rejected");
       }
 
@@ -459,6 +460,7 @@ say "Accept: $accept-server, $ismaster";
       MongoDB::Server $server is copy,
       Bool :$force = False
     ) {
+
       my BSON::Document $doc = self.database('admin')._internal-run-command(
         BSON::Document.new((
           shutdown => 1,
@@ -480,6 +482,7 @@ say "Accept: $accept-server, $ismaster";
     #---------------------------------------------------------------------------
     #
     method _take-out-server ( MongoDB::Server $server is copy ) {
+
       if $server.defined {
 
         # Server can be taken out before when a failure takes place in the
@@ -501,9 +504,12 @@ say "Accept: $accept-server, $ismaster";
           #
           $srv-struct<command-channel>.send('stop');
           sleep 1;
-          $srv-struct<command-channel>.receive;
-          $!servers{$server.name}:delete;
-          undefine $server;
+          info-message(
+            "Server $server.name() " ~ $srv-struct<command-channel>.receive
+          );
+          $srv-struct<data-channel>.close;
+          $srv-struct<command-channel>.close;
+          $srv-struct<status> = Server-status::Down-server;
         }
       }
     }

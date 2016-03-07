@@ -169,7 +169,6 @@ package MongoDB {
 
           info-message("Server monitoring stopped for {self.name()}");
           $command-channel.send('stopped');
-#          $data-channel.close();
           $!server-monitor-control.release;
         }
       );

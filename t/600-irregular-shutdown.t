@@ -10,8 +10,8 @@ use MongoDB::Client;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
@@ -21,12 +21,18 @@ my MongoDB::Collection $collection;
 my BSON::Document $req;
 my BSON::Document $doc;
 
+my Int $p2 = get-port-number(:server(2));
+my Int $p3 = get-port-number(:server(3));
+
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= new(:uri('mongodb://:' ~ get-port-number(:server(3))));
-  while $client.nbr-left-actions -> $v {say "Left $v"; sleep 1;}
+  $client .= new(:uri("mongodb://:$p3"));
+  $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
+  is $client.server-status("localhost:$p3"),
+     MongoDB::Master-server,
+     "Status of server is " ~ $client.server-status("localhost:$p3");
 
   info-message('save 2 records');
   $collection = $client.collection('test.myColl');
@@ -48,15 +54,21 @@ subtest {
   info-message('insert same records again');
   $doc = $database.run-command($req);
   nok $doc.defined, 'Document not defined caused by server shutdown';
-  is $client.nbr-servers, 0, 'No servers found';
+  is $client.nbr-servers, 1, 'Still one server found';
+  is $client.server-status("localhost:$p3"),
+     MongoDB::Down-server,
+     "Status of server is " ~ $client.server-status("localhost:$p3");
 
 }, "Shutdown server 3 before run-command";
+
+done-testing();
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= new(:uri('mongodb://:' ~ get-port-number(:server(2))));
-  while $client.nbr-left-actions -> $v {say "Left $v"; sleep 1;}
+  $client .= new(:uri("mongodb://:$p2"));
+  $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
 
   info-message('insert 200 records');
