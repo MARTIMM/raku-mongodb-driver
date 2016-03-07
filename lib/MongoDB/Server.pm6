@@ -135,16 +135,16 @@ package MongoDB {
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
 
-              info-message(
-                "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
-              );
-
               # Send data to Client
               #
               $data-channel.send( {
                   monitor => $doc,
                   weighted-mean-rtt => $!weighted-mean-rtt
                 }
+              );
+
+              info-message(
+                "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
               );
 
               # Rest for a while
