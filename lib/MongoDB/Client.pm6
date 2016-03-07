@@ -212,8 +212,10 @@ package MongoDB {
 
           # Skip all Rejected-server servers
           #
-          next if $srv-struct<status>
-            ~~ any(Server-type::Rejected-server|Server-type::Failed-server);
+          next if $srv-struct<status>  ~~ any(
+            Server-type::Rejected-server |
+            Server-type::Failed-server
+          );
           $found-other-than-unusable = True;
 
           # Check if server is not conflicting
@@ -358,7 +360,7 @@ package MongoDB {
       # available.
       #
       my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
-      if $new-monitor-data.defined and $new-monitor-data<ok> {
+      if $new-monitor-data.defined and $new-monitor-data<monitor><ok> {
         info-message("New server data from $srv-struct<server>.name()");
         $srv-struct<server-data> = $new-monitor-data;
       }
