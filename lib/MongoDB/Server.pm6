@@ -117,8 +117,8 @@ package MongoDB {
               # Check the input-channel to see if there is a stop command. If so
               # exit the while loop. Take a nap otherwise.
               #
-#say "Chan {self.name()}: ", $command-channel.perl;
               my Str $cmd = $command-channel.poll // '';
+#say "Chan {self.name()}: $cmd";
               info-message("Receive command $cmd") if ?$cmd;
               last if ?$cmd and $cmd eq 'stop';
 
@@ -166,13 +166,13 @@ package MongoDB {
               }
             }
           }
+
+          info-message("Server monitoring stopped for {self.name()}");
+          $command-channel.send('stopped');
+#          $data-channel.close();
+          $!server-monitor-control.release;
         }
       );
-
-      info-message("Server monitoring stopped for {self.name()}");
-      $command-channel.send('stopped');
-#      $data-channel.close();
-      $!server-monitor-control.release;
     }
 
     #---------------------------------------------------------------------------
