@@ -61,6 +61,11 @@ A collection can be defined using Database.
 Helps MongoDB::Wire to encode and decode data for transport to and from server.
 
 
+=head2 MongoDB/Log.pm6
+
+Logging module.
+
+
 =head2 MongoDB/Server.pm6
 
 Class to represent a mongo server. This class can return Socket objects.
@@ -209,9 +214,7 @@ and a C<Warn> is. See also L<set-exception-process-level|#set-exception-process-
 Examples of use are shown below when defining the C<MongoDB::Message> Exception.
 
 Furthermore the severity is also tested against the exception trow level and and the
-exception is thrown when level gets to high (above threshold set with
-L<set-exception-throw-level|#set-exception-throw-level>.
-Checking occurs on the following conditions:
+exception is thrown when level is Fatal. Checking occurs on the following conditions:
 
 =for item1
 There is no checking when checking severity is turned off. See also
@@ -219,27 +222,11 @@ L<set-exception-processing|#set-exception-processing>.
 
 =for item1
 The severity in the exception is equal to or higher then the severity throw
-level. This is by default set to C<Fatal>. So a C<Trace> exception is not thrown
-but a C<Fatal> is. See also L<set-exception-throw-level|#set-exception-throw-level>.
+level. This is set to C<Fatal>. So a C<Trace> exception is not thrown
+but a C<Fatal> is.
 
 
 =head1 Exported subs
-
-=head2 set-exception-throw-level
-
-Defined as:
-
-  sub set-exception-throw-level (
-    Severity:D $s where Error <= $s <= Fatal
-  ) is export
-
-use as:
-
-  set-exception-throw-level(MongoDB::Severity::Error);
-
-Set the exception throwing level. Throwing an exception
-can only be done on Error or Fatal.
-
 
 =head2 set-exception-process-level
 
