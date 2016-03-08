@@ -14,13 +14,13 @@ package MongoDB {
                        Replicaset-with-primary
                        Replicaset-no-primary
                      >;
-  enum Server-status < Unknown-server Down-server
+  enum Server-status < Unknown-server Down-server Recovering-server
                        Rejected-server Ghost-server
                        Replicaset-primary Replicaset-secondary
                        Replicaset-arbiter
                        Sharding-server
                        Master-server Slave-server
-                       Replica-pre-init Recovering-server
+                       Replica-pre-init
                      >;
 
   #-----------------------------------------------------------------------------
@@ -86,25 +86,35 @@ package MongoDB {
       # to be discovered or that new non default cases are presented.
       #
       for @($uri-obj.server-data<servers>) -> Hash $sdata {
-        my $db-admin = self.database('admin');
-        $!server-discovery{"$sdata<host>:$sdata<port>"} =  Promise.start( {
-
-            # Create Server object. Throws on failure.
-            #
-#say "Try connect to server $sdata<host>, $sdata<port>";
-            my MongoDB::Server $server .= new(
-              :host($sdata<host>), :port($sdata<port>),
-              :$!uri-data, :$db-admin
-            );
-
-            # Return Server object when server could connect
-            #
-            info-message("Server $server.name() accepted");
-
-            $server;
-          }
+        my Str $server-name = "$sdata<host>:$sdata<port>";
+        $!server-discovery{$server-name} = self!start-server-promise(
+          $sdata<host>, $sdata<port>
         );
       }
+    }
+
+    #---------------------------------------------------------------------------
+    # Return number of servers
+    #
+    method !start-server-promise ( $host, $port --> Promise ) {
+
+      my $db-admin = self.database('admin');
+      Promise.start( {
+
+say "Try connect to server $host, $port";
+          # Create Server object. Throws on failure.
+          #
+          my MongoDB::Server $server .= new(
+            :$host, :$port, :$!uri-data, :$db-admin
+          );
+
+          # Return Server object when server could connect
+          #
+          info-message("Server $server.name() accepted");
+
+          $server;
+        }
+      );
     }
 
     #---------------------------------------------------------------------------
@@ -208,14 +218,20 @@ package MongoDB {
 
         # Loop through the existing set of already found servers
         #
-        for $!servers.values -> Hash $srv-struct {
+        for $!servers.keys -> Str $server-name {
 
-          # Skip all Rejected-server servers
+          my Hash $srv-struct = $!servers{$server-name};
+
+          # Try to revive down servers
+          #
+          self!revive-server( $server-name, $srv-struct);
+
+          # Skip all rejected and unconnectable servers
           #
           next if $srv-struct<status>  ~~ any(
             Server-status::Rejected-server |
             Server-status::Down-server |
-            Server-status::Down-server
+            Server-status::Recovering-server
           );
           $found-other-than-unusable = True;
 
@@ -254,6 +270,8 @@ package MongoDB {
 
       my Int $still-planned = 0;
 
+say "CLP: $!server-discovery.keys()";
+
       # Loop through all Promise objects
       #
       for $!server-discovery.keys -> $server-name {
@@ -265,6 +283,7 @@ package MongoDB {
         # If promise is kept, the Server object is created and
         # is stored in $!servers.
         #
+say "CLP: $server-name, ", $!server-discovery{$server-name}.status;
         if $!server-discovery{$server-name}.status ~~ Kept {
           my MongoDB::Server $server = $!server-discovery{$server-name}.result;
 
@@ -317,6 +336,7 @@ package MongoDB {
 
       $!servers{$server.name} = {
         server => $server,
+        timestamp => now,
         status => Server-status::Unknown-server,
         data-channel => Channel.new(),
         command-channel => Channel.new(),
@@ -350,6 +370,35 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
+    method !revive-server ( Str $server-name, Hash $srv-struct ) {
+
+      # Retry after every 5 sec
+      #
+      if $srv-struct<status> ~~ Server-status::Down-server
+         and (now - $srv-struct<timestamp> > 5) {
+
+        fatal-message("Discovery entry for $server-name still defined")
+          if $!server-discovery{$server-name}.defined;
+
+        # Next round is again some seconds from now
+        #
+        $srv-struct<timestamp> = now;
+
+        # When server is added this will also be set but we need this done
+        # sooner to prevent a second start in a later cycle. When the server
+        # fails to start, it will be set back to Down-server.
+        #
+        $srv-struct<status> = Server-status::Recovering-server;
+
+        ( my $host, my $port) = $server-name.split(':');
+say "Revive: $server-name, $host, $port";
+        $!server-discovery{$server-name} =
+          self!start-server-promise( $host, $port.Int);
+      }
+    }
+
+    #---------------------------------------------------------------------------
+    #
     method !test-server-acceptance ( Hash $srv-struct --> MongoDB::Server ) {
 
 #TODO Check relation of servers otherwise refuse, not yet complete
@@ -365,7 +414,7 @@ package MongoDB {
         info-message("New server data from $srv-struct<server>.name()");
         $srv-struct<server-data> = $new-monitor-data;
       }
-say "Srv: $srv-struct<server-data>.perl()";
+say "Srv: $srv-struct<server>.name(), $srv-struct<server-data>.perl()";
 
       # If there is no server data found yet to test against then skip the rest.
       #
@@ -510,6 +559,8 @@ say "Accept: $accept-server, $ismaster";
           $srv-struct<data-channel>.close;
           $srv-struct<command-channel>.close;
           $srv-struct<status> = Server-status::Down-server;
+          $srv-struct<timestamp> = now;
+          undefine $srv-struct<server>;
         }
       }
     }

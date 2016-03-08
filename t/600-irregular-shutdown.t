@@ -4,17 +4,19 @@ use Test-support;
 use Test;
 use MongoDB;
 use MongoDB::Client;
+use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Client;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
+#set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
+my MongoDB::Server $server;
 my MongoDB::Database $database;
 my MongoDB::Database $db-admin;
 my MongoDB::Collection $collection;
@@ -24,10 +26,11 @@ my BSON::Document $doc;
 my Int $p2 = get-port-number(:server(2));
 my Int $p3 = get-port-number(:server(3));
 
+$client .= new(:uri("mongodb://:$p3"));
+
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= new(:uri("mongodb://:$p3"));
   $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p3"),
@@ -49,25 +52,57 @@ subtest {
 
   info-message('shutdown server');
   $db-admin = $client.database('admin');
-  $db-admin.run-command: (shutdown => 1);
-
-  info-message('insert same records again');
-  $doc = $database.run-command($req);
-  nok $doc.defined, 'Document not defined caused by server shutdown';
   is $client.nbr-servers, 1, 'Still one server found';
+  $db-admin.run-command: (shutdown => 1);
   is $client.server-status("localhost:$p3"),
      MongoDB::Down-server,
      "Status of server is " ~ $client.server-status("localhost:$p3");
 
-}, "Shutdown server 3 before run-command";
+  info-message('insert same records again');
+  $doc = $database.run-command($req);
+  nok $doc.defined, 'Document not defined caused by server shutdown';
 
-done-testing();
-exit(0);
+}, "Shutdown server 3 before run-command";
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client .= new(:uri("mongodb://:$p2"));
+  my $prms = Promise.start( {
+      sleep 4;
+      ok start-mongod( "Sandbox/Server3", $p3), "Server 3 restarted";
+    }
+  );
+  
+  while not ($server = $client.select-server).defined {
+    info-message("Wait for localhost:$p3 to start");
+    sleep 2;
+  }
+
+  await $prms;
+
+  is $client.server-status("localhost:$p3"),
+     MongoDB::Master-server,
+     "Status of server 3 is " ~ $client.server-status("localhost:$p3");
+
+  info-message('Retrying insert same records again');
+  $req .= new: (
+    insert => $collection.name,
+    documents => [
+      BSON::Document.new((a => 1, b => 2),),
+      BSON::Document.new((a => 11, b => 22),),
+    ]
+  );
+  $doc = $database.run-command($req);
+  ok $doc.defined, "Document now defined after reviving localhost:$p3";
+
+}, 'Reviving server 3';
+
+#-------------------------------------------------------------------------------
+set-logfile($*OUT);
+$client .= new(:uri("mongodb://:$p2"));
+
+subtest {
+
   $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
 
@@ -108,7 +143,45 @@ subtest {
     }
   }
 
+  is $client.server-status("localhost:$p2"),
+     MongoDB::Down-server,
+     "Status of server 2 is " ~ $client.server-status("localhost:$p2");
+
 }, "Shutdown server 2 after find";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my $prms = Promise.start( {
+      sleep 4;
+      ok start-mongod( "Sandbox/Server2", $p2), "Server 2 restarted";
+    }
+  );
+
+  while not ($server = $client.select-server).defined {
+    info-message("Wait for localhost:$p2 to start");
+    sleep 2;
+  }
+
+  await $prms;
+
+  is $client.server-status("localhost:$p2"),
+     MongoDB::Master-server,
+     "Status of server 2 is " ~ $client.server-status("localhost:$p2");
+
+  info-message("Try to find records from collection again");
+  my MongoDB::Cursor $cursor = $collection.find;
+
+  my $count = 1;
+  while $cursor.fetch -> $doc {
+    info-message("record $count: $doc<a b>") unless $count % 10;
+    $count++;
+  }
+
+}, 'Reviving server 2';
+
+done-testing();
+exit(0);
 
 #-------------------------------------------------------------------------------
 #subtest {
