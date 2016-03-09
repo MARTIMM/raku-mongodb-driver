@@ -1,15 +1,15 @@
 use v6.c;
-use MongoDB::Log;
-
-#-------------------------------------------------------------------------------
-#
-package MongoDB:ver<0.28.7> {
+use MongoDB::Log :ALL;
 
   sub EXPORT { {
       '&set-exception-process-level'    => &set-exception-process-level,
       '&set-logfile'                    => &set-logfile
     }
   };
+
+#-------------------------------------------------------------------------------
+#
+package MongoDB:ver<0.28.7> {
 
   # Declare a message object to be used anywhere
   #
@@ -26,27 +26,27 @@ package MongoDB:ver<0.28.7> {
   }
 
   sub trace-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Trace));
+    $logger.log(|combine-args( c, MongoDB::Severity::Trace));
   }
 
   sub debug-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Debug));
+    $logger.log(|combine-args( c, MongoDB::Severity::Debug));
   }
 
   sub info-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Info));
+    $logger.log(|combine-args( c, MongoDB::Severity::Info));
   }
 
   sub warn-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Warn));
+    $logger.log(|combine-args( c, MongoDB::Severity::Warn));
   }
 
   sub error-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Error));
+    $logger.log(|combine-args( c, MongoDB::Severity::Error));
   }
 
   sub fatal-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Fatal));
+    $logger.log(|combine-args( c, MongoDB::Severity::Fatal));
   }
 }
 
