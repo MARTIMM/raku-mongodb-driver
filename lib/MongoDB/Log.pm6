@@ -137,8 +137,7 @@ package MongoDB {
     ) {
 #say 'l 0';
       return
-        unless ($do-check and ($severity >= MongoDB::Severity::Fatal))
-        or ($do-log and ($severity >= $severity-process-level));
+        unless ($do-log and ($severity >= $severity-process-level));
 
 
 #say "l 1: {callframe(3).line} {callframe(3).file}";
@@ -180,12 +179,12 @@ package MongoDB {
 #say "l 3";
       $control-logging.release;
 
-      return unless (
-        $do-check
-        and ($copy.severity >= MongoDB::Severity::Fatal)
-      );
+#      return unless (
+#        $do-check
+#        and ($copy.severity >= MongoDB::Severity::Fatal)
+#      );
 #say "l 4";
-      die $copy;
+      return $do-check ?? $copy !! Any;
     }
 
     #-----------------------------------------------------------------------------

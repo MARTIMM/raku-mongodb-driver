@@ -46,7 +46,8 @@ package MongoDB:ver<0.28.7> {
   }
 
   sub fatal-message ( |c ) is export {
-    $logger.log(|combine-args( c, MongoDB::Severity::Fatal));
+    my $mobj = $logger.log(|combine-args( c, MongoDB::Severity::Fatal));
+    die $mobj if $mobj.defined;
   }
 }
 
