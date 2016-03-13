@@ -278,7 +278,8 @@ package MongoDB {
     #-----------------------------------------------------------------------------
     #
     method info ( --> Str ) {
-      return [~] "$!message ", "[{$!method // ''}:$!line]"
+      $!message
+#      return [~] "$!message ", "[{$!method // ''}:$!line]"
 #                 ? $!code ?? " \({$!code})" !! '',
 #                 ? $!collection-ns ?? " Collection namespace $!collection-ns." !! '',
 #                 ? $!method ?? " From method $!method" !! '',
@@ -320,8 +321,47 @@ package MongoDB {
 
 
 
-  class Log {
+  # Declare a message object to be used anywhere
+  #
+  state MongoDB::Message $logger .= new;
 
-
+  sub combine-args ( $c, $s) {
+    my %args = $c.kv;
+    if $c.elems and $c<message>:!exists {
+      my Str $msg = $c[0] // '';
+      %args<message> = $msg;
+    }
+    %args<severity> = $s;
+    return %args;
   }
+
+  sub trace-message ( |c ) is export {
+    $logger.log(|combine-args( c, MongoDB::Severity::Trace));
+  }
+
+  sub debug-message ( |c ) is export {
+    $logger.log(|combine-args( c, MongoDB::Severity::Debug));
+  }
+
+  sub info-message ( |c ) is export {
+    $logger.log(|combine-args( c, MongoDB::Severity::Info));
+  }
+
+  sub warn-message ( |c ) is export {
+    $logger.log(|combine-args( c, MongoDB::Severity::Warn));
+  }
+
+  sub error-message ( |c ) is export {
+    $logger.log(|combine-args( c, MongoDB::Severity::Error));
+  }
+
+  sub fatal-message ( |c ) is export {
+    my $mobj = $logger.log(|combine-args( c, MongoDB::Severity::Fatal));
+    die $mobj if $mobj.defined;
+  }
+
+#  class Log {
+#
+#
+#  }
 }

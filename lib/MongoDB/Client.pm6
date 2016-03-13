@@ -270,7 +270,7 @@ say "Try connect to server $host, $port";
 
       my Int $still-planned = 0;
 
-say "CLP: $!server-discovery.keys()";
+say "CLP: servers $!server-discovery.keys()";
 
       # Loop through all Promise objects
       #
