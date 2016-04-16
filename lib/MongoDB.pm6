@@ -18,5 +18,8 @@ use MongoDB::Log :ALL;
 
 #-------------------------------------------------------------------------------
 #
-package MongoDB:ver<0.28.7> { }
+package MongoDB:ver<0.28.9> {
+#  signal(SIGTERM).act: {say "Hi"; die "Stopped by user"};
+
+}
 

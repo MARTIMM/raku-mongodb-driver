@@ -1,4 +1,5 @@
 use v6.c;
+
 use MongoDB;
 use MongoDB::Uri;
 use MongoDB::ClientIF;
@@ -14,6 +15,8 @@ package MongoDB {
                        Replicaset-with-primary
                        Replicaset-no-primary
                      >;
+
+  # Start as Unknown-server.
   enum Server-status < Unknown-server Down-server Recovering-server
                        Rejected-server Ghost-server
                        Replicaset-primary Replicaset-secondary
@@ -98,15 +101,12 @@ package MongoDB {
     #
     method !start-server-promise ( $host, $port --> Promise ) {
 
-      my $db-admin = self.database('admin');
       Promise.start( {
 
 say "Try connect to server $host, $port";
           # Create Server object. Throws on failure.
           #
-          my MongoDB::Server $server .= new(
-            :$host, :$port, :$!uri-data, :$db-admin
-          );
+          my MongoDB::Server $server .= new( :$host, :$port, :$!uri-data);
 
           # Return Server object when server could connect
           #

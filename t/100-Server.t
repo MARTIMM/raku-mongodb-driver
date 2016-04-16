@@ -1,10 +1,11 @@
 use v6.c;
 use lib 't';
+
 use Test-support;
 use Test;
 use MongoDB;
-use MongoDB::Client;
 use MongoDB::Server;
+use MongoDB::Server::Monitor;
 use MongoDB::Socket;
 
 #-------------------------------------------------------------------------------
@@ -12,79 +13,31 @@ use MongoDB::Socket;
 #set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client;
-my MongoDB::Server $server;
+my $p1 = get-port-number(:server(1));
+my $data-channel = Channel.new;
+my $command-channel = Channel.new;
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client = get-connection(:server(1));
-  my MongoDB::Server $server = $client.select-server;
+  my MongoDB::Server $server .= new( :host<localhost>, :port($p1));
   ok $server.defined, 'Connection server available';
 
-  my MongoDB::Socket $socket = $server.get-socket;
-  ok $socket.is-open, 'Socket is open';
-  $socket.close;
-  nok $socket.is-open, 'Socket is closed';
+  my MongoDB::Server::Monitor $server-monitor = $server.server-monitor;
+  $server-monitor.monitor-looptime = 1;
+  is $server-monitor.monitor-looptime, 1, 'Monitor loop time changed';
+  $server-monitor.monitor-server( $data-channel, $command-channel);
 
-  try {
-    my @skts;
-    for ^10 {
-      my $s = $server.get-socket;
+  sleep 2;
+  my Hash $monitor-data = $data-channel.poll // Hash.new;
+  ok $monitor-data<monitor>:exists, 'Data is set';
+  ok $monitor-data<monitor><ismaster>, 'This server is master';
 
-      # Still below max
-      #
-      @skts.push($s);
+  $command-channel.send('stop');
+  sleep 2;
+  is $command-channel.receive, 'stopped', 'Monitoring stopped';
 
-      CATCH {
-        when MongoDB::Message {
-          ok .message ~~ m:s/Too many sockets 'opened,' max is/,
-             "Too many sockets opened, max is $server.max-sockets()";
-
-          for @skts { .close; }
-          last;
-        }
-      }
-    }
-  }
-
-  try {
-    $server.set-max-sockets(5);
-    is $server.max-sockets, 5, "Maximum socket $server.max-sockets()";
-
-    my @skts;
-    for ^10 {
-      my $s = $server.get-socket;
-
-      # Still below max
-      #
-      @skts.push($s);
-
-      CATCH {
-        when MongoDB::Message {
-          ok .message ~~ m:s/Too many sockets 'opened,' max is/,
-             "Too many sockets opened, max is $server.max-sockets()";
-
-          for @skts { .close; }
-          last;
-        }
-      }
-    }
-  }
-
-  try {
-    $server.set-max-sockets(2);
-
-    CATCH {
-      default {
-        is .message,
-           "Constraint type check failed for parameter '\$max-sockets'",
-           .message;
-      }
-    }
-  }
-
-}, 'Client, Server, Socket tests';
+}, 'Server monitoring tests';
 
 #-------------------------------------------------------------------------------
 # Cleanup

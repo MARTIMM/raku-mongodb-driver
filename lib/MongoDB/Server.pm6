@@ -1,8 +1,8 @@
 use v6.c;
+
 use MongoDB;
+use MongoDB::Server::Monitor;
 use MongoDB::Socket;
-#use MongoDB::ClientIF;
-use MongoDB::DatabaseIF;
 use BSON::Document;
 
 package MongoDB {
@@ -22,10 +22,9 @@ package MongoDB {
 
     has Duration $!weighted-mean-rtt .= new(0);
 
-    has MongoDB::DatabaseIF $!db-admin;
-
-    # Variables to control infinite monitoring actions
+    # Variables to control infinite server monitoring actions
     #
+    has MongoDB::Server::Monitor $.server-monitor;
     has Promise $!promise-monitor;
     has Semaphore $!server-monitor-control;
 
@@ -41,13 +40,11 @@ package MongoDB {
       Int:D :$port! where (0 <= $_ <= 65535),
       Int :$max-sockets where $_ >= 3 = 3,
       Hash :$uri-data,
-      MongoDB::DatabaseIF:D :$db-admin,
     ) {
-      $!db-admin = $db-admin;
       $!server-name = $host;
       $!server-port = $port;
       $!max-sockets = $max-sockets;
-      $!uri-data = $uri-data;
+      $!uri-data = $uri-data // %();
 
       $!server-monitor-control .= new(1);
       $!server-socket-selection .= new(1);
@@ -60,32 +57,12 @@ package MongoDB {
         :port($!server-port)
       );
 
+      $!server-monitor .= new: :server(self);
+
       # Must close this because of thread errors when reading the socket
       # Besides the sockets are encapsulated in Socket and kept in an array.
       #
       $sock.close;
-    }
-
-    #---------------------------------------------------------------------------
-    # Is called from Client in same thread as server creation. Any run command
-    # will end up in a Wire object which will ask select-server to get a ticket
-    # linked to a Server object. When calling this method no info is yet
-    # available and needs to be retrieved. This causes an endless loop when we
-    # call a run-command to get server info. This is prevented here by storing
-    # the Server object ourselfs and send the ticket with the run-command. When
-    # it arrives ate the Wire object query method it knows not to call for
-    # server-select and get the Server object using the provided ticket.
-    #
-    method _initial-poll ( --> BSON::Document ) {
-
-      # Calculation of mean Return Trip Time
-      #
-      my BSON::Document $doc = $!db-admin._internal-run-command(
-        BSON::Document.new((isMaster => 1)),
-        :server(self)
-      );
-
-      return $doc;
     }
 
     #---------------------------------------------------------------------------
@@ -94,84 +71,7 @@ package MongoDB {
     #
     method _monitor-server ( Channel $data-channel, Channel $command-channel ) {
 
-      # Set the lock so the code will only be started once. When server or
-      # program stops(controlled), the code is terminated via a channel.
-      #
-#say "Start {self.name()} monitoring";
-      return unless $!server-monitor-control.try_acquire;
-#say "Acquired lock";
-
-      $!promise-monitor .= start( {
-          my Instant $t0;
-          my BSON::Document $doc;
-          my Duration $rtt;
-
-          # As long as the server lives test it. Changes are possible when 
-          # server conditions change.
-          #
-          loop {
-
-            # Temporary try block to catch typos
-            try {
-
-              # Check the input-channel to see if there is a stop command. If so
-              # exit the while loop. Take a nap otherwise.
-              #
-              my Str $cmd = $command-channel.poll // '';
-#say "Chan {self.name()}: $cmd";
-              info-message("Receive command $cmd") if ?$cmd;
-              last if ?$cmd and $cmd eq 'stop';
-
-              # Calculation of mean Return Trip Time
-              #
-              $t0 = now;
-              $doc = $!db-admin._internal-run-command(
-                BSON::Document.new((isMaster => 1)),
-                :server(self)
-              );
-#say "Monitor {self.name()}: ", $doc.perl;
-              $rtt = now - $t0;
-              $!weighted-mean-rtt .= new(
-                0.2 * $rtt + 0.8 * $!weighted-mean-rtt
-              );
-
-              # Send data to Client
-              #
-              $data-channel.send( {
-                  monitor => $doc,
-                  weighted-mean-rtt => $!weighted-mean-rtt
-                }
-              );
-
-              info-message(
-                "Weighted mean RTT: $!weighted-mean-rtt for server {self.name}"
-              );
-
-              # Rest for a while
-              #
-              sleep 10;
-
-              # Capture errors. When there are any, stop monitoring. On older
-              # servers before version 3.2 the server just stops communicating
-              # when a shutdown command was given. Opening a socket will then
-              # bring us here.
-              #
-              CATCH {
-                default {
-                  warn-message(
-                    "Server {self.name} caught error while monitoring, quitting"
-                  );
-                  last;
-                }
-              }
-            }
-          }
-
-          info-message("Server monitoring stopped for {self.name()}");
-          $command-channel.send('stopped');
-          $!server-monitor-control.release;
-        }
-      );
+      $!server-monitor.monitor-server( $data-channel, $command-channel);
     }
 
     #---------------------------------------------------------------------------

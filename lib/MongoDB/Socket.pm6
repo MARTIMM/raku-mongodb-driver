@@ -42,7 +42,7 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    method receive ( Int $nbr-bytes --> Buf ) {
+    method receive ( int $nbr-bytes --> Buf ) {
 #TODO Check if sock is usable
       return $!sock.read($nbr-bytes);
     }

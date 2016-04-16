@@ -1,5 +1,6 @@
 use v6.c;
 use lib 't';
+
 use Test-support;
 use Test;
 use MongoDB;
@@ -7,6 +8,7 @@ use MongoDB::Client;
 use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
+
 #set-logfile($*OUT);
 #set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
