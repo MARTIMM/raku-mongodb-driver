@@ -10,8 +10,10 @@ use MongoDB::Collection;
 use MongoDB::Client;
 use MongoDB::Cursor;
 
+#signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
+
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
+set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
