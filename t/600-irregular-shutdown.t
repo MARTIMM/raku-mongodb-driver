@@ -1,5 +1,6 @@
 use v6.c;
 use lib 't';
+
 use Test-support;
 use Test;
 use MongoDB;
@@ -155,7 +156,7 @@ subtest {
 subtest {
 
   my $prms = Promise.start( {
-      sleep 4;
+      sleep 2;
       ok start-mongod( "Sandbox/Server2", $p2), "Server 2 restarted";
     }
   );

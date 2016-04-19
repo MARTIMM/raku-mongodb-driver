@@ -25,7 +25,7 @@ package MongoDB {
     #
     has @.documents;
 
-    has $server where .^name eq 'MongoDB::Server';
+    has $server;
 
     #---------------------------------------------------------------------------
     # Support for the newer BSON::Document
@@ -53,7 +53,6 @@ package MongoDB {
       }
 
       # Get documents from the reply.
-      #
       @!documents = $server-reply<documents>.list;
     }
 

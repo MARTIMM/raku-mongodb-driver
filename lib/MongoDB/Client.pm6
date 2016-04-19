@@ -11,12 +11,13 @@ use BSON::Document;
 
 package MongoDB {
 
+  # Start as TUnknown type and Unknown-server status
+  #
   enum Topology-type < TUnknown TStandalone
                        Replicaset-with-primary
                        Replicaset-no-primary
                      >;
 
-  # Start as Unknown-server.
   enum Server-status < Unknown-server Down-server Recovering-server
                        Rejected-server Ghost-server
                        Replicaset-primary Replicaset-secondary
@@ -204,7 +205,7 @@ say "Try connect to server $host, $port";
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-
+say "SS: 0";
       # As long as we didn't find a server. Break out of the loop
       # if there is no data left.
       #
@@ -215,10 +216,12 @@ say "Try connect to server $host, $port";
         # Check if there are any promises left.
         #
         my Int $still-planned = self!cleanup-promises;
+say "SS: 1, still planned: $still-planned";
 
         # Loop through the existing set of already found servers
         #
         for $!servers.keys -> Str $server-name {
+say "SS: 2, server: $server-name";
 
           my Hash $srv-struct = $!servers{$server-name};
 
@@ -228,11 +231,13 @@ say "Try connect to server $host, $port";
 
           # Skip all rejected and unconnectable servers
           #
+say "SS: 3, server status: $srv-struct<status>";
           next if $srv-struct<status>  ~~ any(
             Server-status::Rejected-server |
             Server-status::Down-server |
             Server-status::Recovering-server
           );
+
           $found-other-than-unusable = True;
 
           # Check if server is not conflicting
@@ -240,6 +245,7 @@ say "Try connect to server $host, $port";
           $server = self!test-server-acceptance($srv-struct);
         }
 
+say "SS: 4, server defined: {$server.defined ?? $server.name !! '-'}";
         last if $server.defined;
 
         if $still-planned {
@@ -251,7 +257,7 @@ say "Try connect to server $host, $port";
 
           # Try again a bit later to give the servers monitoring some time
           #
-          warn-message("No server found yet with $!uri, wait for server monitoringy");
+          warn-message("No server found yet with $!uri, wait for server monitoring");
           sleep 1;
         }
 
@@ -261,6 +267,7 @@ say "Try connect to server $host, $port";
         }
       }
 
+say "SS: 5, server returned: {$server.defined ?? $server.name !! '-'}";
       return $server;
     }
 
@@ -407,10 +414,18 @@ say "Revive: $server-name, $host, $port";
       my Bool $found-master = False;
 
       # Get new data from the server monitoring process. Might not yet be
-      # available.
+      # available. The monitoring takes place regularly so we must get the
+      # last data sent over the channel.
       #
-      my Hash $new-monitor-data = $srv-struct<data-channel>.poll // Hash;
-      if $new-monitor-data.defined and $new-monitor-data<monitor><ok> {
+      my Hash $new-monitor-data;
+      while my Hash $nmd = $srv-struct<data-channel>.poll // Hash {
+        $new-monitor-data = $nmd if $nmd.defined;
+      }
+
+      if $new-monitor-data.defined              # Data sent?
+         and $new-monitor-data<ok>              # Server ok
+         and $new-monitor-data<monitor><ok> {   # Sent server data ok
+
         info-message("New server data from $srv-struct<server>.name()");
         $srv-struct<server-data> = $new-monitor-data;
       }
@@ -491,7 +506,7 @@ say "Accept: $accept-server, $ismaster";
         }
 
         $server = $srv-struct<server>;
-        debug-message("Server {$server.name} selected");
+        debug-message("Server {$server.name} type and status: $!topology-type, $srv-struct<status>");
       }
 
       else {
@@ -532,6 +547,7 @@ say "Accept: $accept-server, $ismaster";
     #
     method _take-out-server ( MongoDB::Server $server is copy ) {
 
+#TODO no removal but change state !!!!!!
       if $server.defined {
 
         # Server can be taken out before when a failure takes place in the
@@ -549,18 +565,18 @@ say "Accept: $accept-server, $ismaster";
       for $!servers.values -> Hash $srv-struct {
         if $srv-struct<server> === $server {
 
-          # Stop monitoring on server and wait for it to stop
-          #
-          $srv-struct<command-channel>.send('stop');
-          sleep 1;
-          info-message(
-            "Server $server.name() " ~ $srv-struct<command-channel>.receive
-          );
+#          # Stop monitoring on server and wait for it to stop
+#          #
+#          $srv-struct<command-channel>.send('stop');
+#          sleep 1;
+#          info-message(
+#            "Server $server.name() " ~ $srv-struct<command-channel>.receive
+#          );
           $srv-struct<data-channel>.close;
           $srv-struct<command-channel>.close;
           $srv-struct<status> = Server-status::Down-server;
           $srv-struct<timestamp> = now;
-          undefine $srv-struct<server>;
+#          undefine $srv-struct<server>;
         }
       }
     }
@@ -569,8 +585,26 @@ say "Accept: $accept-server, $ismaster";
     #
     method DESTROY ( ) {
 
-      for $!servers.values -> Hash $srv-struct {
-        self!remove-server($srv-struct<server>);
+      # Remove all servers concurrently. Shouldn't be many per client.
+      for $!servers.values.race(batch => 1) -> Hash $srv-struct {
+
+#        self!remove-server($srv-struct<server>);
+
+        if $srv-struct<server>.defined {
+
+          # Stop monitoring on server and wait for it to stop
+          #
+          $srv-struct<command-channel>.send('stop');
+          sleep 15;
+          info-message(
+            "Server $srv-struct<server>.name() "
+              ~ $srv-struct<command-channel>.receive
+          );
+
+          $srv-struct<data-channel>.close;
+          $srv-struct<command-channel>.close;
+          undefine $srv-struct<server>;
+        }
       }
 
       debug-message("Client destroyed");

@@ -43,8 +43,7 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0, List :$read-concern,
-      :$server is copy #`{{where .^name eq 'MongoDB::Server'}} = Nil
+      Int :$flags = 0, List :$read-concern
 
       --> MongoDB::Cursor
     ) {
@@ -57,8 +56,7 @@ package MongoDB {
          $read-concern.defined ?? BSON::Document.new: $read-concern
                                !! $!read-concern;
 
-      $server = $.database.client.select-server(:read-concern($rc))
-        unless $server.defined;
+      my $server = $.database.client.select-server(:read-concern($rc));
 
       if not $server.defined {
         error-message("No server object for query");
@@ -93,8 +91,7 @@ package MongoDB {
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
       Int :$flags = 0,
-      BSON::Document :$read-concern,
-      :$server is copy #`{{where .^name eq 'MongoDB::Server'}} = Nil
+      BSON::Document :$read-concern
 
       --> MongoDB::Cursor
     ) {
@@ -106,8 +103,7 @@ package MongoDB {
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-      $server = $.database.client.select-server(:read-concern($rc))
-        unless $server.defined;
+      my $server = $.database.client.select-server(:read-concern($rc));
 
       if not $server.defined {
         error-message("No server object for query");
@@ -124,11 +120,7 @@ package MongoDB {
         return MongoDB::Cursor;
       }
 
-      return MongoDB::Cursor.new(
-        :collection(self),
-        :$server-reply,
-        :$server
-      );
+      return MongoDB::Cursor.new( :collection(self), :$server-reply, :$server);
     }
 
     #---------------------------------------------------------------------------

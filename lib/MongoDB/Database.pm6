@@ -129,41 +129,6 @@ package MongoDB {
     }
 
     #---------------------------------------------------------------------------
-    method _internal-run-command (
-      BSON::Document:D $command,
-      BSON::Document :$read-concern = BSON::Document.new,
-      :$server where .^name eq 'MongoDB::Server'
-      --> BSON::Document
-    ) {
-
-      debug-message(
-        "run internal command $command.find-key(0) on $server.name()"
-      );
-
-      my BSON::Document $rc =
-        $read-concern.defined ?? $read-concern !! $!read-concern;
-
-      # And use it to do a find on it, get the doc and return it.
-      #
-      my MongoDB::Cursor $cursor = $!cmd-collection.find(
-        :criteria($command),
-        :number-to-return(1),
-        :read-concern($rc),
-        :$server
-      );
-
-      # Return undefined on server problems
-      #
-      if not $cursor.defined {
-        error-message("No cursor returned");
-        return BSON::Document;
-      }
-
-      my $doc = $cursor.fetch;
-      return $doc.defined ?? $doc !! BSON::Document.new;
-    }
-
-    #---------------------------------------------------------------------------
     method !set-name ( Str $name = '' ) {
 
       # Check special database first. Should be empty and is set later

@@ -95,6 +95,7 @@ class Server::Monitor {
 
             # Send data to Client
             $data-channel.send( {
+                ok => True,
                 monitor => $doc<documents>[0],
                 weighted-mean-rtt => $!weighted-mean-rtt
               }
@@ -107,13 +108,18 @@ class Server::Monitor {
             # Rest for a while
             sleep($!monitor-looptime);
 
-            # Capture errors. When there are any, stop monitoring. On older
-            # servers before version 3.2 the server just stops communicating
-            # when a shutdown command was given. Opening a socket will then
-            # bring us here.
+            # Capture errors. When there are any, On older servers before
+            # version 3.2 the server just stops communicating when a shutdown
+            # command was given. Opening a socket will then bring us here.
+            # Send ok False to mention the fact that the server is down.
             #
             CATCH {
               default {
+                $data-channel.send( {
+                    ok => False,
+                  }
+                );
+
                 warn-message(
                   "Server $!server.name() error while monitoring, changing state"
                 );
@@ -159,28 +165,6 @@ class Server::Monitor {
       # Assert that the request-id and response-to are the same
       fatal-message("Id in request is not the same as in the response")
         unless $request-id == $!monitor-result<message-header><response-to>;
-
-      # Catch all thrown exceptions and take out the server if needed
-      #
-      CATCH {
-#channel server state!
-        when MongoDB::Message {
-#          $client._take-out-server($server);
-        }
-
-        default {
-          when Str {
-            warn-message($_);
-#            $client._take-out-server($server);
-          }
-
-          when Exception {
-            warn-message(.message);
-#            $client._take-out-server($server);
-          }
-        }
-
-      }
     }
 
     $!socket.close;

@@ -5,258 +5,258 @@ use MongoDB;
 use MongoDB::CollectionIF;
 use MongoDB::Header;
 
-package MongoDB {
+unit package MongoDB;
 
-  class Wire {
+class Wire {
 
-    #---------------------------------------------------------------------------
+  has $!server;
+  has $!socket;
+
+  #-----------------------------------------------------------------------------
+  #
+  method query (
+    MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
+    BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
+    :$number-to-return, :$server where .^name eq 'MongoDB::Server'
+    --> BSON::Document
+  ) {
+
+    $!server = $server;
+
+    # Must clone the document otherwise the MongoDB::Header will be added
+    # to the $qdoc even when the copy trait is used.
     #
-    method query (
-      MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
-      BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
-      :$number-to-return, :$server where .^name eq 'MongoDB::Server'
-      --> BSON::Document
-    ) {
-      # Must clone the document otherwise the MongoDB::Header will be added
-      # to the $qdoc even when the copy trait is used.
+    my BSON::Document $d = $qdoc.clone;
+    $d does MongoDB::Header;
+    my BSON::Document $result;
+
+    my Bool $write-operation = False;
+    my $client;
+
+    try {
+      $client = $collection.database.client;
+
+      # Check if the server ticket is defined and thus a server is reserved
+      # for this communication.
       #
-      my BSON::Document $d = $qdoc.clone;
-      $d does MongoDB::Header;
-      my BSON::Document $result;
+      fatal-message("No server available") unless $!server.defined;
 
-      my Bool $write-operation = False;
-      my $client;
-      my $socket;
-
-      try {
-        $client = $collection.database.client;
-
-        # Check if the server ticket is defined and thus a server is reserved
-        # for this communication.
-        #
-        fatal-message("No server available") unless $server.defined;
-
-        $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
+      $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
 #say "Need master for {$d.find-key(0)} $write-operation";
-        my $full-collection-name = $collection.full-collection-name;
+      my $full-collection-name = $collection.full-collection-name;
 
-        ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
-          $full-collection-name, $projection,
-          :$flags, :$number-to-skip, :$number-to-return
-        );
+      ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
+        $full-collection-name, $projection,
+        :$flags, :$number-to-skip, :$number-to-return
+      );
 
-        $socket = $server.get-socket;
-        $socket.send($encoded-query);
+      $!socket = $server.get-socket;
+      $!socket.send($encoded-query);
 
-        # Read 4 bytes for int32 response size
-        #
-        my Buf $size-bytes = $socket.receive(4);
-        if $size-bytes.elems == 0 {
-          # Try again
-          #
-          $size-bytes = $socket.receive(4);
-          fatal-message("No response from server") if $size-bytes.elems == 0;
-        }
-
-        if $size-bytes.elems < 4 {
-          # Try to get the rest of it
-          #
-          $size-bytes.push($socket.receive(4 - $size-bytes.elems));
-          fatal-message("Response corrupted") if $size-bytes.elems < 4;
-        }
-
-        my Int $response-size = decode-int32( $size-bytes, 0) - 4;
-
-        # Receive remaining response bytes from socket. Prefix it with the
-        # already read bytes and decode. Return the resulting document.
-        #
-        my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
-        if $server-reply.elems < $response-size + 4 {
-          $server-reply.push($socket.receive($response-size));
-          fatal-message("Response corrupted") if $server-reply.elems < $response-size + 4;
-        }
-
-        $result = $d.decode-reply($server-reply);
-
-        # Assert that the request-id and response-to are the same
-        #
-        fatal-message("Id in request is not the same as in the response")
-          unless $request-id == $result<message-header><response-to>;
-
-
-        # Catch all thrown exceptions and take out the server if needed
-        #
-        CATCH {
-          when MongoDB::Message {
-            $client._take-out-server($server);
-          }
-
-          default {
-            when Str {
-              warn-message($_);
-              $client._take-out-server($server);
-            }
-
-            when Exception {
-              warn-message(.message);
-              $client._take-out-server($server);
-            }
-          }
-
-        }
-      }
-
-      $socket.close if $socket.defined;
-      return $result;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method get-more (
-      $cursor,
-      :$server where .^name eq 'MongoDB::Server'
-      --> BSON::Document
-    ) {
-
-      my BSON::Document $d .= new;
-      $d does MongoDB::Header;
-      my $client;
-      my $socket;
-      my BSON::Document $result;
-
-      try {
-
-        ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
-          $cursor.full-collection-name, $cursor.id
-        );
-
-        $client = $cursor.client;
-
-        fatal-message("No server available") unless $server.defined;
-        $socket = $server.get-socket;
-        $socket.send($encoded-get-more);
-
-        # Read 4 bytes for int32 response size
-        #
-        my Buf $size-bytes = $socket.receive(4);
-        if $size-bytes.elems == 0 {
-          # Try again
-          #
-          $size-bytes = $socket.receive(4);
-          fatal-message("No response from server") if $size-bytes.elems == 0;
-        }
-
-        if $size-bytes.elems < 4 {
-          # Try to get the rest of it
-          #
-          $size-bytes.push($socket.receive(4 - $size-bytes.elems));
-          fatal-message("Response corrupted") if $size-bytes.elems < 4;
-        }
-
-        my Int $response-size = decode-int32( $size-bytes, 0) - 4;
-
-        # Receive remaining response bytes from socket. Prefix it with the already
-        # read bytes and decode. Return the resulting document.
-        #
-        my Buf $server-reply = $size-bytes ~ $socket.receive($response-size);
-        if $server-reply.elems < $response-size + 4 {
-          $server-reply.push($socket.receive($response-size));
-          fatal-message("Response corrupted") if $server-reply.elems < $response-size + 4;
-        }
-
-        $result = $d.decode-reply($server-reply);
-  # TODO check if cursorID matches (if present)
-
-        # Assert that the request-id and response-to are the same
-        #
-        fatal-message("Id in request is not the same as in the response")
-          unless $request-id == $result<message-header><response-to>;
-
-
-        # Catch all thrown exceptions and take out the server if needed
-        #
-        CATCH {
-          when MongoDB::Message {
-            $client._take-out-server($server);
-          }
-
-          default {
-            when Str {
-              warn-message($_);
-              $client._take-out-server($server);
-            }
-
-            when Exception {
-              warn-message(.message);
-              $client._take-out-server($server);
-            }
-          }
-        }
-      }
-
-      $socket.close if $socket.defined;
-      return $result;
-    }
-
-    #---------------------------------------------------------------------------
-    #
-    method kill-cursors (
-      @cursors where .elems > 0,
-      :$server! where .^name eq 'MongoDB::Server'
-    ) {
-
-      my BSON::Document $d .= new;
-      $d does MongoDB::Header;
-      my $client;
-      my $socket;
-
-      # Gather the ids only when they are non-zero.i.e. still active.
+      # Read 4 bytes for int32 response size
       #
-      my Buf @cursor-ids;
-      for @cursors -> $cursor {
-        @cursor-ids.push($cursor.id) if [+] $cursor.id.list;
-      }
+      my Buf $size-bytes = self!get-bytes(4);
 
-      # Kill the cursors if found any
+      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+
+      # Receive remaining response bytes from socket. Prefix it with the
+      # already read bytes and decode. Return the resulting document.
       #
-      $client = @cursors[0].client;
+      my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
 
-      try {
-        fatal-message("No server available") unless $server.defined;
-        $socket = $server.get-socket;
+      $result = $d.decode-reply($server-reply);
 
-        if +@cursor-ids {
-          ( my Buf $encoded-kill-cursors,
-            my Int $request-id
-          ) = $d.encode-kill-cursors(@cursor-ids);
+      # Assert that the request-id and response-to are the same
+      #
+      fatal-message("Id in request is not the same as in the response")
+        unless $request-id == $result<message-header><response-to>;
 
-          $socket.send($encoded-kill-cursors);
+      # Catch all thrown exceptions and take out the server if needed
+      #
+      CATCH {
+        when MongoDB::Message {
+          $client._take-out-server($server);
         }
 
-
-        # Catch all thrown exceptions and take out the server if needed
-        #
-        CATCH {
-          when MongoDB::Message {
+        default {
+          when Str {
+            warn-message($_);
             $client._take-out-server($server);
           }
 
-          default {
-            when Str {
-              warn-message($_);
-              $client._take-out-server($server);
-            }
-
-            when Exception {
-              warn-message(.message);
-              $client._take-out-server($server);
-            }
+          when Exception {
+            warn-message(.message);
+            $client._take-out-server($server);
           }
         }
       }
-
-      $socket.close if $socket.defined;
     }
+
+    $!socket.close if $!socket.defined;
+    return $result;
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  method get-more (
+    $cursor,
+    :$server where .^name eq 'MongoDB::Server'
+    --> BSON::Document
+  ) {
+
+    $!server = $server;
+
+    my BSON::Document $d .= new;
+    $d does MongoDB::Header;
+    my $client;
+    my BSON::Document $result;
+
+say "Get more 0: ", $server.name;
+    try {
+
+      ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
+        $cursor.full-collection-name, $cursor.id
+      );
+
+      $client = $cursor.client;
+
+      fatal-message("No server available") unless $!server.defined;
+      $!socket = $server.get-socket;
+      $!socket.send($encoded-get-more);
+
+      # Read 4 bytes for int32 response size
+      #
+      my Buf $size-bytes = self!get-bytes(4);
+say "Get more 1: ", $size-bytes.perl;
+      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+say "Get more 2: size = ", $response-size;
+
+      # Receive remaining response bytes from socket. Prefix it with the already
+      # read bytes and decode. Return the resulting document.
+      #
+      my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
+say "Get more 3:";
+      $result = $d.decode-reply($server-reply);
+say "Get more 4";
+
+# TODO check if cursorID matches (if present)
+
+      # Assert that the request-id and response-to are the same
+      #
+      fatal-message("Id in request is not the same as in the response")
+        unless $request-id == $result<message-header><response-to>;
+
+
+      # Catch all thrown exceptions and take out the server if needed
+      #
+      CATCH {
+        when MongoDB::Message {
+          $client._take-out-server($server);
+        }
+
+        default {
+          when Str {
+            warn-message($_);
+            $client._take-out-server($server);
+          }
+
+          when Exception {
+            warn-message(.message);
+            $client._take-out-server($server);
+          }
+        }
+      }
+    }
+
+    $!socket.close if $!socket.defined;
+    return $result;
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  method kill-cursors (
+    @cursors where .elems > 0,
+    :$server! where .^name eq 'MongoDB::Server'
+  ) {
+
+    $!server = $server;
+
+    my BSON::Document $d .= new;
+    $d does MongoDB::Header;
+    my $client;
+
+    # Gather the ids only when they are non-zero.i.e. still active.
+    #
+    my Buf @cursor-ids;
+    for @cursors -> $cursor {
+      @cursor-ids.push($cursor.id) if [+] $cursor.id.list;
+    }
+
+    # Kill the cursors if found any
+    #
+    $client = @cursors[0].client;
+
+    try {
+      fatal-message("No server available") unless $server.defined;
+      $!socket = $server.get-socket;
+
+      if +@cursor-ids {
+        ( my Buf $encoded-kill-cursors,
+          my Int $request-id
+        ) = $d.encode-kill-cursors(@cursor-ids);
+
+        $!socket.send($encoded-kill-cursors);
+      }
+
+
+      # Catch all thrown exceptions and take out the server if needed
+      #
+      CATCH {
+        when MongoDB::Message {
+          $client._take-out-server($server);
+        }
+
+        default {
+          when Str {
+            warn-message($_);
+            $client._take-out-server($server);
+          }
+
+          when Exception {
+            warn-message(.message);
+            $client._take-out-server($server);
+          }
+        }
+      }
+    }
+
+    $!socket.close if $!socket.defined;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Read number of bytes from server. When no/not enaugh bytes an error
+  # is thrown.
+  #
+  method !get-bytes ( int $n --> Buf ) {
+
+    my Buf $bytes = $!socket.receive($n);
+    if $bytes.elems == 0 {
+
+      # No data, try again
+      #
+      $bytes = $!socket.receive($n);
+      fatal-message("No response from server") if $bytes.elems == 0;
+    }
+
+    if 0 < $bytes.elems < $n {
+
+      # Not 0 but too little, try to get the rest of it
+      #
+      $bytes.push($!socket.receive($n - $bytes.elems));
+      fatal-message("Response corrupted") if $bytes.elems < $n;
+    }
+
+    $bytes;
   }
 }
 
