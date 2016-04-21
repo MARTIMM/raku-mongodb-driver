@@ -6,7 +6,7 @@ use Test;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
-use MongoDB::Socket;
+use MongoDB::Server::Socket;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
@@ -23,7 +23,7 @@ subtest {
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, 'Connection server available';
 
-  my MongoDB::Socket $socket = $server.get-socket;
+  my MongoDB::Server::Socket $socket = $server.get-socket;
   ok $socket.is-open, 'Socket is open';
   $socket.close;
   nok $socket.is-open, 'Socket is closed';

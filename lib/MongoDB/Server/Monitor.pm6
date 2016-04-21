@@ -1,7 +1,7 @@
 use v6.c;
 
 use MongoDB;
-use MongoDB::Socket;
+use MongoDB::Server::Socket;
 use MongoDB::Header;
 use BSON::Document;
 
@@ -25,7 +25,7 @@ class Server::Monitor {
   has $!server where .^name eq 'MongoDB::Server';
   has BSON::Document $!monitor-command;
   has BSON::Document $!monitor-result;
-  has MongoDB::Socket $!socket;
+  has MongoDB::Server::Socket $!socket;
   has Int $.monitor-looptime is rw = 10;
 
   has Duration $!weighted-mean-rtt .= new(0);

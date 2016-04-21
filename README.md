@@ -292,6 +292,7 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
   * send the output to a separate class of which the object of it is in a thread. The information is then sent via a channel. This way it will always be synchronized (need to check that though).
   * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of \*-message() function.
   * Use macros to get info at the calling point before sending to \*-message(). This will make the search through the stack unnecessary
+* The interpretation of numberToReturn in a query is wrong.
 
 ## CHANGELOG
 
@@ -299,6 +300,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.28.10
+  * Moved Socket.pm6 to MongoDB/Server directory.
 * 0.28.9
   * Factored out monitoring code into MongoDB::Server::Monitor and made it thread save.
 * 0.28.8

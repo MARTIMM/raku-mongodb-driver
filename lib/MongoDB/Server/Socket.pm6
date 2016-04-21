@@ -2,7 +2,7 @@ use v6.c;
 
 package MongoDB {
 
-  class Socket {
+  class Server::Socket {
 
     has IO::Socket::INET $!sock;
 

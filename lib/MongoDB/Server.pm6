@@ -2,7 +2,7 @@ use v6.c;
 
 use MongoDB;
 use MongoDB::Server::Monitor;
-use MongoDB::Socket;
+use MongoDB::Server::Socket;
 use BSON::Document;
 
 package MongoDB {
@@ -18,7 +18,7 @@ package MongoDB {
     has Hash $!uri-data;
 
     has Int $.max-sockets;
-    has MongoDB::Socket @!sockets;
+    has MongoDB::Server::Socket @!sockets;
 
     has Duration $!weighted-mean-rtt .= new(0);
 
@@ -77,12 +77,12 @@ package MongoDB {
     #---------------------------------------------------------------------------
     # Search in the array for a closed Socket.
     #
-    method get-socket ( --> MongoDB::Socket ) {
+    method get-socket ( --> MongoDB::Server::Socket ) {
 #TODO place semaphores using $!max-sockets
 
       $!server-socket-selection.acquire;
 
-      my MongoDB::Socket $sock;
+      my MongoDB::Server::Socket $sock;
 
       # Setup a try block to catch unknown exceptions
       #
