@@ -205,7 +205,7 @@ say "Try connect to server $host, $port";
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-say "SS: 0";
+#say "SS: 0";
       # As long as we didn't find a server. Break out of the loop
       # if there is no data left.
       #
@@ -216,12 +216,12 @@ say "SS: 0";
         # Check if there are any promises left.
         #
         my Int $still-planned = self!cleanup-promises;
-say "SS: 1, still planned: $still-planned";
+#say "SS: 1, still planned: $still-planned";
 
         # Loop through the existing set of already found servers
         #
         for $!servers.keys -> Str $server-name {
-say "SS: 2, server: $server-name";
+#say "SS: 2, server: $server-name";
 
           my Hash $srv-struct = $!servers{$server-name};
 
@@ -231,7 +231,7 @@ say "SS: 2, server: $server-name";
 
           # Skip all rejected and unconnectable servers
           #
-say "SS: 3, server status: $srv-struct<status>";
+#say "SS: 3, server status: $srv-struct<status>";
           next if $srv-struct<status>  ~~ any(
             Server-status::Rejected-server |
             Server-status::Down-server |
@@ -245,7 +245,7 @@ say "SS: 3, server status: $srv-struct<status>";
           $server = self!test-server-acceptance($srv-struct);
         }
 
-say "SS: 4, server defined: {$server.defined ?? $server.name !! '-'}";
+#say "SS: 4, server defined: {$server.defined ?? $server.name !! '-'}";
         last if $server.defined;
 
         if $still-planned {
@@ -267,7 +267,7 @@ say "SS: 4, server defined: {$server.defined ?? $server.name !! '-'}";
         }
       }
 
-say "SS: 5, server returned: {$server.defined ?? $server.name !! '-'}";
+#say "SS: 5, server returned: {$server.defined ?? $server.name !! '-'}";
       return $server;
     }
 
@@ -277,7 +277,7 @@ say "SS: 5, server returned: {$server.defined ?? $server.name !! '-'}";
 
       my Int $still-planned = 0;
 
-say "CLP: servers $!server-discovery.keys()";
+#say "CLP: servers $!server-discovery.keys()";
 
       # Loop through all Promise objects
       #
@@ -290,7 +290,7 @@ say "CLP: servers $!server-discovery.keys()";
         # If promise is kept, the Server object is created and
         # is stored in $!servers.
         #
-say "CLP: $server-name, ", $!server-discovery{$server-name}.status;
+#say "CLP: $server-name, ", $!server-discovery{$server-name}.status;
         if $!server-discovery{$server-name}.status ~~ Kept {
           my MongoDB::Server $server = $!server-discovery{$server-name}.result;
 
@@ -429,7 +429,7 @@ say "Revive: $server-name, $host, $port";
         info-message("New server data from $srv-struct<server>.name()");
         $srv-struct<server-data> = $new-monitor-data;
       }
-say "Srv: $srv-struct<server>.name(), $srv-struct<server-data>.perl()";
+#say "Srv: $srv-struct<server-data>.perl()";
 
       # If there is no server data found yet to test against then skip the rest.
       #
@@ -460,7 +460,7 @@ say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
         # No two masters, set if server is accepted and is a master
         #
         $accept-server = not ($found-master and $ismaster);
-say "Accept: $accept-server, $ismaster";
+#say "Accept server: $accept-server, is master: $ismaster";
       }
 
       # When server can be accepted, set the status values
@@ -547,7 +547,8 @@ say "Accept: $accept-server, $ismaster";
     #
     method _take-out-server ( MongoDB::Server $server is copy ) {
 
-#TODO no removal but change state !!!!!!
+say "$server.name() is down, change state";
+
       if $server.defined {
 
         # Server can be taken out before when a failure takes place in the
@@ -565,18 +566,10 @@ say "Accept: $accept-server, $ismaster";
       for $!servers.values -> Hash $srv-struct {
         if $srv-struct<server> === $server {
 
-#          # Stop monitoring on server and wait for it to stop
-#          #
-#          $srv-struct<command-channel>.send('stop');
-#          sleep 1;
-#          info-message(
-#            "Server $server.name() " ~ $srv-struct<command-channel>.receive
-#          );
           $srv-struct<data-channel>.close;
           $srv-struct<command-channel>.close;
           $srv-struct<status> = Server-status::Down-server;
           $srv-struct<timestamp> = now;
-#          undefine $srv-struct<server>;
         }
       }
     }
@@ -587,8 +580,6 @@ say "Accept: $accept-server, $ismaster";
 
       # Remove all servers concurrently. Shouldn't be many per client.
       for $!servers.values.race(batch => 1) -> Hash $srv-struct {
-
-#        self!remove-server($srv-struct<server>);
 
         if $srv-struct<server>.defined {
 
