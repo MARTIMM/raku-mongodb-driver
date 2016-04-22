@@ -196,7 +196,7 @@ package MongoDB {
     method encode-get-more (
       Str:D $full-collection-name,
       Buf:D $cursor-id,
-      Int :$number-to-return = 100
+      Int :$number-to-return = 0
       --> List
     ) {
       # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPGETMORE
@@ -335,20 +335,23 @@ package MongoDB {
         documents => []
       );
 
-say "MH length: ", $reply-document<message-header><message-length>;
-say "MH rid: ", $reply-document<message-header><request-id>;
-say "MH opc: ", $reply-document<message-header><op-code>;
-say "MH nret: ", $reply-document<number-returned>;
-say "MH cid: ", $reply-document<cursor-id>;
+#say "MH length: ", $reply-document<message-header><message-length>;
+#say "MH rid: ", $reply-document<message-header><request-id>;
+#say "MH opc: ", $reply-document<message-header><op-code>;
+#say "MH nret: ", $reply-document<number-returned>;
+#say "MH cid: ", $reply-document<cursor-id>;
 
-say "Buf: ", $b;
-say "Subbuf: ", $b.subbuf( $index, 30);
+#say "Buf: ", $b;
+#say "Subbuf: ", $b.subbuf( $index, 30);
+
+#say "Buf length: ", $b.elems;
+#say "Subbuf at $index";
 
       # Extract documents from message.
       #
       for ^$reply-document<number-returned> {
         my $doc-size = decode-int32( $b, $index);
-say "I: $index, $doc-size";
+#say "I: $index, $doc-size";
         my BSON::Document $document .= new($b.subbuf( $index, $doc-size));
 #        $index += BSON::C-INT32-SIZE;
         $index += $doc-size;
@@ -356,7 +359,7 @@ say "I: $index, $doc-size";
       }
 
       $index += 3 * BSON::C-INT32-SIZE + 8;
-say "B: $index, ", $b.elems;
+#say "B: $index, ", $b.elems;
 
       # Every response byte must be consumed
       #

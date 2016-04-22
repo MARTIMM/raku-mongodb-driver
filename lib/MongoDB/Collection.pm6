@@ -79,7 +79,8 @@ package MongoDB {
       return MongoDB::Cursor.new(
         :collection(self),
         :$server-reply,
-        :$server
+        :$server,
+        :$number-to-return
       );
     }
 
@@ -120,7 +121,12 @@ package MongoDB {
         return MongoDB::Cursor;
       }
 
-      return MongoDB::Cursor.new( :collection(self), :$server-reply, :$server);
+      return MongoDB::Cursor.new(
+        :collection(self),
+        :$server-reply,
+        :$server,
+        :$number-to-return
+      );
     }
 
     #---------------------------------------------------------------------------

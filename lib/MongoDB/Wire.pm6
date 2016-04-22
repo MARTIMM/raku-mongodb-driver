@@ -16,8 +16,8 @@ class Wire {
   #
   method query (
     MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
-    BSON::Document:D $qdoc, $projection?, :$flags, :$number-to-skip,
-    :$number-to-return, :$server where .^name eq 'MongoDB::Server'
+    BSON::Document:D $qdoc, $projection?, :$flags, Int :$number-to-skip,
+    Int :$number-to-return, :$server where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
 
@@ -99,7 +99,7 @@ class Wire {
   #-----------------------------------------------------------------------------
   #
   method get-more (
-    $cursor,
+    $cursor, Int :$number-to-return, 
     :$server where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
@@ -115,7 +115,7 @@ say "Get more 0: ", $server.name;
     try {
 
       ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
-        $cursor.full-collection-name, $cursor.id
+        $cursor.full-collection-name, $cursor.id, :$number-to-return
       );
 
       $client = $cursor.client;
@@ -129,7 +129,7 @@ say "Get more 0: ", $server.name;
       my Buf $size-bytes = self!get-bytes(4);
 say "Get more 1: ", $size-bytes.perl;
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
-say "Get more 2: size = ", $response-size;
+say "Get more 2: total size = $response-size + 4";
 
       # Receive remaining response bytes from socket. Prefix it with the already
       # read bytes and decode. Return the resulting document.

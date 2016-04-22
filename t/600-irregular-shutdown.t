@@ -15,7 +15,7 @@ use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
 set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Client $client;
@@ -35,6 +35,12 @@ $client .= new(:uri("mongodb://:$p3"));
 subtest {
 
   $client.select-server;
+
+  $collection = $client.collection('test.myColl');
+  $database = $collection.database;
+  $doc = $database.run-command: (dropDatabase => 1);
+  ok $doc<ok>, "Database test dropped";
+
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p3"),
      MongoDB::Master-server,
@@ -101,12 +107,16 @@ subtest {
 }, 'Reviving server 3';
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
 $client .= new(:uri("mongodb://:$p2"));
-
 subtest {
 
   $client.select-server;
+
+  $collection = $client.collection('test.myColl');
+  $database = $collection.database;
+  $doc = $database.run-command: (dropDatabase => 1);
+  ok $doc<ok>, "Database test dropped";
+
   is $client.nbr-servers, 1, 'One server found';
 
   info-message('insert 200 records');
@@ -146,8 +156,8 @@ subtest {
     }
   }
 
-  is $client.server-status("localhost:$p2"),
-     MongoDB::Down-server,
+  ok $client.server-status("localhost:$p2") ~~
+     any(MongoDB::Down-server|MongoDB::Recovering-server),
      "Status of server 2 is " ~ $client.server-status("localhost:$p2");
 
 }, "Shutdown server 2 after find";
@@ -173,7 +183,7 @@ subtest {
      "Status of server 2 is " ~ $client.server-status("localhost:$p2");
 
   info-message("Try to find records from collection again");
-  my MongoDB::Cursor $cursor = $collection.find;
+  my MongoDB::Cursor $cursor = $collection.find(:number-to-return(50));
 
   my $count = 1;
   while $cursor.fetch -> $doc {
@@ -183,28 +193,9 @@ subtest {
 
 }, 'Reviving server 2';
 
-done-testing();
-exit(0);
-
-#-------------------------------------------------------------------------------
-#subtest {
-#
-#  $client .= new(:uri('mongodb://:' ~ get-port-number(:server(1))));
-#  is $client.nbr-servers, 1, 'One server found';
-#  $client.shutdown-server($client.select-server());
-#  is $client.nbr-servers, 0, 'No server found';
-#
-#}, "Server 1 stopped too";
-
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-#for ^2 + 2 -> $server-number {
-#  my $port-number = get-port-number(:server($server-number));
-#  my Str $server-dir = "Sandbox/Server$server-number";
-#  ok start-mongod( $server-dir, $port-number), "Server $server-number restarted";
-#}
-
 info-message("Test $?FILE stop");
-done-testing();
+done-testing;
 exit(0);
