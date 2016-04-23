@@ -6,7 +6,8 @@
   ],
   "depends": [
     "BSON",
-    "Digest::MD5"
+    "Digest::MD5",
+    "Config::TOML"
   ],
   "description": "MongoDB driver",
   "license": "The Artistic License 2.0",
@@ -18,19 +19,21 @@
     "MongoDB::ClientIF":                "lib/MongoDB/ClientIF.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
     "MongoDB::CollectionIF":            "lib/MongoDB/CollectionIF.pm6",
+    "MongoDB::Config":                  "lib/MongoDB/Config.pm6"
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
     "MongoDB::DatabaseIF":              "lib/MongoDB/DatabaseIF.pm6",
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
     "MongoDB::Log":                     "lib/MongoDB/Log.pm6",
     "MongoDB::Server":                  "lib/MongoDB/Server.pm6",
+    "MongoDB::Server::Control":         "lib/MongoDB/Server/Control.pm6",
     "MongoDB::Server::Monitor":         "lib/MongoDB/Server/Monitor.pm6",
-    "MongoDB::Socket":                  "lib/MongoDB/Socket.pm6",
-    "MongoDB::Uri"  :                   "lib/MongoDB/Uri.pm6",
+    "MongoDB::Server::Socket":          "lib/MongoDB/Server/Socket.pm6",
+    "MongoDB::Uri":                     "lib/MongoDB/Uri.pm6",
     "MongoDB::Users":                   "lib/MongoDB/Users.pm6",
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm6",
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "v0.28.10"
+  "version": "v0.28.11"
 }
