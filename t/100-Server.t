@@ -1,8 +1,8 @@
 use v6.c;
 use lib 't';
 
-use Test-support;
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Server;
 use MongoDB::Server::Monitor;
@@ -13,7 +13,7 @@ use MongoDB::Socket;
 #set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
-my $p1 = get-port-number(:server(1));
+my $p1 = $Test-support::server-control.get-port-number('s1');
 my $data-channel = Channel.new;
 my $command-channel = Channel.new;
 

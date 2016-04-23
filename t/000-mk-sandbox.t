@@ -1,9 +1,10 @@
 use v6.c;
 use lib 't';
+
+use Test;
 use Test-support;
 use MongoDB;
 use MongoDB::Server::Control;
-use Test;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
@@ -27,10 +28,10 @@ my Str $config-text = Q:qq:to/EOCONFIG/;
     user = 'test_user'
     pwd = 'T3st-Us3r'
 
-  [Server-Binary]
+  [mongod-binary]
     path = '$*CWD/Travis-ci/MongoDB/mongod'
 
-  [Servers]
+  [mongod]
     nojournal = true
     fork = true
 
@@ -57,16 +58,16 @@ for @$Test-support::server-range -> $server-number {
 
     # Configuration for Server $server-number
     #
-    [Servers.s$server-number]
+    [mongod.s$server-number]
       logpath = '$*CWD/$server-dir/m.log'
       pidfilepath = '$*CWD/$server-dir/m.pid'
       dbpath = '$*CWD/$server-dir/m.data'
       port = $port-number
 
-    [Servers.s$server-number.replicate]
+    [mongod.s$server-number.replicate]
       replSet = 'test_replicate'
 
-    [Servers.s$server-number.authenticate]
+    [mongod.s$server-number.authenticate]
       auth = true
 
     EOCONFIG
@@ -75,9 +76,9 @@ for @$Test-support::server-range -> $server-number {
 my Str $file = 'Sandbox/config.toml';
 spurt( $file, $config-text);
 
-my MongoDB::Server::Control $msc .= new(:$file);
 for @$Test-support::server-range -> $server-number {
-  ok $msc.start-mongod("s$server-number"), "Server $server-number started";
+  ok $Test-support::server-control.start-mongod("s$server-number"),
+     "Server $server-number started";
 }
 
 #-------------------------------------------------------------------------------

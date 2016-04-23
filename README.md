@@ -304,6 +304,7 @@ change at any time. The public API should not be considered stable.*
   * Facturing out code from test environment into MongoDB::Server::Control to have a module to control a server like startup, shutdown, converting a standalone server to a replica server or something else.
   * Using a new module Config::TOML to control server startup.
   * Singleton class MongoDB::Config to read config from everywhere.
+  * start-mongod(), get-port-number() defined in Control class
 * 0.28.10
   * Moved Socket.pm6 to MongoDB/Server directory.
   * bugfix use of number-to-return used in Collection.find().

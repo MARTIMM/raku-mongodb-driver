@@ -18,14 +18,14 @@ class Server::Control {
     my Hash $options = {};
     my Bool $started = False;
 
-    for $config<Servers>.keys -> $k {
-      next if $config<Servers>{$k} ~~ Hash;
+    for $config<mongod>.keys -> $k {
+      next if $config<mongod>{$k} ~~ Hash;
 
-      my Bool $bo = self!bool-option($config<Servers>{$k});
+      my Bool $bo = self!bool-option($config<mongod>{$k});
 
       # Not a boolean option
       if not $bo.defined {
-        $options{$k} = " $config<Servers>{$k}";
+        $options{$k} = " $config<mongod>{$k}";
       }
 
       # Boolean option and true. False booleans are ignored
@@ -34,13 +34,13 @@ class Server::Control {
       }
     }
 
-    my Hash $s = $config<Servers> // {};
+    my Hash $s = $config<mongod> // {};
     for @server-keys -> $server-key {
       $s = $s{$server-key} // {};
       for $s.keys -> $k {
         next if $s{$k} ~~ Hash;
 
-        my Bool $bo = self!bool-option($config<Servers>{$k});
+        my Bool $bo = self!bool-option($config<mongod>{$k});
 
         # Not a boolean option
         if not $bo.defined {
@@ -80,6 +80,24 @@ class Server::Control {
   }
 
   #-----------------------------------------------------------------------------
+  # Get selected port number from the config
+  #
+  method get-port-number ( *@server-keys --> Int ) {
+
+    my Hash $config = MongoDB::Config.instance.config;
+    my Int $port-number;
+    my Hash $s = $config<mongod> // {};
+    for @server-keys -> $server-key {
+      $s = $s{$server-key} // {};
+
+      # Overwrite at every other oportunity
+      $port-number = $s<port> if $s<port>:exists;
+    }
+
+    return $port-number;
+  }
+
+  #-----------------------------------------------------------------------------
   # Return values
   # Any) Not boolean/undefined, True) Boolean False, False) Boolean True
   #
@@ -112,10 +130,10 @@ class Server::Control {
 
     # Can be configured in config file
     #
-    if $config<Server-Binary>:exists
-       and $config<Server-Binary><path>:exists {
+    if $config<mongod-binary>:exists
+       and $config<mongod-binary><path>:exists {
 
-      $mongodb-server-path = $config<Server-Binary><path>;
+      $mongodb-server-path = $config<mongod-binary><path>;
     }
 
     # On Travis-ci the path is known because I've put it there using the script
