@@ -104,7 +104,8 @@ package MongoDB {
 
       Promise.start( {
 
-say "Try connect to server $host, $port";
+          trace-message("Try connect to server $host, $port");
+
           # Create Server object. Throws on failure.
           #
           my MongoDB::Server $server .= new( :$host, :$port, :$!uri-data);
@@ -370,6 +371,7 @@ say "Try connect to server $host, $port";
 
       $!servers{$server-name} = {
         status => Server-status::Down-server,
+        timestamp => now
       }
 
       info-message( "Failed server $server-name saved");
@@ -384,6 +386,7 @@ say "Try connect to server $host, $port";
       if $srv-struct<status> ~~ Server-status::Down-server
          and (now - $srv-struct<timestamp> > 5) {
 
+        # Shouldn't happen
         fatal-message("Discovery entry for $server-name still defined")
           if $!server-discovery{$server-name}.defined;
 
@@ -398,7 +401,8 @@ say "Try connect to server $host, $port";
         $srv-struct<status> = Server-status::Recovering-server;
 
         ( my $host, my $port) = $server-name.split(':');
-say "Revive: $server-name, $host, $port";
+
+        trace-message("Revive: $server-name, $host, $port");
         $!server-discovery{$server-name} =
           self!start-server-promise( $host, $port.Int);
       }
