@@ -12,6 +12,13 @@ unit package Test-support;
 #-------------------------------------------------------------------------------
 state $empty-document = BSON::Document.new();
 
+# If we are under the scrutany of TRAVIS then adjust the path where to find the
+# mongod/mongos binaries
+#
+if ? %*ENV<TRAVIS> {
+  %*ENV<PATH> = "$*CWD/Travis-ci/MongoDB:%*ENV<PATH>";
+}
+
 # N servers started
 #
 my $nbr-of-servers = 3;

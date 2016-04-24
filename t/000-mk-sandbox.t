@@ -28,8 +28,8 @@ my Str $config-text = Q:qq:to/EOCONFIG/;
     user = 'test_user'
     pwd = 'T3st-Us3r'
 
-  [mongod-binary]
-    path = '$*CWD/Travis-ci/MongoDB/mongod'
+  [Binaries]
+    mongod = '$*CWD/Travis-ci/MongoDB/mongod'
 
   [mongod]
     nojournal = true

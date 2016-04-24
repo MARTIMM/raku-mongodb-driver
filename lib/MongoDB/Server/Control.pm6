@@ -54,7 +54,7 @@ class Server::Control {
       }
     }
 
-    my Str $cmdstr = self!get-mongod-path;
+    my Str $cmdstr = self!get-binary-path('mongod');
     for $options.keys -> $k {
       $cmdstr ~= " --$k$options{$k}";
     }
@@ -117,46 +117,26 @@ class Server::Control {
   }
 
   #-----------------------------------------------------------------------------
-  # Download mongodb binaries before testing on TRAVIS-CI. Version of mongo on
-  # Travis is still from the middle ages (2.4.12).
-  #
-  # Assume at first that mongod is in the users path, then we try to find a path
-  # to it depending on OS. If it can be found, use the precise path.
-  #
-  method !get-mongod-path ( --> Str ) {
+  method !get-binary-path ( Str $binary --> Str ) {
 
     my Hash $config = MongoDB::Config.instance.config;
     my Str $mongodb-server-path;
 
-    # Can be configured in config file
-    #
-    if $config<mongod-binary>:exists
-       and $config<mongod-binary><path>:exists {
-
-      $mongodb-server-path = $config<mongod-binary><path>;
-    }
-
-    # On Travis-ci the path is known because I've put it there using the script
-    # install-mongodb.sh.
-    #
-    elsif ? %*ENV<TRAVIS> {
-      $mongodb-server-path = "$*CWD/Travis-ci/MongoDB/mongod";
-    }
-
     # On linuxes it should be in /usr/bin
     #
-    elsif $*KERNEL.name eq 'linux' {
-      if '/usr/bin/mongod'.IO ~~ :x {
-        $mongodb-server-path = '/usr/bin/mongod';
+    if !?$mongodb-server-path and $*KERNEL.name eq 'linux' {
+      if "/usr/bin/$binary".IO ~~ :x {
+        $mongodb-server-path = "/usr/bin/$binary";
       }
     }
 
     # On windows it should be in C:/Program Files/MongoDB/Server/*/bin if the
     # user keeps the default installation directory.
     #
-    elsif $*KERNEL.name eq 'win32' {
+    if !?$mongodb-server-path and $*KERNEL.name eq 'win32' {
+
       for 2.6, 2.8 ... 10 -> $vn {
-        my Str $path = "C:/Program Files/MongoDB/Server/$vn/bin/mongod.exe";
+        my Str $path = "C:/Program Files/MongoDB/Server/$vn/bin/$binary.exe";
         if $path.IO ~~ :e {
           $mongodb-server-path = $path;
           last;
@@ -166,8 +146,22 @@ class Server::Control {
 
     # Hopefully it can be found in any other path
     #
-    else {
-      $mongodb-server-path = 'mongod';
+    if !?$mongodb-server-path and %*ENV<PATH> {
+      
+      for %*ENV<PATH>.split(':') -> $path {
+        if "$path/$binary".IO ~~ :x {
+          $mongodb-server-path = "$path/$binary";
+          last;
+        }
+      }
+    }
+
+    # Can be configured in config file
+    #
+    if !?$mongodb-server-path and $config<Binaries>:exists
+       and $config<Binaries>{$binary}:exists {
+
+      $mongodb-server-path = $config<Binaries>{$binary};
     }
 
     $mongodb-server-path;
