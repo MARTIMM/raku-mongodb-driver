@@ -1,7 +1,8 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
@@ -17,7 +18,6 @@ my MongoDB::Database $db-admin;
 #my MongoDB::Collection $collection;
 my BSON::Document $req;
 my BSON::Document $doc;
-
 
 # Stop any left over servers
 #
