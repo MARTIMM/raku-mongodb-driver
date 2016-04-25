@@ -1,4 +1,6 @@
 use v6.c;
+
+use MongoDB;
 use MongoDB::Config;
 
 unit package MongoDB;
@@ -14,69 +16,62 @@ class Server::Control {
   #-----------------------------------------------------------------------------
   method start-mongod ( *@server-keys --> Bool ) {
 
-    my Hash $config = MongoDB::Config.instance.config;
-    my Hash $options = {};
-    my Bool $started = False;
-
-    for $config<mongod>.keys -> $k {
-      next if $config<mongod>{$k} ~~ Hash;
-
-      my Bool $bo = self!bool-option($config<mongod>{$k});
-
-      # Not a boolean option
-      if not $bo.defined {
-        $options{$k} = " $config<mongod>{$k}";
-      }
-
-      # Boolean option and true. False booleans are ignored
-      elsif $bo {
-        $options{$k} = '';
-      }
-    }
-
-    my Hash $s = $config<mongod> // {};
-    for @server-keys -> $server-key {
-      $s = $s{$server-key} // {};
-      for $s.keys -> $k {
-        next if $s{$k} ~~ Hash;
-
-        my Bool $bo = self!bool-option($config<mongod>{$k});
-
-        # Not a boolean option
-        if not $bo.defined {
-          $options{$k} = " $s{$k}";
-        }
-
-        # Boolean option and true. False booleans are ignored
-        elsif $bo {
-          $options{$k} = '';
-        }
-      }
-    }
+    my Hash $options = self!get-mongod-options(@server-keys);
 
     my Str $cmdstr = self!get-binary-path('mongod');
     for $options.keys -> $k {
-      $cmdstr ~= " --$k$options{$k}";
+      $cmdstr ~= " --$k {?$options{$k} ?? $options{$k} !! ''}";
     }
 
+    my Bool $started = False;
     my Proc $proc = shell($cmdstr);
     if $proc.exitcode != 0 {
 
-#TODO Must remove check on NO-MONGODB-SERVER
-#      spurt $server-dir ~ '/NO-MONGODB-SERVER', '';
+      fatal-message($cmdstr);
     }
 
     else {
-      # Remove the file if still there
-      #
-#      if "$server-dir/NO-MONGODB-SERVER".IO ~~ :e {
-#        unlink "$server-dir/NO-MONGODB-SERVER";
-#      }
 
       $started = True;
+      debug-message($cmdstr);
     }
 
     $started;
+  }
+
+  #-----------------------------------------------------------------------------
+  method stop-mongod ( *@server-keys --> Bool ) {
+
+    my Hash $options = self!get-mongod-options(@server-keys);
+    my Str $cmdstr = self!get-binary-path('mongod');
+    $cmdstr ~= " --shutdown";
+    $cmdstr ~= ' --dbpath ' ~ "'$options<dbpath>'" // '/data/db';
+    $cmdstr ~= ' --quiet' if $options<quiet>;
+
+    my Bool $stopped = False;
+    my Proc $proc = shell($cmdstr);
+    if $proc.exitcode != 0 {
+
+      fatal-message($cmdstr);
+    }
+
+    else {
+
+      debug-message($cmdstr);
+      $stopped = True;
+    }
+
+    $stopped;
+  }
+
+  #-----------------------------------------------------------------------------
+  method start-mongos ( ) {
+
+  }
+
+  #-----------------------------------------------------------------------------
+  method stop-mongos ( ) {
+
   }
 
   #-----------------------------------------------------------------------------
@@ -95,6 +90,36 @@ class Server::Control {
     }
 
     return $port-number;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Get selected port number from the config
+  #
+  method !get-mongod-options ( @server-keys --> Hash ) {
+
+    my Hash $config = MongoDB::Config.instance.config;
+    my Hash $options = {};
+    my Hash $s = $config // {};
+    for 'mongod', @server-keys -> $server-key {
+      $s = $s{$server-key} // {};
+      for $s.keys -> $k {
+        next if $s{$k} ~~ Hash;
+
+        my Bool $bo = self!bool-option($s{$k});
+
+        # Not a boolean option
+        if not $bo.defined {
+          $options{$k} = $s{$k};
+        }
+
+        # Boolean option and true. False booleans are ignored
+        elsif $bo {
+          $options{$k} = '';
+        }
+      }
+    }
+
+    $options;
   }
 
   #-----------------------------------------------------------------------------

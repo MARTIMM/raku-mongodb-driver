@@ -1,7 +1,8 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Database;
 use MongoDB::Users;
@@ -75,11 +76,9 @@ subtest {
 #---------------------------------------------------------------------------------
 subtest {
 
-  my Str $server-dir = "Sandbox/Server$server-number";
-  ok stop-mongod($server-dir), "Server from $server-dir stopped";
-
-  my $port-number = get-port-number(:server($server-number));
-  ok start-mongod( $server-dir, $port-number, :auth), "Server 1 in auth mode";
+  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $Test-support::server-control.start-mongod( 's1', 'authenticate'),
+     "Server 1 in auth mode";
 
 }, "Server changed to authentication mode";
 
@@ -125,11 +124,9 @@ subtest {
 #---------------------------------------------------------------------------------
 subtest {
 
-  my Str $server-dir = "Sandbox/Server$server-number";
-  ok stop-mongod($server-dir), "Server from $server-dir stopped";
-
-  my $port-number = get-port-number(:server($server-number));
-  ok start-mongod( $server-dir, $port-number), "Server 1 in normal mode";
+  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $Test-support::server-control.start-mongod('s1'),
+     "Server 1 in normal mode";
 
 }, "Server changed to normal mode";
 

@@ -22,8 +22,8 @@ my BSON::Document $doc;
 
 my Str $rs1 = 'myreplset';
 my Str $host = 'localhost';
-my Int $p1 = get-port-number(:server(1));
-my Int $p2 = get-port-number(:server(2));
+my Int $p1 = $Test-support::server-control.get-port-number('s1');
+my Int $p2 = $Test-support::server-control.get-port-number('s2');
 
 #-------------------------------------------------------------------------------
 subtest {

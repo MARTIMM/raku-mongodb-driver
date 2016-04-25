@@ -26,8 +26,8 @@ my MongoDB::Collection $collection;
 my BSON::Document $req;
 my BSON::Document $doc;
 
-my Int $p2 = get-port-number(:server(2));
-my Int $p3 = get-port-number(:server(3));
+my Int $p2 = $Test-support::server-control.get-port-number('s2');
+my Int $p3 = $Test-support::server-control.get-port-number('s3');
 
 $client .= new(:uri("mongodb://:$p3"));
 
@@ -78,7 +78,8 @@ subtest {
 
   my $prms = Promise.start( {
       sleep 4;
-      ok start-mongod( "Sandbox/Server3", $p3), "Server 3 restarted";
+      ok $Test-support::server-control.start-mongod('s3'),
+         "Server 3 restarted";
     }
   );
   
@@ -167,7 +168,7 @@ subtest {
 
   my $prms = Promise.start( {
       sleep 2;
-      ok start-mongod( "Sandbox/Server2", $p2), "Server 2 restarted";
+      ok $Test-support::server-control.start-mongod('s3'), "Server 2 restarted";
     }
   );
 

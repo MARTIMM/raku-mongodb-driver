@@ -8,7 +8,6 @@ use MongoDB::Server::Control;
 
 unit package Test-support;
 
-
 #-------------------------------------------------------------------------------
 state $empty-document = BSON::Document.new();
 
@@ -19,45 +18,89 @@ if ? %*ENV<TRAVIS> {
   %*ENV<PATH> = "$*CWD/Travis-ci/MongoDB:%*ENV<PATH>";
 }
 
-# N servers started
+# N servers needed for the tests
 #
 my $nbr-of-servers = 3;
 our $server-range = (^$nbr-of-servers + 1);
-our $server-control = MongoDB::Server::Control.new(:file<Sandbox/config.toml>);
 
 #-------------------------------------------------------------------------------
-# Get selected port number. When file is not there the process fails.
+# Check directory Sandbox and start config file
 #
-sub get-port-number ( Int :$server = 1 --> Int ) is export {
+unless 'Sandbox'.IO ~~ :d {
 
-  $server = 1 unless  $server ~~ any $server-range;
+  mkdir( 'Sandbox', 0o700);
+  my Int $start-portnbr = 65000;
+  my Str $config-text = Q:qq:to/EOCONFIG/;
 
-  if "Sandbox/Server$server/port-number".IO !~~ :e {
-    plan 1;
-    flunk('No port number found, Sandbox cleaned up?');
-    skip-rest('No port number found, Sandbox cleaned up?');
-    exit(0);
+    # Configuration file for the servers in the Sandbox
+    #
+    [Account]
+      user = 'test_user'
+      pwd = 'T3st-Us3r'
+
+    [Binaries]
+      mongod = '$*CWD/Travis-ci/MongoDB/mongod'
+
+    [mongod]
+      nojournal = true
+      fork = true
+      quiet = true
+
+    EOCONFIG
+
+
+  #-------------------------------------------------------------------------------
+  for @$Test-support::server-range -> $server-number {
+
+    my Str $server-dir = "Sandbox/Server$server-number";
+    mkdir( $server-dir, 0o700) unless $server-dir.IO ~~ :d;
+    mkdir( "$server-dir/m.data", 0o700) unless "$server-dir/m.data".IO ~~ :d;
+
+    my Int $port-number = find-next-free-port($start-portnbr);
+    ok $port-number >= $start-portnbr,
+       "Portnumber for server $server-number $port-number";
+    $start-portnbr = $port-number + 1;
+
+    # Save portnumber for later tests
+    #
+    spurt "$server-dir/port-number", $port-number;
+
+    $config-text ~= Q:qq:to/EOCONFIG/;
+
+      # Configuration for Server $server-number
+      #
+      [mongod.s$server-number]
+        logpath = '$*CWD/$server-dir/m.log'
+        pidfilepath = '$*CWD/$server-dir/m.pid'
+        dbpath = '$*CWD/$server-dir/m.data'
+        port = $port-number
+
+      [mongod.s$server-number.replicate1]
+        replSet = 'first_replicate'
+
+      [mongod.s$server-number.replicate2]
+        replSet = 'second_replicate'
+
+      [mongod.s$server-number.authenticate]
+        auth = true
+
+      EOCONFIG
   }
 
-  my $port-number = slurp("Sandbox/Server$server/port-number").Int;
-  return $port-number;
+  my Str $file = 'Sandbox/config.toml';
+  spurt( $file, $config-text);
 }
+
+our $server-control = MongoDB::Server::Control.new(:file<Sandbox/config.toml>);
 
 #-----------------------------------------------------------------------------
 # Get a connection.
 #
 sub get-connection ( Int :$server = 1 --> MongoDB::Client ) is export {
 
-  $server = 1 unless  $server ~~ any $server-range;
+  $server = 1 unless $server ~~ any $server-range;
 
-  if "Sandbox/Server$server/NO-MONGODB-SERVER".IO ~~ :e {
-    plan 1;
-    flunk('No database server started!');
-    skip-rest('No database server started!');
-    exit(0);
-  }
-
-  my Int $port-number = get-port-number(:$server);
+  my Int $port-number = $server-control.get-port-number("s$server");
   my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
 
   return $client;
@@ -70,7 +113,7 @@ sub get-connection-try10 ( Int :$server = 1 --> MongoDB::Client ) is export {
 
   $server = 1 unless  $server ~~ any $server-range;
 
-  my Int $port-number = get-port-number(:$server);
+  my Int $port-number = $server-control.get-port-number("s$server");
   my MongoDB::Client $client;
   for ^10 {
     $client .= new(:uri("mongodb://localhost:$port-number"));
@@ -83,20 +126,6 @@ sub get-connection-try10 ( Int :$server = 1 --> MongoDB::Client ) is export {
   }
 
   return $client;
-}
-
-#-----------------------------------------------------------------------------
-# Get collection object
-#
-sub get-test-collection (
-  Str $db-name,
-  Str $col-name
-  --> MongoDB::Collection
-) is export {
-
-  my MongoDB::Client $client = get-connection();
-  my MongoDB::Database $database .= new($db-name);
-  return $database.collection($col-name);
 }
 
 #-----------------------------------------------------------------------------
@@ -169,80 +198,6 @@ sub find-next-free-port ( Int $start-portnbr --> Int ) is export {
   }
 
   $port-number;
-}
-
-#-----------------------------------------------------------------------------
-sub start-mongod (
-  Str:D $server-dir,
-  Int:D $port,
-  Bool :$auth = False,
-  Str :$repl-set,
-  --> Bool
-) is export {
-
-  my Bool $started = False;
-
-  my Str $cmdstr = get-mongod-path();
-  $cmdstr ~= " --port $port";
-  $cmdstr ~= " --auth" if $auth;
-  $cmdstr ~= " --replSet $repl-set" if ?$repl-set;
-
-  # Options from the original config file.
-  #
-  $cmdstr ~= " --logpath '$*CWD/$server-dir/m.log'";
-  $cmdstr ~= " --pidfilepath '$*CWD/$server-dir/m.pid'";
-  $cmdstr ~= " --dbpath '$*CWD/$server-dir/m.data'";
-  $cmdstr ~= " --nojournal";
-  $cmdstr ~= " --fork";
-
-  my Proc $proc = shell($cmdstr);
-  if $proc.exitcode != 0 {
-    spurt $server-dir ~ '/NO-MONGODB-SERVER', '';
-  }
-
-  else {
-    # Remove the file if still there
-    #
-    if "$server-dir/NO-MONGODB-SERVER".IO ~~ :e {
-      unlink "$server-dir/NO-MONGODB-SERVER";
-    }
-
-    $started = True;
-  }
-
-  $started;
-}
-
-#-----------------------------------------------------------------------------
-sub stop-mongod ( Str:D $server-dir --> Bool ) is export {
-
-  my Bool $stopped = False;
-
-  my Str $cmdstr = get-mongod-path();
-  $cmdstr ~= " --shutdown";
-  $cmdstr ~= " --dbpath '$*CWD/$server-dir/m.data'";
-
-  my Proc $proc = shell($cmdstr);
-  if $proc.exitcode != 0 {
-    spurt $server-dir ~ '/NO-MONGODB-SERVER', '';
-  }
-
-  else {
-    # Remove the file if still there
-    #
-    if "$server-dir/NO-MONGODB-SERVER".IO ~~ :e {
-      unlink "$server-dir/NO-MONGODB-SERVER";
-    }
-
-    $stopped = True;
-  }
-
-  $stopped;
-}
-
-#-----------------------------------------------------------------------------
-sub start-mongos ( ) is export {
-
 }
 
 #-----------------------------------------------------------------------------

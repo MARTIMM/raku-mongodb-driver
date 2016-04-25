@@ -14,10 +14,8 @@ info-message("Test $?FILE start");
 #
 for @$Test-support::server-range -> $server-number {
 
-  my Str $server-dir = "Sandbox/Server$server-number";
-#  stop-mongod($server-dir);
-  ok 1, (stop-mongod($server-dir) ?? 'Server is stopped' !! 'Server already stopped');
-#  ok stop-mongod($server-dir), "Server from $server-dir stopped";
+  ok $Test-support::server-control.stop-mongod('s' ~ $server-number),
+     "Server $server-number is stopped";
 }
 
 cleanup-sandbox();

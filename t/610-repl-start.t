@@ -6,6 +6,7 @@ use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
+use MongoDB::Config;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
@@ -22,23 +23,23 @@ my BSON::Document $doc;
 #
 for @$Test-support::server-range -> $server-number {
 
-  my Str $server-dir = "Sandbox/Server$server-number";
-  stop-mongod($server-dir);
-#  ok stop-mongod($server-dir), "Server from $server-dir stopped";
+  ok $Test-support::server-control.stop-mongod("sserver-number"),
+     "Server $server-number stopped";
 }
 
-my Str $rs1 = 'myreplset';
+my Hash $config = MongoDB::Config.instance.config;
+my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 my Str $host = 'localhost';
-my Int $p1 = get-port-number(:server(1));
-my Int $p2 = get-port-number(:server(2));
+my Int $p1 = $Test-support::server-control.get-port-number('s1');
+my Int $p2 = $Test-support::server-control.get-port-number('s2');
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  ok start-mongod( "Sandbox/Server1", $p1), "Server 1 started";
+  ok start-mongod('s1'), "Server 1 started";
 
-  ok start-mongod( "Sandbox/Server2", $p2, :repl-set($rs1)),
-     "Server 2 started in replica set '$rs1'";
+  ok start-mongod( 's2', replicate1),
+     "Server 2 started in replica set '$rs1-s2'";
 
 }, "Servers start";
 
@@ -50,8 +51,11 @@ set-exception-process-level(MongoDB::Severity::Debug);
 
   # The name is not set yet, so no replicat name found in monitor result!
   #
-  $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1"));
-  while $client.nbr-left-actions { sleep 1; }
+  $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  while $client.nbr-left-actions {
+    debug-message('Wait for server 2');
+    sleep 1;
+  }
 
 say "Type of localhost:$p2: $client.server-status('localhost:$p2')";
 #  is $client.server-status('localhost:65535'),
@@ -62,7 +66,10 @@ say "Type of localhost:$p2: $client.server-status('localhost:$p2')";
   # Get client without option
   #
   $client .= new(:uri("mongodb://:$p2"));
-  while $client.nbr-left-actions { sleep 1; }
+  while $client.nbr-left-actions {
+    debug-message('Wait for server 2');
+    sleep 1;
+  }
   is $client.nbr-servers, 1, 'One server found';
 
   $database = $client.database('test');
@@ -74,7 +81,7 @@ say "Type of localhost:$p2: $client.server-status('localhost:$p2')";
 
   $doc = $db-admin.run-command: (
     replSetInitiate => (
-      _id => $rs1,
+      _id => $rs1-s2,
       members => [ (
           _id => 0,
           host => "$host:$p2",
@@ -89,19 +96,22 @@ say "Type of localhost:$p2: $client.server-status('localhost:$p2')";
 
   $doc = $database.run-command: (isMaster => 1);
   ok $doc<setName>:exists, 'Name now set';
-  is $doc<setName>, $rs1, 'Name ok';
+  is $doc<setName>, $rs1-s2, 'Name ok';
   is $doc<setVersion>, 1, 'Repl set version 1';
 
 
 
   $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1"));
-  while $client.nbr-left-actions { sleep 1; }
+  while $client.nbr-left-actions {
+    debug-message('Wait for server 2');
+    sleep 1;
+  }
   is $client.nbr-servers, 1, 'One server found';
 
   my Int $new-version = $doc<setVersion> + 1;
   $doc = $db-admin.run-command: (
     replSetReconfig => (
-      _id => $rs1,
+      _id => $rs1-s2,
       version => $new-version,
       members => [ (
           _id => 0,

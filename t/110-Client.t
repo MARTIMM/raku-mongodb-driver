@@ -1,8 +1,8 @@
 use v6.c;
 use lib 't';
 
-use Test-support;
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
@@ -13,8 +13,8 @@ use MongoDB::Server;
 #set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
-my $p1 = get-port-number(:server(1));
-my $p2 = get-port-number(:server(2));
+my Int $p1 = $Test-support::server-control.get-port-number('s1');
+my Int $p2 = $Test-support::server-control.get-port-number('s2');
 my MongoDB::Client $client;
 
 #-------------------------------------------------------------------------------
@@ -37,8 +37,7 @@ subtest {
   is $client.found-master, True, 'Found a master';
   is $client.server-status("localhost:$p1"),
      MongoDB::Master-server,
-     "Status of server is $client.server-status("localhost:$p1")";
-     
+     "Status of server is $client.server-status('localhost:' ~ $p1)";
 
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
@@ -46,8 +45,8 @@ subtest {
   is $client.nbr-servers, 1, 'One server accepted, two were equal';
 
 
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p2"));
   $server = $client.select-server;
