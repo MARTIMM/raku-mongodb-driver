@@ -86,9 +86,7 @@ package MongoDB {
 
       info-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 
-      # Background process to discover hosts only if there are new servers
-      # to be discovered or that new non default cases are presented.
-      #
+      # Background process to discover hosts.
       for @($uri-obj.server-data<servers>) -> Hash $sdata {
         my Str $server-name = "$sdata<host>:$sdata<port>";
         $!server-discovery{$server-name} = self!start-server-promise(

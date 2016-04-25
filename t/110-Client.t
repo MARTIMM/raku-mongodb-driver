@@ -16,20 +16,24 @@ info-message("Test $?FILE start");
 my Int $p1 = $Test-support::server-control.get-port-number('s1');
 my Int $p2 = $Test-support::server-control.get-port-number('s2');
 my MongoDB::Client $client;
+my MongoDB::Server $server;
 
 #-------------------------------------------------------------------------------
 subtest {
 
   $client .= new(:uri("mongodb://localhost:65535"));
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
-  my MongoDB::Server $server = $client.select-server;
+  $server = $client.select-server;
   nok $server.defined, 'No servers selected';
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status('localhost:65535'),
      MongoDB::Down-server,
      "Status of server is $client.server-status('localhost:65535')";
 
+}, 'Non existent server == down server';
 
+#-------------------------------------------------------------------------------
+subtest {
   $client .= new(:uri("mongodb://localhost:$p1"));
   $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
@@ -39,14 +43,12 @@ subtest {
      MongoDB::Master-server,
      "Status of server is $client.server-status('localhost:' ~ $p1)";
 
-
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
   $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server accepted, two were equal';
 
-
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Debug);
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p2"));
   $server = $client.select-server;
