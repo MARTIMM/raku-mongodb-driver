@@ -2,33 +2,41 @@
 
 title Select a server
 
-(*) -right-> "check servers"
--right-> if "server" then
+state "Server processing" as SProc {
 
--right-> [next server] "poll server\ndata"
--right-> "check replica\noption in uri"
--right-> "check for\nmultiple masters"
+  [*] --> Build : Uri
+  Build --> [*] : Client Object
+  Build : init object and start\nbackground proc
 
+  [*] --> Select
+  Select --> Await
+  Await : wait for server select\nto have at least a\nmaster server
+  Await --> Select : server
+  Select --> [*] : server object
+  Select : find proper server
 
+  Receive : receive server\nobjects from channel
+  Receive --> Await
 
-if "server conlicts" then
---> [True] "Remove server"
---> "check servers"
+  --
 
-else
+  [*] --> Discover : server from uri
+  Discover : loop through\nlist of servers
+  Discover --> Catagorize : list of servers
 
---> [False] if "usable server" then
--right-> [True] "set server"
-else
---> [False] "check servers"
-endif
+  Catagorize : catagorize list\nof servers
+  Catagorize --> Send : list of servers
+  Catagorize --> Topology : list of servers
+  Catagorize --> Interrogate : master server
 
-endif
+  Interrogate : ask server for secondary hosts
+  Interrogate --> Discover : found servers
 
-else
---> [no servers left] "set server"
-endif
+  Send : send each server\nobject through channel
 
-"set server" -right-> (*)
+  Topology : set server types and\nClient topology
+  Topology --> Discover
+
+}
 
 @enduml
