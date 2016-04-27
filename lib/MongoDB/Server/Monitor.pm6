@@ -20,27 +20,31 @@ unit package MongoDB;
 # - Full collection name is fixed. Document and encoding is fixed.
 # - No Cursor object needed. One document is pulled out directly from result.
 #
-class Server::Monitor {
+# Note: Because Supplier is inherited, BUILD cannot get its named parameters.
+# when a new() method is defined, Supplier gets wrong parameters. Therefore
+# BUILD is replaced by monitor-init() and must be called explicitly
+#
+class Server::Monitor is Supplier {
 
-  has $!server where .^name eq 'MongoDB::Server';
-  has BSON::Document $!monitor-command;
-  has BSON::Document $!monitor-result;
+  has $!server;
   has MongoDB::Server::Socket $!socket;
-  has Int $.monitor-looptime is rw = 10;
 
   has Duration $!weighted-mean-rtt .= new(0);
 
   # Variables to control infinite monitoring actions
   has Promise $!promise-monitor;
   has Semaphore $!server-monitor-control;
+  has Int $.monitor-looptime is rw = 10;
+  has Bool $!monitor-loop;
+  has BSON::Document $!monitor-command;
+  has BSON::Document $!monitor-result;
 
   #-----------------------------------------------------------------------------
-  #
-  submethod BUILD (
-    :$server where ( .defined and .^name eq 'MongoDB::Server')
-  ) {
+  # Call before monitor-server to set the $!server object!
+  method monitor-init ( :$server ) {
 
     $!server = $server;
+
     $!monitor-command .= new: (isMaster => 1);
     $!monitor-command.encode;
     $!monitor-command does MongoDB::Header;
@@ -49,12 +53,26 @@ class Server::Monitor {
   }
 
   #-----------------------------------------------------------------------------
-  # Run this on a separate thread because it lasts until this program
-  # atops or the server shuts down.
-  #
-  method monitor-server ( Channel $data-channel, Channel $command-channel ) {
+  method done ( ) {
 
-#say "Start $!server.name() monitoring";
+    $!monitor-loop = False;
+    callwith();
+  }
+
+  #-----------------------------------------------------------------------------
+  method quit ( ) {
+
+    $!monitor-loop = False;
+    callwith('Monitor forced to quit');
+  }
+
+  #-----------------------------------------------------------------------------
+  # Run this on a separate thread because it lasts until this program atops.
+  #
+#  method monitor-server ( Channel $data-channel, Channel $command-channel ) {
+  method monitor-server ( ) {
+
+say "Start $!server.name() monitoring";
     return unless $!server-monitor-control.try_acquire;
 
     $!promise-monitor .= start( {
@@ -66,11 +84,13 @@ class Server::Monitor {
         # As long as the server lives test it. Changes are possible when 
         # server conditions change.
         #
-        loop {
+        $!monitor-loop = True;
+        while $!monitor-loop {
 
           # Temporary try block to catch typos
           try {
 
+#`{{
             # Check the input-channel to see if there is a stop command. If so
             # exit the while loop. Take a nap otherwise.
             #
@@ -78,7 +98,7 @@ class Server::Monitor {
             info-message("Server $!server.name(). Receive command $cmd")
               if ?$cmd;
             last if ?$cmd and $cmd eq 'stop';
-
+}}
             # Save time stamp for RTT measurement
             $t0 = now;
 
@@ -93,8 +113,16 @@ class Server::Monitor {
 
 #say "Monitor info: ", $doc.perl;
 
+#`{{
             # Send data to Client
             $data-channel.send( {
+                ok => True,
+                monitor => $doc<documents>[0],
+                weighted-mean-rtt => $!weighted-mean-rtt
+              }
+            );
+}}
+            self.emit( {
                 ok => True,
                 monitor => $doc<documents>[0],
                 weighted-mean-rtt => $!weighted-mean-rtt
@@ -114,8 +142,16 @@ class Server::Monitor {
             # Send ok False to mention the fact that the server is down.
             #
             CATCH {
+.say;
+last;
               default {
+#`{{
                 $data-channel.send( {
+                    ok => False,
+                  }
+                );
+}}
+                self.emit( {
                     ok => False,
                   }
                 );
@@ -123,14 +159,14 @@ class Server::Monitor {
                 warn-message(
                   "Server $!server.name() error while monitoring, changing state"
                 );
-                last;
+#                last;
               }
             }
           }
         }
 
-        info-message("Server monitoring stopped for $!server.name()");
-        $command-channel.send('stopped');
+#        info-message("Server monitoring stopped for $!server.name()");
+#        $command-channel.send('stopped');
         $!server-monitor-control.release;
       }
     );
@@ -146,28 +182,34 @@ class Server::Monitor {
 
     try {
       $!socket = $!server.get-socket;
-      fatal-message("No socket available") unless $!socket.defined;
+      if $!socket.defined {
 
-      $!socket.send($encoded-query);
+        $!socket.send($encoded-query);
 
-      # Read 4 bytes for int32 response size
-      #
-      my Buf $size-bytes = self!get-bytes(4);
+        # Read 4 bytes for int32 response size
+        #
+        my Buf $size-bytes = self!get-bytes(4);
 
-      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+        my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
-      # Receive remaining response bytes from socket. Prefix it with the
-      # already read bytes and decode. Return the resulting document.
-      #
-      my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
-      $!monitor-result = $!monitor-command.decode-reply($server-reply);
+        # Receive remaining response bytes from socket. Prefix it with the
+        # already read bytes and decode. Return the resulting document.
+        #
+        my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
+        $!monitor-result = $!monitor-command.decode-reply($server-reply);
 
-      # Assert that the request-id and response-to are the same
-      fatal-message("Id in request is not the same as in the response")
-        unless $request-id == $!monitor-result<message-header><response-to>;
+        # Assert that the request-id and response-to are the same
+        fatal-message("Id in request is not the same as in the response")
+          unless $request-id == $!monitor-result<message-header><response-to>;
+
+        $!socket.close;
+      }
+      
+      else {
+        $!monitor-result = Nil;
+      }
     }
 
-    $!socket.close;
     return $!monitor-result;
   }
 

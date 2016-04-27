@@ -9,9 +9,62 @@ use MongoDB::Server::Monitor;
 use MongoDB::Socket;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
+
+my $p1 = $Test-support::server-control.get-port-number('s1');
+my MongoDB::Server $server .= new( :host<localhost>, :port($p1));
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my MongoDB::Server::Monitor $monitor .= new;
+  $monitor.monitor-looptime = 1;
+  $monitor.monitor-init(:$server);
+  $monitor.monitor-server;
+
+  my Supply $s = $monitor.Supply;
+  $s.act( {
+      ok $_<ok>, 'Monitoring is ok';
+      ok $_<weighted-mean-rtt> > 0.0, "Weighted mean is $_<weighted-mean-rtt>";
+      ok $_<monitor><ok>, 'Ok response from server';
+      ok $_<monitor><ismaster>, 'Is master';
+    }
+  );
+
+  sleep 2;
+  $monitor.done;
+  say 'done monitoring';
+  sleep 2;
+
+}, 'Monitor test';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  ok $server.server-status, "Status is Unknown({MongoDB::C-UNKNOWN-SERVER})";
+  $server.server-init;
+
+  $server.tap-monitor( {
+      ok $_<ok>, 'Monitoring is ok';
+      ok $_<weighted-mean-rtt> > 0.0, "Weighted mean is $_<weighted-mean-rtt>";
+      ok $_<monitor><ok>, 'Ok response from server';
+      ok $_<monitor><ismaster>, 'Is master';
+    }
+  );
+
+}, 'Server test';
+
+#-------------------------------------------------------------------------------
+# Cleanup
+#
+info-message("Test $?FILE end");
+done-testing();
+exit(0);
+
+
+=finish
 
 my $p1 = $Test-support::server-control.get-port-number('s1');
 my $data-channel = Channel.new;
