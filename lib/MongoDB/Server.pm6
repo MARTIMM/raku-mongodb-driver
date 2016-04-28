@@ -7,23 +7,6 @@ use BSON::Document;
 
 unit package MongoDB;
 
-subset ServerStatus of Int where 10 <= $_ <= 21;
-constant C-UNKNOWN-SERVER               = 10;
-constant C-DOWN-SERVER                  = 11;
-constant C-RECOVERING-SERVER            = 12;
-
-constant C-REJECTED-SERVER              = 13;
-constant C-GHOST-SERVER                 = 14;
-
-constant C-REPLICA-PRE-INIT             = 15;
-constant C-REPLICASET-PRIMARY           = 16;
-constant C-REPLICASET-SECONDARY         = 17;
-constant C-REPLICASET-ARBITER           = 18;
-
-constant C-SHARDING-SERVER              = 19;
-constant C-MASTER-SERVER                = 20;
-constant C-SLAVE-SERVER                 = 21;
-
 class Server {
 
   has Str $.server-name;
@@ -45,7 +28,7 @@ class Server {
   has MongoDB::Server::Socket @!sockets;
   has Semaphore $!server-socket-selection;
 
-  has ServerStatus $.server-status is rw = C-UNKNOWN-SERVER;
+  has MongoDB::ServerStatus $.server-status is rw = MongoDB::C-UNKNOWN-SERVER;
 
   #---------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
@@ -80,7 +63,7 @@ class Server {
       CATCH {
         default {
           info-message("Server self.name() is down");
-          $!server-status = C-DOWN-SERVER;
+          $!server-status = MongoDB::C-DOWN-SERVER;
         }
       }
     }
@@ -100,6 +83,83 @@ say "S: {self}";
     $!server-monitor .= new;
     $!server-monitor.monitor-init(:server(self));
     $!server-monitor.monitor-server;
+
+    self.tap-monitor( -> Hash $monitor-data {
+
+#TODO protect with semaphore
+        say "\nMonitor data: $monitor-data.perl()";
+        if $monitor-data<ok> {
+
+          my $mdata = $monitor-data<monitor>;
+
+          # Does the caller want to have a replicaset
+          if $!uri-data<options><replicaSet> {
+
+            # Is the server in a replicaset
+            if $mdata<isreplicaset> and $mdata<setName> {
+
+              # Is the server in the replicaset matching the callers request
+              if $mdata<setName> eq $!uri-data<options><replicaSet> {
+
+                if $mdata<ismaster> {
+                  $!server-status = MongoDB::C-REPLICASET-PRIMARY;
+                }
+
+                elsif $mdata<issecondary> {
+                  $!server-status = MongoDB::C-REPLICASET-PRIMARY;
+                }
+
+                # ... Arbiter etc
+              }
+
+              # Replicaset name does not match
+              else {
+                $!server-status = MongoDB::C-REJECTED-SERVER;
+              }
+            }
+
+            # Must be initialized. When an other name for replicaset is used
+            # the next state should be C-REJECTED-SERVER. Otherwise it becomes
+            # any of MongoDB::C-REPLICASET-*
+            #
+            elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
+              $!server-status = MongoDB::C-REPLICA-PRE-INIT
+            }
+
+            # Shouldn't happen
+            else {
+              $!server-status = MongoDB::C-REJECTED-SERVER;
+            }
+          }
+
+          # Need one standalone server
+          else {
+
+            # Must not be any type of replicaset server
+            if $mdata<isreplicaset>:exists {
+              $!server-status = MongoDB::C-REJECTED-SERVER;
+            }
+
+            else {
+              # Must be master
+              if $mdata<ismaster> {
+                $!server-status = MongoDB::C-MASTER-SERVER;
+              }
+
+              # Shouldn't happen
+              else {
+                $!server-status = MongoDB::C-REJECTED-SERVER;
+              }
+            }
+          }
+        }
+
+        # Server did not respond
+        else {
+          $!server-status = MongoDB::C-DOWN-SERVER;
+        }
+      }
+    );
   }
 
   #---------------------------------------------------------------------------
@@ -108,13 +168,12 @@ say "S: {self}";
   #
   method tap-monitor ( |c ) {
 
-    my Supply $s = $!server-monitor.Supply;
-    $s.act(|c);
+    $!server-monitor.Supply.act(|c);
   }
 
   #---------------------------------------------------------------------------
   method stop-monitor ( |c ) {
-    
+
     $!server-monitor.done;
   }
 

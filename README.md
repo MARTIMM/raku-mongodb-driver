@@ -302,6 +302,7 @@ change at any time. The public API should not be considered stable.*
 
 * 0.28.12
   * Changing monitoring to be a Supplies instead of using channels.
+  * Major rewrite of Client, Server and Monitor modules.
 * 0.28.11
   * Facturing out code from test environment into MongoDB::Server::Control to have a module to control a server like startup, shutdown, converting a standalone server to a replica server or something else.
   * Using a new module Config::TOML to control server startup.
