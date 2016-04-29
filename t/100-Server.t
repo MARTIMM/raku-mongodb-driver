@@ -13,7 +13,6 @@ set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
-
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -44,9 +43,30 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
+  my MongoDB::Server $server .= new( :host<localhost>, :port(65535));
+  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
+
+  $server.server-init;
+  $server.server-monitor.monitor-looptime = 1;
+  $server.tap-monitor( {
+      nok $_<ok>, 'Monitoring is not ok';
+    }
+  );
+
+  sleep 2;
+  $server.stop-monitor;
+
+  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is still down";
+
+}, 'Down server test';
+
+
+#-------------------------------------------------------------------------------
+subtest {
+
   my $p2 = $Test-support::server-control.get-port-number('s1');
   my MongoDB::Server $server .= new( :host<localhost>, :port($p2));
-  is  $server.server-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
+  is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
   $server.server-init;
   $server.server-monitor.monitor-looptime = 1;
@@ -61,7 +81,7 @@ subtest {
   sleep 2;
   $server.stop-monitor;
 
-  is $server.server-status, MongoDB::C-MASTER-SERVER,
+  is $server.get-status, MongoDB::C-MASTER-SERVER,
      "Status is standalone master";
 
 }, 'Server test';

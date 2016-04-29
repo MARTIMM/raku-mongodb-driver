@@ -28,7 +28,11 @@ class Server {
   has MongoDB::Server::Socket @!sockets;
   has Semaphore $!server-socket-selection;
 
-  has MongoDB::ServerStatus $.server-status is rw = MongoDB::C-UNKNOWN-SERVER;
+  # Server status. Must be protected by a semaphore because of a thread
+  # handling monitoring data
+  #
+  has MongoDB::ServerStatus $!server-status;
+  has Semaphore $!status-semaphore;
 
   #---------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
@@ -46,6 +50,9 @@ class Server {
     $!uri-data = $uri-data // %();
 
     $!server-socket-selection .= new(1);
+
+    $!server-status = MongoDB::C-UNKNOWN-SERVER;
+    $!status-semaphore .= new(1);
 
     # IO::Socket::INET throws an exception when things go wrong.
     #
@@ -78,16 +85,18 @@ class Server {
 
   #---------------------------------------------------------------------------
   method server-init ( ) {
-say "S: {self}";
 
+    # Initialize and start monitoring
     $!server-monitor .= new;
     $!server-monitor.monitor-init(:server(self));
     $!server-monitor.monitor-server;
 
+    # Get monitor data
     self.tap-monitor( -> Hash $monitor-data {
 
-#TODO protect with semaphore
         say "\nMonitor data: $monitor-data.perl()";
+
+        my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
         if $monitor-data<ok> {
 
           my $mdata = $monitor-data<monitor>;
@@ -102,11 +111,11 @@ say "S: {self}";
               if $mdata<setName> eq $!uri-data<options><replicaSet> {
 
                 if $mdata<ismaster> {
-                  $!server-status = MongoDB::C-REPLICASET-PRIMARY;
+                  $server-status = MongoDB::C-REPLICASET-PRIMARY;
                 }
 
                 elsif $mdata<issecondary> {
-                  $!server-status = MongoDB::C-REPLICASET-PRIMARY;
+                  $server-status = MongoDB::C-REPLICASET-PRIMARY;
                 }
 
                 # ... Arbiter etc
@@ -114,7 +123,7 @@ say "S: {self}";
 
               # Replicaset name does not match
               else {
-                $!server-status = MongoDB::C-REJECTED-SERVER;
+                $server-status = MongoDB::C-REJECTED-SERVER;
               }
             }
 
@@ -123,12 +132,12 @@ say "S: {self}";
             # any of MongoDB::C-REPLICASET-*
             #
             elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
-              $!server-status = MongoDB::C-REPLICA-PRE-INIT
+              $server-status = MongoDB::C-REPLICA-PRE-INIT
             }
 
             # Shouldn't happen
             else {
-              $!server-status = MongoDB::C-REJECTED-SERVER;
+              $server-status = MongoDB::C-REJECTED-SERVER;
             }
           }
 
@@ -137,18 +146,18 @@ say "S: {self}";
 
             # Must not be any type of replicaset server
             if $mdata<isreplicaset>:exists {
-              $!server-status = MongoDB::C-REJECTED-SERVER;
+              $server-status = MongoDB::C-REJECTED-SERVER;
             }
 
             else {
               # Must be master
               if $mdata<ismaster> {
-                $!server-status = MongoDB::C-MASTER-SERVER;
+                $server-status = MongoDB::C-MASTER-SERVER;
               }
 
               # Shouldn't happen
               else {
-                $!server-status = MongoDB::C-REJECTED-SERVER;
+                $server-status = MongoDB::C-REJECTED-SERVER;
               }
             }
           }
@@ -156,10 +165,24 @@ say "S: {self}";
 
         # Server did not respond
         else {
-          $!server-status = MongoDB::C-DOWN-SERVER;
+          $server-status = MongoDB::C-DOWN-SERVER;
         }
+
+        # Set the status with the new value
+        $!status-semaphore.acquire;
+        $!server-status = $server-status;
+        $!status-semaphore.release;
       }
     );
+  }
+
+  #---------------------------------------------------------------------------
+  method get-status ( --> MongoDB::ServerStatus ) {
+
+    $!status-semaphore.acquire;
+    my MongoDB::ServerStatus $server-status = $!server-status;
+    $!status-semaphore.release;
+    $server-status;
   }
 
   #---------------------------------------------------------------------------
