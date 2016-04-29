@@ -262,6 +262,7 @@ MongoDB versions are supported from 2.6 and up. Versions lower that this are not
 * Blog [A Consistent CRUD API](https://www.mongodb.com/blog/post/consistent-crud-api-next-generation-mongodb-drivers?jmp=docs&_ga=1.72964115.1411139568.1420476116)
 * Speed
   * Speed can be influenced by specifying types on all variables
+  * Also take native types for simple things such as counters
   * Also setting constraints like (un)definedness etc on parameters
   * Furthermore the speedup of the language perl6 itself would have more impact than the programming of a several month student(me) can accomplish ;-). In september and also in december 2015 great improvements are made.
   * The compile step of perl6 takes some time before running. This obviously depends on the code base of the programs. One thing I have done is removing all exception classes from the modules and replace them by only one class defined in MongoDB.pm.
@@ -292,7 +293,7 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
   * send the output to a separate class of which the object of it is in a thread. The information is then sent via a channel. This way it will always be synchronized (need to check that though).
   * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of \*-message() function.
   * Use macros to get info at the calling point before sending to \*-message(). This will make the search through the stack unnecessary
-
+* Use semaphores in Server to get a Socket. Use the socket limit as a parameter. Need also to modify this.
 
 ## CHANGELOG
 
