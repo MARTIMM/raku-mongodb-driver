@@ -90,48 +90,36 @@ say "Start $!server.name() monitoring";
           # Temporary try block to catch typos
           try {
 
-#`{{
-            # Check the input-channel to see if there is a stop command. If so
-            # exit the while loop. Take a nap otherwise.
-            #
-            my Str $cmd = $command-channel.poll // '';
-            info-message("Server $!server.name(). Receive command $cmd")
-              if ?$cmd;
-            last if ?$cmd and $cmd eq 'stop';
-}}
             # Save time stamp for RTT measurement
             $t0 = now;
 
             # Get server info
             $doc = self!query;
+            if $doc.defined {
 
-            # Calculation of mean Return Trip Time
-            $rtt = now - $t0;
-            $!weighted-mean-rtt .= new(
-              0.2 * $rtt + 0.8 * $!weighted-mean-rtt
-            );
+              # Calculation of mean Return Trip Time
+              $rtt = now - $t0;
+              $!weighted-mean-rtt .= new(
+                0.2 * $rtt + 0.8 * $!weighted-mean-rtt
+              );
 
 #say "Monitor info: ", $doc.perl;
 
-#`{{
-            # Send data to Client
-            $data-channel.send( {
-                ok => True,
-                monitor => $doc<documents>[0],
-                weighted-mean-rtt => $!weighted-mean-rtt
-              }
-            );
-}}
-            self.emit( {
-                ok => True,
-                monitor => $doc<documents>[0],
-                weighted-mean-rtt => $!weighted-mean-rtt
-              }
-            );
+              self.emit( {
+                  ok => True,
+                  monitor => $doc<documents>[0],
+                  weighted-mean-rtt => $!weighted-mean-rtt
+                }
+              );
 
-            info-message(
-              "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
-            );
+              info-message(
+                "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
+              );
+            }
+            
+            else {
+              self.emit({ok => False,});
+            }
 
             # Rest for a while
             sleep($!monitor-looptime);
@@ -143,23 +131,14 @@ say "Start $!server.name() monitoring";
             #
             CATCH {
 .say;
-last;
+#last;
               default {
-#`{{
-                $data-channel.send( {
-                    ok => False,
-                  }
-                );
-}}
-                self.emit( {
-                    ok => False,
-                  }
-                );
+
+                self.emit({ok => False,});
 
                 warn-message(
                   "Server $!server.name() error while monitoring, changing state"
                 );
-#                last;
               }
             }
           }
