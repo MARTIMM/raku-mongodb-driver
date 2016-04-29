@@ -44,19 +44,27 @@ class Server {
     Int :$max-sockets where $_ >= 3 = 3,
     Hash :$uri-data,
   ) {
+    # Save name andd port of the server
     $!server-name = $host;
     $!server-port = $port;
+
+    # Define number of available sockets and its semaphore
     $!max-sockets = $max-sockets;
-    $!uri-data = $uri-data // %();
-
     $!server-socket-selection .= new(1);
+#TODO semaphores using $!max-sockets
 
+    # Set status to its default starting status
     $!server-status = MongoDB::C-UNKNOWN-SERVER;
     $!status-semaphore .= new(1);
 
+    $!uri-data = $uri-data // %();
+
+    $!server-monitor .= new;
+
     # IO::Socket::INET throws an exception when things go wrong.
     #
-    try {
+    if 0 {
+#    try {
       my IO::Socket::INET $sock .= new(
         :host($!server-name),
         :port($!server-port)
@@ -69,8 +77,16 @@ class Server {
 
       CATCH {
         default {
-          info-message("Server self.name() is down");
-          $!server-status = MongoDB::C-DOWN-SERVER;
+          warn-message("Server {self.name()}: {.message}");
+
+#          if 0 and .message ~~ m:s/Failed to connect\: connection refused/ {
+          if  .message ~~ m:s/Failed to connect\: connection refused/ {
+            $!server-status = MongoDB::C-DOWN-SERVER;
+          }
+
+          elsif .message ~~ m:s/Failed to resolve host name/ {
+            $!server-status = MongoDB::C-NON-EXISTENT-SERVER;
+          }
         }
       }
     }
@@ -78,81 +94,70 @@ class Server {
 #    $!data-channel = Channel.new();
 #    $!command-channel = Channel.new();
 
+
     # Start server monitoring
 #    $!server-monitor.monitor-server( $!data-channel, $!command-channel);
 #    $!server-monitor.monitor-server;
   }
 
   #---------------------------------------------------------------------------
+  # Server initialization 
   method server-init ( ) {
 
-    # Initialize and start monitoring
-    $!server-monitor .= new;
-    $!server-monitor.monitor-init(:server(self));
-    $!server-monitor.monitor-server;
 
-    # Get monitor data
-    self.tap-monitor( -> Hash $monitor-data {
+say "Sts: $!server-status";
+    # Don't start monitoring if dns failed to return an ip address
+    if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
 
-        say "\nMonitor data: $monitor-data.perl()";
+      # Initialize and start monitoring
+      $!server-monitor.monitor-init(:server(self));
 
-        my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
-        if $monitor-data<ok> {
+      # Start monitoring
+      $!server-monitor.monitor-server;
 
-          my $mdata = $monitor-data<monitor>;
+say "Start tapping data";
+      # Tap into monitor data
+      self.tap-monitor( -> Hash $monitor-data {
 
-          # Does the caller want to have a replicaset
-          if $!uri-data<options><replicaSet> {
+say "\nMonitor data: $monitor-data.perl()";
 
-            # Is the server in a replicaset
-            if $mdata<isreplicaset> and $mdata<setName> {
+          my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
+          if $monitor-data<ok> {
 
-              # Is the server in the replicaset matching the callers request
-              if $mdata<setName> eq $!uri-data<options><replicaSet> {
+            my $mdata = $monitor-data<monitor>;
 
-                if $mdata<ismaster> {
-                  $server-status = MongoDB::C-REPLICASET-PRIMARY;
+            # Does the caller want to have a replicaset
+            if $!uri-data<options><replicaSet> {
+
+              # Is the server in a replicaset
+              if $mdata<isreplicaset> and $mdata<setName> {
+
+                # Is the server in the replicaset matching the callers request
+                if $mdata<setName> eq $!uri-data<options><replicaSet> {
+
+                  if $mdata<ismaster> {
+                    $server-status = MongoDB::C-REPLICASET-PRIMARY;
+                  }
+
+                  elsif $mdata<issecondary> {
+                    $server-status = MongoDB::C-REPLICASET-PRIMARY;
+                  }
+
+                  # ... Arbiter etc
                 }
 
-                elsif $mdata<issecondary> {
-                  $server-status = MongoDB::C-REPLICASET-PRIMARY;
+                # Replicaset name does not match
+                else {
+                  $server-status = MongoDB::C-REJECTED-SERVER;
                 }
-
-                # ... Arbiter etc
               }
 
-              # Replicaset name does not match
-              else {
-                $server-status = MongoDB::C-REJECTED-SERVER;
-              }
-            }
-
-            # Must be initialized. When an other name for replicaset is used
-            # the next state should be C-REJECTED-SERVER. Otherwise it becomes
-            # any of MongoDB::C-REPLICASET-*
-            #
-            elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
-              $server-status = MongoDB::C-REPLICA-PRE-INIT
-            }
-
-            # Shouldn't happen
-            else {
-              $server-status = MongoDB::C-REJECTED-SERVER;
-            }
-          }
-
-          # Need one standalone server
-          else {
-
-            # Must not be any type of replicaset server
-            if $mdata<isreplicaset>:exists {
-              $server-status = MongoDB::C-REJECTED-SERVER;
-            }
-
-            else {
-              # Must be master
-              if $mdata<ismaster> {
-                $server-status = MongoDB::C-MASTER-SERVER;
+              # Must be initialized. When an other name for replicaset is used
+              # the next state should be C-REJECTED-SERVER. Otherwise it becomes
+              # any of MongoDB::C-REPLICASET-*
+              #
+              elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
+                $server-status = MongoDB::C-REPLICA-PRE-INIT
               }
 
               # Shouldn't happen
@@ -160,20 +165,49 @@ class Server {
                 $server-status = MongoDB::C-REJECTED-SERVER;
               }
             }
+
+            # Need one standalone server
+            else {
+
+              # Must not be any type of replicaset server
+              if $mdata<isreplicaset>:exists {
+                $server-status = MongoDB::C-REJECTED-SERVER;
+              }
+
+              else {
+                # Must be master
+                if $mdata<ismaster> {
+                  $server-status = MongoDB::C-MASTER-SERVER;
+                }
+
+                # Shouldn't happen
+                else {
+                  $server-status = MongoDB::C-REJECTED-SERVER;
+                }
+              }
+            }
           }
-        }
 
-        # Server did not respond
-        else {
-          $server-status = MongoDB::C-DOWN-SERVER;
-        }
+          # Server did not respond
+          else {
+say "No response";
+            if $monitor-data<reason>:exists
+               and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
+              $server-status = MongoDB::C-NON-EXISTENT-SERVER;
+            }
 
-        # Set the status with the new value
-        $!status-semaphore.acquire;
-        $!server-status = $server-status;
-        $!status-semaphore.release;
-      }
-    );
+            else {
+              $server-status = MongoDB::C-DOWN-SERVER;
+            }
+          }
+
+          # Set the status with the new value
+          $!status-semaphore.acquire;
+          $!server-status = $server-status;
+          $!status-semaphore.release;
+        }
+      );
+    }
   }
 
   #---------------------------------------------------------------------------
@@ -204,31 +238,25 @@ class Server {
   # Search in the array for a closed Socket.
   #
   method get-socket ( --> MongoDB::Server::Socket ) {
-#TODO place semaphores using $!max-sockets
-
-#    # If server is still unknown, down or rejected then no sockets can be opened
-#    return MongoDB::Server::Socket if $!server-status ~~ any(
-#      C-UNKNOWN-SERVER |
-#      C-DOWN-SERVER |
-#      C-REJECTED-SERVER
-#    );
-
-    $!server-socket-selection.acquire;
 
     my MongoDB::Server::Socket $sock;
 
-    # Setup a try block to catch unknown exceptions
+    # Get a free socket entry
+    $!server-socket-selection.acquire;
+    for ^(@!sockets.elems) -> $si {
+
+      # Skip all active sockets
+      #
+      next if @!sockets[$si].is-open;
+
+      $sock = @!sockets[$si];
+      last;
+    }
+    $!server-socket-selection.release;
+
+    # Setup a try block to catch socket new() exceptions
     #
     try {
-      for ^(@!sockets.elems) -> $si {
-
-        # Skip all active sockets
-        #
-        next if @!sockets[$si].is-open;
-
-        $sock = @!sockets[$si];
-        last;
-      }
 
       # If none is found insert a new Socket in the array
       #
@@ -241,7 +269,6 @@ class Server {
         }
 
         $sock .= new(:server(self));
-        @!sockets.push($sock);
       }
 
       # Return a usable socket which is opened. The user has the responsibility
@@ -251,11 +278,15 @@ class Server {
       $sock.open();
 
       CATCH {
+say "Sock: ", .message;
         default {
-          $!server-socket-selection.release;
-          .throw;
+          die .message;
         }
       }
+
+      $!server-socket-selection.acquire;
+      @!sockets.push($sock);
+      $!server-socket-selection.release;
     }
 
     $!server-socket-selection.release;

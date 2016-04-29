@@ -43,11 +43,15 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my MongoDB::Server $server .= new( :host<localhost>, :port(65535));
-  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
+  my MongoDB::Server $server .= new(
+    :host<an-unknown-server.with-unknown-domain>,
+    :port(65535)
+  );
+  is $server.get-status, MongoDB::C-NON-EXISTENT-SERVER,
+     "Server is non existent";
 
-  $server.server-init;
   $server.server-monitor.monitor-looptime = 1;
+  $server.server-init;
   $server.tap-monitor( {
       nok $_<ok>, 'Monitoring is not ok';
     }
@@ -56,10 +60,30 @@ subtest {
   sleep 2;
   $server.stop-monitor;
 
+  is $server.get-status, MongoDB::C-NON-EXISTENT-SERVER,
+     "Server is still non existent";
+
+}, 'Non existent server test';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my MongoDB::Server $server .= new( :host<localhost>, :port(65535));
+  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
+
+  $server.server-monitor.monitor-looptime = 1;
+  $server.server-init;
+  $server.tap-monitor( {
+      nok $_<ok>, 'Monitoring is not ok';
+    }
+  );
+
+  sleep 4;
+  $server.stop-monitor;
+
   is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is still down";
 
 }, 'Down server test';
-
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -68,8 +92,8 @@ subtest {
   my MongoDB::Server $server .= new( :host<localhost>, :port($p2));
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
-  $server.server-init;
   $server.server-monitor.monitor-looptime = 1;
+  $server.server-init;
   $server.tap-monitor( {
       ok $_<ok>, 'Monitoring is ok';
       ok $_<weighted-mean-rtt> > 0.0, "Weighted mean is $_<weighted-mean-rtt>";
@@ -85,42 +109,6 @@ subtest {
      "Status is standalone master";
 
 }, 'Server test';
-
-#-------------------------------------------------------------------------------
-# Cleanup
-#
-info-message("Test $?FILE end");
-done-testing();
-exit(0);
-
-
-=finish
-
-my $p1 = $Test-support::server-control.get-port-number('s1');
-my $data-channel = Channel.new;
-my $command-channel = Channel.new;
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  my MongoDB::Server $server .= new( :host<localhost>, :port($p1));
-  ok $server.defined, 'Connection server available';
-
-  my MongoDB::Server::Monitor $server-monitor = $server.server-monitor;
-  $server-monitor.monitor-looptime = 1;
-  is $server-monitor.monitor-looptime, 1, 'Monitor loop time changed';
-  $server-monitor.monitor-server( $data-channel, $command-channel);
-
-  sleep 2;
-  my Hash $monitor-data = $data-channel.poll // Hash.new;
-  ok $monitor-data<monitor>:exists, 'Data is set';
-  ok $monitor-data<monitor><ismaster>, 'This server is master';
-
-  $command-channel.send('stop');
-  sleep 2;
-  is $command-channel.receive, 'stopped', 'Monitoring stopped';
-
-}, 'Server monitoring tests';
 
 #-------------------------------------------------------------------------------
 # Cleanup

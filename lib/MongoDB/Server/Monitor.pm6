@@ -69,12 +69,11 @@ class Server::Monitor is Supplier {
   #-----------------------------------------------------------------------------
   # Run this on a separate thread because it lasts until this program atops.
   #
-#  method monitor-server ( Channel $data-channel, Channel $command-channel ) {
   method monitor-server ( ) {
 
-say "Start $!server.name() monitoring";
     return unless $!server-monitor-control.try_acquire;
 
+    info-message("Start $!server.name() monitoring");
     $!promise-monitor .= start( {
 
         my Instant $t0;
@@ -118,7 +117,11 @@ say "Start $!server.name() monitoring";
             }
             
             else {
-              self.emit({ok => False,});
+              self.emit( {
+                  ok => False,
+                  reason => 'Undefined document'
+                }
+              );
             }
 
             # Rest for a while
@@ -130,22 +133,33 @@ say "Start $!server.name() monitoring";
             # Send ok False to mention the fact that the server is down.
             #
             CATCH {
-.say;
-#last;
+say 'Tap: ', .message;
               default {
 
-                self.emit({ok => False,});
+                # Failure messages;
+                #   Failed to connect: connection refused
+                #   Failed to resolve host name
+                #
+say "Emit: \{ ok => False, reason => $_.message() \}";
+
+                self.emit( {
+                    ok => False,
+                    reason => .message
+                  }
+                );
 
                 warn-message(
                   "Server $!server.name() error while monitoring, changing state"
                 );
+
+                # Rest for a while
+                sleep($!monitor-looptime);
               }
             }
           }
         }
 
-#        info-message("Server monitoring stopped for $!server.name()");
-#        $command-channel.send('stopped');
+        info-message("Server monitoring stopped for $!server.name()");
         $!server-monitor-control.release;
       }
     );
@@ -159,34 +173,32 @@ say "Start $!server.name() monitoring";
     ( my Buf $encoded-query, my Int $request-id) =
        $!monitor-command.encode-query( 'admin.$cmd', :number-to-return(1));
 
-    try {
-      $!socket = $!server.get-socket;
-      if $!socket.defined {
+    $!socket = $!server.get-socket;
+    if $!socket.defined {
 
-        $!socket.send($encoded-query);
+      $!socket.send($encoded-query);
 
-        # Read 4 bytes for int32 response size
-        #
-        my Buf $size-bytes = self!get-bytes(4);
+      # Read 4 bytes for int32 response size
+      #
+      my Buf $size-bytes = self!get-bytes(4);
 
-        my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+      my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
-        # Receive remaining response bytes from socket. Prefix it with the
-        # already read bytes and decode. Return the resulting document.
-        #
-        my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
-        $!monitor-result = $!monitor-command.decode-reply($server-reply);
+      # Receive remaining response bytes from socket. Prefix it with the
+      # already read bytes and decode. Return the resulting document.
+      #
+      my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
+      $!monitor-result = $!monitor-command.decode-reply($server-reply);
 
-        # Assert that the request-id and response-to are the same
-        fatal-message("Id in request is not the same as in the response")
-          unless $request-id == $!monitor-result<message-header><response-to>;
+      # Assert that the request-id and response-to are the same
+      fatal-message("Id in request is not the same as in the response")
+        unless $request-id == $!monitor-result<message-header><response-to>;
 
-        $!socket.close;
-      }
-      
-      else {
-        $!monitor-result = Nil;
-      }
+      $!socket.close;
+    }
+
+    else {
+      $!monitor-result = Nil;
     }
 
     return $!monitor-result;

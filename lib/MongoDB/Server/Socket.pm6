@@ -11,9 +11,8 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     #
-    submethod BUILD (
-      :$server! where .^name eq 'MongoDB::Server',
-    ) {
+    submethod BUILD ( :$server! where .^name eq 'MongoDB::Server' ) {
+
       $!server = $server;
       $!is-open = False;
     };

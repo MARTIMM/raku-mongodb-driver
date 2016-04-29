@@ -294,6 +294,7 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
   * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of \*-message() function.
   * Use macros to get info at the calling point before sending to \*-message(). This will make the search through the stack unnecessary
 * Use semaphores in Server to get a Socket. Use the socket limit as a parameter. Need also to modify this.
+* Must check for max BSON document size
 
 ## CHANGELOG
 
