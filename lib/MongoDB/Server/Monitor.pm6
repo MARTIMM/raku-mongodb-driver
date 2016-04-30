@@ -55,7 +55,7 @@ class Server::Monitor is Supplier {
   }
 
   #-----------------------------------------------------------------------------
-  method done ( ) {
+  method done ( |c ) {
 
     $!monitor-loop = False;
     callwith();
