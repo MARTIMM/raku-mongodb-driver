@@ -7,6 +7,7 @@ unit package MongoDB;
 
 class Server::Control {
 
+#TODO startup/shutdown on windows and appels
   #-----------------------------------------------------------------------------
   submethod BUILD ( Str :$file ) {
 
