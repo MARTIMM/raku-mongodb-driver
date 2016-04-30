@@ -19,10 +19,7 @@ class Server {
 
   # Variables to control infinite server monitoring actions
   has MongoDB::Server::Monitor $.server-monitor;
-
-  # Communication to monitoring proces
-#  has Channel $!data-channel;
-#  has Channel $!command-channel;
+  has Supply $!monitor-supply;
 
   has Int $.max-sockets;
   has MongoDB::Server::Socket @!sockets;
@@ -60,52 +57,12 @@ class Server {
     $!uri-data = $uri-data // %();
 
     $!server-monitor .= new;
-
-    # IO::Socket::INET throws an exception when things go wrong.
-    #
-    if 0 {
-#    try {
-      my IO::Socket::INET $sock .= new(
-        :host($!server-name),
-        :port($!server-port)
-      );
-
-      # Must close this because of thread errors when reading the socket
-      # Besides the sockets are encapsulated in Socket and kept in an array.
-      #
-      $sock.close;
-
-      CATCH {
-        default {
-          warn-message("Server {self.name()}: {.message}");
-
-#          if 0 and .message ~~ m:s/Failed to connect\: connection refused/ {
-          if  .message ~~ m:s/Failed to connect\: connection refused/ {
-            $!server-status = MongoDB::C-DOWN-SERVER;
-          }
-
-          elsif .message ~~ m:s/Failed to resolve host name/ {
-            $!server-status = MongoDB::C-NON-EXISTENT-SERVER;
-          }
-        }
-      }
-    }
-
-#    $!data-channel = Channel.new();
-#    $!command-channel = Channel.new();
-
-
-    # Start server monitoring
-#    $!server-monitor.monitor-server( $!data-channel, $!command-channel);
-#    $!server-monitor.monitor-server;
   }
 
   #---------------------------------------------------------------------------
   # Server initialization 
   method server-init ( ) {
 
-
-say "Sts: $!server-status";
     # Don't start monitoring if dns failed to return an ip address
     if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
 
@@ -115,11 +72,8 @@ say "Sts: $!server-status";
       # Start monitoring
       $!server-monitor.monitor-server;
 
-say "Start tapping data";
       # Tap into monitor data
       self.tap-monitor( -> Hash $monitor-data {
-
-say "\nMonitor data: $monitor-data.perl()";
 
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
@@ -190,7 +144,7 @@ say "\nMonitor data: $monitor-data.perl()";
 
           # Server did not respond
           else {
-say "No response";
+
             if $monitor-data<reason>:exists
                and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
               $server-status = MongoDB::C-NON-EXISTENT-SERVER;
@@ -225,7 +179,8 @@ say "No response";
   #
   method tap-monitor ( |c ) {
 
-    $!server-monitor.Supply.act(|c);
+    $!monitor-supply = $!server-monitor.Supply unless $!monitor-supply.defined;
+    $!monitor-supply.act(|c);
   }
 
   #---------------------------------------------------------------------------
@@ -278,7 +233,6 @@ say "No response";
       $sock.open();
 
       CATCH {
-say "Sock: ", .message;
         default {
           die .message;
         }

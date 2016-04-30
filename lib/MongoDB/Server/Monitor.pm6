@@ -41,6 +41,8 @@ class Server::Monitor is Supplier {
 
   #-----------------------------------------------------------------------------
   # Call before monitor-server to set the $!server object!
+  # Inheriting from Supplier prevents use of proper BUILD 
+  #
   method monitor-init ( :$server ) {
 
     $!server = $server;
@@ -65,6 +67,14 @@ class Server::Monitor is Supplier {
     $!monitor-loop = False;
     callwith('Monitor forced to quit');
   }
+
+  #-----------------------------------------------------------------------------
+#  method emit ( |c ) {
+#
+#say "Start emit: ", c.perl;
+#    callsame;
+#say "Done emit";
+#  }
 
   #-----------------------------------------------------------------------------
   # Run this on a separate thread because it lasts until this program atops.
@@ -133,18 +143,17 @@ class Server::Monitor is Supplier {
             # Send ok False to mention the fact that the server is down.
             #
             CATCH {
-say 'Tap: ', .message;
               default {
 
                 # Failure messages;
                 #   Failed to connect: connection refused
                 #   Failed to resolve host name
                 #
-say "Emit: \{ ok => False, reason => $_.message() \}";
-
+#TODO 2016-04-30, perl6 bug, cannot do it directly in hash
+                my Str $s = .message();
                 self.emit( {
                     ok => False,
-                    reason => .message
+                    reason => $s
                   }
                 );
 

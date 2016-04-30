@@ -9,8 +9,8 @@ use MongoDB::Server::Monitor;
 use MongoDB::Socket;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
@@ -47,8 +47,28 @@ subtest {
     :host<an-unknown-server.with-unknown-domain>,
     :port(65535)
   );
+  is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
+
+  $server.server-monitor.monitor-looptime = 1;
+  $server.server-init;
+  $server.tap-monitor( {
+      nok $_<ok>, 'Monitoring is not ok';
+    }
+  );
+
+  sleep 2;
+
   is $server.get-status, MongoDB::C-NON-EXISTENT-SERVER,
      "Server is non existent";
+
+  $server.stop-monitor;
+}, 'Non existent server test';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my MongoDB::Server $server .= new( :host<localhost>, :port(65535));
+  is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is unknown";
 
   $server.server-monitor.monitor-looptime = 1;
   $server.server-init;
@@ -60,28 +80,7 @@ subtest {
   sleep 2;
   $server.stop-monitor;
 
-  is $server.get-status, MongoDB::C-NON-EXISTENT-SERVER,
-     "Server is still non existent";
-
-}, 'Non existent server test';
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  my MongoDB::Server $server .= new( :host<localhost>, :port(65535));
   is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
-
-  $server.server-monitor.monitor-looptime = 1;
-  $server.server-init;
-  $server.tap-monitor( {
-      nok $_<ok>, 'Monitoring is not ok';
-    }
-  );
-
-  sleep 4;
-  $server.stop-monitor;
-
-  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is still down";
 
 }, 'Down server test';
 
