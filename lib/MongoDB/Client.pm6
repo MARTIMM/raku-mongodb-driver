@@ -38,6 +38,8 @@ class Client is MongoDB::ClientIF {
   # the server address/ip and its port number. This should be unique.
   #
   has Hash $!servers;
+  has Str $!master-servername;          # Modify only in thread
+  has Semaphore $!servers-semaphore;
 
   # Key is same as for $!servers;
   #
@@ -50,25 +52,25 @@ class Client is MongoDB::ClientIF {
 
   has Hash $!uri-data;
 
-
   has Promise $!Background-discovery;
   has Channel $!Background-command-pipe;
-  has Channel $!Background-result-pipe;
+#  has Channel $!Background-result-pipe;
 
   #-----------------------------------------------------------------------------
   # Explicitly create an object using the undefined class name to prevent
   # changes in the existing class when used as an invocant.
   #
-  method new ( Str:D :$uri, BSON::Document :$read-concern ) {
-
-    MongoDB::Client.bless( :$uri, :$read-concern);
-  }
+#  method new ( Str:D :$uri, BSON::Document :$read-concern ) {
+#
+#    MongoDB::Client.bless( :$uri, :$read-concern);
+#  }
 
   #-----------------------------------------------------------------------------
   #
   submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern ) {
 
     $!servers = {};
+    $!servers-semaphore .= new(1);
     $!server-discovery = {};
     $!uri = $uri;
 
@@ -90,9 +92,14 @@ class Client is MongoDB::ClientIF {
 
     info-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 
+    # Background proces to handle server monitoring data
+    $!Background-command-pipe .= new;
     $!Background-discovery = Promise.start( {
+
+        # Start processing when something is produced
         while my Hash $server-data = $!Background-command-pipe.receive {
 
+          # Create server object
           my MongoDB::Server $server .= new(
             :host($server-data<host>),
             :port($server-data<port>),
@@ -103,8 +110,79 @@ class Client is MongoDB::ClientIF {
 
           my Str $server-name = "$server-data<host>:$server-data<port>";
 
-          self!add-server($server);
+#          self!add-server($server);
+          # Start server monitoring
           $server.server-init;
+
+          # Tap into the stream of monitor data
+          $server.tap-monitor( -> Hash $monitor-data {
+
+say "Monitor: ", $monitor-data.perl;
+              # Only when data is ok
+              my Hash $h;
+              if $monitor-data.defined and $monitor-data<ok> {
+
+                $h = {
+                  server => $server,
+                  status => $server.get-status,
+                  timestamp => now,
+                  server-data => $monitor-data
+                };
+              }
+
+              elsif $monitor-data.defined {
+
+                # Not found by DNS so big chance that it doesn't exist
+                if $h<status> ~~ MongoDB::C-NON-EXISTENT-SERVER {
+                  $server.stop-monitor;
+                  undefine $server;
+                  $server = Nil;
+                  error-message("Stopping monitor: $monitor-data<reason>");
+                }
+
+                # Down server can be revived
+                else {
+
+                  $h = {
+                    server => $server,
+                    status => $server.get-status,
+                    timestamp => now,
+                    server-data => $monitor-data
+                  };
+                }
+              }
+
+              # Check for double master servers
+              if $h.defined {
+                if $h<status> ~~ any(
+                  MongoDB::C-MASTER-SERVER |
+                  MongoDB::C-REPLICASET-PRIMARY
+                ) {
+
+                  # Not defined, be the first master server
+                  if not $!master-servername.defined {
+                    $!master-servername = $server.name;
+                  }
+
+                  # Is defined, be the second and rejected master server
+                  else {
+                    if $!master-servername ne $server.name {
+                      $h<status> = MongoDB::C-REJECTED-SERVER;
+                      error-message("Server $server.name() rejected, second master");
+                    }
+                  }
+                }
+
+#TODO $!master-servername must be able to change when server roles are changed
+#TODO Define client topology
+
+                # Store result
+                $!servers-semaphore.acquire;
+                $!servers{$server.name} = $h;
+                $!servers-semaphore.release;
+              }
+            }
+          );
         }
       }
     );
@@ -116,58 +194,48 @@ class Client is MongoDB::ClientIF {
   }
 
   #-----------------------------------------------------------------------------
-  # 
-  #
-  method !start-server-promise ( $host, $port --> Promise ) {
-
-    Promise.start( {
-
-        trace-message("Try connect to server $host, $port");
-
-        # Create Server object. Throws on failure.
-        #
-        my MongoDB::Server $server .= new( :$host, :$port, :$!uri-data);
-
-        # Return Server object when server could connect
-        #
-        info-message("Server $server.name() accepted");
-
-        $server;
-      }
-    );
-  }
-
-  #-----------------------------------------------------------------------------
   # Return number of servers
   #
   method nbr-servers ( --> Int ) {
 
-    # Investigate first before getting the nuber of servers. We get a
-    # server ticket and must be removed again.
-    #
-    self!cleanup-promises;
-    return $!servers.elems;
-  }
+    $!servers-semaphore.acquire;
+    my $nservers = $!servers.elems;
+    $!servers-semaphore.release;
 
-  #-----------------------------------------------------------------------------
-  # Return number of actions left
-  #
-  method nbr-left-actions ( --> Int ) {
-
-    # Investigate first before getting the nuber of servers. We get a
-    # server ticket and must be removed again.
-    #
-    return self!cleanup-promises;
+    $nservers;
   }
 
   #-----------------------------------------------------------------------------
   # Called from thread above where Server object is created.
   #
-  method server-status ( Str:D $server-name --> Server-status ) {
+  method server-status ( Str:D $server-name --> MongoDB::ServerStatus ) {
 
-    my Server-status $sts;
-    $sts = $!servers{$server-name}<status> if $!servers{$server-name}.defined;
-    return $sts;
+    $!servers-semaphore.acquire;
+    my Hash $h = $!servers{$server-name};
+    $!servers-semaphore.release;
+
+    my MongoDB::ServerStatus $sts = $h<status> if $h.defined;
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  method select-server ( BSON::Document :$read-concern --> MongoDB::Server ) {
+
+#TODO use read/write concern for selection
+#TODO must break loop when noting is found
+    my Hash $h;
+    while 1 {
+
+      if $!master-servername.defined {
+        $!servers-semaphore.acquire;
+        my Hash $h = $!servers{$!master-servername};
+        $!servers-semaphore.release;
+      }
+
+      sleep 1;
+    }
+
+    $h<server>;
   }
 
   #---------------------------------------------------------------------------
@@ -181,11 +249,7 @@ class Client is MongoDB::ClientIF {
     my BSON::Document $rc =
        $read-concern.defined ?? $read-concern !! $!read-concern;
 
-    return MongoDB::Database.new(
-      :client(self),
-      :name($name),
-      :read-concern($rc)
-    );
+    MongoDB::Database.new( :client(self), :name($name), :read-concern($rc));
   }
 
   #-----------------------------------------------------------------------------
@@ -200,7 +264,7 @@ class Client is MongoDB::ClientIF {
     my BSON::Document $rc =
        $read-concern.defined ?? $read-concern !! $!read-concern;
 
-    ( my $db-name, my $cll-name) = $full-collection-name.split('.');
+    ( my $db-name, my $cll-name) = $full-collection-name.split( '.', 2);
 
     my MongoDB::Database $db .= new(
       :client(self),
@@ -210,6 +274,100 @@ class Client is MongoDB::ClientIF {
 
     return $db.collection( $cll-name, :read-concern($rc));
   }
+
+  #-----------------------------------------------------------------------------
+  #
+  method shutdown-server (
+    MongoDB::Server $server is copy,
+    Bool :$force = False
+  ) {
+return;
+
+    my BSON::Document $doc = self.database('admin')._internal-run-command(
+      BSON::Document.new((
+        shutdown => 1,
+        :$force
+      )),
+
+      :$server
+    );
+
+    # Servers do not return an answer when going down.
+    # Update: Newer versions of the mongodb server will return ok 1 as of
+    # version 3.2.
+    #
+    if !$doc.defined or ($doc.defined and $doc<ok>) {
+      self._take-out-server($server);
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  method _take-out-server ( MongoDB::Server $server is copy ) {
+
+say "$server.name() is down, change state";
+
+    if $server.defined {
+
+      # Server can be taken out before when a failure takes place in the
+      # Wire module. Especially when shutdown-server() is called on
+      # servers before version 3.2. Those servers just stop communicating.
+      #
+      self!remove-server($server) if $server.defined;
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  method !remove-server ( MongoDB::Server $server is copy ) {
+
+    for $!servers.values -> Hash $srv-struct {
+      if $srv-struct<server> === $server {
+
+        $srv-struct<data-channel>.close;
+        $srv-struct<command-channel>.close;
+        $srv-struct<status> = Server-status::Down-server;
+        $srv-struct<timestamp> = now;
+      }
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  method DESTROY ( ) {
+
+    # Remove all servers concurrently. Shouldn't be many per client.
+    for $!servers.values.race(batch => 1) -> Hash $srv-struct {
+
+      if $srv-struct<server>.defined {
+
+        # Stop monitoring on server and wait for it to stop
+        #
+        $srv-struct<command-channel>.send('stop');
+        sleep 15;
+        info-message(
+          "Server $srv-struct<server>.name() "
+            ~ $srv-struct<command-channel>.receive
+        );
+
+        $srv-struct<data-channel>.close;
+        $srv-struct<command-channel>.close;
+        undefine $srv-struct<server>;
+      }
+    }
+
+    debug-message("Client destroyed");
+  }
+}
+
+
+
+
+
+=finish
+
+
+
 
   #-----------------------------------------------------------------------------
   #
@@ -292,111 +450,6 @@ class Client is MongoDB::ClientIF {
 
   #-----------------------------------------------------------------------------
   #
-  method !cleanup-promises ( --> Int ) {
-
-    my Int $still-planned = 0;
-
-#say "CLP: servers $!server-discovery.keys()";
-
-    # Loop through all Promise objects
-    #
-    for $!server-discovery.keys -> $server-name {
-
-      # When processed, object is cleared. Skip them if encounter one
-      #
-      next unless $!server-discovery{$server-name}.defined;
-
-      # If promise is kept, the Server object is created and
-      # is stored in $!servers.
-      #
-#say "CLP: $server-name, ", $!server-discovery{$server-name}.status;
-      if $!server-discovery{$server-name}.status ~~ Kept {
-        my MongoDB::Server $server = $!server-discovery{$server-name}.result;
-
-        info-message("Kept: $server.name()");
-
-        # Cleanup promise entry
-        #
-        $!server-discovery{$server-name}:delete;
-
-        # Save server and start server monitoring.
-        #
-        self!add-server($server);
-      }
-
-      # When broken throw away result
-      #
-      elsif $!server-discovery{$server-name}.status == Broken {
-
-        # When broken, it is mostly caused by a thrown exception
-        # so catch it here.
-        #
-        try {
-          $!server-discovery{$server-name}.result;
-
-          CATCH {
-            default {
-              warn-message(.message);
-              $!server-discovery{$server-name}:delete;
-              self!add-Down-server($server-name);
-            }
-          }
-        }
-      }
-
-      # When planned look at it in next while cycle
-      #
-      elsif $!server-discovery{$server-name}.status == Planned {
-        info-message("Thread for $server-name still running");
-        $still-planned++;
-      }
-    }
-
-    return $still-planned;
-  }
-
-  #-----------------------------------------------------------------------------
-  # Called from thread above where Server object is created.
-  #
-  method !add-server ( MongoDB::Server:D $server ) {
-
-    $!servers{$server.name} = {
-      server => $server,
-      timestamp => now,
-      status => Server-status::Unknown-server,
-#      data-channel => Channel.new(),
-#      command-channel => Channel.new(),
-      server-data => {
-        monitor => {},
-        weighted-mean-rtt => 0
-      }
-    }
-
-    info-message( "Server {$server.name} saved");
-
-    # Start server monitoring
-    #
-#    $server.server-monitor.monitor-server(
-#      $!servers{$server.name}<data-channel>,
-#      $!servers{$server.name}<command-channel>
-#    );
-  }
-
-  #-----------------------------------------------------------------------------
-  # Called from thread above where Server object is created.
-  #
-  method !add-Down-server ( Str:D $server-name ) {
-
-    $!servers{$server-name} = {
-      status => Server-status::Down-server,
-      timestamp => now
-    }
-
-    info-message( "Failed server $server-name saved");
-  }
-
-  #-----------------------------------------------------------------------------
-  #
   method !revive-server ( Str $server-name, Hash $srv-struct ) {
 
     # Retry after every 5 sec
@@ -421,8 +474,8 @@ class Client is MongoDB::ClientIF {
       ( my $host, my $port) = $server-name.split(':');
 
       trace-message("Revive: $server-name, $host, $port");
-      $!server-discovery{$server-name} =
-        self!start-server-promise( $host, $port.Int);
+#      $!server-discovery{$server-name} =
+#        self!start-server-promise( $host, $port.Int);
     }
   }
 
@@ -539,89 +592,131 @@ say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
     $!found-master = $found-master;
     return $server;
   }
-
   #-----------------------------------------------------------------------------
   #
-  method shutdown-server (
-    MongoDB::Server $server is copy,
-    Bool :$force = False
-  ) {
+  method !cleanup-promises ( --> Int ) {
 
-    my BSON::Document $doc = self.database('admin')._internal-run-command(
-      BSON::Document.new((
-        shutdown => 1,
-        :$force
-      )),
+    my Int $still-planned = 0;
 
-      :$server
-    );
+#say "CLP: servers $!server-discovery.keys()";
 
-    # Servers do not return an answer when going down.
-    # Update: Newer versions of the mongodb server will return ok 1 as of
-    # version 3.2.
+    # Loop through all Promise objects
     #
-    if !$doc.defined or ($doc.defined and $doc<ok>) {
-      self._take-out-server($server);
-    }
-  }
+    for $!server-discovery.keys -> $server-name {
 
-  #-----------------------------------------------------------------------------
-  #
-  method _take-out-server ( MongoDB::Server $server is copy ) {
-
-say "$server.name() is down, change state";
-
-    if $server.defined {
-
-      # Server can be taken out before when a failure takes place in the
-      # Wire module. Especially when shutdown-server() is called on
-      # servers before version 3.2. Those servers just stop communicating.
+      # When processed, object is cleared. Skip them if encounter one
       #
-      self!remove-server($server) if $server.defined;
-    }
-  }
+      next unless $!server-discovery{$server-name}.defined;
 
-  #-----------------------------------------------------------------------------
-  #
-  method !remove-server ( MongoDB::Server $server is copy ) {
+      # If promise is kept, the Server object is created and
+      # is stored in $!servers.
+      #
+#say "CLP: $server-name, ", $!server-discovery{$server-name}.status;
+      if $!server-discovery{$server-name}.status ~~ Kept {
+        my MongoDB::Server $server = $!server-discovery{$server-name}.result;
 
-    for $!servers.values -> Hash $srv-struct {
-      if $srv-struct<server> === $server {
+        info-message("Kept: $server.name()");
 
-        $srv-struct<data-channel>.close;
-        $srv-struct<command-channel>.close;
-        $srv-struct<status> = Server-status::Down-server;
-        $srv-struct<timestamp> = now;
-      }
-    }
-  }
-
-  #-----------------------------------------------------------------------------
-  #
-  method DESTROY ( ) {
-
-    # Remove all servers concurrently. Shouldn't be many per client.
-    for $!servers.values.race(batch => 1) -> Hash $srv-struct {
-
-      if $srv-struct<server>.defined {
-
-        # Stop monitoring on server and wait for it to stop
+        # Cleanup promise entry
         #
-        $srv-struct<command-channel>.send('stop');
-        sleep 15;
-        info-message(
-          "Server $srv-struct<server>.name() "
-            ~ $srv-struct<command-channel>.receive
-        );
+        $!server-discovery{$server-name}:delete;
 
-        $srv-struct<data-channel>.close;
-        $srv-struct<command-channel>.close;
-        undefine $srv-struct<server>;
+        # Save server and start server monitoring.
+        #
+#        self!add-server($server);
+      }
+
+      # When broken throw away result
+      #
+      elsif $!server-discovery{$server-name}.status == Broken {
+
+        # When broken, it is mostly caused by a thrown exception
+        # so catch it here.
+        #
+        try {
+          $!server-discovery{$server-name}.result;
+
+          CATCH {
+            default {
+              warn-message(.message);
+              $!server-discovery{$server-name}:delete;
+#              self!add-Down-server($server-name);
+            }
+          }
+        }
+      }
+
+      # When planned look at it in next while cycle
+      #
+      elsif $!server-discovery{$server-name}.status == Planned {
+        info-message("Thread for $server-name still running");
+        $still-planned++;
       }
     }
 
-    debug-message("Client destroyed");
+    return $still-planned;
   }
-}
 
+  #-----------------------------------------------------------------------------
+  method !start-server-promise ( $host, $port --> Promise ) {
 
+    Promise.start( {
+
+        trace-message("Try connect to server $host, $port");
+
+        # Create Server object. Throws on failure.
+        #
+        my MongoDB::Server $server .= new( :$host, :$port, :$!uri-data);
+
+        # Return Server object when server could connect
+        #
+        info-message("Server $server.name() accepted");
+
+        $server;
+      }
+    );
+  }
+
+  #-----------------------------------------------------------------------------
+  # Return number of actions left
+  #
+  method nbr-left-actions ( --> Int ) {
+
+    # Investigate first before getting the nuber of servers. We get a
+    # server ticket and must be removed again.
+    #
+    return self!cleanup-promises;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Called from thread above where Server object is created.
+  #
+  method !add-server ( MongoDB::Server:D $server ) {
+
+    $!servers-semaphore.acquire;
+    $!servers{$server.name} = {
+      server => $server,
+      status => $server.get-status,
+      timestamp => now,
+      server-data => {
+        monitor => {},
+        weighted-mean-rtt => 0
+      }
+    }
+    $!servers-semaphore.release;
+
+    info-message( "Server {$server.name} saved");
+  }
+
+  #-----------------------------------------------------------------------------
+  # Called from thread above where Server object is created.
+  #
+  method !add-Down-server ( Str:D $server-name ) {
+
+    $!servers{$server-name} = {
+      status => Server-status::Down-server,
+      timestamp => now
+    }
+
+    info-message( "Failed server $server-name saved");
+  }

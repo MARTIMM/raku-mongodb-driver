@@ -9,8 +9,8 @@ use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
 
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my Int $p1 = $Test-support::server-control.get-port-number('s1');
@@ -23,6 +23,7 @@ subtest {
 
   $client .= new(:uri("mongodb://localhost:65535"));
   is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
+
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
   is $client.nbr-servers, 1, 'One server found';
@@ -31,6 +32,9 @@ subtest {
      "Status of server is $client.server-status('localhost:65535')";
 
 }, 'Non existent server == down server';
+
+done-testing();
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {

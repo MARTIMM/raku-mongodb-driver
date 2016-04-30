@@ -150,6 +150,7 @@ class Server::Monitor is Supplier {
                 #   Failed to resolve host name
                 #
 #TODO 2016-04-30, perl6 bug, cannot do it directly in hash
+.say;
                 my Str $s = .message();
                 self.emit( {
                     ok => False,
@@ -157,9 +158,7 @@ class Server::Monitor is Supplier {
                   }
                 );
 
-                warn-message(
-                  "Server $!server.name() error while monitoring, changing state"
-                );
+                warn-message("Server $!server.name() error $s");
 
                 # Rest for a while
                 sleep($!monitor-looptime);

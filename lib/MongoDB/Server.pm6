@@ -180,7 +180,8 @@ class Server {
   method tap-monitor ( |c ) {
 
     $!monitor-supply = $!server-monitor.Supply unless $!monitor-supply.defined;
-    $!monitor-supply.act(|c);
+#    $!monitor-supply.act(|c);
+    $!monitor-supply.tap(|c);
   }
 
   #---------------------------------------------------------------------------
