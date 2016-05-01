@@ -191,11 +191,24 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. It should be possible to have a mix of all this when there are several databases with collections which cannot be merged onto one server, replica set or otherwise. A user must have a way to send the task to one or the other server/replicaset/shard.
 
+  ### Test cases handling servers in Client object
+
+Tested|Test Filename|Test Purpose
+-|-
+x|110-Client|Unknown server, fails DNS lookup
+x||Down server, no connection
+x||Standalone server, not in replicaset
+x||Two standalone servers, one gets rejected
+|-|Replicaset server in pre initialization state, must be a master server
+||Replicaset server master in uri, must search for secondaries and add them
+||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
+
+
 ## API CHANGES
 
 There has been a lot of changes in the API.
 * All methods which had underscores ('\_') are converted to dashed ones ('-').
-* Many helper functions are removed, see change log
+* Many helper functions are removed, see change log. In the documentation must come some help to create a database/collection helper module as well as examples in the xt or doc directory.
 * The way to get a database is changed. One doesn't use a connection for that anymore.
 * Connection module is gone. The Client module has come in its place.
 
@@ -241,6 +254,9 @@ or
 $ perl6 Collection.pod
 ...
 ```
+ I can't tell about the situation on other OS though. You can always use perl6 to get the html version. '/' should become '\\' on windows of course
+ ```
+ $ perl6 --doc=HTML doc/Pod/Collection.pod
 
 ## INSTALLING THE MODULES
 
@@ -256,6 +272,7 @@ $ panda install MongoDB
 This project is tested with Rakudo built on MoarVM implementing Perl v6.c.
 
 MongoDB versions are supported from 2.6 and up. Versions lower that this are not supported because of not completely implementing the wire protocol.
+
 
 ## BUGS, KNOWN LIMITATIONS AND TODO
 
@@ -305,6 +322,7 @@ change at any time. The public API should not be considered stable.*
 * 0.28.12
   * Changing monitoring to be a Supplies instead of using channels.
   * Major rewrite of Client, Server and Monitor modules.
+  * bugfix in uri. FQDN hostnames couldn't have dots.
 * 0.28.11
   * Facturing out code from test environment into MongoDB::Server::Control to have a module to control a server like startup, shutdown, converting a standalone server to a replica server or something else.
   * Using a new module Config::TOML to control server startup.
