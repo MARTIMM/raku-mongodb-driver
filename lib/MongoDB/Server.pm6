@@ -20,6 +20,7 @@ class Server {
   # Variables to control infinite server monitoring actions
   has MongoDB::Server::Monitor $.server-monitor;
   has Supply $!monitor-supply;
+  has Promise $!monitor-promise;
 
   has Int $.max-sockets;
   has MongoDB::Server::Socket @!sockets;
@@ -70,7 +71,7 @@ class Server {
       $!server-monitor.monitor-init(:server(self));
 
       # Start monitoring
-      $!server-monitor.monitor-server;
+      $!monitor-promise = $!server-monitor.monitor-server;
 
       # Tap into monitor data
       self.tap-monitor( -> Hash $monitor-data {
@@ -188,6 +189,8 @@ class Server {
   method stop-monitor ( |c ) {
 
     $!server-monitor.done(c);
+    $!monitor-promise.result;
+    info-message("Monitor code result: $!monitor-promise.status()"); 
   }
 
   #---------------------------------------------------------------------------

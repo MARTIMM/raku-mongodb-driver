@@ -35,7 +35,6 @@ subtest {
 
   sleep 2;
   $monitor.done;
-  say 'done monitoring';
   sleep 2;
 
 }, 'Monitor test';

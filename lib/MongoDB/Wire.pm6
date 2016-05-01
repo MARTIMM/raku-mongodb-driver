@@ -75,18 +75,18 @@ class Wire {
       #
       CATCH {
         when MongoDB::Message {
-          $client._take-out-server($server);
+#          $client._take-out-server($server);
         }
 
         default {
           when Str {
             warn-message($_);
-            $client._take-out-server($server);
+#            $client._take-out-server($server);
           }
 
           when Exception {
             warn-message(.message);
-            $client._take-out-server($server);
+#            $client._take-out-server($server);
           }
         }
       }
@@ -151,18 +151,18 @@ say "Get more 4";
       #
       CATCH {
         when MongoDB::Message {
-          $client._take-out-server($server);
+#          $client._take-out-server($server);
         }
 
         default {
           when Str {
             warn-message($_);
-            $client._take-out-server($server);
+#            $client._take-out-server($server);
           }
 
           when Exception {
             warn-message(.message);
-            $client._take-out-server($server);
+#            $client._take-out-server($server);
           }
         }
       }
@@ -213,18 +213,18 @@ say "Get more 4";
       #
       CATCH {
         when MongoDB::Message {
-          $client._take-out-server($server);
+#          $client._take-out-server($server);
         }
 
         default {
           when Str {
             warn-message($_);
-            $client._take-out-server($server);
+#            $client._take-out-server($server);
           }
 
           when Exception {
             warn-message(.message);
-            $client._take-out-server($server);
+#            $client._take-out-server($server);
           }
         }
       }

@@ -119,39 +119,44 @@ class Client is MongoDB::ClientIF {
 
 say "Monitor: ", $monitor-data.perl;
               # Only when data is ok
-              my Hash $h;
+              my Hash $h = {
+                server => $server,
+                status => $server.get-status,
+                timestamp => now,
+                server-data => $monitor-data // {}
+              };
+
+say "Hash 0: $h.perl()";
+              # No errors while monitoring
               if $monitor-data.defined and $monitor-data<ok> {
 
-                $h = {
-                  server => $server,
-                  status => $server.get-status,
-                  timestamp => now,
-                  server-data => $monitor-data
-                };
               }
 
+              # There are errors while monitoring
               elsif $monitor-data.defined {
 
                 # Not found by DNS so big chance that it doesn't exist
                 if $h<status> ~~ MongoDB::C-NON-EXISTENT-SERVER {
+
                   $server.stop-monitor;
-                  undefine $server;
-                  $server = Nil;
+#                  undefine $server;
+#                  $server = Nil;
+#                  $h = Nil;
                   error-message("Stopping monitor: $monitor-data<reason>");
                 }
 
                 # Down server can be revived
                 else {
 
-                  $h = {
-                    server => $server,
-                    status => $server.get-status,
-                    timestamp => now,
-                    server-data => $monitor-data
-                  };
                 }
               }
+              
+              # Other cases should be skipped
+              else {
+#                $h = Nil;
+              }
 
+say "Hash 1: $h.perl()";
               # Check for double master servers
               if $h.defined {
                 if $h<status> ~~ any(
@@ -222,9 +227,10 @@ say "Monitor: ", $monitor-data.perl;
   method select-server ( BSON::Document :$read-concern --> MongoDB::Server ) {
 
 #TODO use read/write concern for selection
-#TODO must break loop when noting is found
+#TODO must break loop when nothing is found
+    my Int $test-count = 10;
     my Hash $h;
-    while 1 {
+    while $test-count-- {
 
       if $!master-servername.defined {
         $!servers-semaphore.acquire;
@@ -235,7 +241,7 @@ say "Monitor: ", $monitor-data.perl;
       sleep 1;
     }
 
-    $h<server>;
+    $h<server> // MongoDB::Server;
   }
 
   #---------------------------------------------------------------------------
@@ -277,63 +283,6 @@ say "Monitor: ", $monitor-data.perl;
 
   #-----------------------------------------------------------------------------
   #
-  method shutdown-server (
-    MongoDB::Server $server is copy,
-    Bool :$force = False
-  ) {
-return;
-
-    my BSON::Document $doc = self.database('admin')._internal-run-command(
-      BSON::Document.new((
-        shutdown => 1,
-        :$force
-      )),
-
-      :$server
-    );
-
-    # Servers do not return an answer when going down.
-    # Update: Newer versions of the mongodb server will return ok 1 as of
-    # version 3.2.
-    #
-    if !$doc.defined or ($doc.defined and $doc<ok>) {
-      self._take-out-server($server);
-    }
-  }
-
-  #-----------------------------------------------------------------------------
-  #
-  method _take-out-server ( MongoDB::Server $server is copy ) {
-
-say "$server.name() is down, change state";
-
-    if $server.defined {
-
-      # Server can be taken out before when a failure takes place in the
-      # Wire module. Especially when shutdown-server() is called on
-      # servers before version 3.2. Those servers just stop communicating.
-      #
-      self!remove-server($server) if $server.defined;
-    }
-  }
-
-  #-----------------------------------------------------------------------------
-  #
-  method !remove-server ( MongoDB::Server $server is copy ) {
-
-    for $!servers.values -> Hash $srv-struct {
-      if $srv-struct<server> === $server {
-
-        $srv-struct<data-channel>.close;
-        $srv-struct<command-channel>.close;
-        $srv-struct<status> = Server-status::Down-server;
-        $srv-struct<timestamp> = now;
-      }
-    }
-  }
-
-  #-----------------------------------------------------------------------------
-  #
   method DESTROY ( ) {
 
     # Remove all servers concurrently. Shouldn't be many per client.
@@ -341,17 +290,15 @@ say "$server.name() is down, change state";
 
       if $srv-struct<server>.defined {
 
-        # Stop monitoring on server and wait for it to stop
+        # Stop monitoring on server
         #
-        $srv-struct<command-channel>.send('stop');
-        sleep 15;
+        $srv-struct<server>.stop-monitor;
+
         info-message(
           "Server $srv-struct<server>.name() "
             ~ $srv-struct<command-channel>.receive
         );
 
-        $srv-struct<data-channel>.close;
-        $srv-struct<command-channel>.close;
         undefine $srv-struct<server>;
       }
     }
@@ -720,3 +667,63 @@ say "IPoll 0: $!uri-data<options><replicaSet>, $accept-server";
 
     info-message( "Failed server $server-name saved");
   }
+
+  #-----------------------------------------------------------------------------
+  #
+#TODO shutdown via Control.pm6
+  method shutdown-server (
+    MongoDB::Server $server is copy,
+    Bool :$force = False
+  ) {
+return;
+
+    my BSON::Document $doc = self.database('admin')._internal-run-command(
+      BSON::Document.new((
+        shutdown => 1,
+        :$force
+      )),
+
+      :$server
+    );
+
+    # Servers do not return an answer when going down.
+    # Update: Newer versions of the mongodb server will return ok 1 as of
+    # version 3.2.
+    #
+    if !$doc.defined or ($doc.defined and $doc<ok>) {
+      self._take-out-server($server);
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  #
+  method _take-out-server ( MongoDB::Server $server is copy ) {
+
+say "$server.name() is down, change state";
+
+    if $server.defined {
+
+      # Server can be taken out before when a failure takes place in the
+      # Wire module. Especially when shutdown-server() is called on
+      # servers before version 3.2. Those servers just stop communicating.
+      #
+      self!remove-server($server) if $server.defined;
+    }
+  }
+
+
+  #-----------------------------------------------------------------------------
+  #
+  method !remove-server ( MongoDB::Server $server is copy ) {
+
+    for $!servers.values -> Hash $srv-struct {
+      if $srv-struct<server> === $server {
+
+        $srv-struct<status> = MongoDB::C-DOWN-SERVER;
+        $srv-struct<timestamp> = now;
+      }
+    }
+  }
+
+
+

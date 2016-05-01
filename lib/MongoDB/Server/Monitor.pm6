@@ -79,9 +79,9 @@ class Server::Monitor is Supplier {
   #-----------------------------------------------------------------------------
   # Run this on a separate thread because it lasts until this program atops.
   #
-  method monitor-server ( ) {
+  method monitor-server ( --> Promise ) {
 
-    return unless $!server-monitor-control.try_acquire;
+    return Promise unless $!server-monitor-control.try_acquire;
 
     info-message("Start $!server.name() monitoring");
     $!promise-monitor .= start( {
@@ -150,7 +150,7 @@ class Server::Monitor is Supplier {
                 #   Failed to resolve host name
                 #
 #TODO 2016-04-30, perl6 bug, cannot do it directly in hash
-.say;
+#.say;
                 my Str $s = .message();
                 self.emit( {
                     ok => False,
@@ -168,9 +168,11 @@ class Server::Monitor is Supplier {
         }
 
         info-message("Server monitoring stopped for $!server.name()");
-        $!server-monitor-control.release;
       }
     );
+
+    $!server-monitor-control.release;
+    $!promise-monitor;
   }
 
   #-----------------------------------------------------------------------------
