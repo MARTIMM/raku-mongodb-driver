@@ -45,6 +45,18 @@ subtest {
 
 }, 'Down server';
 
+#-------------------------------------------------------------------------------
+subtest {
+  $client .= new(:uri("mongodb://:$p1"));
+  $server = $client.select-server;
+  is $client.nbr-servers, 1, 'One server found';
+  is $client.found-master, True, 'Found a master';
+  is $client.server-status("localhost:$p1"),
+     MongoDB::Master-server,
+     "Status of server is $client.server-status('localhost:' ~ $p1)";
+
+}, "Standalone server";
+
 done-testing();
 exit(0);
 

@@ -189,8 +189,11 @@ class Server {
   method stop-monitor ( |c ) {
 
     $!server-monitor.done(c);
-    $!monitor-promise.result;
-    info-message("Monitor code result: $!monitor-promise.status()"); 
+# Doesn't seem to work
+#    if $!monitor-promise.defined {
+#      $!monitor-promise.result;
+#      info-message("Monitor code result: $!monitor-promise.status()"); 
+#    }
   }
 
   #---------------------------------------------------------------------------

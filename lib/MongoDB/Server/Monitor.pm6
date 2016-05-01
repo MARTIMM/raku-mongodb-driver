@@ -167,11 +167,11 @@ class Server::Monitor is Supplier {
           }
         }
 
+        $!server-monitor-control.release;
         info-message("Server monitoring stopped for $!server.name()");
       }
     );
 
-    $!server-monitor-control.release;
     $!promise-monitor;
   }
 

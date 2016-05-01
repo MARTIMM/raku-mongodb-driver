@@ -31,19 +31,21 @@ enum Server-status < Unknown-server Down-server Recovering-server
 #
 class Client is MongoDB::ClientIF {
 
-  has Bool $.found-master = False;
+#  has Bool $.found-master = False;
   has Topology-type $.topology-type = Topology-type::TUnknown;
 
   # Store all found servers here. key is the name of the server which is
   # the server address/ip and its port number. This should be unique.
   #
   has Hash $!servers;
-  has Str $!master-servername;          # Modify only in thread
   has Semaphore $!servers-semaphore;
+
+  has Str $!master-servername;
+  has Semaphore $!servername-semaphore;
 
   # Key is same as for $!servers;
   #
-  has Hash $!server-discovery;
+#  has Hash $!server-discovery;
 
   has Str $!uri;
 
@@ -71,7 +73,8 @@ class Client is MongoDB::ClientIF {
 
     $!servers = {};
     $!servers-semaphore .= new(1);
-    $!server-discovery = {};
+    $!servername-semaphore .= new(1);
+#    $!server-discovery = {};
     $!uri = $uri;
 
     # Parse the uri and get info in $uri-obj. Fields are protocol, username,
@@ -128,12 +131,12 @@ say "Monitor: ", $monitor-data.perl;
 
 say "Hash 0: $h.perl()";
               # No errors while monitoring
-              if $monitor-data.defined and $monitor-data<ok> {
-
-              }
+#              if $monitor-data.defined and $monitor-data<ok> {
+#
+#              }
 
               # There are errors while monitoring
-              elsif $monitor-data.defined {
+              if $monitor-data.defined and not $monitor-data<ok> {
 
                 # Not found by DNS so big chance that it doesn't exist
                 if $h<status> ~~ MongoDB::C-NON-EXISTENT-SERVER {
@@ -146,15 +149,15 @@ say "Hash 0: $h.perl()";
                 }
 
                 # Down server can be revived
-                else {
-
-                }
+#                else {
+#
+#                }
               }
               
               # Other cases should be skipped
-              else {
+#              else {
 #                $h = Nil;
-              }
+#              }
 
 say "Hash 1: $h.perl()";
               # Check for double master servers
@@ -165,13 +168,19 @@ say "Hash 1: $h.perl()";
                 ) {
 
                   # Not defined, be the first master server
-                  if not $!master-servername.defined {
+                  $!servername-semaphore.acquire;
+                  my $sname = $!master-servername;
+                  $!servername-semaphore.release;
+                  
+                  if not $sname.defined {
+                    $!servername-semaphore.acquire;
                     $!master-servername = $server.name;
+                    $!servername-semaphore.release;
                   }
 
                   # Is defined, be the second and rejected master server
                   else {
-                    if $!master-servername ne $server.name {
+                    if $sname ne $server.name {
                       $h<status> = MongoDB::C-REJECTED-SERVER;
                       error-message("Server $server.name() rejected, second master");
                     }
@@ -228,13 +237,17 @@ say "Hash 1: $h.perl()";
 
 #TODO use read/write concern for selection
 #TODO must break loop when nothing is found
-    my Int $test-count = 10;
+    my Int $test-count = 15;
     my Hash $h;
     while $test-count-- {
 
-      if $!master-servername.defined {
+      $!servername-semaphore.acquire;
+      my $sname = $!master-servername;
+      $!servername-semaphore.release;
+
+      if $sname.defined {
         $!servers-semaphore.acquire;
-        my Hash $h = $!servers{$!master-servername};
+        my Hash $h = $!servers{$sname};
         $!servers-semaphore.release;
       }
 
