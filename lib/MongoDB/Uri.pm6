@@ -25,7 +25,7 @@ package MongoDB {
 
       token host-port { <host> [ ':' <port> ]? }
 
-      token host { <[\w\d-]>* }
+      token host { <[\w\d\-\.]>* }
 
       token port { \d+ }
 
