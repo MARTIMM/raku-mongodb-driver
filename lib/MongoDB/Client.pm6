@@ -102,6 +102,20 @@ class Client is MongoDB::ClientIF {
         # Start processing when something is produced
         while my Hash $server-data = $!Background-command-pipe.receive {
 
+          my Str $server-name = "$server-data<host>:$server-data<port>";
+
+          trace-message("Processing server $server-name");
+
+          $!servers-semaphore.acquire;
+          my $prev-server = $!servers{$server-name};
+          $!servers-semaphore.release;
+
+          # Check if server was managed before
+          if $prev-server.defined {
+            trace-message("Server $server-name already managed");
+            next;
+          }
+
           # Create server object
           my MongoDB::Server $server .= new(
             :host($server-data<host>),
@@ -109,18 +123,20 @@ class Client is MongoDB::ClientIF {
             :$!uri-data
           );
 
-          info-message("Server $server.name() processed");
-
-          my Str $server-name = "$server-data<host>:$server-data<port>";
-
-#          self!add-server($server);
           # Start server monitoring
           $server.server-init;
 
           # Tap into the stream of monitor data
           $server.tap-monitor( -> Hash $monitor-data {
 
-#say "Monitor $server.name(): ", $monitor-data.perl;
+
+say "Monitor $server.name(): ", $monitor-data.perl;
+#say "Monitor $server.name(): $monitor-data<ok>, $monitor-data<status>";
+
+              $!servers-semaphore.acquire;
+              $prev-server = $!servers{$server.name} // {};
+              $!servers-semaphore.release;
+
               # Only when data is ok
               my Hash $h = {
                 server => $server,
@@ -129,12 +145,6 @@ class Client is MongoDB::ClientIF {
                 server-data => $monitor-data // {}
               };
 
-#say "Hash 0: $h.perl()";
-              # No errors while monitoring
-#              if $monitor-data.defined and $monitor-data<ok> {
-#
-#              }
-
               # There are errors while monitoring
               if $monitor-data.defined and not $monitor-data<ok> {
 
@@ -142,37 +152,40 @@ class Client is MongoDB::ClientIF {
                 if $h<status> ~~ MongoDB::C-NON-EXISTENT-SERVER {
 
                   $server.stop-monitor;
-#                  undefine $server;
-#                  $server = Nil;
-#                  $h = Nil;
                   error-message("Stopping monitor: $monitor-data<reason>");
                 }
-
-                # Down server can be revived
-#                else {
-#
-#                }
               }
-              
-              # Other cases should be skipped
-#              else {
-#                $h = Nil;
-#              }
 
-say "Monitor data in hash: $h.perl()";
-              # Check for double master servers
-              if $h.defined {
-                if $h<status> ~~ any(
+#              if $h.defined {
+
+                $!servername-semaphore.acquire;
+                my $sname = $!master-servername // '';
+                $!servername-semaphore.release;
+
+                # Don't ever modify a rejected server
+                if $prev-server<status>:exists
+                   and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
+
+                  $h<status> = MongoDB::C-REJECTED-SERVER;
+                }
+                
+                # Check if the master server went down
+                elsif $h<status> ~~ MongoDB::C-DOWN-SERVER 
+                      and $sname eq $server.name {
+say "Server $sname went down";
+                  $!servername-semaphore.acquire;
+                  $!master-servername = Nil;
+                  $!servername-semaphore.release;
+                }
+
+                # Check for double master servers
+                elsif $h<status> ~~ any(
                   MongoDB::C-MASTER-SERVER |
                   MongoDB::C-REPLICASET-PRIMARY
                 ) {
 
                   # Not defined, be the first master server
-                  $!servername-semaphore.acquire;
-                  my $sname = $!master-servername;
-                  $!servername-semaphore.release;
-                  
-                  if not $sname.defined {
+                  if ! ?$sname {
                     $!servername-semaphore.acquire;
                     $!master-servername = $server.name;
                     $!servername-semaphore.release;
@@ -190,12 +203,13 @@ say "Monitor data in hash: $h.perl()";
 #TODO $!master-servername must be able to change when server roles are changed
 #TODO Define client topology
 
+say "\nMonitor data in hash: $h.perl()";
                 # Store result
                 $!servers-semaphore.acquire;
                 $!servers{$server.name} = $h;
                 $!servers-semaphore.release;
               }
-            }
+#            }
           );
         }
       }
@@ -239,15 +253,17 @@ say "Monitor data in hash: $h.perl()";
 #TODO must break loop when nothing is found
     my Int $test-count = 12;
     my Hash $h;
+    my Str $msname;
+
     while $test-count-- {
 
       $!servername-semaphore.acquire;
-      my $sname = $!master-servername;
+      $msname = $!master-servername;
       $!servername-semaphore.release;
 
-      if $sname.defined {
+      if $msname.defined {
         $!servers-semaphore.acquire;
-        $h = $!servers{$sname};
+        $h = $!servers{$msname};
         $!servers-semaphore.release;
         last;
       }
@@ -255,6 +271,10 @@ say "Monitor data in hash: $h.perl()";
       sleep 1;
     }
 
+    info-message(
+      ?$msname ?? "Master server $msname selected"
+               !! 'No master server selected'
+    );
     $h<server> // MongoDB::Server;
   }
 

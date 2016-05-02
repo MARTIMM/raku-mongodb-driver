@@ -72,6 +72,7 @@ class Server {
 
       # Start monitoring
       $!monitor-promise = $!server-monitor.monitor-server;
+      return unless $!monitor-promise.defined;
 
       # Tap into monitor data
       self.tap-monitor( -> Hash $monitor-data {
