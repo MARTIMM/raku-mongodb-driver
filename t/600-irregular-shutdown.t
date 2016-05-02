@@ -34,7 +34,7 @@ $client .= new(:uri("mongodb://:$p3"));
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client.select-server;
+  my $server = $client.select-server;
 
   $collection = $client.collection('test.myColl');
   $database = $collection.database;
@@ -72,6 +72,10 @@ subtest {
   nok $doc.defined, 'Document not defined caused by server shutdown';
 
 }, "Shutdown server 3 before run-command";
+
+info-message("Test $?FILE stop");
+done-testing;
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {

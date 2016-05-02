@@ -130,7 +130,7 @@ class Client is MongoDB::ClientIF {
           $server.tap-monitor( -> Hash $monitor-data {
 
 
-say "Monitor $server.name(): ", $monitor-data.perl;
+#say "Monitor $server.name(): ", $monitor-data.perl;
 #say "Monitor $server.name(): $monitor-data<ok>, $monitor-data<status>";
 
               $!servers-semaphore.acquire;
@@ -172,7 +172,7 @@ say "Monitor $server.name(): ", $monitor-data.perl;
                 # Check if the master server went down
                 elsif $h<status> ~~ MongoDB::C-DOWN-SERVER 
                       and $sname eq $server.name {
-say "Server $sname went down";
+
                   $!servername-semaphore.acquire;
                   $!master-servername = Nil;
                   $!servername-semaphore.release;
@@ -203,7 +203,7 @@ say "Server $sname went down";
 #TODO $!master-servername must be able to change when server roles are changed
 #TODO Define client topology
 
-say "\nMonitor data in hash: $h.perl()";
+#say "\nMonitor data in hash: $h.perl()";
                 # Store result
                 $!servers-semaphore.acquire;
                 $!servers{$server.name} = $h;
