@@ -199,7 +199,7 @@ x|110-Client|Unknown server, fails DNS lookup
 x||Down server, no connection
 x||Standalone server, not in replicaset
 x||Two standalone servers, one gets rejected
-x||Standalone server brought down and revived, Client object must follow
+x|111-Client|Standalone server brought down and revived, Client object must follow
 |-|Replicaset server in pre initialization state, must be a master server
 ||Replicaset server master in uri, must search for secondaries and add them
 ||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
