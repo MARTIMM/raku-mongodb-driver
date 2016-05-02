@@ -34,8 +34,11 @@ class Server::Monitor is Supplier {
   # Variables to control infinite monitoring actions
   has Promise $!promise-monitor;
   has Semaphore $!server-monitor-control;
-  has Int $.monitor-looptime is rw = 10;
   has Bool $!monitor-loop;
+  has Semaphore $!loop-semaphore;
+  has Int $!monitor-looptime = 10;
+  has Semaphore $!looptime-semaphore;
+
   has BSON::Document $!monitor-command;
   has BSON::Document $!monitor-result;
 
@@ -52,19 +55,25 @@ class Server::Monitor is Supplier {
     $!monitor-command does MongoDB::Header;
 
     $!server-monitor-control .= new(1);
+    $!looptime-semaphore .= new(1);
+    $!loop-semaphore .= new(1);
   }
 
   #-----------------------------------------------------------------------------
   method done ( |c ) {
 
+    $!loop-semaphore.acquire;
     $!monitor-loop = False;
+    $!loop-semaphore.release;
     callwith();
   }
 
   #-----------------------------------------------------------------------------
   method quit ( ) {
 
+    $!loop-semaphore.acquire;
     $!monitor-loop = False;
+    $!loop-semaphore.release;
     callwith('Monitor forced to quit');
   }
 
@@ -77,10 +86,19 @@ class Server::Monitor is Supplier {
 #  }
 
   #-----------------------------------------------------------------------------
+  method monitor-looptime ( Int $mlt ) {
+
+    $!looptime-semaphore.acquire;
+    $!monitor-looptime = $mlt;
+    $!looptime-semaphore.release;
+  }
+
+  #-----------------------------------------------------------------------------
   # Run this on a separate thread because it lasts until this program atops.
   #
   method monitor-server ( --> Promise ) {
 
+    # Just to prevent that more than one monitor is started.
     return Promise unless $!server-monitor-control.try_acquire;
 
     info-message("Start $!server.name() monitoring");
@@ -93,8 +111,10 @@ class Server::Monitor is Supplier {
         # As long as the server lives test it. Changes are possible when 
         # server conditions change.
         #
-        $!monitor-loop = True;
-        while $!monitor-loop {
+        $!loop-semaphore.acquire;
+        my $mloop = $!monitor-loop = True;
+        $!loop-semaphore.release;
+        while $mloop {
 
           # Temporary try block to catch typos
           try {
@@ -114,19 +134,19 @@ class Server::Monitor is Supplier {
 
 #say "Monitor info: ", $doc.perl;
 
+              info-message(
+                "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
+              );
               self.emit( {
                   ok => True,
                   monitor => $doc<documents>[0],
                   weighted-mean-rtt => $!weighted-mean-rtt
                 }
               );
-
-              info-message(
-                "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
-              );
             }
-            
+
             else {
+              warn-message("Server $!server.name() undefined document");
               self.emit( {
                   ok => False,
                   reason => 'Undefined document'
@@ -144,27 +164,37 @@ class Server::Monitor is Supplier {
             #
             CATCH {
               default {
-
+#.say;
                 # Failure messages;
                 #   Failed to connect: connection refused
                 #   Failed to resolve host name
                 #
-#TODO 2016-04-30, perl6 bug, cannot do it directly in hash
-#.say;
+                # 2016-04-30, perl6 bug, cannot do it directly in hash,
+                # Doesn't seem to be a bug, according to doc, $_ is one of
+                # the triggers to turn a hash into a block. Use 'hash '
+                # or '%()' explicitly!!!
+                #
                 my Str $s = .message();
-                self.emit( {
+                warn-message("Server $!server.name() error $s");
+                self.emit(
+                  hash (
                     ok => False,
                     reason => $s
-                  }
+                  )
                 );
 
-                warn-message("Server $!server.name() error $s");
-
                 # Rest for a while
-                sleep($!monitor-looptime);
+                $!looptime-semaphore.acquire;
+                my Int $sleeptime = $!monitor-looptime;
+                $!looptime-semaphore.release;
+                sleep($sleeptime);
               }
             }
           }
+
+          $!loop-semaphore.acquire;
+          $mloop = $!monitor-loop;
+          $!loop-semaphore.release;
         }
 
         $!server-monitor-control.release;

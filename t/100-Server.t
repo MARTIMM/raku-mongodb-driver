@@ -20,7 +20,7 @@ subtest {
   my MongoDB::Server $server .= new( :host<localhost>, :port($p1));
 
   my MongoDB::Server::Monitor $monitor .= new;
-  $monitor.monitor-looptime = 1;
+  $monitor.monitor-looptime(1);
   $monitor.monitor-init(:$server);
   $monitor.monitor-server;
 
@@ -48,7 +48,7 @@ subtest {
   );
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
-  $server.server-monitor.monitor-looptime = 1;
+  $server.server-monitor.monitor-looptime(1);
   $server.server-init;
   $server.tap-monitor( {
       nok $_<ok>, 'Monitoring is not ok';
@@ -69,7 +69,7 @@ subtest {
   my MongoDB::Server $server .= new( :host<localhost>, :port(65535));
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is unknown";
 
-  $server.server-monitor.monitor-looptime = 1;
+  $server.server-monitor.monitor-looptime(1);
   $server.server-init;
   $server.tap-monitor( {
       nok $_<ok>, 'Monitoring is not ok';
@@ -90,7 +90,7 @@ subtest {
   my MongoDB::Server $server .= new( :host<localhost>, :port($p2));
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
-  $server.server-monitor.monitor-looptime = 1;
+  $server.server-monitor.monitor-looptime(1);
   $server.server-init;
   $server.tap-monitor( {
       ok $_<ok>, 'Monitoring is ok';
