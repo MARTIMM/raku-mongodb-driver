@@ -9,8 +9,8 @@ use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
 
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my Int $p1 = $Test-support::server-control.get-port-number('s1');
@@ -47,47 +47,44 @@ subtest {
 
 #-------------------------------------------------------------------------------
 subtest {
+
   $client .= new(:uri("mongodb://:$p1"));
   $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
-  is $client.found-master, True, 'Found a master';
-  is $client.server-status("localhost:$p1"),
-     MongoDB::Master-server,
+  is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is $client.server-status('localhost:' ~ $p1)";
 
 }, "Standalone server";
 
-done-testing();
-exit(0);
-
 #-------------------------------------------------------------------------------
 subtest {
-  $client .= new(:uri("mongodb://localhost:$p1"));
-  $server = $client.select-server;
-  is $client.nbr-servers, 1, 'One server found';
-  is $client.nbr-left-actions, 0, 'No actions left';
-  is $client.found-master, True, 'Found a master';
-  is $client.server-status("localhost:$p1"),
-     MongoDB::Master-server,
-     "Status of server is $client.server-status('localhost:' ~ $p1)";
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
   $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server accepted, two were equal';
 
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+}, "Two equal servers";
 
-  $client .= new(:uri("mongodb://localhost:$p1,localhost:$p2"));
+#-------------------------------------------------------------------------------
+subtest {
+
+  $client .= new(:uri("mongodb://:$p1,:$p2"));
   $server = $client.select-server;
-  is $client.nbr-servers, 2,
-     "Server $server.name() accepted, two servers were master";
-  is $client.server-status($server.name()),
-     MongoDB::Master-server,
-     "Status of server is Master-server";
+  is $server.get-status, MongoDB::C-MASTER-SERVER,
+     "Server $server.name() is master";
 
+  if $server.name ~~ m/$p1/ {
+    is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
+       "Server localhost:$p2 is rejected";
+  }
 
-}, 'Independent servers';
+  else {
+    is $client.server-status('localhost:' ~ $p1), MongoDB::C-REJECTED-SERVER,
+       "Server localhost:$p1 is rejected";
+  }
+
+  is $client.nbr-servers, 2, 'Two servers found';
+}, "Two standalone servers";
 
 #-------------------------------------------------------------------------------
 # Cleanup

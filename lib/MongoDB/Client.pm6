@@ -120,7 +120,7 @@ class Client is MongoDB::ClientIF {
           # Tap into the stream of monitor data
           $server.tap-monitor( -> Hash $monitor-data {
 
-say "Monitor: ", $monitor-data.perl;
+#say "Monitor $server.name(): ", $monitor-data.perl;
               # Only when data is ok
               my Hash $h = {
                 server => $server,
@@ -129,7 +129,7 @@ say "Monitor: ", $monitor-data.perl;
                 server-data => $monitor-data // {}
               };
 
-say "Hash 0: $h.perl()";
+#say "Hash 0: $h.perl()";
               # No errors while monitoring
 #              if $monitor-data.defined and $monitor-data<ok> {
 #
@@ -159,7 +159,7 @@ say "Hash 0: $h.perl()";
 #                $h = Nil;
 #              }
 
-say "Hash 1: $h.perl()";
+say "Monitor data in hash: $h.perl()";
               # Check for double master servers
               if $h.defined {
                 if $h<status> ~~ any(
@@ -237,7 +237,7 @@ say "Hash 1: $h.perl()";
 
 #TODO use read/write concern for selection
 #TODO must break loop when nothing is found
-    my Int $test-count = 15;
+    my Int $test-count = 12;
     my Hash $h;
     while $test-count-- {
 
@@ -247,8 +247,9 @@ say "Hash 1: $h.perl()";
 
       if $sname.defined {
         $!servers-semaphore.acquire;
-        my Hash $h = $!servers{$sname};
+        $h = $!servers{$sname};
         $!servers-semaphore.release;
+        last;
       }
 
       sleep 1;
