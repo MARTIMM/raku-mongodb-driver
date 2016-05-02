@@ -9,8 +9,8 @@ use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
 
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my Int $p1 = $Test-support::server-control.get-port-number('s1');
@@ -18,7 +18,6 @@ my Int $p2 = $Test-support::server-control.get-port-number('s2');
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 
-#`{{
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -45,36 +44,16 @@ subtest {
      "Status of server is down";
 
 }, 'Down server';
-}}
 
 #-------------------------------------------------------------------------------
 subtest {
 
   $client .= new(:uri("mongodb://:$p1"));
   $server = $client.select-server;
-  $server.server-monitor.monitor-looptime(1);
 
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master";
-
-  # Bring server down to see what Client does...
-  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 is stopped";
-  sleep 10;
-
-  $server = $client.select-server;
-  nok $server.defined, 'Server not defined';
-  is $client.server-status("localhost:$p1"), MongoDB::C-DOWN-SERVER,
-     "Status of server is down";
-
-  # Bring server up again to see ift Client recovers...
-  ok $Test-support::server-control.start-mongod("s1"), "Server 1 started";
-  sleep 3;
-
-  $server = $client.select-server;
-  ok $server.defined, 'Server is defined';
-  is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
-     "Status of server is master again";
   
 }, "Standalone server";
 
@@ -106,6 +85,7 @@ subtest {
   }
 
   is $client.nbr-servers, 2, 'Two servers found';
+
 }, "Two standalone servers";
 
 #-------------------------------------------------------------------------------

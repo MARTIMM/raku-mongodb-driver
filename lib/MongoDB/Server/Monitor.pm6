@@ -108,6 +108,9 @@ class Server::Monitor is Supplier {
         my Duration $rtt;
         my BSON::Document $doc;
 
+        # Start loops frequently and slow it down to looptime max
+        my $looptime-trottle = 1;
+
         # As long as the server lives test it. Changes are possible when 
         # server conditions change.
         #
@@ -183,10 +186,13 @@ class Server::Monitor is Supplier {
                   )
                 );
 
-                # Rest for a while
+                # Rest for a while$looptime
                 $!looptime-semaphore.acquire;
                 my Int $sleeptime = $!monitor-looptime;
                 $!looptime-semaphore.release;
+                $sleeptime = $looptime-trottle++
+                  if $looptime-trottle < $sleeptime;
+
                 sleep($sleeptime);
               }
             }
