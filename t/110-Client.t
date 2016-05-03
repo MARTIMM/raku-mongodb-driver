@@ -8,7 +8,6 @@ use MongoDB::Client;
 use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
-
 #set-logfile($*OUT);
 #set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
