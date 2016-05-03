@@ -320,6 +320,7 @@ class Client is MongoDB::ClientIF {
   method DESTROY ( ) {
 
     # Remove all servers concurrently. Shouldn't be many per client.
+    $!servers-semaphore.acquire;
     for $!servers.values.race(batch => 1) -> Hash $srv-struct {
 
       if $srv-struct<server>.defined {
@@ -327,16 +328,12 @@ class Client is MongoDB::ClientIF {
         # Stop monitoring on server
         #
         $srv-struct<server>.stop-monitor;
-
-        info-message(
-          "Server $srv-struct<server>.name() "
-            ~ $srv-struct<command-channel>.receive
-        );
-
-        undefine $srv-struct<server>;
+        debug-message("Undefine server $srv-struct<server>.name()");
+        $srv-struct<server> = Nil;
       }
     }
 
+    $!servers-semaphore.release;
     debug-message("Client destroyed");
   }
 }
