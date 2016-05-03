@@ -8,8 +8,8 @@ use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
-use MongoDB::Client;
 use MongoDB::Cursor;
+use BSON::Document;
 
 #signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
@@ -30,86 +30,6 @@ my Int $p2 = $Test-support::server-control.get-port-number('s2');
 my Int $p3 = $Test-support::server-control.get-port-number('s3');
 
 $client .= new(:uri("mongodb://:$p3"));
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  my $server = $client.select-server;
-
-  $collection = $client.collection('test.myColl');
-  $database = $collection.database;
-  $doc = $database.run-command: (dropDatabase => 1);
-  ok $doc<ok>, "Database test dropped";
-
-  is $client.nbr-servers, 1, 'One server found';
-  is $client.server-status("localhost:$p3"),
-     MongoDB::Master-server,
-     "Status of server is " ~ $client.server-status("localhost:$p3");
-
-  info-message('save 2 records');
-  $collection = $client.collection('test.myColl');
-  $req .= new: (
-    insert => $collection.name,
-    documents => [
-      BSON::Document.new((a => 1, b => 2),),
-      BSON::Document.new((a => 11, b => 22),),
-    ]
-  );
-
-  $database = $collection.database;
-  $database.run-command($req);
-
-  info-message('shutdown server');
-  $db-admin = $client.database('admin');
-  is $client.nbr-servers, 1, 'Still one server found';
-  $db-admin.run-command: (shutdown => 1);
-  is $client.server-status("localhost:$p3"),
-     MongoDB::Down-server,
-     "Status of server is " ~ $client.server-status("localhost:$p3");
-
-  info-message('insert same records again');
-  $doc = $database.run-command($req);
-  nok $doc.defined, 'Document not defined caused by server shutdown';
-
-}, "Shutdown server 3 before run-command";
-
-info-message("Test $?FILE stop");
-done-testing;
-exit(0);
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  my $prms = Promise.start( {
-      sleep 4;
-      ok $Test-support::server-control.start-mongod('s3'),
-         "Server 3 restarted";
-    }
-  );
-  
-  while not ($server = $client.select-server).defined {
-    info-message("Wait for localhost:$p3 to start");
-    sleep 2;
-  }
-
-  await $prms;
-
-  is $client.server-status("localhost:$p3"),
-     MongoDB::Master-server,
-     "Status of server 3 is " ~ $client.server-status("localhost:$p3");
-
-  info-message('Retrying insert same records again');
-  $req .= new: (
-    insert => $collection.name,
-    documents => [
-      BSON::Document.new((a => 1, b => 2),),
-      BSON::Document.new((a => 11, b => 22),),
-    ]
-  );
-  $doc = $database.run-command($req);
-  ok $doc.defined, "Document now defined after reviving localhost:$p3";
-
-}, 'Reviving server 3';
 
 #-------------------------------------------------------------------------------
 $client .= new(:uri("mongodb://:$p2"));
