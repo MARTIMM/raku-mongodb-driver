@@ -201,7 +201,7 @@ x||Standalone server, not in replicaset
 x||Two standalone servers, one gets rejected
 x|111-Client|Standalone server brought down and revived, Client object must follow
 x||Shutdown server and restart while inserting records
-|-|Replicaset server in pre initialization state, must be a master server
+x|610-repl-start|Replicaset server in pre-init state, is not a master nor secondary server
 ||Replicaset server master in uri, must search for secondaries and add them
 ||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
 
@@ -327,6 +327,7 @@ change at any time. The public API should not be considered stable.*
   * Major rewrite of Client, Server and Monitor modules.
   * bugfix in uri. FQDN hostnames couldn't have dots.
   * Added tests to test Client object behaviour.
+  * select-server() in Client split in multis.
 * 0.28.11
   * Facturing out code from test environment into MongoDB::Server::Control to have a module to control a server like startup, shutdown, converting a standalone server to a replica server or something else.
   * Using a new module Config::TOML to control server startup.

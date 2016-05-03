@@ -168,7 +168,7 @@ class Client is MongoDB::ClientIF {
 
                   $h<status> = MongoDB::C-REJECTED-SERVER;
                 }
-                
+
                 # Check if the master server went down
                 elsif $h<status> ~~ MongoDB::C-DOWN-SERVER 
                       and $sname eq $server.name {
@@ -246,11 +246,68 @@ class Client is MongoDB::ClientIF {
   }
 
   #-----------------------------------------------------------------------------
-  #
-  method select-server ( BSON::Document :$read-concern --> MongoDB::Server ) {
+  # Selecting servers based on;
+  # - read/write concern, depends on server version
+  # - state of a server, e.g. to initialize a replica server or to get a slave
+  #   or arbiter
+  # - default is to get a master server
+  #-----------------------------------------------------------------------------
 
 #TODO use read/write concern for selection
 #TODO must break loop when nothing is found
+
+  # Read/write concern selection
+  multi method select-server (
+    BSON::Document:D :$read-concern!
+    --> MongoDB::Server
+  ) {
+
+    MongoDB::Server;
+  }
+
+  #-----------------------------------------------------------------------------
+  # State of server selection
+  multi method select-server (
+    MongoDB::ServerStatus:D :$needed-state!
+    --> MongoDB::Server
+  ) {
+
+    my Int $test-count = 12;
+    my Hash $h;
+
+    whileLoopLabel: while $test-count-- {
+
+      $!servers-semaphore.acquire;
+      my @server-names = $!servers.keys;
+      $!servers-semaphore.release;
+
+      for @server-names -> $sname {
+
+        $!servers-semaphore.acquire;
+        my Hash $shash = $!servers{$sname};
+        $!servers-semaphore.release;
+
+        if $shash<status> ~~ $needed-state {
+          $h = $shash;
+          last whileLoopLabel;
+        }
+      }
+
+      sleep 1;
+    }
+
+    info-message(
+      ($h.defined and $h<server>) ?? "Server $h<server> selected"
+                                  !! 'No typed server selected'
+    );
+
+    $h<server> // MongoDB::Server;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Sefault master server selection
+  multi method select-server ( --> MongoDB::Server ) {
+
     my Int $test-count = 12;
     my Hash $h;
     my Str $msname;
@@ -275,11 +332,11 @@ class Client is MongoDB::ClientIF {
       ?$msname ?? "Master server $msname selected"
                !! 'No master server selected'
     );
+
     $h<server> // MongoDB::Server;
   }
 
-  #---------------------------------------------------------------------------
-  #
+  #-----------------------------------------------------------------------------
   method database (
     Str:D $name,
     BSON::Document :$read-concern
@@ -293,7 +350,6 @@ class Client is MongoDB::ClientIF {
   }
 
   #-----------------------------------------------------------------------------
-  #
   method collection (
     Str:D $full-collection-name,
     BSON::Document :$read-concern
