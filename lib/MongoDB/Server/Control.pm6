@@ -101,8 +101,11 @@ class Server::Control {
     my Hash $config = MongoDB::Config.instance.config;
     my Hash $options = {};
     my Hash $s = $config // {};
-    for 'mongod', @server-keys -> $server-key {
+
+    for 'mongod', |@server-keys -> $server-key {
+
       $s = $s{$server-key} // {};
+
       for $s.keys -> $k {
         next if $s{$k} ~~ Hash;
 
