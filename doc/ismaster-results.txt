@@ -1,12 +1,27 @@
 Results of ismaster query
 
-Standalone server;
+Standalone server
 
   ismaster => Bool::True,
   maxBsonObjectSize => 16777216,
   maxMessageSizeBytes => 48000000,
   maxWriteBatchSize => 1000,
   localTime => DateTime.new(48293,12,17,19,36,58,:timezone(7200)),
+  maxWireVersion => 3,
+  minWireVersion => 0,
+  ok => 1e0,
+
+
+Replica server in preinitialization state
+
+  ismaster => Bool::False,
+  secondary => Bool::False,
+  info => "Does not have a valid replica set config",
+  isreplicaset => Bool::True,
+  maxBsonObjectSize => 16777216,
+  maxMessageSizeBytes => 48000000,
+  maxWriteBatchSize => 1000,
+  localTime => DateTime.new(48308,2,8,0,9,58,:timezone(7200)),
   maxWireVersion => 3,
   minWireVersion => 0,
   ok => 1e0,
