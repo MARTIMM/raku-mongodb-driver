@@ -95,10 +95,11 @@ package MongoDB {
       return $doc.defined ?? $doc !! BSON::Document.new;
     }
 
+    #---------------------------------------------------------------------------
     # Run command using List of Pair.
-    #
     multi method run-command ( |c --> BSON::Document ) {
 #TODO check on arguments
+say "\nrun-command c: ", c.perl;
 
       fatal-message("Not enough arguments",) unless ? c.elems;
 

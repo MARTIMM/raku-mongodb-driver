@@ -104,7 +104,7 @@ package MongoDB {
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-      my $server = $.database.client.select-server(:read-concern($rc));
+      my $server = $!database.client.select-server(:read-concern($rc));
 
       if not $server.defined {
         error-message("No server object for query");

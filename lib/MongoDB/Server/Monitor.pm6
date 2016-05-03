@@ -135,7 +135,7 @@ class Server::Monitor is Supplier {
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
 
-#say "Monitor info: ", $doc.perl;
+say "\nMonitor info: ", $doc.perl;
 
               info-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"

@@ -262,7 +262,7 @@ class Client is MongoDB::ClientIF {
     --> MongoDB::Server
   ) {
 
-    MongoDB::Server;
+    self.select-server;
   }
 
   #-----------------------------------------------------------------------------
