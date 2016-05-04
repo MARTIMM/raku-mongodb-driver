@@ -124,7 +124,7 @@ subtest {
     documents => [(code => 15)]
   );
 
-  $doc = $database.run-command: (listCollections => 1);
+  $doc = $database.run-command: (listCollections => 1,);
   is $doc<ok>, 1, 'list collections request ok';
 #say "LC: ", $doc.perl;
   my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
@@ -142,7 +142,7 @@ subtest {
   #
   $f-cl1 = False;
   $f-cl2 = False;
-  $doc = $database.run-command: (listCollections => 1);
+  $doc = $database.run-command: (listCollections => 1,);
   for MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>)) -> BSON::Document $d {
     $f-cl1 = True if $d<name> eq 'cl1';
     $f-cl2 = True if $d<name> eq 'cl2';
@@ -158,7 +158,7 @@ subtest {
 
   # Drop database
   #
-  $req .= new: ( dropDatabase => 1 );
+  $req .= new: (dropDatabase => 1,);
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "Drop database test ok";
 
@@ -167,7 +167,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  $doc = $database.run-command: (unknownDbCommand => 'unknownCollection');
+  $doc = $database.run-command: (unknownDbCommand => 'unknownCollection',);
   is $doc<ok>, 0, 'unknown request';
   is $doc<errmsg>, 'no such command: unknownDbCommand', 'Err: no such command';
   is $doc<code>, 59, 'Code 59';

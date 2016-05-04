@@ -21,7 +21,7 @@ my BSON::Document $req;
 my BSON::Document $doc;
 my MongoDB::Cursor $cursor;
 
-$database.run-command: (dropDatabase => 1);
+$database.run-command: (dropDatabase => 1,);
 
 $req .= new: (
   insert => $collection.name,

@@ -66,7 +66,8 @@ package MongoDB {
     #
     multi method run-command (
       BSON::Document:D $command,
-      BSON::Document :$read-concern
+      BSON::Document :$read-concern,
+      :$server
       --> BSON::Document
     ) {
 
@@ -76,20 +77,18 @@ package MongoDB {
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
       # And use it to do a find on it, get the doc and return it.
-      #
       my MongoDB::Cursor $cursor = $!cmd-collection.find(
         :criteria($command),
         :number-to-return(1),
         :read-concern($rc),
+        :$server
       );
 
       # Return undefined on server problems
-      #
       if not $cursor.defined {
         error-message("No cursor returned");
         return BSON::Document;
       }
-
 
       my $doc = $cursor.fetch;
       return $doc.defined ?? $doc !! BSON::Document.new;
@@ -97,29 +96,34 @@ package MongoDB {
 
     #---------------------------------------------------------------------------
     # Run command using List of Pair.
-    multi method run-command ( |c --> BSON::Document ) {
+#    multi method run-command ( |c --> BSON::Document ) {
+    multi method run-command (
+      List $pairs,
+      BSON::Document :$read-concern,
+      :$server
+      --> BSON::Document
+    ) {
 #TODO check on arguments
-say "\nrun-command c: ", c.perl;
+#say "\nrun-command c: ", c.perl;
 
-      fatal-message("Not enough arguments",) unless ? c.elems;
+#      fatal-message("Not enough arguments",) unless ? c.elems;
 
-      my BSON::Document $command .= new: c[0];
+      my BSON::Document $command .= new: $pairs;
       debug-message("run command {$command.find-key(0)}");
 
       my BSON::Document $rc = 
-        c<read-concern>.defined ?? (BSON::Document.new(c<read-concern>))
-                                !! $!read-concern;
+        $read-concern.defined ?? (BSON::Document.new($read-concern))
+                              !! $!read-concern;
 
       # And use it to do a find on it, get the doc and return it.
-      #
       my MongoDB::Cursor $cursor = $!cmd-collection.find(
         :criteria($command),
         :number-to-return(1)
         :read-concern($rc)
+        :$server
       );
 
       # Return undefined on server problems
-      #
       if not $cursor.defined {
         error-message("No cursor returned");
         return BSON::Document;

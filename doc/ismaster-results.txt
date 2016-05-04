@@ -1,5 +1,6 @@
-Results of ismaster query
+Results of ismaster query and other operations (3.0.5)
 
+--------------------------------------------------------------------------------
 Standalone server
 
   ismaster => Bool::True,
@@ -12,6 +13,7 @@ Standalone server
   ok => 1e0,
 
 
+--------------------------------------------------------------------------------
 Replica server in preinitialization state
 
   ismaster => Bool::False,
@@ -25,3 +27,13 @@ Replica server in preinitialization state
   maxWireVersion => 3,
   minWireVersion => 0,
   ok => 1e0,
+
+Error message on write(insert)
+  note => "from execCommand",
+  ok => 0e0,
+  errmsg => "not master",
+
+Error message on read(find)
+  $err => "not master and slaveOk=false",
+  code => 13435
+

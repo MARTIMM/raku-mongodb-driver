@@ -7,19 +7,15 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Database;
+use MongoDB::Collection;
 use MongoDB::Config;
+use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client;
-my MongoDB::Server $server;
-my MongoDB::Database $database;
-my MongoDB::Database $db-admin;
-my BSON::Document $req;
-my BSON::Document $doc;
 
 # Stop any left over servers
 #
@@ -36,11 +32,6 @@ my Int $p1 = $Test-support::server-control.get-port-number('s1');
 my Int $p2 = $Test-support::server-control.get-port-number('s2');
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
-info-message("Test $?FILE start");
-
-#-------------------------------------------------------------------------------
 subtest {
 
   my Int $p2 = $Test-support::server-control.get-port-number('s2');
@@ -50,8 +41,26 @@ subtest {
   ok $Test-support::server-control.start-mongod( 's2', 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
-  $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
-  $server = $client.select-server;
+  # Cannot find server now, need replicaSet option
+  my MongoDB::Client $client .= new(:uri("mongodb://:$p2"));
+  my MongoDB::Server $server = $client.select-server;
+  nok $server.defined, 'No master server found';
+  is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
+     "Server 2 is rejected";
+
+}, "Replica server pre-init rejected";
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+
+  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Database $database = $client.database('test');
+  my MongoDB::Collection $collection = $database.collection('mycll');
+
+  my MongoDB::Server $server = $client.select-server;
   nok $server.defined, 'No master server found';
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICA-PRE-INIT,
      "Server is in replica initialization state";
@@ -60,15 +69,45 @@ subtest {
   is $server.get-status, MongoDB::C-REPLICA-PRE-INIT,
      "Selected server is in replica initialization state";
 
+  # Must use :$server because otherwise a master would be searched for
+  # which is not available. The same goes for find later on
+  #
+  my BSON::Document $doc = $database.run-command( (
+      insert => $collection.name,
+      documents => [
+        (a => 1876, b => 2, c => 20),
+        (:p<data1>, :q(20), :2r, :s),
+      ]
+    ),
+    :$server
+  );
+
+  ok !?$doc<ok>, 'Command not accepted';
+  is $doc<errmsg>, 'not master', 'write to non-master';
+
+
+  my MongoDB::Cursor $cursor = $collection.find(:$server);
+#say "\nC: ", $cursor.perl;
+  $doc = $cursor.fetch;
+#say "DF: ", $doc.perl;
+  is $doc{'$err'}, 'not master and slaveOk=false', $doc{'$err'};
+
 }, "Replica server pre-init";
 
-sleep 3;
 
 done-testing();
 exit(0);
 
 =finish
 
+
+
+my MongoDB::Client $client;
+my MongoDB::Server $server;
+my MongoDB::Database $database;
+my MongoDB::Database $db-admin;
+my BSON::Document $req;
+my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -76,7 +115,7 @@ subtest {
 
   # The name is not set yet, so no replicat name found in monitor result!
   #
-  $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
 
 say "Type of localhost:$p2: $client.server-status('localhost:$p2')";
 #  is $client.server-status('localhost:65535'),

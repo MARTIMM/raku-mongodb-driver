@@ -201,10 +201,10 @@ x||Standalone server, not in replicaset
 x||Two standalone servers, one gets rejected
 x|111-Client|Standalone server brought down and revived, Client object must follow
 x||Shutdown server and restart while inserting records
-x|610-repl-start|Replicaset server in pre-init state, is not a master nor secondary server
+x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.
+x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.
 ||Replicaset server master in uri, must search for secondaries and add them
 ||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
-
 
 ## API CHANGES
 
@@ -315,6 +315,14 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
   * Use macros to get info at the calling point before sending to \*-message(). This will make the search through the stack unnecessary
 * Use semaphores in Server to get a Socket. Use the socket limit as a parameter. Need also to modify this.
 * Must check for max BSON document size
+* Handle read/write concerns.
+* Handle more options from the mongodb uri
+  * readConcernLevel - defines the level for the read concern.
+  * w - corresponds to w in the class definition.
+  * journal - corresponds to journal in the class definition.
+  * wtimeoutMS - corresponds to wtimeoutMS in the class definition.
+
+
 
 ## CHANGELOG
 

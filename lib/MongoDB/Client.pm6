@@ -106,9 +106,14 @@ class Client is MongoDB::ClientIF {
 
           trace-message("Processing server $server-name");
 
+#say 'acq 0';
           $!servers-semaphore.acquire;
-          my $prev-server = $!servers{$server-name};
+say 'acq 1';
+          my Hash $prev-server = $!servers{$server-name}:exists
+                                 ?? $!servers{$server-name}
+                                 !! Nil;
           $!servers-semaphore.release;
+say 'acq 2';
 
           # Check if server was managed before
           if $prev-server.defined {
@@ -134,7 +139,9 @@ class Client is MongoDB::ClientIF {
 #say "Monitor $server.name(): $monitor-data<ok>, $monitor-data<status>";
 
               $!servers-semaphore.acquire;
-              $prev-server = $!servers{$server.name} // {};
+              $prev-server = $!servers{$server-name}:exists
+                             ?? $!servers{$server-name}
+                             !! {};
               $!servers-semaphore.release;
 
               # Only when data is ok
@@ -239,10 +246,12 @@ class Client is MongoDB::ClientIF {
   method server-status ( Str:D $server-name --> MongoDB::ServerStatus ) {
 
     $!servers-semaphore.acquire;
-    my Hash $h = $!servers{$server-name};
+    my Hash $h = $!servers{$server-name}:exists
+                 ?? $!servers{$server-name}
+                 !! {};
     $!servers-semaphore.release;
 
-    my MongoDB::ServerStatus $sts = $h<status> if $h.defined;
+    my MongoDB::ServerStatus $sts = $h<status> if $h<status>:exists;
   }
 
   #-----------------------------------------------------------------------------
@@ -282,10 +291,11 @@ class Client is MongoDB::ClientIF {
       $!servers-semaphore.release;
 
       for @server-names -> $sname {
-
+#say "\n$sname";
         $!servers-semaphore.acquire;
         my Hash $shash = $!servers{$sname};
         $!servers-semaphore.release;
+#say "\n", $shash.perl;
 
         if $shash<status> ~~ $needed-state {
           $h = $shash;
@@ -296,10 +306,13 @@ class Client is MongoDB::ClientIF {
       sleep 1;
     }
 
-    info-message(
-      ($h.defined and $h<server>) ?? "Server $h<server> selected"
-                                  !! 'No typed server selected'
-    );
+    if $h.defined and $h<server> {
+      info-message("Server $h<server>.name() selected");
+    }
+    
+    else {
+      error-message('No typed server selected');
+    }
 
     $h<server> // MongoDB::Server;
   }
@@ -328,10 +341,13 @@ class Client is MongoDB::ClientIF {
       sleep 1;
     }
 
-    info-message(
-      ?$msname ?? "Master server $msname selected"
-               !! 'No master server selected'
-    );
+    if ?$msname {
+      info-message("Master server $msname selected");
+    }
+    
+    else {
+      error-message('No master server selected');
+    }
 
     $h<server> // MongoDB::Server;
   }

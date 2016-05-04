@@ -43,8 +43,7 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0, List :$read-concern
-
+      Int :$flags = 0, List :$read-concern, :$server is copy
       --> MongoDB::Cursor
     ) {
 
@@ -56,13 +55,13 @@ package MongoDB {
          $read-concern.defined ?? BSON::Document.new: $read-concern
                                !! $!read-concern;
 
-      my $server = $.database.client.select-server(:read-concern($rc));
+      $server = $!database.client.select-server(:read-concern($rc))
+        unless $server.defined;
 
       if not $server.defined {
         error-message("No server object for query");
         return MongoDB::Cursor;
       }
-
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
@@ -91,9 +90,7 @@ package MongoDB {
       BSON::Document :$criteria = BSON::Document.new,
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0,
-      BSON::Document :$read-concern
-
+      Int :$flags = 0, BSON::Document :$read-concern, :$server is copy
       --> MongoDB::Cursor
     ) {
 
@@ -104,7 +101,8 @@ package MongoDB {
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-      my $server = $!database.client.select-server(:read-concern($rc));
+      $server = $!database.client.select-server(:read-concern($rc))
+        unless $server.defined;
 
       if not $server.defined {
         error-message("No server object for query");
@@ -158,8 +156,8 @@ package MongoDB {
     #
     method !set-full-collection-name ( ) {
 
-      return unless !?$.full-collection-name and ?$.database.name and ?$.name;
-      $!full-collection-name = [~] $.database.name, '.', $.name;
+      return unless !?$!full-collection-name and ?$!database.name and ?$!name;
+      $!full-collection-name = [~] $!database.name, '.', $!name;
     }
   }
 }

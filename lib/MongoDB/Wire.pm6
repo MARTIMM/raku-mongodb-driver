@@ -13,7 +13,6 @@ class Wire {
   has $!socket;
 
   #-----------------------------------------------------------------------------
-  #
   method query (
     MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
     BSON::Document:D $qdoc, $projection?, :$flags, Int :$number-to-skip,
@@ -111,7 +110,6 @@ class Wire {
     my $client;
     my BSON::Document $result;
 
-say "Get more 0: ", $server.name;
     try {
 
       ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
@@ -127,17 +125,13 @@ say "Get more 0: ", $server.name;
       # Read 4 bytes for int32 response size
       #
       my Buf $size-bytes = self!get-bytes(4);
-say "Get more 1: ", $size-bytes.perl;
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
-say "Get more 2: total size = $response-size + 4";
 
       # Receive remaining response bytes from socket. Prefix it with the already
       # read bytes and decode. Return the resulting document.
       #
       my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
-say "Get more 3:";
       $result = $d.decode-reply($server-reply);
-say "Get more 4";
 
 # TODO check if cursorID matches (if present)
 
