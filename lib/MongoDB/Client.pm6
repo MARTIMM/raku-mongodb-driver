@@ -309,7 +309,7 @@ say 'acq 2';
     if $h.defined and $h<server> {
       info-message("Server $h<server>.name() selected");
     }
-    
+
     else {
       error-message('No typed server selected');
     }
@@ -344,7 +344,7 @@ say 'acq 2';
     if ?$msname {
       info-message("Master server $msname selected");
     }
-    
+
     else {
       error-message('No master server selected');
     }

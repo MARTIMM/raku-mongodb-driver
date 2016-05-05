@@ -37,3 +37,28 @@ Error message on read(find)
   $err => "not master and slaveOk=false",
   code => 13435
 
+
+--------------------------------------------------------------------------------
+Initialized replica server master
+
+  setName => "first_replicate",
+  setVersion => 1,
+  ismaster => Bool::True,
+  secondary => Bool::False,
+  hosts => [
+    "localhost:65001",
+  ],
+  primary => "localhost:65001",
+  tags => BSON::Document.new((
+    use => "testing",
+    name => "default-server",
+  )),
+  me => "localhost:65001",
+  electionId => BSON::ObjectId.new(:string('0x94042b57a506e23c40471600')),
+  maxBsonObjectSize => 16777216,
+  maxMessageSizeBytes => 48000000,
+  maxWriteBatchSize => 1000,
+  localTime => DateTime.new(48312,10,14,9,21,56,:timezone(7200)),
+  maxWireVersion => 3,
+  minWireVersion => 0,
+  ok => 1e0,
