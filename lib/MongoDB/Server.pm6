@@ -126,7 +126,9 @@ class Server {
             else {
 
               # Must not be any type of replicaset server
-              if $mdata<isreplicaset>:exists {
+              if $mdata<isreplicaset>:exists
+                 or $mdata<setName>:exists
+                 or $mdata<primary>:exists {
                 $server-status = MongoDB::C-REJECTED-SERVER;
               }
 
