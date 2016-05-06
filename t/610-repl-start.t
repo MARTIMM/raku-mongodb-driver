@@ -12,8 +12,8 @@ use MongoDB::Config;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my Hash $config = MongoDB::Config.instance.config;
@@ -93,7 +93,6 @@ subtest {
     :needed-state(MongoDB::C-REPLICA-PRE-INIT)
   );
 
-say "Server: ", $server.perl;
   is $server.get-status, MongoDB::C-REPLICA-PRE-INIT,
      "Selected server is in replica initialization state";
 
@@ -101,7 +100,7 @@ say "Server: ", $server.perl;
   my MongoDB::Database $db-admin = $client.database('admin');
 
   my BSON::Document $doc = $database.run-command: (isMaster => 1,), :$server;
-  ok $doc<isreplicaset>, 'Is a replica set server';
+  ok $doc<isreplicaset>, 'Is a pre-init replica set server';
 
   nok $doc<setName>:exists, 'Name not set';
 
@@ -127,7 +126,7 @@ say "Server: ", $server.perl;
   ok $doc<setName>:exists, 'Name now set';
   is $doc<setName>, $rs1-s2, 'Name ok';
   is $doc<setVersion>, 1, 'Repl set version 1';
-  ok $doc<ismaster>, 'Sserver is master';
+  ok $doc<ismaster>, 'Server is master';
   nok $doc<secondary>, 'And not secondary';
 
 }, "Replica servers initialization and modification";
@@ -149,7 +148,6 @@ subtest {
 
   # Get server info, can now be done without server spec. Get the repl version
   my BSON::Document $doc = $database.run-command: (isMaster => 1,),;
-  ok $doc<isreplicaset>, 'Is a replica set server';
 
   # Change server data and update version
   my Int $new-version = $doc<setVersion> + 1;
@@ -178,21 +176,6 @@ subtest {
 
 }, "Replica servers update replica data";
 
-sleep 3;
-
-done-testing;
-exit(0);
-
-=finish
-
-
-
-my MongoDB::Client $client;
-my MongoDB::Server $server;
-my MongoDB::Database $database;
-my MongoDB::Database $db-admin;
-my BSON::Document $req;
-my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 # Cleanup
 #

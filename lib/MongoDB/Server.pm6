@@ -86,7 +86,7 @@ class Server {
             if $!uri-data<options><replicaSet> {
 
               # Is the server in a replicaset
-              if $mdata<isreplicaset> and $mdata<setName> {
+              if $mdata<isreplicaset>:!exists and $mdata<setName> {
 
                 # Is the server in the replicaset matching the callers request
                 if $mdata<setName> eq $!uri-data<options><replicaSet> {
@@ -95,7 +95,7 @@ class Server {
                     $server-status = MongoDB::C-REPLICASET-PRIMARY;
                   }
 
-                  elsif $mdata<issecondary> {
+                  elsif $mdata<secondary> {
                     $server-status = MongoDB::C-REPLICASET-PRIMARY;
                   }
 

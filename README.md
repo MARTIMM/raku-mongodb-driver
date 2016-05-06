@@ -187,7 +187,7 @@ This is done now. The Client.instance method will only accept uri which will be 
 * The blogs [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116)
 and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read conserns. What I want to provide is the following server situations;
   * Single server. The simplest of situations.
-  * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send commands to when it is about reading with the risk that the particular server (a secondary server) is not up to date.
+  * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to with the risk that the particular server (a secondary server) is not up to date.
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. It should be possible to have a mix of all this when there are several databases with collections which cannot be merged onto one server, replica set or otherwise. A user must have a way to send the task to one or the other server/replicaset/shard.
 
@@ -203,6 +203,7 @@ x|111-Client|Standalone server brought down and revived, Client object must foll
 x||Shutdown server and restart while inserting records
 x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.
 x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.
+x||Replicaset pre-init initialization to master server and update master info
 ||Replicaset server master in uri, must search for secondaries and add them
 ||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
 
@@ -321,7 +322,7 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
   * w - corresponds to w in the class definition.
   * journal - corresponds to journal in the class definition.
   * wtimeoutMS - corresponds to wtimeoutMS in the class definition.
-
+* Take tests from 610 into Control.pm6 for replicaset initialization.
 
 
 ## CHANGELOG
@@ -336,6 +337,7 @@ change at any time. The public API should not be considered stable.*
   * bugfix in uri. FQDN hostnames couldn't have dots.
   * Added tests to test Client object behaviour.
   * select-server() in Client split in multis.
+  * Replicaset pre-init intialization.
 * 0.28.11
   * Facturing out code from test environment into MongoDB::Server::Control to have a module to control a server like startup, shutdown, converting a standalone server to a replica server or something else.
   * Using a new module Config::TOML to control server startup.

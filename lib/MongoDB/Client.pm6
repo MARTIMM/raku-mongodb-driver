@@ -108,12 +108,12 @@ class Client is MongoDB::ClientIF {
 
 #say 'acq 0';
           $!servers-semaphore.acquire;
-say 'acq 1';
+#say 'acq 1';
           my Hash $prev-server = $!servers{$server-name}:exists
                                  ?? $!servers{$server-name}
                                  !! Nil;
           $!servers-semaphore.release;
-say 'acq 2';
+#say 'acq 2';
 
           # Check if server was managed before
           if $prev-server.defined {
@@ -141,7 +141,7 @@ say 'acq 2';
               $!servers-semaphore.acquire;
               $prev-server = $!servers{$server-name}:exists
                              ?? $!servers{$server-name}
-                             !! {};
+                             !! Nil;
               $!servers-semaphore.release;
 
               # Only when data is ok
@@ -166,13 +166,18 @@ say 'acq 2';
 #              if $h.defined {
 
                 $!servername-semaphore.acquire;
-                my $sname = $!master-servername // '';
+                my $sname = $!master-servername;
                 $!servername-semaphore.release;
+#say 'Master server name: ', $sname // '-';
+#say 'Master prev stat: ', $prev-server<status>:exists 
+                          ?? $prev-server<status>
+                          !! '-';
 
                 # Don't ever modify a rejected server
                 if $prev-server<status>:exists
                    and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
 
+#say "H0: $h<status>, ", $sname // '-', ', ', $server.name;
                   $h<status> = MongoDB::C-REJECTED-SERVER;
                 }
 
@@ -180,6 +185,7 @@ say 'acq 2';
                 elsif $h<status> ~~ MongoDB::C-DOWN-SERVER 
                       and $sname eq $server.name {
 
+#say "H1: $h<status>, ", $sname // '-', ', ', $server.name;
                   $!servername-semaphore.acquire;
                   $!master-servername = Nil;
                   $!servername-semaphore.release;
@@ -190,21 +196,27 @@ say 'acq 2';
                   MongoDB::C-MASTER-SERVER |
                   MongoDB::C-REPLICASET-PRIMARY
                 ) {
-
-                  # Not defined, be the first master server
-                  if ! ?$sname {
-                    $!servername-semaphore.acquire;
-                    $!master-servername = $server.name;
-                    $!servername-semaphore.release;
-                  }
-
+#say "H2: $h<status>, ", $sname // '-', ', ', $server.name;
                   # Is defined, be the second and rejected master server
-                  else {
+                  if $sname.defined {
                     if $sname ne $server.name {
                       $h<status> = MongoDB::C-REJECTED-SERVER;
                       error-message("Server $server.name() rejected, second master");
                     }
                   }
+
+                  # Not defined, be the first master server
+                  else {
+#say "H3: $h<status>, ", $sname // '-', ', ', $server.name;
+                    $!servername-semaphore.acquire;
+                    $!master-servername = $server.name;
+                    $!servername-semaphore.release;
+                  }
+                }
+                
+                else {
+                
+#say "H4: $h<status>, ", $sname // '-', ', ', $server.name;
                 }
 
 #TODO $!master-servername must be able to change when server roles are changed
