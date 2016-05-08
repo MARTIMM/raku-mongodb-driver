@@ -331,13 +331,15 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.29.0
+  * Replicaset pre-init intialization.
+  * Add servers to replica set
 * 0.28.12
   * Changing monitoring to be a Supplies instead of using channels.
   * Major rewrite of Client, Server and Monitor modules.
   * bugfix in uri. FQDN hostnames couldn't have dots.
   * Added tests to test Client object behaviour.
   * select-server() in Client split in multis.
-  * Replicaset pre-init intialization.
 * 0.28.11
   * Facturing out code from test environment into MongoDB::Server::Control to have a module to control a server like startup, shutdown, converting a standalone server to a replica server or something else.
   * Using a new module Config::TOML to control server startup.

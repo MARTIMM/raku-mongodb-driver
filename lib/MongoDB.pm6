@@ -16,7 +16,7 @@ sub EXPORT { {
   }
 };
 
-package MongoDB:ver<0.28.12> {
+package MongoDB:ver<0.29.0> {
 
   #-----------------------------------------------------------------------------
   # Status values of Server.

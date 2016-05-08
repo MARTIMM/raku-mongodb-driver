@@ -19,7 +19,7 @@
     "MongoDB::ClientIF":                "lib/MongoDB/ClientIF.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
     "MongoDB::CollectionIF":            "lib/MongoDB/CollectionIF.pm6",
-    "MongoDB::Config":                  "lib/MongoDB/Config.pm6"
+    "MongoDB::Config":                  "lib/MongoDB/Config.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
     "MongoDB::DatabaseIF":              "lib/MongoDB/DatabaseIF.pm6",
@@ -35,5 +35,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "v0.28.12"
+  "version": "v0.29.0"
 }
