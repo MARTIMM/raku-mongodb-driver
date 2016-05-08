@@ -33,6 +33,8 @@ unless 'Sandbox'.IO ~~ :d {
   my Str $config-text = Q:qq:to/EOCONFIG/;
 
     # Configuration file for the servers in the Sandbox
+    # Settings are specifically for test situations and not for deployment
+    # situations!
     #
     [Account]
       user = 'test_user'
@@ -45,6 +47,8 @@ unless 'Sandbox'.IO ~~ :d {
       nojournal = true
       fork = true
       quiet = true
+      smallfiles = true
+      oplogSize = 128
 
     EOCONFIG
 

@@ -137,7 +137,7 @@ class Server::Monitor is Supplier {
 
 #say "\nMonitor info: ", $doc.perl;
 
-              info-message(
+              debug-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
               );
               self.emit( {

@@ -39,7 +39,7 @@ Error message on read(find)
 
 
 --------------------------------------------------------------------------------
-Initialized replica server master
+Initialized replica server primary
 
   setName => "first_replicate",
   setVersion => 1,
@@ -59,6 +59,57 @@ Initialized replica server master
   maxMessageSizeBytes => 48000000,
   maxWriteBatchSize => 1000,
   localTime => DateTime.new(48312,10,14,9,21,56,:timezone(7200)),
+  maxWireVersion => 3,
+  minWireVersion => 0,
+  ok => 1e0,
+
+
+Initialized replica server primary with two secondary servers
+
+  setName => "first_replicate",
+  setVersion => 3,
+  ismaster => Bool::True,
+  secondary => Bool::False,
+  hosts => [
+    "localhost:65001",
+    "localhost:65000",
+    "localhost:65002",
+  ],
+  primary => "localhost:65001",
+  tags => BSON::Document.new((
+    name => "server2",
+  )),
+  me => "localhost:65001",
+  electionId => BSON::ObjectId.new(:string('0x22182f57a506e2f433a08b00')),
+  maxBsonObjectSize => 16777216,
+  maxMessageSizeBytes => 48000000,
+  maxWriteBatchSize => 1000,
+  localTime => DateTime.new(48321,4,2,9,40,41,:timezone(7200)),
+  maxWireVersion => 3,
+  minWireVersion => 0,
+  ok => 1e0,
+
+
+Initialized replica server secondary
+
+  setName => "first_replicate",
+  setVersion => 3,
+  ismaster => Bool::False,
+  secondary => Bool::True,
+  hosts => [
+    "localhost:65001",
+    "localhost:65000",
+    "localhost:65002",
+  ],
+  primary => "localhost:65001",
+  tags => BSON::Document.new((
+    name => "server1",
+  )),
+  me => "localhost:65000",
+  maxBsonObjectSize => 16777216,
+  maxMessageSizeBytes => 48000000,
+  maxWriteBatchSize => 1000,
+  localTime => DateTime.new(48321,6,9,8,27,19,:timezone(7200)),
   maxWireVersion => 3,
   minWireVersion => 0,
   ok => 1e0,

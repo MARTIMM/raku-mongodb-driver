@@ -13,71 +13,41 @@ set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client;
-my MongoDB::Database $database;
-my MongoDB::Database $db-admin;
-#my MongoDB::Collection $collection;
-my BSON::Document $req;
-my BSON::Document $doc;
-
-# Stop any left over servers
-#
-for @$Test-support::server-range -> $server-number {
-
-  ok $Test-support::server-control.stop-mongod("s$server-number"),
-     "Server $server-number stopped";
-}
-
-my Hash $config = MongoDB::Config.instance.config;
-my Str $rs2-s1 = $config<mongod><s1><replicate2><replSet>;
-my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
-my Str $rs2-s3 = $config<mongod><s3><replicate2><replSet>;
-my Str $host = 'localhost';
-my Int $p1 = $Test-support::server-control.get-port-number('s1');
-my Int $p2 = $Test-support::server-control.get-port-number('s2');
-my Int $p3 = $Test-support::server-control.get-port-number('s3');
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  ok $Test-support::server-control.start-mongod( 's1', 'replicate2'),
-     "Server 1 $p1 started in replica set '$rs2-s1'";
+  my Hash $config = MongoDB::Config.instance.config;
+  my Str $host = 'localhost';
 
-  ok $Test-support::server-control.start-mongod( 's2', 'replicate1'),
-     "Server 2 $p2 started in replica set '$rs1-s2'";
+  my Int $p1 = $Test-support::server-control.get-port-number('s1');
+  my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
+  my MongoDB::Client $c-s1 .= new(:uri("mongodb://:$p1/?replicaSet=$rs1-s1"));
+  my MongoDB::Server $s-s1 = $c-s1.select-server;
+  nok $s-s1.defined, 'No server defined';
+  $s-s1 = $c-s1.select-server(:needed-state(MongoDB::C-REPLICASET-SECONDARY));
+  ok $s-s1.defined, 'Secondary server found';
+  is $s-s1.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 1 is secondary';
 
-  ok $Test-support::server-control.start-mongod( 's3', 'replicate2'),
-     "Server 3 $p3 started in replica set '$rs2-s3'";
+  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+  my MongoDB::Client $c-s2 .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Server $s-s2 = $c-s2.select-server;
+  ok $s-s2.defined, 'Server selected';
+  is $s-s2.get-status, MongoDB::C-REPLICASET-PRIMARY, 'Server 2 is primary';
 
-}, "Servers start";
+  my Int $p3 = $Test-support::server-control.get-port-number('s3');
+  my Str $rs1-s3 = $config<mongod><s3><replicate1><replSet>;
+  my MongoDB::Client $c-s3 .= new(:uri("mongodb://:$p3/?replicaSet=$rs1-s3"));
+  my MongoDB::Server $s-s3 = $c-s3.select-server;
+  nok $s-s3.defined, 'No server defined';
+  $s-s3 = $c-s3.select-server(:needed-state(MongoDB::C-REPLICASET-SECONDARY));
+  ok $s-s3.defined, 'Secondary server found';
+  is $s-s3.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 3 is secondary';
 
-#-------------------------------------------------------------------------------
-subtest {
+#sleep 10;
 
-  $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=$rs1-s2"));
-  while $client.nbr-left-actions -> $v { say "left $v"; sleep 1; }
-  is $client.nbr-servers, 1, 'One server found';
-  my $server = $client.select-server;
-  is $server.name, "localhost:$p2", "Servername $server.name()";
-
-  $client .= new(:uri("mongodb://:$p1,:$p3/?replicaSet=$rs2-s1"));
-  while $client.nbr-left-actions -> $v { say "left $v"; sleep 1; }
-  is $client.nbr-servers, 2, 'Two servers found';
-#  my $server = $client.select-server;
-#  is $server.name, "localhost:$p2", "Servername $server.name()";
-
-#`{{
-  $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=unknownRS"));
-  while $client.nbr-left-actions { sleep 1; }
-  is $client.nbr-servers, 0, 'No server found';
-
-  $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=$rs1-s2"));
-  while $client.nbr-left-actions { sleep 1; }
-  is $client.nbr-servers, 1, 'One server found';
-  $server = $client.select-server;
-  is $server.name, "localhost:$p2", "Servername $server.name()";
-}}
-}, "Servers access";
+}, "Client behaviour";
 
 #-------------------------------------------------------------------------------
 # Cleanup

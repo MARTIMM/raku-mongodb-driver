@@ -64,7 +64,7 @@ subtest {
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICASET-PRIMARY,
      "Server localhost:$p2 replicaset primary";
 
-}, "Servers access";
+}, "Client behaviour";
 
 #-------------------------------------------------------------------------------
 # Cleanup

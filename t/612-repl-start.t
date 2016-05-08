@@ -5,82 +5,83 @@ use Test;
 use Test-support;
 use MongoDB;
 use MongoDB::Client;
+use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Config;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
+set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client;
-my MongoDB::Database $db-admin;
-my BSON::Document $req;
-my BSON::Document $doc;
-
-# Stop any left over servers
-#
-for @$Test-support::server-range -> $server-number {
-
-  ok $Test-support::server-control.stop-mongod("s$server-number"),
-     "Server $server-number stopped";
-}
-
-my Hash $config = MongoDB::Config.instance.config;
-my Str $rs2-s1 = $config<mongod><s1><replicate2><replSet>;
-my Str $rs2-s3 = $config<mongod><s3><replicate2><replSet>;
-my Str $host = 'localhost';
-my Int $p1 = $Test-support::server-control.get-port-number('s1');
-my Int $p3 = $Test-support::server-control.get-port-number('s3');
-
 #-------------------------------------------------------------------------------
 subtest {
 
-  ok $Test-support::server-control.start-mongod( "s1", 'replicate2'),
-     "Server 1 started in replica set '$rs2-s1'";
+  my Str $host = 'localhost';
+  my Hash $config = MongoDB::Config.instance.config;
 
-  ok $Test-support::server-control.start-mongod( "s3", 'replicate2'),
-     "Server 3 started in replica set '$rs2-3'";
+  my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
+  diag "Start server 1 pre-init in replicaset $rs1-s1";
+  my Int $p1 = $Test-support::server-control.get-port-number('s1');
+  ok $Test-support::server-control.stop-mongod("s1"), "Server 1 stopped";
+  ok $Test-support::server-control.start-mongod( "s1", 'replicate1'),
+     "Server 1 started in replica set '$rs1-s1'";
 
-}, "Servers start";
+  my Str $rs1-s3 = $config<mongod><s3><replicate1><replSet>;
+  diag "Start server 2 pre-init in replicaset $rs1-s3";
+  my Int $p3 = $Test-support::server-control.get-port-number('s3');
+  ok $Test-support::server-control.stop-mongod("s3"), "Server 3 stopped";
+  ok $Test-support::server-control.start-mongod( "s3", 'replicate1'),
+     "Server 3 started in replica set '$rs1-s3'";
 
-#-------------------------------------------------------------------------------
-subtest {
 
-  $client .= new(:uri("mongodb://:$p1"));
-  while $client.nbr-left-actions { sleep 1; }
-  is $client.nbr-servers, 1, "Server at $p1 found";
-  $db-admin = $client.database('admin');
+  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+  diag "Connect to server replica primary of $rs1-s2";
+  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Server $server = $client.select-server;
+  ok $server.defined, "Server $server.name() seleced";
+  is $server.get-status, MongoDB::C-REPLICASET-PRIMARY, 'Server 2 is primary';
 
-  $doc = $db-admin.run-command: (isMaster => 1);
-  ok $doc<isreplicaset>, 'Is a replica set server';
-  nok $doc<setName>:exists, 'Name not set';
+  diag "Get server info. Get the repl version and update version";
+  my MongoDB::Database $db-admin = $client.database('admin');
+  my BSON::Document $doc = $db-admin.run-command: (isMaster => 1,),;
+  my Int $new-version = $doc<setVersion> + 1;
 
-  $doc = $db-admin.run-command: (
-    replSetInitiate => (
-      _id => $rs2-s1,
-      members => [ (
-          _id => 0,
-          host => "$host:$p1",
-          tags => ( name => 'server1', )
-        ),(
-          _id => 1,
-          host => "$host:$p3",
-          tags => ( name => 'server3', )
-        ),
-      ]
-    )
+  $doc = $db-admin.run-command( (
+      replSetReconfig => (
+        _id => $rs1-s2,
+        version => $new-version,
+        members => [ (
+            _id => 0,
+            host => "$host:$p2",
+            tags => ( name => 'server2', )
+          ),(
+            _id => 1,
+            host => "$host:$p1",
+            tags => ( name => 'server1', )
+          ),(
+            _id => 2,
+            host => "$host:$p3",
+            tags => ( name => 'server3', )
+          ),
+        ]
+      ),
+    ),
   );
 
-#  sleep 1;
-  $doc = $db-admin.run-command: (isMaster => 1);
-say $doc.perl;
+  ok ?$doc<ok>, 'Servers are added';
+#say $doc.perl;
 
-  ok $doc<setName>:exists, 'Name now set';
-  is $doc<setName>, $rs2-s1, "Name $rs2-s1";
-  is $doc<setVersion>, 1, 'Repl set version 1';
+  sleep 2;
+  $doc = $db-admin.run-command: (isMaster => 1,),;
+  is-deeply $doc<hosts>, ["localhost:65001","localhost:65000","localhost:65002",],
+            "servers in replica: {$doc<hosts>}";
+  
+#say $doc.perl;
+}, "Adding replica servers";
 
-}, "Replica servers initialization and modification";
+#sleep 15;
 
 #-------------------------------------------------------------------------------
 # Cleanup

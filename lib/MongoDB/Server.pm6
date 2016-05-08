@@ -96,7 +96,7 @@ class Server {
                   }
 
                   elsif $mdata<secondary> {
-                    $server-status = MongoDB::C-REPLICASET-PRIMARY;
+                    $server-status = MongoDB::C-REPLICASET-SECONDARY;
                   }
 
                   # ... Arbiter etc

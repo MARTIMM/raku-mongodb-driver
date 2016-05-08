@@ -129,7 +129,7 @@ subtest {
   ok $doc<ismaster>, 'Server is master';
   nok $doc<secondary>, 'And not secondary';
 
-}, "Replica servers initialization and modification";
+}, "Replica server initialization and modification";
 
 #-------------------------------------------------------------------------------
 subtest {

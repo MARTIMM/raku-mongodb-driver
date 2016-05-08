@@ -213,9 +213,9 @@ class Client is MongoDB::ClientIF {
                     $!servername-semaphore.release;
                   }
                 }
-                
+
                 else {
-                
+
 #say "H4: $h<status>, ", $sname // '-', ', ', $server.name;
                 }
 
