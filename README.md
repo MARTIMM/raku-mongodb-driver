@@ -204,6 +204,8 @@ x||Shutdown server and restart while inserting records
 x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.
 x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.
 x||Replicaset pre-init initialization to master server and update master info
+x|611-Client|Replicaserver rejected when there is no replica option in uri
+x||Standalone server rejected when used in mix with replica option defined
 ||Replicaset server master in uri, must search for secondaries and add them
 ||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
 
