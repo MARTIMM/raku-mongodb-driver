@@ -19,31 +19,42 @@ sub EXPORT { {
 package MongoDB:ver<0.29.0> {
 
   #-----------------------------------------------------------------------------
-  # Status values of Server.
+  # Client object topology types
+  #
+  subset TopologyType of Int where 40 <= $_ <= 43;
+
+  constant C-UNKNOWN-TPLGY                 = 40;   # Start value
+  constant C-STANDALONE-TPLGY              = 41;   # Standalone, one server
+  constant C-REPLSET-WITH-PRIMARY-TPLGY    = 42;   # Replicaset with prim
+  constant C-REPLSET-NO-PRIMARY-TPLGY      = 43;   # Replicaset without prim
+
+  #-----------------------------------------------------------------------------
+  # Status values of a Server.object
   #
   subset ServerStatus of Int where 10 <= $_ <= 22;
 
-  constant C-UNKNOWN-SERVER             = 10;
-  constant C-NON-EXISTENT-SERVER        = 11;
-  constant C-DOWN-SERVER                = 12;
-  constant C-RECOVERING-SERVER          = 13;
+  constant C-UNKNOWN-SERVER          = 10;   # Start value
+  constant C-NON-EXISTENT-SERVER     = 11;   # DNS problems
+  constant C-DOWN-SERVER             = 12;   # Connection problems
+  constant C-RECOVERING-SERVER       = 13;   # -
 
-  constant C-REJECTED-SERVER            = 14;
-  constant C-GHOST-SERVER               = 15;
+  constant C-REJECTED-SERVER         = 14;   # Client status of Server object
+  constant C-GHOST-SERVER            = 15;   # -
 
-  constant C-REPLICA-PRE-INIT           = 16;
-  constant C-REPLICASET-PRIMARY         = 17;
-  constant C-REPLICASET-SECONDARY       = 18;
-  constant C-REPLICASET-ARBITER         = 19;
+  constant C-REPLICA-PRE-INIT        = 16;   # Standalone start with option
+  constant C-REPLICASET-PRIMARY      = 17;   # Primary after replSetInitiate
+  constant C-REPLICASET-SECONDARY    = 18;   # Secondary after replSetReconfig
+  constant C-REPLICASET-ARBITER      = 19;   # -
 
-  constant C-SHARDING-SERVER            = 20;
-  constant C-MASTER-SERVER              = 21;
-  constant C-SLAVE-SERVER               = 22;
-
+  constant C-SHARDING-SERVER         = 20;   # -
+  constant C-MASTER-SERVER           = 21;   # Standalone master
+  constant C-SLAVE-SERVER            = 22;   # -
 
   #-----------------------------------------------------------------------------
   # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
   #
+  subset WireOpcode of Int where ($_ == 1 or $_ == 1000 or 2001 <= $_ <= 2007);
+
   constant C-OP-REPLY           = 1;    # Reply to a client request.responseTo is set
   constant C-OP-MSG             = 1000; # generic msg command followed by a string. deprecated
   constant C-OP-UPDATE          = 2001; # update document
@@ -57,7 +68,8 @@ package MongoDB:ver<0.29.0> {
   #-----------------------------------------------------------------------------
   # Query flags
   #
-  #
+  subset QueryFindFlags of Int where $_ ~~ any(0x02,0x04...0x80);
+
   constant C-QF-RESERVED        = 0x01;
   constant C-QF-TAILABLECURSOR  = 0x02; # corresponds to TailableCursor. Tailable means cursor is not closed when the last data is retrieved. Rather, the cursor marks the final object\u2019s position. You can resume using the cursor later, from where it was located, if more data were received. Like any \u201clatent cursor\u201d, the cursor may become invalid at some point (CursorNotFound) \u2013 for example if the final object it references were deleted.
   constant C-QF-SLAVEOK         = 0x04; # corresponds to SlaveOk.Allow query of replica slave. Normally these return an error except for namespace \u201clocal\u201d.
