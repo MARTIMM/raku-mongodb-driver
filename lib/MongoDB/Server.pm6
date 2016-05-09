@@ -42,22 +42,28 @@ class Server {
     Int :$max-sockets where $_ >= 3 = 3,
     Hash :$uri-data,
   ) {
+say "SB0";
     # Save name andd port of the server
     $!server-name = $host;
     $!server-port = $port;
 
+say "SB1: $host, $port";
     # Define number of available sockets and its semaphore
     $!max-sockets = $max-sockets;
     $!server-socket-selection .= new(1);
 #TODO semaphores using $!max-sockets
 
+say "SB2";
     # Set status to its default starting status
     $!server-status = MongoDB::C-UNKNOWN-SERVER;
     $!status-semaphore .= new(1);
 
+say "SB3: ", $uri-data.perl;
     $!uri-data = $uri-data // %();
 
+say "SB4";
     $!server-monitor .= new;
+say "SB5 done";
   }
 
   #---------------------------------------------------------------------------
@@ -67,16 +73,20 @@ class Server {
     # Don't start monitoring if dns failed to return an ip address
     if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
 
+say "si 0";
       # Initialize and start monitoring
       $!server-monitor.monitor-init(:server(self));
 
+say "si 1";
       # Start monitoring
       $!monitor-promise = $!server-monitor.monitor-server;
       return unless $!monitor-promise.defined;
 
+say "si 2";
       # Tap into monitor data
       self.tap-monitor( -> Hash $monitor-data {
 
+say "si 3";
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
