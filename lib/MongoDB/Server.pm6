@@ -5,12 +5,15 @@ use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 use BSON::Document;
 
+#-------------------------------------------------------------------------------
 unit package MongoDB;
 
+#-------------------------------------------------------------------------------
 class Server {
 
+  # Used by Socket
   has Str $.server-name;
-  has Int $.server-port;
+  has MongoDB::PortType $.server-port;
 
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
@@ -18,75 +21,97 @@ class Server {
   has Hash $!uri-data;
 
   # Variables to control infinite server monitoring actions
-  has MongoDB::Server::Monitor $.server-monitor;
+  has MongoDB::Server::Monitor $!server-monitor;
   has Supply $!monitor-supply;
   has Promise $!monitor-promise;
 
-  has Int $.max-sockets;
+  has MongoDB::SocketLimit $!max-sockets;
   has MongoDB::Server::Socket @!sockets;
   has Semaphore $!server-socket-selection;
+#TODO semaphores using $!max-sockets
 
   # Server status. Must be protected by a semaphore because of a thread
-  # handling monitoring data
-  #
+  # handling monitoring data.
+  # Set status to its default starting status
   has MongoDB::ServerStatus $!server-status;
   has Semaphore $!status-semaphore;
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
   # must be done in the background so Client starts this process in a thread.
   #
-  submethod BUILD (
-    Str:D :$host!,
-    Int:D :$port! where (0 <= $_ <= 65535),
-    Int :$max-sockets where $_ >= 3 = 3,
-    Hash :$uri-data,
-  ) {
-say "SB0";
-    # Save name andd port of the server
-    $!server-name = $host;
-    $!server-port = $port;
+#`{{
+  method new ( |c ) {
 
-say "SB1: $host, $port";
+say "New 0: ", self.defined;
+    my $x = MongoDB::Server.bless(|c);
+say "New 1: ", $x.perl;
+    $x;
+  }
+
+  method BUILDALL ( |c ) {
+
+say "Buildall 0: ", self.defined, ', ', c.perl;
+    self.BUILD(|c);
+say "Buildall 1: ", self.defined;
+  }
+}}
+
+  submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
+    MongoDB::SocketLimit :$max-sockets = 3
+  ) {
+
+#my $str = '';
+#if 1 {
+
+#    say ENTER { "Enter BUILD 2 block\n" ~ dump-callframe; }
+say "SB0";
+
+    # Save name andd port of the server
+    ( my $host, my $port) = split( ':', $server-name);
+    $!server-name = $host;
+    $!server-port = $port.Int;
+
+    $!uri-data = $uri-data;
+
+    $!server-monitor .= new(:server(self));
+
     # Define number of available sockets and its semaphore
     $!max-sockets = $max-sockets;
-    $!server-socket-selection .= new(1);
-#TODO semaphores using $!max-sockets
 
-say "SB2";
-    # Set status to its default starting status
+    @!sockets = ();
+    $!server-socket-selection .= new(1);
+
     $!server-status = MongoDB::C-UNKNOWN-SERVER;
     $!status-semaphore .= new(1);
 
-say "SB3: ", $uri-data.perl;
-    $!uri-data = $uri-data // %();
-
-say "SB4";
-    $!server-monitor .= new;
 say "SB5 done";
+#LEAVE { $str = "Leave BUILD 2 block\n" ~ dump-callframe(12); }
+#}
+#say $str;
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Server initialization 
   method server-init ( ) {
 
+#ENTER { say "Enter server-init block"; dump-callframe; }
+say "si 0a";
+
     # Don't start monitoring if dns failed to return an ip address
-    if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
+#    if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
 
-say "si 0";
+say "si 0b";
       # Initialize and start monitoring
-      $!server-monitor.monitor-init(:server(self));
+#      $!server-monitor.monitor-init(:server(self));
 
-say "si 1";
       # Start monitoring
-      $!monitor-promise = $!server-monitor.monitor-server;
+      $!monitor-promise = $!server-monitor.start-monitor;
       return unless $!monitor-promise.defined;
 
-say "si 2";
       # Tap into monitor data
       self.tap-monitor( -> Hash $monitor-data {
 
-say "si 3";
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
@@ -173,12 +198,13 @@ say "si 3";
           $!status-semaphore.acquire;
           $!server-status = $server-status;
           $!status-semaphore.release;
+say "si 4, $server-status";
         }
       );
-    }
+#    }
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method get-status ( --> MongoDB::ServerStatus ) {
 
     $!status-semaphore.acquire;
@@ -187,21 +213,22 @@ say "si 3";
     $server-status;
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Make a tap on the Supply. Use act() for this so we are sure that only this
   # code runs whithout any other parrallel threads.
   #
-  method tap-monitor ( |c ) {
+  method tap-monitor ( |c --> Tap ) {
 
-    $!monitor-supply = $!server-monitor.Supply unless $!monitor-supply.defined;
+    $!monitor-supply = $!server-monitor.get-supply
+       unless $!monitor-supply.defined;
 #    $!monitor-supply.act(|c);
     $!monitor-supply.tap(|c);
   }
 
-  #---------------------------------------------------------------------------
-  method stop-monitor ( |c ) {
+  #-----------------------------------------------------------------------------
+  method stop-monitor ( ) {
 
-    $!server-monitor.done(c);
+    $!server-monitor.done;
 # Doesn't seem to work
 #    if $!monitor-promise.defined {
 #      $!monitor-promise.result;
@@ -209,7 +236,7 @@ say "si 3";
 #    }
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Search in the array for a closed Socket.
   #
   method get-socket ( --> MongoDB::Server::Socket ) {
@@ -231,7 +258,7 @@ say "si 3";
 
     # Setup a try block to catch socket new() exceptions
     #
-    try {
+#    try {
 
       # If none is found insert a new Socket in the array
       #
@@ -248,42 +275,74 @@ say "si 3";
 
       # Return a usable socket which is opened. The user has the responsibility
       # to close the socket. Otherwise there will be new sockets created every
-      # time get-socket() is called.
+      # time get-socket() is called. When limit is reached, an exception
+      # is thrown.
       #
       $sock.open();
 
-      CATCH {
-        default {
-          die .message;
-        }
-      }
+#      CATCH {
+#say "Error server: ", $_;
+#        default {
+#          die .message;
+#        }
+#      }
 
       $!server-socket-selection.acquire;
       @!sockets.push($sock);
       $!server-socket-selection.release;
-    }
+#    }
 
     $!server-socket-selection.release;
     return $sock;
   }
 
-  #---------------------------------------------------------------------------
-  #
-  method perl ( --> Str ) {
-    return [~] 'MongoDB::Server.new(', ':host(', $.server-name, '), :port(',
-               $.server-port, '))';
-  }
-
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   #
   method name ( --> Str ) {
-    return [~] $.server-name, ':', $.server-port;
+
+    return [~] $!server-name // '-', ':', $!server-port // '-';
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   #
   method set-max-sockets ( Int $max-sockets where $_ >= 3 ) {
     $!max-sockets = $max-sockets;
   }
 }
 
+
+#-------------------------------------------------------------------------------
+sub dump-callframe ( $fn-max = 10 --> Str ) {
+
+  my Str $dftxt = "\nDump call frame: \n";
+
+  my $fn = 1;
+  while my CallFrame $cf = callframe($fn) {
+#say $cf.perl;
+#say "TOP: ", $cf<TOP>:exists;
+
+    # End loop with the program that starts on line 1 and code object is
+    # a hollow shell.
+    #
+    if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
+      $cf = Nil;
+      last;
+    }
+
+    # Cannot pass sub THREAD-ENTRY either
+    #
+    if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
+      $cf = Nil;
+      last;
+    }
+
+    $dftxt ~= [~] "cf [$fn.fmt('%2d')]: ", $cf.line, ', ', $cf.code.^name,
+        ', ', ($cf.code.^can('name') ?? $cf.code.name !! '-'),
+         "\n         $cf.file()\n";
+
+    $fn++;
+    last if $fn > $fn-max;
+  }
+
+  $dftxt ~= "\n";
+}

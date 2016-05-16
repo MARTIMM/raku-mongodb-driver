@@ -3,6 +3,7 @@ use lib 't';
 
 use Test;
 use Test-support;
+
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
@@ -13,6 +14,7 @@ set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
+my MongoDB::Test-support $ts .= new;
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -20,12 +22,14 @@ subtest {
   my Hash $config = MongoDB::Config.instance.config;
   my Str $host = 'localhost';
 
-  my Int $p1 = $Test-support::server-control.get-port-number('s1');
+  my Int $p1 = $ts.server-control.get-port-number('s1');
   my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
   diag "checkout uri 'mongodb://:$p1/?replicaSet=$rs1-s1'";
   my MongoDB::Client $c-s1 .= new(:uri("mongodb://:$p1/?replicaSet=$rs1-s1"));
-  sleep 40;
+  my MongoDB::Server $s-s1 = $c-s1.select-server;
+#  sleep 5;
   is $c-s1.nbr-servers, 3, '3 servers in replica';
+#`{{
   my MongoDB::Server $s-s1 = $c-s1.select-server;
   ok $s-s1.defined, 'Server defined';
   is $s-s1.get-status, MongoDB::C-REPLICASET-PRIMARY,
@@ -34,7 +38,8 @@ subtest {
   ok $s-s1.defined, 'Secondary server found';
   is $s-s1.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 1 is secondary';
 
-#`{{
+
+
   my Int $p2 = $Test-support::server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
   diag "checkout uri 'mongodb://:$p2/?replicaSet=$rs1-s2'";

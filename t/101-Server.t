@@ -9,17 +9,21 @@ use MongoDB::Server;
 use MongoDB::Server::Socket;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
+
+my MongoDB::Test-support $ts .= new;
 
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 
+my MongoDB::Test-support $ts .= new;
+
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client = get-connection(:server(1));
+  $client = $ts.get-connection(:server(4));
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, 'Connection server available';
 

@@ -8,12 +8,14 @@ use MongoDB::Client;
 use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my Int $p1 = $Test-support::server-control.get-port-number('s1');
-my Int $p2 = $Test-support::server-control.get-port-number('s2');
+my MongoDB::Test-support $ts .= new;
+
+my Int $p1 = $ts.server-control.get-port-number('s1');
+my Int $p2 = $ts.server-control.get-port-number('s2');
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 

@@ -1,6 +1,6 @@
 use v6.c;
+
 use MongoDB;
-use MongoDB::DatabaseIF;
 use MongoDB::Collection;
 use BSON::Document;
 
@@ -10,17 +10,17 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   #
-  class Database is MongoDB::DatabaseIF {
+  class Database {
 
     has Str $.name;
-    has MongoDB::ClientIF $.client;
+    has MongoDB::ClientType $.client;
     has BSON::Document $.read-concern;
     has MongoDB::Collection $!cmd-collection;
 
     #---------------------------------------------------------------------------
     #
     submethod BUILD (
-      MongoDB::ClientIF:D :$client,
+      MongoDB::ClientType:D :$client,
       Str:D :$name,
       BSON::Document :$read-concern
     ) {
@@ -35,7 +35,7 @@ package MongoDB {
       #
       $!cmd-collection = self.collection( '$cmd', :$read-concern);
 
-      debug-message("create database $name");
+      trace-message("create database $name");
     }
 
     #---------------------------------------------------------------------------

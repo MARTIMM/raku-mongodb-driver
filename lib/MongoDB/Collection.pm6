@@ -1,8 +1,6 @@
 use v6.c;
 
 use MongoDB;
-use MongoDB::DatabaseIF;
-use MongoDB::CollectionIF;
 use MongoDB::Wire;
 use MongoDB::Cursor;
 
@@ -10,9 +8,9 @@ use MongoDB::Cursor;
 #
 package MongoDB {
 
-  class Collection is MongoDB::CollectionIF {
+  class Collection {
 
-    has MongoDB::DatabaseIF $.database;
+    has MongoDB::DatabaseType $.database;
     has Str $.name;
     has Str $.full-collection-name;
     has BSON::Document $.read-concern;
@@ -20,7 +18,7 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     submethod BUILD (
-      MongoDB::DatabaseIF:D :$database,
+      MongoDB::DatabaseType:D :$database,
       Str:D :$name,
       BSON::Document :$read-concern
     ) {
@@ -31,7 +29,7 @@ package MongoDB {
       $!database = $database;
       self!set-name($name) if ?$name;
 
-      debug-message("create collection $database.name()\.$name");
+      trace-message("create collection $database.name()\.$name");
     }
 
     #---------------------------------------------------------------------------

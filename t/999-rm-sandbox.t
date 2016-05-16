@@ -10,15 +10,17 @@ use MongoDB;
 #set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
+my MongoDB::Test-support $ts .= new;
+
 #-----------------------------------------------------------------------------
 #
-for @$Test-support::server-range -> $server-number {
+for $ts.server-range -> $server-number {
 
-  ok $Test-support::server-control.stop-mongod('s' ~ $server-number),
+  ok $ts.server-control.stop-mongod('s' ~ $server-number),
      "Server $server-number is stopped";
 }
 
-cleanup-sandbox();
+$ts.cleanup-sandbox();
 
 #-----------------------------------------------------------------------------
 # Cleanup and close

@@ -2,11 +2,12 @@ use v6.c;
 
 use BSON::Document;
 use MongoDB;
-use MongoDB::CollectionIF;
 use MongoDB::Header;
 
+#-------------------------------------------------------------------------------
 unit package MongoDB;
 
+#-------------------------------------------------------------------------------
 class Wire {
 
   has $!server;
@@ -14,7 +15,7 @@ class Wire {
 
   #-----------------------------------------------------------------------------
   method query (
-    MongoDB::CollectionIF $collection! where .^name eq 'MongoDB::Collection',
+    MongoDB::CollectionType:D $collection,
     BSON::Document:D $qdoc, $projection?, :$flags, Int :$number-to-skip,
     Int :$number-to-return, :$server where .^name eq 'MongoDB::Server'
     --> BSON::Document
@@ -73,20 +74,24 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
+#say .WHAT;
+#say "Error wire query: ", $_;
+
+        # Fatal messages from the program
         when MongoDB::Message {
-#          $client._take-out-server($server);
+          # Already logged
         }
 
-        default {
-          when Str {
-            warn-message($_);
-#            $client._take-out-server($server);
-          }
+        # Other messages from Socket.open
+        when .message ~~ m:s/Failed to resolve host name/ ||
+             .message ~~ m:s/Failed to connect\: connection refused/ {
 
-          when Exception {
-            warn-message(.message);
-#            $client._take-out-server($server);
-          }
+          error-message(.message);
+        }
+
+        # If not one of the above errors, rethrow the error
+        default {
+          .rethrow;
         }
       }
     }
@@ -144,20 +149,24 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
+say .WHAT;
+say "Error wire get-more: ", .message;
+
+        # Fatal messages from the program
         when MongoDB::Message {
-#          $client._take-out-server($server);
+          # Already logged
         }
 
-        default {
-          when Str {
-            warn-message($_);
-#            $client._take-out-server($server);
-          }
+        # Other messages from Socket.open
+        when .message ~~ m:s/Failed to resolve host name/ ||
+             .message ~~ m:s/Failed to connect\: connection refused/ {
 
-          when Exception {
-            warn-message(.message);
-#            $client._take-out-server($server);
-          }
+          error-message(.message);
+        }
+
+        # If not one of the above errors, rethrow the error
+        default {
+          .rethrow;
         }
       }
     }
@@ -206,20 +215,24 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
+say .WHAT;
+say "Error wire kill-cursors: ", .message;
+
+        # Fatal messages from the program
         when MongoDB::Message {
-#          $client._take-out-server($server);
+          # Already logged
         }
 
-        default {
-          when Str {
-            warn-message($_);
-#            $client._take-out-server($server);
-          }
+        # Other messages from Socket.open
+        when .message ~~ m:s/Failed to resolve host name/ ||
+             .message ~~ m:s/Failed to connect\: connection refused/ {
 
-          when Exception {
-            warn-message(.message);
-#            $client._take-out-server($server);
-          }
+          error-message(.message);
+        }
+
+        # If not one of the above errors, rethrow the error
+        default {
+          .rethrow;
         }
       }
     }

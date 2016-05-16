@@ -3,8 +3,10 @@ use v6.c;
 use MongoDB;
 use MongoDB::Config;
 
+#-------------------------------------------------------------------------------
 unit package MongoDB;
 
+#-------------------------------------------------------------------------------
 class Server::Control {
 
 #TODO startup/shutdown on windows and appels
@@ -94,8 +96,6 @@ class Server::Control {
   }
 
   #-----------------------------------------------------------------------------
-  # Get selected port number from the config
-  #
   method !get-mongod-options ( @server-keys --> Hash ) {
 
     my Hash $config = MongoDB::Config.instance.config;
@@ -153,7 +153,7 @@ class Server::Control {
 
     # On linuxes it should be in /usr/bin
     #
-    if !?$mongodb-server-path and $*KERNEL.name eq 'linux' {
+    if not $mongodb-server-path.defined and $*KERNEL.name eq 'linux' {
       if "/usr/bin/$binary".IO ~~ :x {
         $mongodb-server-path = "/usr/bin/$binary";
       }
@@ -162,7 +162,7 @@ class Server::Control {
     # On windows it should be in C:/Program Files/MongoDB/Server/*/bin if the
     # user keeps the default installation directory.
     #
-    if !?$mongodb-server-path and $*KERNEL.name eq 'win32' {
+    if not $mongodb-server-path.defined and $*KERNEL.name eq 'win32' {
 
       for 2.6, 2.8 ... 10 -> $vn {
         my Str $path = "C:/Program Files/MongoDB/Server/$vn/bin/$binary.exe";
@@ -175,7 +175,7 @@ class Server::Control {
 
     # Hopefully it can be found in any other path
     #
-    if !?$mongodb-server-path and %*ENV<PATH> {
+    if not $mongodb-server-path.defined and %*ENV<PATH> {
       
       for %*ENV<PATH>.split(':') -> $path {
         if "$path/$binary".IO ~~ :x {
@@ -187,7 +187,7 @@ class Server::Control {
 
     # Can be configured in config file
     #
-    if !?$mongodb-server-path and $config<Binaries>:exists
+    if not $mongodb-server-path.defined and $config<Binaries>:exists
        and $config<Binaries>{$binary}:exists {
 
       $mongodb-server-path = $config<Binaries>{$binary};

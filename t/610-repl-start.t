@@ -10,11 +10,14 @@ use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Config;
 use MongoDB::Cursor;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
+
+my MongoDB::Test-support $ts .= new;
 
 my Hash $config = MongoDB::Config.instance.config;
 my Str $host = 'localhost';
@@ -22,11 +25,11 @@ my Str $host = 'localhost';
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 
-  ok $Test-support::server-control.stop-mongod("s2"), "Server 2 stopped";
-  ok $Test-support::server-control.start-mongod( 's2', 'replicate1'),
+  ok $ts.server-control.stop-mongod("s2"), "Server 2 stopped";
+  ok $ts.server-control.start-mongod( 's2', 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
   # Cannot find server now, need replicaSet option
@@ -41,7 +44,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
@@ -85,7 +88,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
@@ -134,7 +137,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));

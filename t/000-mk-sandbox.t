@@ -8,14 +8,16 @@ use MongoDB::Server::Control;
 
 #-------------------------------------------------------------------------------
 set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Debug);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
+
+my MongoDB::Test-support $ts .= new;
 
 #-------------------------------------------------------------------------------
 #
 diag "\n\nSetting up involves initializing mongodb data files which takes time";
-for @$Test-support::server-range -> $server-number {
-  ok $Test-support::server-control.start-mongod("s$server-number"),
+for $ts.server-range -> $server-number {
+  ok $ts.server-control.start-mongod("s$server-number"),
      "Server $server-number started";
 }
 

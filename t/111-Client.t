@@ -8,7 +8,6 @@ use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
-#use MongoDB::Cursor;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
@@ -16,10 +15,12 @@ set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
+my MongoDB::Test-support $ts .= new;
+
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Int $p1 = $Test-support::server-control.get-port-number('s1');
+  my Int $p1 = $ts.server-control.get-port-number('s1');
   my MongoDB::Client $client .= new(:uri("mongodb://:$p1"));
   my MongoDB::Server $server = $client.select-server;
 
@@ -28,7 +29,7 @@ subtest {
      "Status of server is master";
 
   # Bring server down to see what Client does...
-  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 is stopped";
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
   sleep 10;
 
   $server = $client.select-server;
@@ -37,7 +38,7 @@ subtest {
      "Status of server is down";
 
   # Bring server up again to see ift Client recovers...
-  ok $Test-support::server-control.start-mongod("s1"), "Server 1 started";
+  ok $ts.server-control.start-mongod("s1"), "Server 1 started";
   sleep 5;
 
   $server = $client.select-server;
@@ -51,7 +52,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Int $p3 = $Test-support::server-control.get-port-number('s3');
+  my Int $p3 = $ts.server-control.get-port-number('s3');
   my MongoDB::Client $client .= new(:uri("mongodb://:$p3"));
   my MongoDB::Server $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
@@ -60,7 +61,7 @@ subtest {
 
   # Drop database test
   my MongoDB::Database $database = $client.database('test');
-  my $doc = $database.run-command: (dropDatabase => 1);
+  my $doc = $database.run-command: (dropDatabase => 1,);
   ok $doc<ok>, "Database test dropped";
 
 
@@ -88,7 +89,7 @@ subtest {
         info-message($msg);
         sleep 1;
       }
-    
+
       True;
     }
   );
@@ -98,7 +99,7 @@ subtest {
 
   # Bring server down to see what Client does...
   info-message('shutdown server');
-  ok $Test-support::server-control.stop-mongod('s3'), "Server 3 is stopped";
+  ok $ts.server-control.stop-mongod('s3'), "Server 3 is stopped";
   sleep 10;
 
   is $client.server-status("localhost:$p3"), MongoDB::C-DOWN-SERVER,
@@ -106,7 +107,7 @@ subtest {
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');
-  ok $Test-support::server-control.start-mongod("s3"), "Server 1 started";
+  ok $ts.server-control.start-mongod("s3"), "Server 1 started";
   sleep 5;
 
   # Wait for concurrent writer

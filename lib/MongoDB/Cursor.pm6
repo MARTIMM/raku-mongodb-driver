@@ -1,8 +1,6 @@
 use v6.c;
 use BSON::Document;
 use MongoDB;
-use MongoDB::CollectionIF;
-use MongoDB::ClientIF;
 use MongoDB::Wire;
 
 #-------------------------------------------------------------------------------
@@ -33,7 +31,7 @@ package MongoDB {
     # Support for the newer BSON::Document
     #
     multi submethod BUILD (
-      MongoDB::CollectionIF:D :$collection!,
+      MongoDB::CollectionType:D :$collection!,
       BSON::Document:D :$server-reply!,
       :$server! where .^name eq 'MongoDB::Server',
       Int :$number-to-return = 0
@@ -64,7 +62,7 @@ package MongoDB {
     # This can be set with data received from a command e.g. listDatabases
     #
     multi submethod BUILD (
-      MongoDB::ClientIF:D :$client!,
+      MongoDB::ClientType:D :$client!,
       BSON::Document:D :$cursor-doc!,
       BSON::Document :$read-concern,
       Int :$number-to-return = 0

@@ -24,20 +24,21 @@ unit package MongoDB;
 # when a new() method is defined, Supplier gets wrong parameters. Therefore
 # BUILD is replaced by monitor-init() and must be called explicitly
 #
-class Server::Monitor is Supplier {
+class Server::Monitor {
 
   has $!server;
   has MongoDB::Server::Socket $!socket;
 
-  has Duration $!weighted-mean-rtt .= new(0);
+  has Duration $!weighted-mean-rtt;
 
   # Variables to control infinite monitoring actions
   has Promise $!promise-monitor;
   has Semaphore $!server-monitor-control;
   has Bool $!monitor-loop;
   has Semaphore $!loop-semaphore;
-  has Int $!monitor-looptime = 10;
+  has Int $!monitor-looptime;
   has Semaphore $!looptime-semaphore;
+  has Supplier $!monitor-data-supplier;
 
   has BSON::Document $!monitor-command;
   has BSON::Document $!monitor-result;
@@ -46,26 +47,30 @@ class Server::Monitor is Supplier {
   # Call before monitor-server to set the $!server object!
   # Inheriting from Supplier prevents use of proper BUILD 
   #
-  method monitor-init ( :$server ) {
+  submethod BUILD ( :$server ) {
 
     $!server = $server;
+    
+    $!weighted-mean-rtt .= new(0);
+    
+    $!server-monitor-control .= new(1);
+    $!loop-semaphore .= new(1);
+    $!monitor-looptime = 10;
+    $!looptime-semaphore .= new(1);
+    $!monitor-data-supplier .= new;
 
     $!monitor-command .= new: (isMaster => 1);
     $!monitor-command.encode;
     $!monitor-command does MongoDB::Header;
-
-    $!server-monitor-control .= new(1);
-    $!looptime-semaphore .= new(1);
-    $!loop-semaphore .= new(1);
   }
 
   #-----------------------------------------------------------------------------
-  method done ( |c ) {
+  method done ( ) {
 
     $!loop-semaphore.acquire;
     $!monitor-loop = False;
     $!loop-semaphore.release;
-    callwith();
+    $!monitor-data-supplier.done;
   }
 
   #-----------------------------------------------------------------------------
@@ -74,7 +79,7 @@ class Server::Monitor is Supplier {
     $!loop-semaphore.acquire;
     $!monitor-loop = False;
     $!loop-semaphore.release;
-    callwith('Monitor forced to quit');
+    $!monitor-data-supplier.quit('Monitor forced to quit');
   }
 
   #-----------------------------------------------------------------------------
@@ -94,14 +99,20 @@ class Server::Monitor is Supplier {
   }
 
   #-----------------------------------------------------------------------------
+  method get-supply ( --> Supply ) {
+
+    $!monitor-data-supplier.Supply;
+  }
+
+  #-----------------------------------------------------------------------------
   # Run this on a separate thread because it lasts until this program atops.
   #
-  method monitor-server ( --> Promise ) {
+  method start-monitor ( --> Promise ) {
 
     # Just to prevent that more than one monitor is started.
     return Promise unless $!server-monitor-control.try_acquire;
 
-    info-message("Start $!server.name() monitoring");
+    debug-message("Start $!server.name() monitoring");
     $!promise-monitor .= start( {
 
         my Instant $t0;
@@ -140,7 +151,7 @@ class Server::Monitor is Supplier {
               debug-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
               );
-              self.emit( {
+              $!monitor-data-supplier.emit( {
                   ok => True,
                   monitor => $doc<documents>[0],
                   weighted-mean-rtt => $!weighted-mean-rtt
@@ -150,7 +161,7 @@ class Server::Monitor is Supplier {
 
             else {
               warn-message("Server $!server.name() undefined document");
-              self.emit( {
+              $!monitor-data-supplier.emit( {
                   ok => False,
                   reason => 'Undefined document'
                 }
@@ -166,8 +177,11 @@ class Server::Monitor is Supplier {
             # Send ok False to mention the fact that the server is down.
             #
             CATCH {
-              default {
-#.say;
+#say .WHAT;
+#say "Error monitor: ", $_;
+              when .message ~~ m:s/Failed to resolve host name/ ||
+                   .message ~~ m:s/Failed to connect\: connection refused/ {
+
                 # Failure messages;
                 #   Failed to connect: connection refused
                 #   Failed to resolve host name
@@ -178,8 +192,8 @@ class Server::Monitor is Supplier {
                 # or '%()' explicitly!!!
                 #
                 my Str $s = .message();
-                warn-message("Server $!server.name() error $s");
-                self.emit(
+                error-message("Server $!server.name() error $s");
+                $!monitor-data-supplier.emit(
                   hash (
                     ok => False,
                     reason => $s
@@ -194,6 +208,11 @@ class Server::Monitor is Supplier {
                   if $looptime-trottle < $sleeptime;
 
                 sleep($sleeptime);
+              }
+              
+              # If not one of the above errors, rethrow the error
+              default {
+                .rethrow;
               }
             }
           }
