@@ -16,13 +16,10 @@
   "provides": {
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
     "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
-    "MongoDB::ClientIF":                "lib/MongoDB/ClientIF.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
-    "MongoDB::CollectionIF":            "lib/MongoDB/CollectionIF.pm6",
     "MongoDB::Config":                  "lib/MongoDB/Config.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
-    "MongoDB::DatabaseIF":              "lib/MongoDB/DatabaseIF.pm6",
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
     "MongoDB::Log":                     "lib/MongoDB/Log.pm6",
     "MongoDB::Server":                  "lib/MongoDB/Server.pm6",
