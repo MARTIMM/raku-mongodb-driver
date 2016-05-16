@@ -16,7 +16,8 @@ sub EXPORT { {
   }
 };
 
-package MongoDB:ver<0.29.0> {
+#-------------------------------------------------------------------------------
+package MongoDB {
 
   #-----------------------------------------------------------------------------
   # Client object topology types
@@ -87,7 +88,22 @@ package MongoDB:ver<0.29.0> {
   constant C-RF-ShardConfigStale= 0x04; # corresponds to ShardConfigStale. Drivers should ignore this. Only mongos will ever see this set, in which case, it needs to update config from the server.
   constant C-RF-AwaitCapable    = 0x08; # corresponds to AwaitCapable. Is set when the server supports the AwaitData Query option. If it doesn\u2019t, a client should sleep a little between getMore\u2019s of a Tailable cursor. Mongod version 1.6 supports AwaitData and thus always sets AwaitCapable.
 
-  #-------------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
+  # Other types
+
+  # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
+  subset PortType of Int where 0 < $_ <= 65535;
+  
+  subset SocketLimit of Int where $_ >= 3;
+
+  # Helper constraints when module cannot be loaded(use)
+  subset ClientType where .^name eq 'MongoDB::Client';
+  subset DatabaseType where .^name eq 'MongoDB::Database';
+  subset CollectionType where .^name eq 'MongoDB::Collection';
+  subset ServerType where .^name eq 'MongoDB::Server';
+  subset SocketType where .^name eq 'MongoDB::Socket';
+
+  #-----------------------------------------------------------------------------
   #
   signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
