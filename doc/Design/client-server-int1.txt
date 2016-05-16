@@ -5,51 +5,81 @@ hide footbox
 
 actor application as app
 participant Client
+participant "Client T0" as Clt0
+participant "Client T1" as Clt1
 participant Server
+participant "Server T" as Srvt0
+participant Monitor
+participant "Monitor T" as Mnt0
 database mongod
+activate mongod
 
-app -> Client: uri
+app -> Client: new(uri)
 activate Client
 
-Client -> Server: create
-activate Server
-note right: in thread
+Client -> Clt0: Promise.start()
+activate Clt0
 
-Client -> app:
-note right: returns immediate
+'Todo list is a structure guarded by semaphores
+Client -> Client: store server\nport in todo list
+
+Clt0 -> Clt0: load server:port\nfrom todo list
+
+Client -> app: Client object
 deactivate Client
 
-Server --> mongod: connect
+Clt0 -> Server: new()
+activate Server
+Server -> Monitor: new()
+activate Monitor
+Monitor -> Server: Monitor object
+deactivate Monitor
+Server -> Clt0: Server object
+deactivate Server
+
+
+Clt0 -> Server: server-init()
+activate Server
+Server -> Monitor: start-monitor()
+activate Monitor
+Monitor -> Mnt0: Promise.start()
+activate Mnt0
+Monitor -> Server: Promise
+deactivate Monitor
+
+Mnt0 --> mongod: ismaster command
+mongod --> Mnt0: ismaster result
+Server -> Srvt0: tap from monitor
+activate Srvt0
+deactivate Server
+
+Mnt0 o-->o Srvt0: monitor data
+
+Clt0 -> Clt1: tap from monitor
+activate Clt1
+Mnt0 o-->o Clt1: monitor data
+
+Clt1 -> Clt1: store new server\nport in todo list
+
+Clt1 -> Clt1: Store in $!servers
+
+'note right: in thread
+
+'note right: returns immediate
+
+'Server --> mongod: connect
+
+
 
 app -> Client: select-server()
 activate Client
-
-Client -> Client: cleanup-promises()
-activate Client
-
-Server -> Client: Server object
-deactivate Server
-
-Client -> Client: acceptence tests
-activate Client
-deactivate Client
-
-Client -> Server: _monitor-server()
-activate Server
-note right: infinite loop in thread
-
-Server -> mongod: ismaster command
-mongod -> Server: ismaster result
-deactivate Client
-
-Client -> Client: server data processing
-activate Client
-Server -> Client: server data
-note right: through channel
-deactivate Client
-
-
+Client -> Client: Get server\nfrom $!servers
 Client -> app: Server object
 deactivate Client
+
+legend
+Monitor data is sent from Monitor thread using a Supply
+
+end legend
 
 @enduml
