@@ -40,32 +40,9 @@ class Server {
   # Server must make contact first to see if server exists and reacts. This
   # must be done in the background so Client starts this process in a thread.
   #
-#`{{
-  method new ( |c ) {
-
-say "New 0: ", self.defined;
-    my $x = MongoDB::Server.bless(|c);
-say "New 1: ", $x.perl;
-    $x;
-  }
-
-  method BUILDALL ( |c ) {
-
-say "Buildall 0: ", self.defined, ', ', c.perl;
-    self.BUILD(|c);
-say "Buildall 1: ", self.defined;
-  }
-}}
-
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
     MongoDB::SocketLimit :$max-sockets = 3
   ) {
-
-#my $str = '';
-#if 1 {
-
-#    say ENTER { "Enter BUILD 2 block\n" ~ dump-callframe; }
-say "SB0";
 
     # Save name andd port of the server
     ( my $host, my $port) = split( ':', $server-name);
@@ -84,26 +61,14 @@ say "SB0";
 
     $!server-status = MongoDB::C-UNKNOWN-SERVER;
     $!status-semaphore .= new(1);
-
-say "SB5 done";
-#LEAVE { $str = "Leave BUILD 2 block\n" ~ dump-callframe(12); }
-#}
-#say $str;
   }
 
   #-----------------------------------------------------------------------------
   # Server initialization 
   method server-init ( ) {
 
-#ENTER { say "Enter server-init block"; dump-callframe; }
-say "si 0a";
-
     # Don't start monitoring if dns failed to return an ip address
 #    if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
-
-say "si 0b";
-      # Initialize and start monitoring
-#      $!server-monitor.monitor-init(:server(self));
 
       # Start monitoring
       $!monitor-promise = $!server-monitor.start-monitor;
@@ -143,9 +108,9 @@ say "si 0b";
                 }
               }
 
-              # Must be initialized. When an other name for replicaset is used
-              # the next state should be C-REJECTED-SERVER. Otherwise it becomes
-              # any of MongoDB::C-REPLICASET-*
+              # Replicaset must be initialized. When an other name for
+              # replicaset is used the next state should be C-REJECTED-SERVER.
+              # Otherwise it becomes any of MongoDB::C-REPLICASET-*
               #
               elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
                 $server-status = MongoDB::C-REPLICA-PRE-INIT
@@ -198,7 +163,6 @@ say "si 0b";
           $!status-semaphore.acquire;
           $!server-status = $server-status;
           $!status-semaphore.release;
-say "si 4, $server-status";
         }
       );
 #    }

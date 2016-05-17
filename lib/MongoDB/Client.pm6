@@ -35,6 +35,7 @@ class Client {
 
   has Promise $!Background-discovery;
 
+#`{{
   #-----------------------------------------------------------------------------
   # Explicitly create an object using the undefined class name to prevent
   # changes in the existing class when used as an invocant.
@@ -46,11 +47,9 @@ say 'new client 0';
 say 'new client 1';
     $x;
   }
-
+}}
   #-----------------------------------------------------------------------------
   submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern ) {
-
-say 'build client 0';
 
     $!topology-type = MongoDB::C-UNKNOWN-TPLGY;
 
@@ -97,9 +96,9 @@ say 'build client 0';
 
             trace-message("Processing server $server-name");
 
-say "a0: $server-name";
+#say "a0: $server-name";
             $!servers-semaphore.acquire;
-say "a1: $server-name";
+#say "a1: $server-name";
             my Bool $server-processed = $!servers{$server-name}:exists;
             $!servers-semaphore.release;
 
@@ -109,23 +108,18 @@ say "a1: $server-name";
               next;
             }
 
-say "a2: $server-name";
+#say "a2: $server-name";
             my MongoDB::Server $server .= new( :$server-name, :$uri-data);
-say "a3a: $server-name";
+#say "a3a: $server-name";
 
-
-say "a3b: ", $server.name;
-            # Start server monitoring
+            # Start server monitoring process its data
             $server.server-init();
-
-say "a3c: ", $server.name;
             self!process-monitor-data($server);
           }
 
           else {
 
             # When no work, take a nap!
-say "a3d: Sleep, no server to process";
             sleep 5;
           }
         }
@@ -139,7 +133,6 @@ say "a3d: Sleep, no server to process";
       $!todo-servers.push("$server-data<host>:$server-data<port>");
       $!todo-servers-semaphore.release;
     }
-say 'build client 1';
   }
 
   #-----------------------------------------------------------------------------
@@ -147,13 +140,11 @@ say 'build client 1';
 
     my Str $server-name = $server.name;
 
-say "a4: $server-name";
     # Tap into the stream of monitor data
     my Tap $t = $server.tap-monitor( -> Hash $monitor-data {
 
-say "a5: $server-name, $monitor-data.perl()";
 
-say "Monitor $server.name(): $monitor-data<ok>" if $monitor-data.defined;
+#say "Monitor $server.name(): $monitor-data<ok>" if $monitor-data.defined;
 #say "Monitor $server.name(): ", $monitor-data.perl if $monitor-data.defined;
 
         $!servers-semaphore.acquire;
@@ -195,7 +186,7 @@ say "Monitor $server.name(): $monitor-data<ok>" if $monitor-data.defined;
             # Check if the master server went down
             if $sname.defined and ($sname eq $server.name) {
 
-say "H1: $h<status>, ", $sname // '-', ', ', $server.name;
+#say "H1: $h<status>, ", $sname // '-', ', ', $server.name;
               $!servername-semaphore.acquire;
               $!master-servername = Nil;
               $!servername-semaphore.release;
@@ -209,8 +200,8 @@ say "H1: $h<status>, ", $sname // '-', ', ', $server.name;
         # Monitoring data is ok
         else {
 
-say 'Master server name: ', $sname // '-';
-say 'Master prev stat: ', $prev-server<status>:exists 
+#say 'Master server name: ', $sname // '-';
+#say 'Master prev stat: ', $prev-server<status>:exists 
                   ?? $prev-server<status>
                   !! '-';
 
@@ -218,7 +209,7 @@ say 'Master prev stat: ', $prev-server<status>:exists
           if $prev-server<status>:exists
              and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
 
-say "H0: $h<status>, ", $sname // '-', ', ', $server.name;
+#say "H0: $h<status>, ", $sname // '-', ', ', $server.name;
             $h<status> = MongoDB::C-REJECTED-SERVER;
           }
 
@@ -239,7 +230,7 @@ say "H0: $h<status>, ", $sname // '-', ', ', $server.name;
             MongoDB::C-MASTER-SERVER |
             MongoDB::C-REPLICASET-PRIMARY
           ) {
-say "H2: $h<status>, ", $sname // '-', ', ', $server.name;
+#say "H2: $h<status>, ", $sname // '-', ', ', $server.name;
             # Is defined, be the second and rejected master server
             if $sname.defined {
               if $sname ne $server.name {
@@ -250,7 +241,7 @@ say "H2: $h<status>, ", $sname // '-', ', ', $server.name;
 
             # Not defined, be the first master server
             else {
-say "H3: $h<status>, ", $sname // '-', ', ', $server.name;
+#say "H3: $h<status>, ", $sname // '-', ', ', $server.name;
               $!servername-semaphore.acquire;
               $!master-servername = $server.name;
               $!servername-semaphore.release;
@@ -259,21 +250,21 @@ say "H3: $h<status>, ", $sname // '-', ', ', $server.name;
 
           else {
 
-say "H4: $h<status>, ", $sname // '-', ', ', $server.name;
+#say "H4: $h<status>, ", $sname // '-', ', ', $server.name;
           }
 
           # When primary, find all servers and process them
           if $h<status> ~~ MongoDB::C-REPLICASET-PRIMARY {
 
-say "H5: $h<server-data>.perl()";
+#say "H5: $h<server-data>.perl()";
             my Array $hosts = $h<server-data><monitor><hosts>;
-say "H6a: $hosts";
+#say "H6a: $hosts";
             for @$hosts -> $hostspec {
               $!servers-semaphore.acquire;
               my Bool $processed = $!servers{$hostspec}:exists;
               $!servers-semaphore.release;
 
-say "H6b: $hostspec, $processed";
+#say "H6b: $hostspec, $processed";
               next if $processed;
 
               $!todo-servers-semaphore.acquire;
@@ -287,7 +278,7 @@ say "H6b: $hostspec, $processed";
 
             # Error when current master is not same as primary
             my $primary = $h<server-data><monitor><primary>;
-say "H6c: $primary, ", $sname // '-';
+#say "H6c: $primary, ", $sname // '-';
             if $sname.defined and $sname ne $primary {
               error-message(
                 "Server $primary found but != current master $sname"
@@ -296,11 +287,11 @@ say "H6c: $primary, ", $sname // '-';
 
             # When defined w've already processed it, if not, go for it
             elsif not $sname.defined {
-say "H6d: $primary";
+#say "H6d: $primary";
               $!todo-servers-semaphore.acquire;
               $!todo-servers.push($primary);
               $!todo-servers-semaphore.release;
-say "H6e";
+#say "H6e";
             }
           }
 
@@ -311,10 +302,10 @@ say "H6e";
         # Store result
         $!servers-semaphore.acquire;
         $!servers{$server.name} = $h;
-say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
+#say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
         $!servers-semaphore.release;
-say "\nWait for next from monitor";
-say ' ';
+#say "\nWait for next from monitor";
+#say ' ';
 
       }
     );
@@ -386,11 +377,9 @@ say ' ';
       $!servers-semaphore.release;
 
       for @server-names -> $sname {
-say "\n$sname";
         $!servers-semaphore.acquire;
         my Hash $shash = $!servers{$sname};
         $!servers-semaphore.release;
-say "\n", $shash.perl;
 
         if $shash<status> ~~ $needed-state {
           $h = $shash;
@@ -427,7 +416,6 @@ say "\n", $shash.perl;
       $!servername-semaphore.acquire;
       $msname = $!master-servername;
       $!servername-semaphore.release;
-say "SS: $test-count, {$msname // '-'}";
 
       if $msname.defined {
         $!servers-semaphore.acquire;

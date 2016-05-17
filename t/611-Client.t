@@ -9,9 +9,11 @@ use MongoDB::Database;
 use MongoDB::Config;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
+
+my MongoDB::Test-support $ts .= new;
 
 my MongoDB::Client $client;
 my MongoDB::Database $database;
@@ -24,8 +26,8 @@ my Hash $config = MongoDB::Config.instance.config;
 
 my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 my Str $host = 'localhost';
-my Int $p1 = $Test-support::server-control.get-port-number('s1');
-my Int $p2 = $Test-support::server-control.get-port-number('s2');
+my Int $p1 = $ts.server-control.get-port-number('s1');
+my Int $p2 = $ts.server-control.get-port-number('s2');
 
 #-------------------------------------------------------------------------------
 subtest {

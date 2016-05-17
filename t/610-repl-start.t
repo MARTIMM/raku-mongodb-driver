@@ -141,7 +141,7 @@ subtest {
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
-  sleep 2;
+  my MongoDB::Server $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICASET-PRIMARY,
      "Server is replica server primary";
@@ -174,7 +174,7 @@ subtest {
 
   $doc = $database.run-command: (isMaster => 1,),;
   is $doc<setVersion>, 2, 'Repl set version 2';
-  is-deeply $doc<hosts>, ["localhost:65001",],
+  is-deeply $doc<hosts>, ["localhost:$p2",],
             "servers in replica: {$doc<hosts>}";
 
 }, "Replica servers update replica data";

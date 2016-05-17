@@ -14,6 +14,8 @@ set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
+my MongoDB::Test-support $ts .= new;
+
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -22,22 +24,22 @@ subtest {
 
   my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
   diag "Start server 1 pre-init in replicaset $rs1-s1";
-  my Int $p1 = $Test-support::server-control.get-port-number('s1');
-  ok $Test-support::server-control.stop-mongod("s1"), "Server 1 stopped";
-  ok $Test-support::server-control.start-mongod( "s1", 'replicate1'),
+  my Int $p1 = $ts.server-control.get-port-number('s1');
+  ok $ts.server-control.stop-mongod("s1"), "Server 1 stopped";
+  ok $ts.server-control.start-mongod( "s1", 'replicate1'),
      "Server 1 started in replica set '$rs1-s1'";
 
   my Str $rs1-s3 = $config<mongod><s3><replicate1><replSet>;
   diag "Start server 2 pre-init in replicaset $rs1-s3";
-  my Int $p3 = $Test-support::server-control.get-port-number('s3');
-  ok $Test-support::server-control.stop-mongod("s3"), "Server 3 stopped";
-  ok $Test-support::server-control.start-mongod( "s3", 'replicate1'),
+  my Int $p3 = $ts.server-control.get-port-number('s3');
+  ok $ts.server-control.stop-mongod("s3"), "Server 3 stopped";
+  ok $ts.server-control.start-mongod( "s3", 'replicate1'),
      "Server 3 started in replica set '$rs1-s3'";
 
 
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
   diag "Connect to server replica primary of $rs1-s2";
-  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Int $p2 = $ts.server-control.get-port-number('s2');
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, "Server $server.name() seleced";
@@ -75,7 +77,7 @@ subtest {
 
   sleep 2;
   $doc = $db-admin.run-command: (isMaster => 1,),;
-  is-deeply $doc<hosts>, ["localhost:65001","localhost:65000","localhost:65002",],
+  is-deeply $doc<hosts>, ["localhost:$p2","localhost:$p1","localhost:$p3",],
             "servers in replica: {$doc<hosts>}";
   
 #say $doc.perl;

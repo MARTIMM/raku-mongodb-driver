@@ -27,9 +27,9 @@ subtest {
   diag "checkout uri 'mongodb://:$p1/?replicaSet=$rs1-s1'";
   my MongoDB::Client $c-s1 .= new(:uri("mongodb://:$p1/?replicaSet=$rs1-s1"));
   my MongoDB::Server $s-s1 = $c-s1.select-server;
-#  sleep 5;
+  sleep 5;
   is $c-s1.nbr-servers, 3, '3 servers in replica';
-#`{{
+
   my MongoDB::Server $s-s1 = $c-s1.select-server;
   ok $s-s1.defined, 'Server defined';
   is $s-s1.get-status, MongoDB::C-REPLICASET-PRIMARY,
@@ -40,7 +40,7 @@ subtest {
 
 
 
-  my Int $p2 = $Test-support::server-control.get-port-number('s2');
+  my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
   diag "checkout uri 'mongodb://:$p2/?replicaSet=$rs1-s2'";
   my MongoDB::Client $c-s2 .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
@@ -51,7 +51,7 @@ subtest {
   is $s-s2.get-status, MongoDB::C-REPLICASET-PRIMARY, 'Server 2 is primary';
 
 
-  my Int $p3 = $Test-support::server-control.get-port-number('s3');
+  my Int $p3 = $ts.server-control.get-port-number('s3');
   my Str $rs1-s3 = $config<mongod><s3><replicate1><replSet>;
   diag "checkout uri 'mongodb://:$p3/?replicaSet=$rs1-s3'";
   my MongoDB::Client $c-s3 .= new(:uri("mongodb://:$p3/?replicaSet=$rs1-s3"));
@@ -59,12 +59,10 @@ subtest {
   is $c-s2.nbr-servers, 3, '3 servers in replica';
   my MongoDB::Server $s-s3 = $c-s3.select-server;
   ok $s-s3.defined, 'Server defined';
-  is $s-s1.get-status, MongoDB::C-REPLICASET-PRIMARY,
-     'Selected server is primary';
   $s-s3 = $c-s3.select-server(:needed-state(MongoDB::C-REPLICASET-SECONDARY));
   ok $s-s3.defined, 'Secondary server found';
   is $s-s3.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 3 is secondary';
-}}
+
 #sleep 10;
 
 }, "Client behaviour";
