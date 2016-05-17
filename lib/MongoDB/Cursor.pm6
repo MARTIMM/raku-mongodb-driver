@@ -1,8 +1,6 @@
 use v6.c;
 use BSON::Document;
 use MongoDB;
-use MongoDB::CollectionIF;
-use MongoDB::ClientIF;
 use MongoDB::Wire;
 
 #-------------------------------------------------------------------------------
@@ -25,15 +23,18 @@ package MongoDB {
     #
     has @.documents;
 
-    has $server where .^name eq 'MongoDB::Server';
+    has $!server;
+
+    has $!number-to-return;
 
     #---------------------------------------------------------------------------
     # Support for the newer BSON::Document
     #
     multi submethod BUILD (
-      MongoDB::CollectionIF:D :$collection!,
+      MongoDB::CollectionType:D :$collection!,
       BSON::Document:D :$server-reply!,
-      :$server! where .^name eq 'MongoDB::Server'
+      :$server! where .^name eq 'MongoDB::Server',
+      Int :$number-to-return = 0
     ) {
 
       $!client = $collection.database.client;
@@ -53,16 +54,18 @@ package MongoDB {
       }
 
       # Get documents from the reply.
-      #
       @!documents = $server-reply<documents>.list;
+
+      $!number-to-return = $number-to-return;
     }
 
     # This can be set with data received from a command e.g. listDatabases
     #
     multi submethod BUILD (
-      MongoDB::ClientIF:D :$client!,
+      MongoDB::ClientType:D :$client!,
       BSON::Document:D :$cursor-doc!,
-      BSON::Document :$read-concern
+      BSON::Document :$read-concern,
+      Int :$number-to-return = 0
     ) {
 
       $!client = $client;
@@ -93,6 +96,8 @@ package MongoDB {
       @!documents = @($cursor-doc<firstBatch>);
 
 #      $!read-concern = $read-concern;
+
+      $!number-to-return = $number-to-return;
     }
 
     #---------------------------------------------------------------------------
@@ -112,12 +117,13 @@ package MongoDB {
         }
 
       # Create the object for this class and return it
-      #
       }.new();
     }
 
     #---------------------------------------------------------------------------
     method fetch ( --> BSON::Document ) {
+
+      return BSON::Document unless self.defined;
 
       # If there are no more documents in last response batch but there is
       # still a next batch(sum of id bytes not 0) to fetch from database.
@@ -127,7 +133,7 @@ package MongoDB {
         # Request next batch of documents
         #
         my BSON::Document $server-reply =
-          MongoDB::Wire.new.get-more( self, :$!server);
+          MongoDB::Wire.new.get-more( self, :$!server, :$!number-to-return);
 
         if $server-reply.defined {
 
@@ -160,7 +166,7 @@ package MongoDB {
       # Invalidate cursor on database only if id is valid
       #
       if [+] @$.id {
-        MongoDB::Wire.new.kill-cursors( (self,), :$!server);
+        MongoDB::Wire.new.kill-cursors( (self,), :$!server, :$!number-to-return);
 
         # Invalidate cursor id with 8 0x00 bytes
         #

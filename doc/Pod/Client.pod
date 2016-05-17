@@ -84,7 +84,7 @@ options and definition.
 
 =begin table :caption('Uri examples')
 
-  example uri | explanation
+  Example uri | Explanation
   =|=
   mongodb:// | most simple specification, localhost using port 27017
   mongodb://:65000 | localhost on port 65000
@@ -98,9 +98,34 @@ options and definition.
 =end table
 
 Note that the servers named in the uri must have something in common such as a
-replica set. When the first server is a master and the second one is also a master
-then the second one will be rejected. In such situations another Client must be
-created.
+replica set. Servers can be refused when there is some problem between them.
+In such situations another Client should be created for the other server. See
+table below.
+
+Next a table where some processing results are shown for uri. In the table there
+are short names use like n#(=digit): for normal server, r#: a replica server,
+R# for replica names, r1R1 server is server for replicaset R1, i# are replicaset
+servers which must be initialized before they become real servers, a# are arbiters
+and s# mongos servers. An uninitialized replicaserver (i) is neither master nor
+secondary. Port numbers are irrelevant here. When two servers in a replica set
+R1 are used, the table shows 'r1R1, r2R1, R1' and the uri could be something like
+'mongodb://r1,r2/?replicaSet=R1'.
+
+=begin table
+
+  Servers in uri | Result of processing in client
+  =|=
+  n1 | The server n1 will be found and accepted
+  n1,n2 | Only one of two servers can be accepted because both might be master. Which server is accepted depends on who is fastest.
+  n1,R1 | The server n1 will not be accepted because its not in a replicaset.
+  n1,r1R1 | Only server n1 is accepted because no replicaset is mentioned in uri.
+  n1,r1R1,R1 | Only server r1 is accepted.
+  i1R1 | Server i1 accepted.
+  i1R1,R1 | Server i1 is not accepted because its not a real replica server yet.
+  r1R1,r2R1,R1 | Servers r1 and r2 are both accepted. There is a master and the other should be a secondary. In this case it should be possible to leave out one of the two servers because the server monitoring process would find the other servers in the replicaset.
+
+=end table
+
 
 =head3 read-concern
 
@@ -175,7 +200,11 @@ read-concern.
    method shutdown ( Bool :$force = False,  MongoDB::Server :$server )
 
 Shutdown a mongod server. Before using this read the text from select-server()
-above because you might end up shutting down the wrong server.
+above because you might end up shutting down the wrong server. It is much better
+to use the commandline to shutdown a server when in a replicaset or sharded
+configuration.
+
+  > mongod --shutdown --dbpath <path to database>
 
 
 =end pod

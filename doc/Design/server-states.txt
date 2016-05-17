@@ -1,0 +1,80 @@
+@startuml
+
+title States of a server in standalone situation
+
+note "Not all state changes are induced\n\
+by the program. E.g. creashes,\n\
+promotion of secondaries etc." as N2
+
+state Unknown {
+  [*] --> Unknown_Unknown : initialize\nfrom Uri
+  Unknown_Unknown : Check replicate option
+
+  note "All servers given to or found\n\
+  by the Client object are initialized\n\
+  to unknown. The Client topology\n\
+  as a whole is also unknown" as N1
+
+
+  Unknown_Unknown --> No_repl_opt
+  Unknown_Unknown --> Has_repl_opt
+
+
+  No_repl_opt : Check server status
+  No_repl_opt --> Rejected : any other\ntype or\nsecond master
+
+  Rejected --> [*] : program\nstops
+  Rejected : No further Client actions
+}
+
+state Standalone {
+  No_repl_opt -left-> Standalone_Master : is master
+  Standalone_Master --> Standalone_Down : Shutdown/Crash
+  Standalone_Master --> [*] : program\nstops
+
+  Standalone_Down --> Standalone_Recovering : reinit
+  Standalone_Down --> [*] : program\nstops
+
+  Standalone_Recovering --> Standalone_Down : fail
+  Standalone_Recovering --> Standalone_Master : succeed
+  Standalone_Recovering : Try to contact every 5 sec
+}
+
+
+
+state "Replica set" as Replset {
+  Has_repl_opt : Check server status
+  Has_repl_opt --> Rejected : Not in\nsame replica\nset
+  Has_repl_opt --> Replica_Master : is master
+  Has_repl_opt --> Replica_Secondary : is secondary
+  Has_repl_opt --> Replica_Arbiter : is arbiter
+  Has_repl_opt --> Pre_Init_Master : uninitialized\nreplica\nserver
+
+  Replica_Master --> [*] : program\nstops
+
+  Replica_Secondary  --> [*]
+  Replica_Secondary  --> Replica_Master : State change\nafter master\ndies
+
+  Replica_Arbiter --> [*]
+
+  Pre_Init_Master --> Replica_Master : becomes master\nwhen there is\nno master
+  Pre_Init_Master -right-> Replica_Secondary : becomes secondary\nwhen there is\na master
+  Pre_Init_Master : initialize
+}
+
+
+
+state "Replica set no primary" as Replsetnoprim {
+  Replica_Master -left-> Replica_Server_Down : Shutdown/Crash
+
+  Replica_Server_Down --> Server_Recovering : reinit
+
+  Server_Recovering --> Replica_Server_Down : fail
+  Server_Recovering --> Replica_Secondary : succeed
+  Server_Recovering : Try to contact every 5 sec
+}
+
+
+@enduml
+
+

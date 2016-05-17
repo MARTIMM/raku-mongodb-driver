@@ -1,16 +1,20 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Client;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
+my MongoDB::Test-support $ts .= new;
+
+my MongoDB::Client $client = $ts.get-connection();
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;

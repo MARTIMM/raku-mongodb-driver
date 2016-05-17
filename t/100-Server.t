@@ -1,92 +1,109 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
-use MongoDB::Client;
 use MongoDB::Server;
-use MongoDB::Socket;
+use MongoDB::Server::Monitor;
+use MongoDB::Server::Socket;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client;
-my MongoDB::Server $server;
-my BSON::Document $req;
-my BSON::Document $doc;
+my MongoDB::Test-support $ts .= new;
 
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client = get-connection();
-  my MongoDB::Server $server = $client.select-server;
-  ok $server.defined, 'Connection server available';
+  my $p4 = $ts.server-control.get-port-number('s4');
+  my MongoDB::Server $server .= new(:server-name("localhost:$p4"));
 
-  my MongoDB::Socket $socket = $server.get-socket;
-  ok $socket.is-open, 'Socket is open';
-  $socket.close;
-  nok $socket.is-open, 'Socket is closed';
+  my MongoDB::Server::Monitor $monitor .= new(:$server);
+  $monitor.start-monitor;
 
-  try {
-    my @skts;
-    for ^10 {
-      my $s = $server.get-socket;
-
-      # Still below max
-      #
-      @skts.push($s);
-
-      CATCH {
-        when MongoDB::Message {
-          ok .message ~~ m:s/Too many sockets 'opened,' max is/,
-             "Too many sockets opened, max is $server.max-sockets()";
-
-          for @skts { .close; }
-          last;
-        }
-      }
+  my Supply $s = $monitor.get-supply;
+  $s.act( -> Hash $mdata {
+      ok $mdata<ok>, 'Monitoring is ok';
+      ok $mdata<weighted-mean-rtt> > 0.0,
+         "Weighted mean is $mdata<weighted-mean-rtt>";
+      ok $mdata<monitor><ok>, 'Ok response from server';
+      ok $mdata<monitor><ismaster>, 'Is master';
     }
-  }
+  );
 
-  try {
-    $server.set-max-sockets(5);
-    is $server.max-sockets, 5, "Maximum socket $server.max-sockets()";
+  sleep 2;
+  $monitor.done;
+  sleep 2;
 
-    my @skts;
-    for ^10 {
-      my $s = $server.get-socket;
+}, 'Monitor test';
 
-      # Still below max
-      #
-      @skts.push($s);
+#-------------------------------------------------------------------------------
+subtest {
 
-      CATCH {
-        when MongoDB::Message {
-          ok .message ~~ m:s/Too many sockets 'opened,' max is/,
-             "Too many sockets opened, max is $server.max-sockets()";
+  my MongoDB::Server $server .= new(
+    :server-name("an-unknown-server.with-unknown-domain:65535")
+  );
+  is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
-          for @skts { .close; }
-          last;
-        }
-      }
+  $server.server-init;
+  $server.tap-monitor( {
+      nok $_<ok>, 'Monitoring is not ok';
     }
-  }
+  );
 
-  try {
-    $server.set-max-sockets(2);
+  sleep 2;
 
-    CATCH {
-      default {
-        is .message,
-           "Constraint type check failed for parameter '\$max-sockets'",
-           .message;
-      }
+  is $server.get-status, MongoDB::C-NON-EXISTENT-SERVER,
+     "Server is non existent";
+
+  $server.stop-monitor;
+}, 'Non existent server test';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my MongoDB::Server $server .= new(:server-name("localhost:65535"));
+  is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is unknown";
+
+  $server.server-init;
+  $server.tap-monitor( {
+      nok $_<ok>, 'Monitoring is not ok';
     }
-  }
+  );
 
-}, 'Client, Server, Socket tests';
+  sleep 3;
+  $server.stop-monitor;
+
+  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
+
+}, 'Down server test';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my $p4 = $ts.server-control.get-port-number('s4');
+  my MongoDB::Server $server .= new(:server-name("localhost:$p4"));
+  is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
+
+  $server.server-init;
+  $server.tap-monitor( {
+      ok $_<ok>, 'Monitoring is ok';
+      ok $_<weighted-mean-rtt> > 0.0, "Weighted mean is $_<weighted-mean-rtt>";
+      ok $_<monitor><ok>, 'Ok response from server';
+      ok $_<monitor><ismaster>, 'Is master';
+    }
+  );
+
+  sleep 2;
+  $server.stop-monitor;
+
+  is $server.get-status, MongoDB::C-MASTER-SERVER,
+     "Status is standalone master";
+
+}, 'Server test';
 
 #-------------------------------------------------------------------------------
 # Cleanup

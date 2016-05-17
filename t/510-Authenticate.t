@@ -1,26 +1,31 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Database;
 use MongoDB::Users;
 use MongoDB::Authenticate;
-
-#`{{
-  Testing;
-    Authentication of a user
-}}
+use BSON::Document;
 
 plan 1;
 skip-rest "Some modules needed for authentication are not yet supported in perl 6";
 exit(0);
 
 #-------------------------------------------------------------------------------
-my Int $exit_code;
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
+info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
-my MongoDB::Database $database .= new(:name<test>);
+my MongoDB::Test-support $ts .= new;
+
+#-------------------------------------------------------------------------------
+my Int $exit_code;
+my Int $server-number = 1;
+
+my MongoDB::Client $client = $ts.get-connection(:server($server-number));
+my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
@@ -29,15 +34,15 @@ my MongoDB::Cursor $cursor;
 my MongoDB::Users $users .= new(:$database);
 my MongoDB::Authenticate $auth;
 
-$database.run-command: (dropDatabase => 1);
-$database.run-command: (dropAllUsersFromDatabase => 1);
+$database.run-command: (dropDatabase => 1,);
+$database.run-command: (dropAllUsersFromDatabase => 1,);
 
 #-------------------------------------------------------------------------------
 subtest {
   $users.set-pw-security(
     :min-un-length(10), 
     :min-pw-length(8),
-    :pw_attribs(MongoDB::Users::C-PW-OTHER-CHARS)
+    :pw_attribs(MongoDB::C-PW-OTHER-CHARS)
   );
 
   $doc = $users.create-user(
@@ -60,39 +65,35 @@ subtest {
   ok $doc<ok>, 'User Dondersteen created';
 
 #say "Users: ", $doc.perl;
-  $doc = $database.run-command: (usersInfo => 1);
+  $doc = $database.run-command: (usersInfo => 1,);
   is $doc<users>.elems, 2, '2 users defined';
   is $doc<users>[0]<user>, 'site-admin', 'User site-admin';
   is $doc<users>[1]<user>, 'Dondersteen', 'User Dondersteen';
 }, "User account preparation";
 
-done-testing();
-exit(0);
-
 #---------------------------------------------------------------------------------
 subtest {
-  diag "Change server mode to authenticated mode";
-  $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
-  sleep 2;
 
-  $exit_code = shell("mongod --auth --config '$*CWD/Sandbox/m-auth.conf'");
-  $client = get-connection-try10();
-#  diag "Changed server mode";
+  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $Test-support::server-control.start-mongod( 's1', 'authenticate'),
+     "Server 1 in auth mode";
+
 }, "Server changed to authentication mode";
 
 #---------------------------------------------------------------------------------
 subtest {
-  # Must get a new database, users and authentication object because server
+  # Must get a new database, users and authentication objects because server
   # is restarted.
   #
+  $client = $ts.get-connection(:server($server-number));
   $database = $client.database('test');
   $users .= new(:$database);
   $auth .= new(:$database);
 
   try {
-    $doc = $users.drop_all_users_from_database();
+    $database.run-command: (dropAllUsersFromDatabase => 1,);
     ok $doc<ok>, 'All users dropped';
-    
+
     CATCH {
       when MongoDB::Message {
         ok .message ~~ m:s/not authorized on test to execute/, .error-text;
@@ -113,34 +114,23 @@ subtest {
   $doc = $auth.authenticate( :user('Dondersteen'), :password('w@tD8jeDan'));
   ok $doc<ok>, 'User Dondersteen logged in';
 
-  $doc = $auth.logout(:user('Dondersteen'));
+  $doc = $database.run-command: (logout => 1,);
   ok $doc<ok>, 'User Dondersteen logged out';
 
 }, "Authenticate tests";
 
 #---------------------------------------------------------------------------------
 subtest {
-  diag "Change server mode back to normal mode";
-  $exit_code = shell("kill `cat $*CWD/Sandbox/m.pid`");
-  sleep 2;
 
-  $exit_code = shell("mongod --config '$*CWD/Sandbox/m.conf'");
-  $client = get-connection-try10();
-#  diag "Changed server mode";
+  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $Test-support::server-control.start-mongod('s1'),
+     "Server 1 in normal mode";
 
-  # Must get a new database and user object because server is restarted.
-  #
-  $database = $client.database('test');
-  $users .= new(:$database);
-
-  $doc = $users.drop_all_users_from_database();
-  ok $doc<ok>, 'All users dropped';
 }, "Server changed to normal mode";
 
 #-------------------------------------------------------------------------------
-# Cleanup
+# Cleanup and close
 #
-$client.database('test').drop;
-
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

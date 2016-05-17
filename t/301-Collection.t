@@ -1,15 +1,20 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Client;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Info);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
+my MongoDB::Test-support $ts .= new;
+
+my MongoDB::Client $client = $ts.get-connection();
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('cl1');
@@ -31,7 +36,7 @@ subtest {
 
   #-------------------------------------------------------------------------------
   #
-  $doc = $database.run-command: (count => $collection.name);
+  $doc = $database.run-command: (count => $collection.name,);
   is $doc<ok>, 1, 'Count request ok';
   is $doc<n>, 3, 'Three documents in collection';
 
@@ -64,7 +69,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$database.run-command: (dropDatabase => 1);
+$database.run-command: (dropDatabase => 1,);
 
 info-message("Test $?FILE stop");
 done-testing();

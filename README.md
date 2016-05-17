@@ -129,13 +129,11 @@ is $doc<value>, Any, 'record not found';
 # Finding things
 #
 my MongoDB::Collection $collection = $database.collection('names');
-my MongoDB::Cursor $cursor = $collection.find: (
-
-), (
+my MongoDB::Cursor $cursor = $collection.find: ( ), (
   _id => 0, name => 1, surname => 1, type => 1
 );
 
-for $cursor.fetch -> BSON::Document $d {
+while $cursor.fetch -> BSON::Document $d {
   say "Name and surname: ", $d<name>, ' ', $d<surname>
       ($d<type> ?? ", $d<type>" !! '');
 
@@ -187,15 +185,35 @@ This is done now. The Client.instance method will only accept uri which will be 
 * The blogs [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116)
 and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read conserns. What I want to provide is the following server situations;
   * Single server. The simplest of situations.
-  * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send commands to when it is about reading with the risk that the particular server (a secondary server) is not up to date.
+  * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to with the risk that the particular server (a secondary server) is not up to date.
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. It should be possible to have a mix of all this when there are several databases with collections which cannot be merged onto one server, replica set or otherwise. A user must have a way to send the task to one or the other server/replicaset/shard.
+
+  ### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
+
+Tested|Test Filename|Test Purpose
+-|-
+x|110-Client|Unknown server, fails DNS lookup
+x||Down server, no connection
+x||Standalone server, not in replicaset
+x||Two standalone servers, one gets rejected
+x|111-client|Standalone server brought down and revived, Client object must follow
+x||Shutdown server and restart while inserting records
+x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.
+x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.
+x||Replicaset pre-init initialization to master server and update master info
+x|612-repl-start|Convert pre init replica server to master
+x|611-client|Replicaserver rejected when there is no replica option in uri
+x||Standalone server rejected when used in mix with replica option defined
+x|612-repl-start|Add servers to replicaset
+x|613-Client|Replicaset server master in uri, must search for secondaries and add them
+x||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
 
 ## API CHANGES
 
 There has been a lot of changes in the API.
 * All methods which had underscores ('\_') are converted to dashed ones ('-').
-* Many helper functions are removed, see change log
+* Many helper functions are removed, see change log. In the documentation must come some help to create a database/collection helper module as well as examples in the xt or doc directory.
 * The way to get a database is changed. One doesn't use a connection for that anymore.
 * Connection module is gone. The Client module has come in its place.
 
@@ -241,6 +259,10 @@ or
 $ perl6 Collection.pod
 ...
 ```
+ I can't tell about the situation on other OS though. You can always use perl6 to get the html version. '/' should become '\\' on windows of course
+ ```
+ $ perl6 --doc=HTML doc/Pod/Collection.pod
+```
 
 ## INSTALLING THE MODULES
 
@@ -257,11 +279,13 @@ This project is tested with Rakudo built on MoarVM implementing Perl v6.c.
 
 MongoDB versions are supported from 2.6 and up. Versions lower that this are not supported because of not completely implementing the wire protocol.
 
+
 ## BUGS, KNOWN LIMITATIONS AND TODO
 
 * Blog [A Consistent CRUD API](https://www.mongodb.com/blog/post/consistent-crud-api-next-generation-mongodb-drivers?jmp=docs&_ga=1.72964115.1411139568.1420476116)
 * Speed
   * Speed can be influenced by specifying types on all variables
+  * Also take native types for simple things such as counters
   * Also setting constraints like (un)definedness etc on parameters
   * Furthermore the speedup of the language perl6 itself would have more impact than the programming of a several month student(me) can accomplish ;-). In september and also in december 2015 great improvements are made.
   * The compile step of perl6 takes some time before running. This obviously depends on the code base of the programs. One thing I have done is removing all exception classes from the modules and replace them by only one class defined in MongoDB.pm.
@@ -292,6 +316,16 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
   * send the output to a separate class of which the object of it is in a thread. The information is then sent via a channel. This way it will always be synchronized (need to check that though).
   * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of \*-message() function.
   * Use macros to get info at the calling point before sending to \*-message(). This will make the search through the stack unnecessary
+* Use semaphores in Server to get a Socket. Use the socket limit as a parameter. Need also to modify this.
+* Must check for max BSON document size
+* Handle read/write concerns.
+* Handle more options from the mongodb uri
+  * readConcernLevel - defines the level for the read concern.
+  * w - corresponds to w in the class definition.
+  * journal - corresponds to journal in the class definition.
+  * wtimeoutMS - corresponds to wtimeoutMS in the class definition.
+* Take tests from 610 into Control.pm6 for replicaset initialization.
+
 
 ## CHANGELOG
 
@@ -299,6 +333,35 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.30.0
+  * Client, Server and Monitor working together to handle replicasets properly
+* 0.29.0
+  * Replicaset pre-init intialization.
+  * Add servers to replica set
+* 0.28.12
+  * Changing monitoring to be a Supplies instead of using channels.
+  * Major rewrite of Client, Server and Monitor modules.
+  * bugfix in uri. FQDN hostnames couldn't have dots.
+  * Added tests to test Client object behaviour.
+  * select-server() in Client split in multis.
+* 0.28.11
+  * Facturing out code from test environment into MongoDB::Server::Control to have a module to control a server like startup, shutdown, converting a standalone server to a replica server or something else.
+  * Using a new module Config::TOML to control server startup.
+  * Singleton class MongoDB::Config to read config from everywhere.
+  * start-mongod(), stop-mongod(), get-port-number() defined in Control class
+* 0.28.10
+  * Moved Socket.pm6 to MongoDB/Server directory.
+  * bugfix use of number-to-return used in Collection.find().
+* 0.28.9
+  * Factored out monitoring code into MongoDB::Server::Monitor and made it thread save.
+* 0.28.8
+  * Factoring out logging from MongoDB to new module MongoDB::Log
+  * Removed set-exception-throw-level. Is now fixed to level Fatal.
+* 0.28.7
+  * Changes to tests to prepare for start of other types of servers
+  * Modified test Authentication to use the new way of server start and stop subs.
+  * Added test to test for irregular server stops
+  * Added test to create replicaset servers.
 * 0.28.6
   * All modules are set to 'use v6.c'
   * Pod documenttation changes because of latest changes

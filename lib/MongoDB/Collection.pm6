@@ -1,8 +1,6 @@
 use v6.c;
 
 use MongoDB;
-use MongoDB::DatabaseIF;
-use MongoDB::CollectionIF;
 use MongoDB::Wire;
 use MongoDB::Cursor;
 
@@ -10,9 +8,9 @@ use MongoDB::Cursor;
 #
 package MongoDB {
 
-  class Collection is MongoDB::CollectionIF {
+  class Collection {
 
-    has MongoDB::DatabaseIF $.database;
+    has MongoDB::DatabaseType $.database;
     has Str $.name;
     has Str $.full-collection-name;
     has BSON::Document $.read-concern;
@@ -20,18 +18,18 @@ package MongoDB {
     #---------------------------------------------------------------------------
     #
     submethod BUILD (
-      MongoDB::DatabaseIF:D :$database,
+      MongoDB::DatabaseType:D :$database,
       Str:D :$name,
       BSON::Document :$read-concern
     ) {
-
-      debug-message("create collection $name");
 
       $!read-concern =
         $read-concern.defined ?? $read-concern !! $database.read-concern;
 
       $!database = $database;
       self!set-name($name) if ?$name;
+
+      trace-message("create collection $database.name()\.$name");
     }
 
     #---------------------------------------------------------------------------
@@ -43,9 +41,7 @@ package MongoDB {
       List :$criteria where all(@$criteria) ~~ Pair = (),
       List :$projection where all(@$criteria) ~~ Pair = (),
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0, List :$read-concern,
-      :$server is copy #`{{where .^name eq 'MongoDB::Server'}} = Nil
-
+      Int :$flags = 0, List :$read-concern, :$server is copy
       --> MongoDB::Cursor
     ) {
 
@@ -57,8 +53,13 @@ package MongoDB {
          $read-concern.defined ?? BSON::Document.new: $read-concern
                                !! $!read-concern;
 
-      $server = $.database.client.select-server(:read-concern($rc))
+      $server = $!database.client.select-server(:read-concern($rc))
         unless $server.defined;
+
+      if not $server.defined {
+        error-message("No server object for query");
+        return MongoDB::Cursor;
+      }
 
       my BSON::Document $cr .= new: $criteria;
       my BSON::Document $pr .= new: $projection;
@@ -67,12 +68,16 @@ package MongoDB {
         :$number-to-return, :$server
       );
 
-      return MongoDB::Cursor unless $server-reply.defined;
+      if not $server-reply.defined {
+        error-message("No server reply on query");
+        return MongoDB::Cursor;
+      }
 
       return MongoDB::Cursor.new(
         :collection(self),
         :$server-reply,
-        :$server
+        :$server,
+        :$number-to-return
       );
     }
 
@@ -83,33 +88,40 @@ package MongoDB {
       BSON::Document :$criteria = BSON::Document.new,
       BSON::Document :$projection?,
       Int :$number-to-skip = 0, Int :$number-to-return = 0,
-      Int :$flags = 0,
-      BSON::Document :$read-concern,
-      :$server is copy #`{{where .^name eq 'MongoDB::Server'}} = Nil
-
+      Int :$flags = 0, BSON::Document :$read-concern, :$server is copy
       --> MongoDB::Cursor
     ) {
 
 #TODO Check provided structure for the fields.
 
+      my MongoDB::Wire $wire .= new;
+
       my BSON::Document $rc =
         $read-concern.defined ?? $read-concern !! $!read-concern;
 
-      my MongoDB::Wire $wire .= new;
-      $server = $.database.client.select-server(:read-concern($rc))
+      $server = $!database.client.select-server(:read-concern($rc))
         unless $server.defined;
+
+      if not $server.defined {
+        error-message("No server object for query");
+        return MongoDB::Cursor;
+      }
 
       my BSON::Document $server-reply = $wire.query(
         self, $criteria, $projection, :$flags, :$number-to-skip,
         :$number-to-return, :$server
       );
 
-      return MongoDB::Cursor unless $server-reply.defined;
+      if not $server-reply.defined {
+        error-message("No server reply on query");
+        return MongoDB::Cursor;
+      }
 
       return MongoDB::Cursor.new(
         :collection(self),
         :$server-reply,
-        :$server
+        :$server,
+        :$number-to-return
       );
     }
 
@@ -142,8 +154,8 @@ package MongoDB {
     #
     method !set-full-collection-name ( ) {
 
-      return unless !?$.full-collection-name and ?$.database.name and ?$.name;
-      $!full-collection-name = [~] $.database.name, '.', $.name;
+      return unless !?$!full-collection-name and ?$!database.name and ?$!name;
+      $!full-collection-name = [~] $!database.name, '.', $!name;
     }
   }
 }

@@ -1,98 +1,131 @@
 use v6.c;
-use Test;
+
 use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
+use MongoDB::Server::Control;
 
-package Test-support
-{
-  state $empty-document = BSON::Document.new();
+#-------------------------------------------------------------------------------
+unit package MongoDB;
 
-  # N servers started
-  #
-  my $nbr-of-servers = 3;
-  our $server-range = (^$nbr-of-servers + 1);
+#-------------------------------------------------------------------------------
+class Test-support {
 
-  #-----------------------------------------------------------------------------
-  # Get selected port number. When file is not there the process fails.
-  #
-  sub get-port-number ( Int :$server = 1 --> Int ) is export {
+  # N servers needed for the tests
+  has Int $!nbr-of-servers;
+  has Range $.server-range;
 
-    $server = 1 unless  $server ~~ any $server-range;
+  has MongoDB::Server::Control $.server-control;
 
-    if "Sandbox/Server$server/port-number".IO !~~ :e {
-      plan 1;
-      flunk('No port number found, Sandbox cleaned up?');
-      skip-rest('No port number found, Sandbox cleaned up?');
-      exit(0);
+  submethod BUILD ( ) {
+  
+    # Init here because of need in BUILD later
+    $!nbr-of-servers = 4;
+    $!server-range = (^$!nbr-of-servers + 1);
+
+    #-----------------------------------------------------------------------------
+    # If we are under the scrutany of TRAVIS then adjust the path where to find the
+    # mongod/mongos binaries
+    #
+    if ? %*ENV<TRAVIS> {
+      %*ENV<PATH> = "$*CWD/Travis-ci/MongoDB:%*ENV<PATH>";
     }
 
-    my $port-number = slurp("Sandbox/Server$server/port-number").Int;
-    return $port-number;
+    #-------------------------------------------------------------------------------
+    # Check directory Sandbox and start config file
+    #
+    unless 'Sandbox'.IO ~~ :d {
+
+      mkdir( 'Sandbox', 0o700);
+      my Int $start-portnbr = 65000;
+      my Str $config-text = Q:qq:to/EOCONFIG/;
+
+        # Configuration file for the servers in the Sandbox
+        # Settings are specifically for test situations and not for deployment
+        # situations!
+        #
+        [Account]
+          user = 'test_user'
+          pwd = 'T3st-Us3r'
+
+        [Binaries]
+          mongod = '$*CWD/Travis-ci/MongoDB/mongod'
+
+        [mongod]
+          nojournal = true
+          fork = true
+          quiet = true
+          smallfiles = true
+          oplogSize = 128
+
+        EOCONFIG
+
+
+      #-------------------------------------------------------------------------------
+      for @$!server-range -> Int $server-number {
+
+        my Str $server-dir = "Sandbox/Server$server-number";
+        mkdir( $server-dir, 0o700) unless $server-dir.IO ~~ :d;
+        mkdir( "$server-dir/m.data", 0o700) unless "$server-dir/m.data".IO ~~ :d;
+
+        my Int $port-number = self!find-next-free-port($start-portnbr);
+        $start-portnbr = $port-number + 1;
+
+        # Save portnumber for later tests
+        #
+        spurt "$server-dir/port-number", $port-number;
+
+        $config-text ~= Q:qq:to/EOCONFIG/;
+
+          # Configuration for Server $server-number
+          #
+          [mongod.s$server-number]
+            logpath = '$*CWD/$server-dir/m.log'
+            pidfilepath = '$*CWD/$server-dir/m.pid'
+            dbpath = '$*CWD/$server-dir/m.data'
+            port = $port-number
+
+          [mongod.s$server-number.replicate1]
+            replSet = 'first_replicate'
+
+          [mongod.s$server-number.replicate2]
+            replSet = 'second_replicate'
+
+          [mongod.s$server-number.authenticate]
+            auth = true
+
+          EOCONFIG
+      }
+
+      my Str $file = 'Sandbox/config.toml';
+      spurt( $file, $config-text);
+    }
+
+    $!server-control .= new(:file<Sandbox/config.toml>);
+#    say "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
   }
 
   #-----------------------------------------------------------------------------
   # Get a connection.
   #
-  sub get-connection ( Int :$server = 1 --> MongoDB::Client ) is export {
+  method get-connection ( Int :$server = 1 --> MongoDB::Client ) {
 
-    $server = 1 unless  $server ~~ any $server-range;
+    $server = 1 unless $server ~~ any $!server-range;
 
-    if "Sandbox/Server$server/NO-MONGODB-SERVER".IO ~~ :e {
-      plan 1;
-      flunk('No database server started!');
-      skip-rest('No database server started!');
-      exit(0);
-    }
-
-    my Int $port-number = get-port-number(:$server);
+    my Int $port-number = $!server-control.get-port-number("s$server");
     my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
 
     return $client;
   }
 
   #-----------------------------------------------------------------------------
-  # Test communication after starting up db server
-  #
-  sub get-connection-try10 ( Int :$server = 1 --> MongoDB::Client ) is export {
-
-    $server = 1 unless  $server ~~ any $server-range;
-
-    my Int $port-number = get-port-number(:$server);
-    my MongoDB::Client $client;
-    for ^10 {
-      $client .= new(:uri("mongodb://localhost:$port-number"));
-      if ? $client.status {
-        diag [~] "Error: ",
-                 $client.status.error-text,
-                 ". Wait a bit longer";
-        sleep 2;
-      }
-    }
-
-    return $client;
-  }
-
-  #-----------------------------------------------------------------------------
-  # Get collection object
-  #
-  sub get-test-collection ( Str $db-name,
-                            Str $col-name
-                            --> MongoDB::Collection
-                          ) is export {
-
-    my MongoDB::Client $client = get-connection();
-    my MongoDB::Database $database .= new($db-name);
-    return $database.collection($col-name);
-  }
-
-  #-----------------------------------------------------------------------------
   # Search and show content of documents
   #
-  sub show-documents ( MongoDB::Collection $collection,
-                       BSON::Document $criteria,
-                       BSON::Document $projection = $empty-document
-                     ) is export {
+  method show-documents (
+    MongoDB::Collection $collection,
+    BSON::Document $criteria,
+    BSON::Document $projection = BSON::Document.new()
+  ) {
 
     say '-' x 80;
 
@@ -101,8 +134,86 @@ package Test-support
       say $document.perl;
     }
   }
-}
 
+  #-----------------------------------------------------------------------------
+  =begin comment
+    Test for usable port number
+    According to https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
+
+    Dynamic, private or ephemeral (lasting for a very short time) ports
+
+    The range 49152-65535 (2**15+2**14 to 2**16-1) contains dynamic or
+    private ports that cannot be registered with IANA. This range is used
+    for private, or customized services or temporary purposes and for automatic
+    allocation of ephemeral ports.
+
+    According to  https://en.wikipedia.org/wiki/Ephemeral_port
+
+    Many Linux kernels use the port range 32768 to 61000.
+    FreeBSD has used the IANA port range since release 4.6.
+    Previous versions, including the Berkeley Software Distribution (BSD), use
+    ports 1024 to 5000 as ephemeral ports.[2]
+
+    Microsoft Windows operating systems through XP use the range 1025-5000 as
+    ephemeral ports by default.
+    Windows Vista, Windows 7, and Server 2008 use the IANA range by default.
+    Windows Server 2003 uses the range 1025-5000 by default, until Microsoft
+    security update MS08-037 from 2008 is installed, after which it uses the
+    IANA range by default.
+    Windows Server 2008 with Exchange Server 2007 installed has a default port
+    range of 1025-60000.
+    In addition to the default range, all versions of Windows since Windows 2000
+    have the option of specifying a custom range anywhere within 1025-365535.
+  =end comment
+
+  method !find-next-free-port ( Int $start-portnbr --> Int ) {
+
+    # Search from port 65000 until the last of possible port numbers for a free
+    # port. this will be configured in the mongodb config file. At least one
+    # should be found here.
+    #
+    my Int $port-number;
+    for $start-portnbr ..^ 2**16 -> $port {
+      my $s = IO::Socket::INET.new( :host('localhost'), :$port);
+      $s.close;
+
+      # On connect failure there was no service available on that port and
+      # an exception is thrown. Catch and save
+      CATCH {
+        default {
+          $port-number = $port;
+          last;
+        }
+      }
+    }
+
+    $port-number;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Remove everything setup in directory Sandbox
+  method cleanup-sandbox ( ) {
+
+    # Make recursable sub
+    my $cleanup-dir = sub ( Str $dir-entry ) {
+      for dir($dir-entry) -> $entry {
+        if $entry ~~ :d {
+          $cleanup-dir(~$entry);
+          rmdir ~$entry;
+        }
+
+        else {
+          unlink ~$entry;
+        }
+      }
+    }
+
+    # Run the sub with top directory 'Sandbox'.
+    $cleanup-dir('Sandbox');
+
+    rmdir "Sandbox";
+  }
+}
 
 
 

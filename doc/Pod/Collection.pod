@@ -147,18 +147,14 @@ The _id field is always included unless explicitly excluded like B<<(_id => 0,)>
 The method returns a C<MongoDB::Cursor>.
 
 =for item1
-B<:number-to-skip> is used to skip a number of documents. By default 0 meaning
-all documents of the found set are to be returned.
+B<:number-to-skip>. Sets the number of documents to omit - starting from the first document in the resulting dataset - when returning the result of the query.
 
 =for item1
-B<:number-to-return> is used to ask for a specific number of documents. By
-default 0 meaning that none of the documents from the found set should be
-skipped first.
+B<:number-to-return>. Limits the number of documents in the first OP_REPLY message to the query. However, the database will still establish a cursor and return the cursorID to the client if there are more results than number-to-return. If number-to-return is 0, the db will use the default return size. If the number is negative, then the database will return that number and close the cursor. No further results for that query can be fetched. If number-to-return is 1 the server will treat it as -1 (closing the cursor automatically).
 
 =begin item1
 
-C<:flags>. This ia a bit variable which can be set using the mask values below.
-An example;
+C<:flags>. This ia a bit variable which can be set using the mask values below. An example;
 
   my $c = $collection.find(
    :flags(MongoDB::C-QF-SLAVEOK +| MongoDB::C-QF-NOCURSORTIMOUT)

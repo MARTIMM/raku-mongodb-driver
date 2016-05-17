@@ -1,58 +1,93 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
-use MongoDB::Socket;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
+my MongoDB::Test-support $ts .= new;
+
+my Int $p1 = $ts.server-control.get-port-number('s1');
+my Int $p2 = $ts.server-control.get-port-number('s2');
 my MongoDB::Client $client;
-my BSON::Document $req;
-my BSON::Document $doc;
+my MongoDB::Server $server;
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my Str $server-name = 'non-existent-server.with-unknown.domain:65535';
+  $client .= new(:uri("mongodb://$server-name"));
+  is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
+
+  $server = $client.select-server;
+  nok $server.defined, 'No servers selected';
+  is $client.nbr-servers, 1, 'One server found';
+  is $client.server-status($server-name ), MongoDB::C-NON-EXISTENT-SERVER,
+     "Status of server is non existent";
+
+}, 'Non existent server';
 
 #-------------------------------------------------------------------------------
 subtest {
 
   $client .= new(:uri("mongodb://localhost:65535"));
-  is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
-  my MongoDB::Server $server = $client.select-server;
+  $server = $client.select-server;
   nok $server.defined, 'No servers selected';
-  is $client.nbr-servers, 0, 'No servers found';
+  is $client.nbr-servers, 1, 'One server found';
+  is $client.server-status('localhost:65535'), MongoDB::C-DOWN-SERVER,
+     "Status of server is down";
 
+}, 'Down server';
 
-  my $p1 = get-port-number(:server(1));
+#-------------------------------------------------------------------------------
+subtest {
 
-  $client .= new(:uri("mongodb://localhost:$p1"));
-  while !$client.nbr-servers {
-    is $client.nbr-servers, 1, 'One server found';
-  }
-  is $client.nbr-left-actions, 0, 'No actions left';
-  is $client.found-master, True, 'Found a master';
+  $client .= new(:uri("mongodb://:$p1"));
+  $server = $client.select-server;
 
+  is $client.nbr-servers, 1, 'One server found';
+  is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
+     "Status of server is master";
+  
+}, "Standalone server";
+
+#-------------------------------------------------------------------------------
+subtest {
 
   $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
-  while !$client.nbr-servers { }
+  $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server accepted, two were equal';
 
+}, "Two equal servers";
 
+#-------------------------------------------------------------------------------
+subtest {
 
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+  $client .= new(:uri("mongodb://:$p1,:$p2"));
+  $server = $client.select-server;
+  is $server.get-status, MongoDB::C-MASTER-SERVER,
+     "Server $server.name() is master";
 
-  my $p2 = get-port-number(:server(2));
+  if $server.name ~~ m/$p1/ {
+    is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
+       "Server localhost:$p2 is rejected";
+  }
 
-  $client .= new(:uri("mongodb://localhost:$p1,localhost:$p2"));
-  while !$client.nbr-servers { }
-  is $client.nbr-servers, 1,
-     "Server $client.select-server.name() accepted, two servers were master";
+  else {
+    is $client.server-status('localhost:' ~ $p1), MongoDB::C-REJECTED-SERVER,
+       "Server localhost:$p1 is rejected";
+  }
 
-}, 'Independent servers';
+  is $client.nbr-servers, 2, 'Two servers found';
+
+}, "Two standalone servers";
 
 #-------------------------------------------------------------------------------
 # Cleanup

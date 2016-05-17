@@ -1,16 +1,21 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Database;
 use MongoDB::Client;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Info);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
+my MongoDB::Test-support $ts .= new;
+
+my MongoDB::Client $client = $ts.get-connection();
 my MongoDB::Database $database = $client.database('test');
 
 # Create collection and insert data in it!
@@ -22,7 +27,7 @@ my BSON::Document $req;
 my BSON::Document $doc;
 my MongoDB::Cursor $cursor;
 
-$database.run-command: (drop => $collection.name);
+$database.run-command: (drop => $collection.name,);
 
 #-------------------------------------------------------------------------------
 subtest {

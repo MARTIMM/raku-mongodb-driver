@@ -1,18 +1,22 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Cursor;
 use BSON::ObjectId;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
+my MongoDB::Test-support $ts .= new;
+
+my MongoDB::Client $client = $ts.get-connection();
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('testf');
@@ -20,7 +24,7 @@ my BSON::Document $req;
 my BSON::Document $doc;
 my MongoDB::Cursor $cursor;
 
-$database.run-command: (dropDatabase => 1);
+$database.run-command: (dropDatabase => 1,);
 
 $req .= new: (
   insert => $collection.name,

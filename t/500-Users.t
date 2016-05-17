@@ -1,38 +1,30 @@
 use v6.c;
 use lib 't';
-use Test-support;
+
 use Test;
+use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Users;
 use MongoDB::Database;
 use MongoDB::Collection;
-
-#`{{
-  Testing;
-    Username and password check init
-    Create a user
-    Drop a user
-    Drop all users
-    Users info
-    Grant roles
-    Revoke roles
-    Update user
-}}
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
+my MongoDB::Test-support $ts .= new;
+
+my MongoDB::Client $client = $ts.get-connection();
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $doc;
 my MongoDB::Users $users .= new(:$database);
 
-$database.run-command: (dropDatabase => 1);
-$database.run-command: (dropAllUsersFromDatabase => 1);
+$database.run-command: (dropDatabase => 1,);
+$database.run-command: (dropAllUsersFromDatabase => 1,);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -53,7 +45,7 @@ subtest {
   is $doc<ok>, 0, 'Request failed this time';
   is $doc<errmsg>, 'User "mt@test" already exists', $doc<errmsg>;
 
-  $doc = $database.run-command: (dropUser => 'mt');
+  $doc = $database.run-command: (dropUser => 'mt',);
   is $doc<ok>, 1, 'User mt deleted';
   
 }, "Test user management";
@@ -122,7 +114,7 @@ say $doc.perl;
   ok $doc<ok>, 'User mt-and-another-few-chars created';
 
 
-  $doc = $database.run-command: (dropUser => 'mt-and-another-few-chars');
+  $doc = $database.run-command: (dropUser => 'mt-and-another-few-chars',);
   ok $doc<ok>, 'User mt-and-another-few-chars deleted';
 
 }, "Test username and password checks";
@@ -138,7 +130,7 @@ subtest {
 
   ok $doc<ok>, 'User mt created';
 
-  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'));
+  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'),);
 
   my $u = $doc<users>[0];
   is $u<_id>, 'test.mt', $u<_id>;
@@ -157,7 +149,7 @@ subtest {
 
   ok $doc<ok>, 'User mt updated';
 
-  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'));
+  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'),);
   $u = $doc<users>[0];
   is $u<roles>[0]<role>, any(<readWrite dbAdmin>), $u<roles>[0]<role>;
   is $u<roles>[0]<db>, any(<test1 test2>), $u<roles>[0]<db>;
@@ -171,7 +163,7 @@ subtest {
   );
   ok $doc<ok>, 'User roles mt updated';
 
-  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'));
+  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'),);
   $u = $doc<users>[0];
   is $u<roles>.elems, 3, 'Now 3 roles defined';
   is $u<roles>[2]<role>, any(<readWrite dbAdmin dbOwner>), $u<roles>[2]<role>;
@@ -185,22 +177,22 @@ subtest {
   ok $doc<ok>, 'User roles mt revoked';
 
 
-  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'));
+  $doc = $database.run-command: (usersInfo => ( user => 'mt', db => 'test'),);
   $u = $doc<users>[0];
   is $u<roles>.elems, 2, 'Now 2 roles left';
   is $u<roles>[0]<role>, any(<readWrite dbOwner>), $u<roles>[0]<role>;
 
 
-  $doc = $database.run-command: (usersInfo => 1);
+  $doc = $database.run-command: (usersInfo => 1,);
   is $doc<users>.elems, 1, 'Only one user defined';
 #say "Doc: ", $doc.perl;
 
 
-  $doc = $database.run-command: (dropAllUsersFromDatabase => 1);
+  $doc = $database.run-command: (dropAllUsersFromDatabase => 1,);
   ok $doc<ok>, 'All users dropped';
 #say "Doc: ", $doc.perl;
 
-  $doc = $database.run-command: (usersInfo => 1);
+  $doc = $database.run-command: (usersInfo => 1,);
   is $doc<users>.elems, 0, 'No users in database';
 
 }, 'account info and drop all users';
@@ -208,7 +200,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$database.run-command: (dropDatabase => 1);
+$database.run-command: (dropDatabase => 1,);
 
 info-message("Test $?FILE start");
 done-testing();

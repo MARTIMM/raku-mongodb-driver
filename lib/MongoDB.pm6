@@ -1,362 +1,110 @@
 use v6.c;
+use MongoDB::Log :ALL;
+
+sub EXPORT { {
+    '&set-exception-process-level'      => &set-exception-process-level,
+    '&set-exception-processing'         => &set-exception-processing,
+    '&set-logfile'                      => &set-logfile,
+    '&open-logfile'                     => &open-logfile,
+
+    '&trace-message'                    => &trace-message,
+    '&debug-message'                    => &debug-message,
+    '&info-message'                     => &info-message,
+    '&warn-message'                     => &warn-message,
+    '&error-message'                    => &error-message,
+    '&fatal-message'                    => &fatal-message,
+  }
+};
 
 #-------------------------------------------------------------------------------
-#
-package MongoDB:ver<0.28.6> {
+package MongoDB {
 
   #-----------------------------------------------------------------------------
-  # Definition of all severity types
+  # Client object topology types
   #
-  enum Severity <Trace Debug Info Warn Error Fatal>;
+  subset TopologyType of Int where 40 <= $_ <= 43;
 
-  # Must keep the following variables here because it must be possible to set
-  # these before creating the exception.
-  #
-  our $severity-throw-level = Fatal;
-  our $severity-process-level = Info;
-
-  our $do-log = True;
-  our $do-check = True;
-
-  our $log-fh;
-  our $log-fn = 'MongoDB.log';
+  constant C-UNKNOWN-TPLGY                 = 40;   # Start value
+  constant C-STANDALONE-TPLGY              = 41;   # Standalone, one server
+  constant C-REPLSET-WITH-PRIMARY-TPLGY    = 42;   # Replicaset with prim
+  constant C-REPLSET-NO-PRIMARY-TPLGY      = 43;   # Replicaset without prim
 
   #-----------------------------------------------------------------------------
-  # Exceptions only thrown at Error or Fatal
+  # Status values of a Server.object
   #
-  sub set-exception-throw-level (
-    Severity:D $s where Error <= $s <= Fatal
-  ) is export {
-    $severity-throw-level = $s;
-  }
+  subset ServerStatus of Int where 10 <= $_ <= 22;
+
+  constant C-UNKNOWN-SERVER          = 10;   # Start value
+  constant C-NON-EXISTENT-SERVER     = 11;   # DNS problems
+  constant C-DOWN-SERVER             = 12;   # Connection problems
+  constant C-RECOVERING-SERVER       = 13;   # -
+
+  constant C-REJECTED-SERVER         = 14;   # Client status of Server object
+  constant C-GHOST-SERVER            = 15;   # -
+
+  constant C-REPLICA-PRE-INIT        = 16;   # Standalone start with option
+  constant C-REPLICASET-PRIMARY      = 17;   # Primary after replSetInitiate
+  constant C-REPLICASET-SECONDARY    = 18;   # Secondary after replSetReconfig
+  constant C-REPLICASET-ARBITER      = 19;   # -
+
+  constant C-SHARDING-SERVER         = 20;   # -
+  constant C-MASTER-SERVER           = 21;   # Standalone master
+  constant C-SLAVE-SERVER            = 22;   # -
 
   #-----------------------------------------------------------------------------
-  # Logging always for Errors and Fatal
+  # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
   #
-  sub set-exception-process-level (
-    Severity:D $s where Trace <= $s <= Warn
-  ) is export {
-    $severity-process-level = $s;
-  }
+  subset WireOpcode of Int where ($_ == 1 or $_ == 1000 or 2001 <= $_ <= 2007);
+
+  constant C-OP-REPLY           = 1;    # Reply to a client request.responseTo is set
+  constant C-OP-MSG             = 1000; # generic msg command followed by a string. deprecated
+  constant C-OP-UPDATE          = 2001; # update document
+  constant C-OP-INSERT          = 2002; # insert new document
+  constant C-OP-RESERVED        = 2003; # formerly used for OP_GET_BY_OID
+  constant C-OP-QUERY           = 2004; # query a collection
+  constant C-OP-GET-MORE        = 2005; # Get more data from a query. See Cursors
+  constant C-OP-DELETE          = 2006; # Delete documents
+  constant C-OP-KILL-CURSORS    = 2007; # Tell database client is done with a cursor
+
+  #-----------------------------------------------------------------------------
+  # Query flags
+  #
+  subset QueryFindFlags of Int where $_ ~~ any(0x02,0x04...0x80);
+
+  constant C-QF-RESERVED        = 0x01;
+  constant C-QF-TAILABLECURSOR  = 0x02; # corresponds to TailableCursor. Tailable means cursor is not closed when the last data is retrieved. Rather, the cursor marks the final object\u2019s position. You can resume using the cursor later, from where it was located, if more data were received. Like any \u201clatent cursor\u201d, the cursor may become invalid at some point (CursorNotFound) \u2013 for example if the final object it references were deleted.
+  constant C-QF-SLAVEOK         = 0x04; # corresponds to SlaveOk.Allow query of replica slave. Normally these return an error except for namespace \u201clocal\u201d.
+  constant C-QF-OPLOGREPLAY     = 0x08; # corresponds to OplogReplay. Internal replication use only - driver should not set.
+  constant C-QF-NOCURSORTIMOUT  = 0x10; # corresponds to NoCursorTimeout. The server normally times out idle cursors after an inactivity period (10 minutes) to prevent excess memory use. Set this option to prevent that.
+  constant C-QF-AWAITDATA       = 0x20; # corresponds to AwaitData. Use with TailableCursor. If we are at the end of the data, block for a while rather than returning no data. After a timeout period, we do return as normal.
+  constant C-QF-EXHAUST         = 0x40; # corresponds to Exhaust. Stream the data down full blast in multiple \u201cmore\u201d packages, on the assumption that the client will fully read all data queried. Faster when you are pulling a lot of data and know you want to pull it all down. Note: the client is not allowed to not read all the data unless it closes the connection.
+  constant C-QF-PORTAIL         = 0x80; # corresponds to Partial. Get partial results from a mongos if some shards are down (instead of throwing an error)
+
+  #-----------------------------------------------------------------------------
+  # Response flags
+  #
+  constant C-RF-CursorNotFound  = 0x01; # corresponds to CursorNotFound. Is set when getMore is called but the cursor id is not valid at the server. Returned with zero results.
+  constant C-RF-QueryFailure    = 0x02; # corresponds to QueryFailure. Is set when query failed. Results consist of one document containing an \u201c$err\u201d field describing the failure.
+  constant C-RF-ShardConfigStale= 0x04; # corresponds to ShardConfigStale. Drivers should ignore this. Only mongos will ever see this set, in which case, it needs to update config from the server.
+  constant C-RF-AwaitCapable    = 0x08; # corresponds to AwaitCapable. Is set when the server supports the AwaitData Query option. If it doesn\u2019t, a client should sleep a little between getMore\u2019s of a Tailable cursor. Mongod version 1.6 supports AwaitData and thus always sets AwaitCapable.
+
+  #-----------------------------------------------------------------------------
+  # Other types
+
+  # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
+  subset PortType of Int where 0 < $_ <= 65535;
+  
+  subset SocketLimit of Int where $_ >= 3;
+
+  # Helper constraints when module cannot be loaded(use)
+  subset ClientType where .^name eq 'MongoDB::Client';
+  subset DatabaseType where .^name eq 'MongoDB::Database';
+  subset CollectionType where .^name eq 'MongoDB::Collection';
+  subset ServerType where .^name eq 'MongoDB::Server';
+  subset SocketType where .^name eq 'MongoDB::Socket';
 
   #-----------------------------------------------------------------------------
   #
-  sub set-exception-processing (
-    Bool :$logging = True,
-    Bool :$checking = True
-  ) is export {
-    $do-log = $logging;
-    $do-check = $checking;
-  }
+  signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
-  #-----------------------------------------------------------------------------
-  #
-  multi sub set-logfile ( Str:D $filename! ) is export {
-    $log-fn = $filename;
-  }
-
-  #-----------------------------------------------------------------------------
-  #
-  multi sub set-logfile ( IO::Handle:D $file-handle! ) is export {
-    $log-fh.close if ? $log-fh and $log-fh !eqv $*OUT and $log-fh !eqv $*ERR;
-    $log-fh = $file-handle;
-  }
-
-  #-----------------------------------------------------------------------------
-  #
-  sub open-logfile (  ) is export {
-    $log-fh.close if ? $log-fh and $log-fh !eqv $*OUT and $log-fh !eqv $*ERR;
-    $log-fh = $log-fn.IO.open: :a;
-  }
-
-  #-----------------------------------------------------------------------------
-  # A role to be used to handle exceptions.
-  #
-  role Logging {
-
-    #---------------------------------------------------------------------------
-    #
-    method mlog ( ) {
-
-#note "Mlog: {self.severity} >= $severity-process-level: ",
-#    self.severity >= $severity-process-level;
-
-      return unless ($do-log and (self.severity >= $severity-process-level));
-#note "log message: {self.message}";
-
-      # Check if file is open.
-      #
-      open-logfile() unless ? $log-fh;
-
-      # Define log text. If severity > Info insert empty line
-      #
-      my Str $dt-str = $.date-time.utc.Str;
-      $dt-str ~~ s/\.\d+Z$//;
-      $dt-str ~~ s/T/ /;
-      my Str $etxt ~= [~] $dt-str,
-                   " [{uc self.severity}]",
-                   self."{lc(self.severity)}"(),
-                   "\n";
-      $log-fh.print($etxt);
-    }
-
-    #-----------------------------------------------------------------------------
-    # Absolute methods. Must be defined by user of this role
-    #
-    method trace ( --> Str ) { ... }
-    method debug ( --> Str ) { ... }
-    method info ( --> Str ) { ... }
-    method warn ( --> Str ) { ... }
-    method error ( --> Str ) { ... }
-    method fatal ( --> Str ) { ... }
-
-    method message ( --> Str ) { ... }
-  }
-
-  #-------------------------------------------------------------------------------
-  #
-  class Message is Exception does MongoDB::Logging {
-    has Str $.message;            # Error text and error code are data mostly
-    has Str $.code;               # originated from the mongod server
-    has Str $.oper-data;          # Operation data are items sent to the server
-    has Str $.collection-ns;      # Collection name space == dbname.clname
-    has Str $.method;             # Method or routine name
-    has Int $.line;               # Line number where Message is called
-    has Str $.file;               # File in which that happened
-
-    has MongoDB::Severity $.severity;   # Severity level
-    has DateTime $.date-time;           # Date and time of creation.
-
-    my Semaphore $control-logging .= new(1) unless $control-logging.defined;
-
-    #-----------------------------------------------------------------------------
-    #
-    method log (
-      Str:D :$message,
-      :$code where $_ ~~ any(Int|Str) = '',
-      Str :$oper-data = '',
-      Str :$collection-ns = '',
-      MongoDB::Severity :$severity = MongoDB::Severity::Warn,
-    ) {
-#say 'l 0';
-      return
-        unless ($do-check and ($severity >= $severity-throw-level))
-        or ($do-log and ($severity >= $severity-process-level));
-
-
-#say "l 1: {callframe(3).line} {callframe(3).file}";
-      $control-logging.acquire;
-#say "l 2";
-#say "Severity $severity, $message";
-      my CallFrame $cf = self!search-callframe(Method);
-      $cf = self!search-callframe(Submethod) unless $cf.defined;
-      $cf = self!search-callframe(Sub) unless $cf.defined;
-      $cf = self!search-callframe(Block) unless $cf.defined;
-
-      if $cf.defined {
-        $!line = $cf.line.Int // 1;
-        $!file = $cf.file // '';
-        $!file ~~ s/$*CWD/\./;
-        $!method = $cf.code.name // '';
-      }
-
-      else {
-        $!line = 0;
-        $!file = $!method = '';
-      }
-
-      $!message           = $message;
-      $!code              = ~$code;
-      $!oper-data         = $oper-data;
-      $!collection-ns     = $collection-ns;
-
-      $!severity          = $severity;
-      $!date-time         .= now;
-
-      self.mlog;
-
-      # Must release the lock here because after a catched message the software
-      # can again call log(). We clone this object so that a waiting thread is not
-      # messing up the data
-      #
-      my $copy = self.clone;
-#say "l 3";
-      $control-logging.release;
-
-      return unless ($do-check and ($copy.severity >= $severity-throw-level));
-#say "l 4";
-      die $copy;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method !search-callframe ( $type --> CallFrame ) {
-
-      # Skip callframes for
-      # 0  search-callframe(method)
-      # 1  log(method)
-      # 2  *-message(sub) helper functions
-      #    Can be bypassed by using $MongoDB::logger.log() directly.
-      #
-      my $fn = 3;
-      while my CallFrame $cf = callframe($fn++) {
-
-        # End loop with the program that starts on line 1 and code object is
-        # a hollow shell.
-        #
-        if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
-          $cf = Nil;
-          last;
-        }
-
-        # Cannot pass sub THREAD-ENTRY either
-        #
-        if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
-          $cf = Nil;
-          last;
-        }
-
-#say "cf $fn: ", $cf.line, ', ', $cf.code.WHAT, ', ', $cf.code.^name,
-#', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
-
-        # Try to find a better place instead of dispatch:...
-        #
-        next if $cf.code ~~ $type and $cf.code.name ~~ m/dispatch/;
-
-        last if $cf.code ~~ $type;
-      }
-
-      return $cf;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method dump-callframes ( ) {
-
-      my $fn = 1;
-      while my CallFrame $cf = callframe($fn++) {
-
-        # End loop with the program that starts on line 1 and code object is
-        # a hollow shell.
-        #
-        if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
-          last;
-        }
-
-        # Cannot pass sub THREAD-ENTRY either
-        #
-        if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
-          last;
-        }
-
-        say $fn.fmt('%02d'), ': ' , $cf.line, ', ', $cf.code.WHAT,
-            ', ', $cf.code.^name,
-            ', ', ($cf.code.^can('name') ?? $cf.code.name !! '-');
-      }
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method trace ( --> Str ) {
-      return [~] " $!message.",
-                 ? $!method ?? " From method $!method" !! '',
-#                 " at $!file\:$!line",
-                 ;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method debug ( --> Str ) {
-      return [~] " $!message.",
-                 ? $!code ?? " \({$!code})" !! '',
-                 ? $!collection-ns ?? "c-ns=$!collection-ns" !! '',
-                 ? $!method ?? " From method $!method" !! '',
-#                 " at $!file\:$!line"
-                 ;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method info ( --> Str ) {
-      return [~] " $!message.",
-                 ? $!code ?? " \({$!code})" !! '',
-                 ? $!collection-ns ?? " Collection namespace $!collection-ns." !! '',
-                 ? $!method ?? " From method $!method" !! '',
-                 " at $!file\:$!line"
-                 ;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method warn ( --> Str ) {
-      return self.message;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method error ( --> Str ) {
-      return self.message;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method fatal ( --> Str ) {
-      return self.message;
-    }
-
-    #-----------------------------------------------------------------------------
-    #
-    method message ( --> Str ) {
-      return [~] "\n  $!message.",
-                 ? $!code ?? " \({$!code})" !! '',
-                 ? $!oper-data ?? "\n  Request data: $!oper-data" !! '',
-                 ? $!collection-ns
-                   ?? "\n  Collection namespace $!collection-ns" !! '',
-                 ? $!method ?? "\n  From method $!method" !! '',
-                 " at $!file\:$!line"
-                 ;
-    }
-  }
-
-#TODO Make a singleton exception processor
-#TODO Make a singleton logger
-
-  # Declare a message object to be used anywhere
-  #
-  state MongoDB::Message $logger .= new;
-
-  sub combine-args ( $c, $s) {
-    my %args = $c.kv;
-    if $c.elems and $c<message>:!exists {
-      my Str $msg = $c[0] // '';
-      %args<message> = $msg;
-    }
-    %args<severity> = $s;
-    return %args;
-  }
-
-  sub trace-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Trace));
-  }
-
-  sub debug-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Debug));
-  }
-
-  sub info-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Info));
-  }
-
-  sub warn-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Warn));
-  }
-
-  sub error-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Error));
-  }
-
-  sub fatal-message ( |c ) is export {
-    $logger.log(|combine-args( c, Severity::Fatal));
-  }
 }
-
