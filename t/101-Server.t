@@ -21,7 +21,7 @@ my MongoDB::Server $server;
 #-------------------------------------------------------------------------------
 subtest {
 
-  $client = $ts.get-connection(:server(4));
+  $client = $ts.get-connection(:server(3));
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, 'Connection server available';
 
