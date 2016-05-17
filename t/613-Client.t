@@ -30,7 +30,6 @@ subtest {
   sleep 5;
   is $c-s1.nbr-servers, 3, '3 servers in replica';
 
-  my MongoDB::Server $s-s1 = $c-s1.select-server;
   ok $s-s1.defined, 'Server defined';
   is $s-s1.get-status, MongoDB::C-REPLICASET-PRIMARY,
      'Selected server is primary';
@@ -44,9 +43,9 @@ subtest {
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
   diag "checkout uri 'mongodb://:$p2/?replicaSet=$rs1-s2'";
   my MongoDB::Client $c-s2 .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Server $s-s2 = $c-s2.select-server;
   sleep 10;
   is $c-s2.nbr-servers, 3, '3 servers in replica';
-  my MongoDB::Server $s-s2 = $c-s2.select-server;
   ok $s-s2.defined, 'Server selected';
   is $s-s2.get-status, MongoDB::C-REPLICASET-PRIMARY, 'Server 2 is primary';
 
@@ -62,8 +61,6 @@ subtest {
   $s-s3 = $c-s3.select-server(:needed-state(MongoDB::C-REPLICASET-SECONDARY));
   ok $s-s3.defined, 'Secondary server found';
   is $s-s3.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 3 is secondary';
-
-#sleep 10;
 
 }, "Client behaviour";
 

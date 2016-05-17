@@ -129,13 +129,11 @@ is $doc<value>, Any, 'record not found';
 # Finding things
 #
 my MongoDB::Collection $collection = $database.collection('names');
-my MongoDB::Cursor $cursor = $collection.find: (
-
-), (
+my MongoDB::Cursor $cursor = $collection.find: ( ), (
   _id => 0, name => 1, surname => 1, type => 1
 );
 
-for $cursor.fetch -> BSON::Document $d {
+while $cursor.fetch -> BSON::Document $d {
   say "Name and surname: ", $d<name>, ' ', $d<surname>
       ($d<type> ?? ", $d<type>" !! '');
 
@@ -191,7 +189,7 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. It should be possible to have a mix of all this when there are several databases with collections which cannot be merged onto one server, replica set or otherwise. A user must have a way to send the task to one or the other server/replicaset/shard.
 
-  ### Test cases handling servers in Client object
+  ### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
 
 Tested|Test Filename|Test Purpose
 -|-
@@ -199,15 +197,17 @@ x|110-Client|Unknown server, fails DNS lookup
 x||Down server, no connection
 x||Standalone server, not in replicaset
 x||Two standalone servers, one gets rejected
-x|111-Client|Standalone server brought down and revived, Client object must follow
+x|111-client|Standalone server brought down and revived, Client object must follow
 x||Shutdown server and restart while inserting records
 x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.
 x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.
 x||Replicaset pre-init initialization to master server and update master info
-x|611-Client|Replicaserver rejected when there is no replica option in uri
+x|612-repl-start|Convert pre init replica server to master
+x|611-client|Replicaserver rejected when there is no replica option in uri
 x||Standalone server rejected when used in mix with replica option defined
-||Replicaset server master in uri, must search for secondaries and add them
-||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
+x|612-repl-start|Add servers to replicaset
+x|613-Client|Replicaset server master in uri, must search for secondaries and add them
+x||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
 
 ## API CHANGES
 
@@ -333,6 +333,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.30.0
+  * Client, Server and Monitor working together to handle replicasets properly
 * 0.29.0
   * Replicaset pre-init intialization.
   * Add servers to replica set

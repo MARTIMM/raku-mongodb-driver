@@ -18,8 +18,6 @@ my MongoDB::Test-support $ts .= new;
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 
-my MongoDB::Test-support $ts .= new;
-
 #-------------------------------------------------------------------------------
 subtest {
 

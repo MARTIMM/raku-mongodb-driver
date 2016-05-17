@@ -202,8 +202,8 @@ say 'new client 1';
 
 #say 'Master server name: ', $sname // '-';
 #say 'Master prev stat: ', $prev-server<status>:exists 
-                  ?? $prev-server<status>
-                  !! '-';
+#                  ?? $prev-server<status>
+#                  !! '-';
 
           # Don't ever modify a rejected server
           if $prev-server<status>:exists
