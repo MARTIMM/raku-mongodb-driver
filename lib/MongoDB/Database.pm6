@@ -31,11 +31,11 @@ package MongoDB {
       self!set-name($name);
       $!client = $client;
 
+      trace-message("create database $name");
+
       # Create a collection $cmd to be used with run-command()
       #
       $!cmd-collection = self.collection( '$cmd', :$read-concern);
-
-      trace-message("create database $name");
     }
 
     #---------------------------------------------------------------------------

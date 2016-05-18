@@ -92,14 +92,18 @@ say 'new client 1';
           # Start processing when something is found in todo hash
           $!todo-servers-semaphore.acquire;
           my Str $server-name = $!todo-servers.shift if $!todo-servers.elems;
-          $!processing-todo-list = $server-name.defined;
           $!todo-servers-semaphore.release;
 
           if $server-name.defined {
 
+            # Make a note. Doing this test above will turn this to False too fast
+            $!todo-servers-semaphore.acquire;
+            $!processing-todo-list = True;
+            $!todo-servers-semaphore.release;
+
             trace-message("Processing server $server-name");
 
-#say "a0: $server-name";
+say "a0: $server-name: $!processing-todo-list";
             $!servers-semaphore.acquire;
 #say "a1: $server-name";
             my Bool $server-processed = $!servers{$server-name}:exists;
@@ -122,11 +126,7 @@ say 'new client 1';
 
           else {
 
-            # When no work, make a note and take a nap!
-            $!todo-servers-semaphore.acquire;
-            $!processing-todo-list = False;
-            $!todo-servers-semaphore.release;
-
+            # When no work take a nap!
             sleep 5;
           }
         }
@@ -150,7 +150,7 @@ say 'new client 1';
     # Tap into the stream of monitor data
     my Tap $t = $server.tap-monitor( -> Hash $monitor-data {
 
-
+        my Bool $found-new-servers = False;
 #say "Monitor $server.name(): $monitor-data<ok>" if $monitor-data.defined;
 #say "Monitor $server.name(): ", $monitor-data.perl if $monitor-data.defined;
 
@@ -276,6 +276,7 @@ say 'new client 1';
 
               $!todo-servers-semaphore.acquire;
               $!todo-servers.push($hostspec);
+              $found-new-servers = True;
               $!todo-servers-semaphore.release;
             }
           }
@@ -297,6 +298,7 @@ say 'new client 1';
 #say "H6d: $primary";
               $!todo-servers-semaphore.acquire;
               $!todo-servers.push($primary);
+              $found-new-servers = True;
               $!todo-servers-semaphore.release;
 #say "H6e";
             }
@@ -309,11 +311,16 @@ say 'new client 1';
         # Store result
         $!servers-semaphore.acquire;
         $!servers{$server.name} = $h;
-#say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
+say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
         $!servers-semaphore.release;
+
+        # Make a note if more servers are to be processed
+        $!todo-servers-semaphore.acquire;
+        $!processing-todo-list = $found-new-servers;
+        $!todo-servers-semaphore.release;
+say "H6f: Processing after $server.name: $!processing-todo-list";
 #say "\nWait for next from monitor";
 #say ' ';
-
       }
     );
   }
@@ -329,6 +336,8 @@ say 'new client 1';
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
+say "Still processing: $still-processing";
+      sleep 1;
     }
 
     $!servers-semaphore.acquire;
@@ -387,6 +396,8 @@ say 'new client 1';
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
+say "Still processing: $still-processing";
+      sleep 1;
     }
 
 #    my Int $test-count = 12;
@@ -435,6 +446,8 @@ say 'new client 1';
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
+say "Still processing: $still-processing";
+      sleep 1;
     }
 
 #    my Int $test-count = 12;
@@ -451,7 +464,7 @@ say 'new client 1';
         $!servers-semaphore.acquire;
         $h = $!servers{$msname};
         $!servers-semaphore.release;
-        last;
+#        last;
       }
 #
 #      sleep 1;
