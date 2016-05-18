@@ -23,6 +23,7 @@ class Client {
   has Semaphore $!servers-semaphore;
 
   has Array $!todo-servers;
+  has Bool $!processing-todo-list;
   has Semaphore $!todo-servers-semaphore;
 
   has Str $!master-servername;
@@ -57,6 +58,7 @@ say 'new client 1';
     $!servers-semaphore .= new(1);
 
     $!todo-servers = [];
+    $!processing-todo-list = False;
     $!todo-servers-semaphore .= new(1);
 
     $!master-servername = Nil;
@@ -90,6 +92,7 @@ say 'new client 1';
           # Start processing when something is found in todo hash
           $!todo-servers-semaphore.acquire;
           my Str $server-name = $!todo-servers.shift if $!todo-servers.elems;
+          $!processing-todo-list = $server-name.defined;
           $!todo-servers-semaphore.release;
 
           if $server-name.defined {
@@ -119,7 +122,11 @@ say 'new client 1';
 
           else {
 
-            # When no work, take a nap!
+            # When no work, make a note and take a nap!
+            $!todo-servers-semaphore.acquire;
+            $!processing-todo-list = False;
+            $!todo-servers-semaphore.release;
+
             sleep 5;
           }
         }
@@ -128,11 +135,11 @@ say 'new client 1';
 
 
     # Feed background process with hosts.via todo list
+    $!todo-servers-semaphore.acquire;
     for @($uri-obj.server-data<servers>) -> Hash $server-data {
-      $!todo-servers-semaphore.acquire;
       $!todo-servers.push("$server-data<host>:$server-data<port>");
-      $!todo-servers-semaphore.release;
     }
+    $!todo-servers-semaphore.release;
   }
 
   #-----------------------------------------------------------------------------
@@ -313,8 +320,16 @@ say 'new client 1';
 
   #-----------------------------------------------------------------------------
   # Return number of servers
-  #
   method nbr-servers ( --> Int ) {
+
+    self!check-discovery-process;
+
+    my Bool $still-processing = True;
+    while $still-processing {
+      $!todo-servers-semaphore.acquire;
+      $still-processing = $!processing-todo-list;
+      $!todo-servers-semaphore.release;
+    }
 
     $!servers-semaphore.acquire;
     my $nservers = $!servers.elems;
@@ -325,8 +340,9 @@ say 'new client 1';
 
   #-----------------------------------------------------------------------------
   # Called from thread above where Server object is created.
-  #
   method server-status ( Str:D $server-name --> MongoDB::ServerStatus ) {
+
+    self!check-discovery-process;
 
     $!servers-semaphore.acquire;
     my Hash $h = $!servers{$server-name}:exists
@@ -354,7 +370,6 @@ say 'new client 1';
     --> MongoDB::Server
   ) {
 
-    self!check-discovery-process;
     self.select-server;
   }
 
@@ -367,10 +382,17 @@ say 'new client 1';
 
     self!check-discovery-process;
 
-    my Int $test-count = 12;
+    my Bool $still-processing = True;
+    while $still-processing {
+      $!todo-servers-semaphore.acquire;
+      $still-processing = $!processing-todo-list;
+      $!todo-servers-semaphore.release;
+    }
+
+#    my Int $test-count = 12;
     my Hash $h;
 
-    whileLoopLabel: while $test-count-- {
+#    whileLoopLabel: while $test-count-- {
 
       $!servers-semaphore.acquire;
       my @server-names = $!servers.keys;
@@ -383,12 +405,13 @@ say 'new client 1';
 
         if $shash<status> ~~ $needed-state {
           $h = $shash;
-          last whileLoopLabel;
+          last;
+#          last whileLoopLabel;
         }
       }
 
-      sleep 1;
-    }
+#      sleep 1;
+#    }
 
     if $h.defined and $h<server> {
       info-message("Server $h<server>.name() selected");
@@ -407,11 +430,18 @@ say 'new client 1';
 
     self!check-discovery-process;
 
-    my Int $test-count = 12;
+    my Bool $still-processing = True;
+    while $still-processing {
+      $!todo-servers-semaphore.acquire;
+      $still-processing = $!processing-todo-list;
+      $!todo-servers-semaphore.release;
+    }
+
+#    my Int $test-count = 12;
     my Hash $h;
     my Str $msname;
 
-    while $test-count-- {
+#    while $test-count-- {
 
       $!servername-semaphore.acquire;
       $msname = $!master-servername;
@@ -423,9 +453,9 @@ say 'new client 1';
         $!servers-semaphore.release;
         last;
       }
-
-      sleep 1;
-    }
+#
+#      sleep 1;
+#    }
 
     if ?$msname {
       info-message("Master server $msname selected");
@@ -443,7 +473,7 @@ say 'new client 1';
   method !check-discovery-process ( ) {
 
     if $!Background-discovery.status ~~ any(Broken|Kept) {
-      error-message(
+      fatal-message(
         'Discovery stopped ' ~
         ($!Background-discovery.status ~~ Broken
                          ?? $!Background-discovery.cause

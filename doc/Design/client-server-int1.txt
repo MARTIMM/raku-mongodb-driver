@@ -5,12 +5,12 @@ hide footbox
 
 actor application as app
 participant Client
-participant "Client T0" as Clt0
-participant "Client T1" as Clt1
-participant Server
-participant "Server T" as Srvt0
-participant Monitor
-participant "Monitor T" as Mnt0
+participant "Client T0" as Clt0 #a0fefe
+participant "Client T1" as Clt1 #fea0fe
+participant Server              #a0fefe
+participant "Server T" as Srvt0 #a0fea0
+participant Monitor             #a0fefe
+participant "Monitor T" as Mnt0 #c0c0c0
 database mongod
 activate mongod
 
@@ -47,39 +47,37 @@ activate Mnt0
 Monitor -> Server: Promise
 deactivate Monitor
 
-Mnt0 --> mongod: ismaster command
-mongod --> Mnt0: ismaster result
+Mnt0 -[#a000bf]-> mongod: ismaster command
+mongod -[#a000bf]-> Mnt0: ismaster result
 Server -> Srvt0: tap from monitor
 activate Srvt0
 deactivate Server
 
-Mnt0 o-->o Srvt0: monitor data
+Mnt0 o-[#a000bf]->o Srvt0: monitor data
 
 Clt0 -> Clt1: tap from monitor
 activate Clt1
-Mnt0 o-->o Clt1: monitor data
+Mnt0 o-[#a000bf]->o Clt1: monitor data
 
 Clt1 -> Clt1: store new server\nport in todo list
 
-Clt1 -> Clt1: Store in $!servers
+Clt1 -> Clt1: Store in\nserver list
 
 'note right: in thread
-
 'note right: returns immediate
-
 'Server --> mongod: connect
 
 
 
 app -> Client: select-server()
 activate Client
-Client -> Client: Get server\nfrom $!servers
+Client -> Client: Get server\nfrom server\nlist
 Client -> app: Server object
 deactivate Client
 
 legend
 Monitor data is sent from Monitor thread using a Supply
-
+Data in Client structures for communication are guarded with Semaphores
 end legend
 
 @enduml
