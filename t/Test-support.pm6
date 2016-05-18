@@ -20,7 +20,7 @@ class Test-support {
   submethod BUILD ( ) {
   
     # Init here because of need in BUILD later
-    $!nbr-of-servers = 4;
+    $!nbr-of-servers = 3;
     $!server-range = (^$!nbr-of-servers + 1);
 
     #-----------------------------------------------------------------------------
@@ -37,7 +37,7 @@ class Test-support {
     unless 'Sandbox'.IO ~~ :d {
 
       mkdir( 'Sandbox', 0o700);
-      my Int $start-portnbr = 65000;
+      my Int $start-portnbr = 65010;
       my Str $config-text = Q:qq:to/EOCONFIG/;
 
         # Configuration file for the servers in the Sandbox

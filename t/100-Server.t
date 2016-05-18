@@ -18,8 +18,8 @@ my MongoDB::Test-support $ts .= new;
 #-------------------------------------------------------------------------------
 subtest {
 
-  my $p4 = $ts.server-control.get-port-number('s4');
-  my MongoDB::Server $server .= new(:server-name("localhost:$p4"));
+  my $p3 = $ts.server-control.get-port-number('s3');
+  my MongoDB::Server $server .= new(:server-name("localhost:$p3"));
 
   my MongoDB::Server::Monitor $monitor .= new(:$server);
   $monitor.start-monitor;
@@ -84,8 +84,8 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my $p4 = $ts.server-control.get-port-number('s4');
-  my MongoDB::Server $server .= new(:server-name("localhost:$p4"));
+  my $p3 = $ts.server-control.get-port-number('s3');
+  my MongoDB::Server $server .= new(:server-name("localhost:$p3"));
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
   $server.server-init;

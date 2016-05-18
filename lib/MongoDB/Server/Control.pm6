@@ -151,6 +151,15 @@ class Server::Control {
     my Hash $config = MongoDB::Config.instance.config;
     my Str $mongodb-server-path;
 
+    # Can be configured in config file
+    #
+    if not $mongodb-server-path.defined and $config<Binaries>:exists
+       and $config<Binaries>{$binary}:exists 
+       and $config<Binaries>{$binary}.IO ~~ :x {
+
+      $mongodb-server-path = $config<Binaries>{$binary};
+    }
+
     # On linuxes it should be in /usr/bin
     #
     if not $mongodb-server-path.defined and $*KERNEL.name eq 'linux' {
@@ -183,14 +192,6 @@ class Server::Control {
           last;
         }
       }
-    }
-
-    # Can be configured in config file
-    #
-    if not $mongodb-server-path.defined and $config<Binaries>:exists
-       and $config<Binaries>{$binary}:exists {
-
-      $mongodb-server-path = $config<Binaries>{$binary};
     }
 
     $mongodb-server-path;
