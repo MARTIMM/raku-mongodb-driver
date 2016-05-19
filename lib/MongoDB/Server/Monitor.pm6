@@ -26,7 +26,7 @@ unit package MongoDB;
 #
 class Server::Monitor {
 
-  has $!server;
+  has MongoDB::ServerType $!server;
   has MongoDB::Server::Socket $!socket;
 
   has Duration $!weighted-mean-rtt;
@@ -34,9 +34,11 @@ class Server::Monitor {
   # Variables to control infinite monitoring actions
   has Promise $!promise-monitor;
   has Semaphore $!server-monitor-control;
+
   has Bool $!monitor-loop;
   has Semaphore $!loop-semaphore;
   has Int $!monitor-looptime;
+
   has Semaphore $!looptime-semaphore;
   has Supplier $!monitor-data-supplier;
 
@@ -47,15 +49,15 @@ class Server::Monitor {
   # Call before monitor-server to set the $!server object!
   # Inheriting from Supplier prevents use of proper BUILD 
   #
-  submethod BUILD ( :$server ) {
+  submethod BUILD ( MongoDB::ServerType:D :$server, Int :$loop-time = 10 ) {
 
     $!server = $server;
-    
+
     $!weighted-mean-rtt .= new(0);
-    
+
     $!server-monitor-control .= new(1);
     $!loop-semaphore .= new(1);
-    $!monitor-looptime = 10;
+    $!monitor-looptime = $loop-time;
     $!looptime-semaphore .= new(1);
     $!monitor-data-supplier .= new;
 
@@ -91,12 +93,12 @@ class Server::Monitor {
 #  }
 
   #-----------------------------------------------------------------------------
-  method monitor-looptime ( Int $mlt ) {
-
-    $!looptime-semaphore.acquire;
-    $!monitor-looptime = $mlt;
-    $!looptime-semaphore.release;
-  }
+#  method monitor-looptime ( Int $mlt ) {
+#
+#    $!looptime-semaphore.acquire;
+#    $!monitor-looptime = $mlt;
+#    $!looptime-semaphore.release;
+#  }
 
   #-----------------------------------------------------------------------------
   method get-supply ( --> Supply ) {
@@ -119,7 +121,7 @@ class Server::Monitor {
         my Duration $rtt;
         my BSON::Document $doc;
 
-        # Start loops frequently and slow it down to looptime max
+        # Start loops frequently and slow it down to $!monitor-looptime
         my $looptime-trottle = 1;
 
         # As long as the server lives test it. Changes are possible when 
@@ -169,7 +171,16 @@ class Server::Monitor {
             }
 
             # Rest for a while
-            sleep($!monitor-looptime);
+#            sleep($!monitor-looptime);
+
+                # Rest for a while$looptime
+                $!looptime-semaphore.acquire;
+                my Int $sleeptime = $!monitor-looptime;
+                $!looptime-semaphore.release;
+                $sleeptime = $looptime-trottle++
+                  if $looptime-trottle < $sleeptime;
+
+                sleep($sleeptime);
 
             # Capture errors. When there are any, On older servers before
             # version 3.2 the server just stops communicating when a shutdown
@@ -209,7 +220,7 @@ class Server::Monitor {
 
                 sleep($sleeptime);
               }
-              
+
               # If not one of the above errors, rethrow the error
               default {
                 .rethrow;

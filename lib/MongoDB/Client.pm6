@@ -50,7 +50,9 @@ say 'new client 1';
   }
 }}
   #-----------------------------------------------------------------------------
-  submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern ) {
+  submethod BUILD (
+    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time
+  ) {
 
     $!topology-type = MongoDB::C-UNKNOWN-TPLGY;
 
@@ -116,7 +118,9 @@ say "a0: $server-name: $!processing-todo-list";
             }
 
 #say "a2: $server-name";
-            my MongoDB::Server $server .= new( :$server-name, :$uri-data);
+            my MongoDB::Server $server .= new(
+              :$server-name, :$uri-data, :$loop-time
+            );
 #say "a3a: $server-name";
 
             # Start server monitoring process its data
