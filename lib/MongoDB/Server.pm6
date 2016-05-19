@@ -41,7 +41,7 @@ class Server {
   # must be done in the background so Client starts this process in a thread.
   #
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
-    MongoDB::SocketLimit :$max-sockets = 3
+    MongoDB::SocketLimit :$max-sockets = 3, Int :$loop-time
   ) {
 
     # Save name andd port of the server
@@ -51,7 +51,7 @@ class Server {
 
     $!uri-data = $uri-data;
 
-    $!server-monitor .= new(:server(self));
+    $!server-monitor .= new( :server(self), :$loop-time);
 
     # Define number of available sockets and its semaphore
     $!max-sockets = $max-sockets;

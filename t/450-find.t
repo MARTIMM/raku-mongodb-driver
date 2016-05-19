@@ -38,7 +38,7 @@ $req .= new: (
 # using wireshark
 #
 my Array $docs = [];
-my $t0 = now;
+#my $t0 = now;
 for ^200 -> $i {
   $docs.push: (
     code                => 'd1',
@@ -54,11 +54,11 @@ $req .= new: (
   documents => $docs
 );
 
-say "Time create request: ", now - $t0;
+#say "Time create request: ", now - $t0;
 
 $doc = $database.run-command($req);
 
-say "Time insert in database: ", now - $t0;
+#say "Time insert in database: ", now - $t0;
 
 is $doc<ok>, 1, 'insert ok';
 is $doc<n>, 200, 'inserted 200 docs';
@@ -68,13 +68,13 @@ say $doc<errmsg> unless $doc<ok>;
 #
 $cursor = $collection.find(:projection(_id => 0,));
 
-say "Time to get cursor with some docs: ", now - $t0;
+#say "Time to get cursor with some docs: ", now - $t0;
 
 while $cursor.fetch -> BSON::Document $document {
 #  say $document.perl;
 }
 
-say "Time after reading all docs: ", now - $t0;
+#say "Time after reading all docs: ", now - $t0;
 
 #------------------------------------------------------------------------------
 subtest {

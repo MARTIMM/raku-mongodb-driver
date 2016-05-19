@@ -21,7 +21,7 @@ my MongoDB::Test-support $ts .= new;
 subtest {
 
   my Int $p1 = $ts.server-control.get-port-number('s1');
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p1"));
+  my MongoDB::Client $client .= new( :uri("mongodb://:$p1"), :loop-time(1));
   my MongoDB::Server $server = $client.select-server;
 
   is $client.nbr-servers, 1, 'One server found';
@@ -30,7 +30,7 @@ subtest {
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
-  sleep 10;
+  sleep 2;
 
   $server = $client.select-server;
   nok $server.defined, 'Server not defined';
@@ -39,7 +39,7 @@ subtest {
 
   # Bring server up again to see ift Client recovers...
   ok $ts.server-control.start-mongod("s1"), "Server 1 started";
-  sleep 5;
+  sleep 2;
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
@@ -53,7 +53,7 @@ subtest {
 subtest {
 
   my Int $p3 = $ts.server-control.get-port-number('s3');
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p3"));
+  my MongoDB::Client $client .= new( :uri("mongodb://:$p3"), :loop-time(3));
   my MongoDB::Server $server = $client.select-server;
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p3"), MongoDB::C-MASTER-SERVER,
@@ -70,9 +70,11 @@ subtest {
 
       info-message('save several records');
 
-      # Setup collection
+      # Setup collection and database
       my MongoDB::Collection $collection = $client.collection('test.myColl');
       $database = $collection.database;
+      
+      # Setup document
       my BSON::Document $req .= new: (
         insert => $collection.name,
         documents => [
@@ -90,6 +92,13 @@ subtest {
         sleep 1;
       }
 
+#      CATCH {
+#        default {
+#          .note.WHAT;
+#          .note;
+#        }
+#      }
+
       True;
     }
   );
@@ -100,7 +109,7 @@ subtest {
   # Bring server down to see what Client does...
   info-message('shutdown server');
   ok $ts.server-control.stop-mongod('s3'), "Server 3 is stopped";
-  sleep 10;
+  sleep 5;
 
   is $client.server-status("localhost:$p3"), MongoDB::C-DOWN-SERVER,
      "Server is down";
@@ -108,7 +117,7 @@ subtest {
   # Bring server up again to see ift Client recovers...
   info-message('start server');
   ok $ts.server-control.start-mongod("s3"), "Server 1 started";
-  sleep 5;
+  sleep 2;
 
   # Wait for concurrent writer
   info-message('wait for writer');

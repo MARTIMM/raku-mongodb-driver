@@ -1,0 +1,3003 @@
+Using worker: worker-linux-docker-69d8e9ee.prod.travis-ci.org:travis-linux-16
+
+travis_fold:start:system_info
+[0K[33;1mBuild system information[0m
+Build language: perl6
+Build group: stable
+Build dist: precise
+[34m[1mBuild image provisioning date and time[0m
+Thu Feb  5 15:09:33 UTC 2015
+[34m[1mOperating System Details[0m
+Distributor ID:	Ubuntu
+Description:	Ubuntu 12.04.5 LTS
+Release:	12.04
+Codename:	precise
+[34m[1mLinux Version[0m
+3.13.0-29-generic
+[34m[1mCookbooks Version[0m
+a68419e https://github.com/travis-ci/travis-cookbooks/tree/a68419e
+[34m[1mGCC version[0m
+gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3
+Copyright (C) 2011 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+[34m[1mLLVM version[0m
+clang version 3.4 (tags/RELEASE_34/final)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+[34m[1mPre-installed Ruby versions[0m
+ruby-1.9.3-p551
+[34m[1mPre-installed Node.js versions[0m
+v0.10.36
+[34m[1mPre-installed Go versions[0m
+1.4.1
+[34m[1mRedis version[0m
+redis-server 2.8.19
+[34m[1mriak version[0m
+2.0.2
+[34m[1mMongoDB version[0m
+MongoDB 2.4.12
+[34m[1mCouchDB version[0m
+couchdb 1.6.1
+[34m[1mNeo4j version[0m
+1.9.4
+[34m[1mRabbitMQ Version[0m
+3.4.3
+[34m[1mElasticSearch version[0m
+1.4.0
+[34m[1mInstalled Sphinx versions[0m
+2.0.10
+2.1.9
+2.2.6
+[34m[1mDefault Sphinx version[0m
+2.2.6
+[34m[1mInstalled Firefox version[0m
+firefox 31.0esr
+[34m[1mPhantomJS version[0m
+1.9.8
+[34m[1mant -version[0m
+Apache Ant(TM) version 1.8.2 compiled on December 3 2011
+[34m[1mmvn -version[0m
+Apache Maven 3.2.5 (12a6b3acb947671f09b81f49094c53f426d8cea1; 2014-12-14T17:29:23+00:00)
+Maven home: /usr/local/maven
+Java version: 1.7.0_76, vendor: Oracle Corporation
+Java home: /usr/lib/jvm/java-7-oracle/jre
+Default locale: en_US, platform encoding: ANSI_X3.4-1968
+OS name: "linux", version: "3.13.0-29-generic", arch: "amd64", family: "unix"
+travis_fold:end:system_info
+[0K
+travis_fold:start:fix.CVE-2015-7547
+[0K$ export DEBIAN_FRONTEND=noninteractive
+W: Size of file /var/lib/apt/lists/us.archive.ubuntu.com_ubuntu_dists_precise-backports_multiverse_source_Sources.gz is not what the server reported 5886 5888
+W: Size of file /var/lib/apt/lists/ppa.launchpad.net_ubuntugis_ppa_ubuntu_dists_precise_main_binary-amd64_Packages.gz is not what the server reported 36669 36677
+W: Size of file /var/lib/apt/lists/ppa.launchpad.net_ubuntugis_ppa_ubuntu_dists_precise_main_binary-i386_Packages.gz is not what the server reported 36729 36733
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following extra packages will be installed:
+  libc-bin libc-dev-bin libc6-dev
+Suggested packages:
+  glibc-doc
+The following packages will be upgraded:
+  libc-bin libc-dev-bin libc6 libc6-dev
+4 upgraded, 0 newly installed, 0 to remove and 236 not upgraded.
+Need to get 8,844 kB of archives.
+After this operation, 9,216 B disk space will be freed.
+Get:1 http://us.archive.ubuntu.com/ubuntu/ precise-updates/main libc6-dev amd64 2.15-0ubuntu10.13 [2,943 kB]
+Get:2 http://us.archive.ubuntu.com/ubuntu/ precise-updates/main libc-dev-bin amd64 2.15-0ubuntu10.13 [84.7 kB]
+Get:3 http://us.archive.ubuntu.com/ubuntu/ precise-updates/main libc-bin amd64 2.15-0ubuntu10.13 [1,179 kB]
+Get:4 http://us.archive.ubuntu.com/ubuntu/ precise-updates/main libc6 amd64 2.15-0ubuntu10.13 [4,637 kB]
+Fetched 8,844 kB in 0s (36.9 MB/s)
+Preconfiguring packages ...
+(Reading database ... 
+(Reading database ... 5%
+...
+(Reading database ... 100%
+(Reading database ... 71420 files and directories currently installed.)
+Preparing to replace libc6-dev 2.15-0ubuntu10.10 (using .../libc6-dev_2.15-0ubuntu10.13_amd64.deb) ...
+Unpacking replacement libc6-dev ...
+Preparing to replace libc-dev-bin 2.15-0ubuntu10.10 (using .../libc-dev-bin_2.15-0ubuntu10.13_amd64.deb) ...
+Unpacking replacement libc-dev-bin ...
+Preparing to replace libc-bin 2.15-0ubuntu10.10 (using .../libc-bin_2.15-0ubuntu10.13_amd64.deb) ...
+Unpacking replacement libc-bin ...
+Processing triggers for man-db ...
+Setting up libc-bin (2.15-0ubuntu10.13) ...
+(Reading database ... 
+(Reading database ... 5%
+...
+(Reading database ... 100%
+(Reading database ... 71420 files and directories currently installed.)
+Preparing to replace libc6 2.15-0ubuntu10.10 (using .../libc6_2.15-0ubuntu10.13_amd64.deb) ...
+Unpacking replacement libc6 ...
+Setting up libc6 (2.15-0ubuntu10.13) ...
+Setting up libc-dev-bin (2.15-0ubuntu10.13) ...
+Setting up libc6-dev (2.15-0ubuntu10.13) ...
+Processing triggers for libc-bin ...
+ldconfig deferred processing now taking place
+travis_fold:end:fix.CVE-2015-7547
+[0K
+[31;1mPerl6 support for Travis-CI is community maintained.[0m
+[31;1mPlease open any issues at https://github.com/travis-ci/travis-ci/issues/new[0m
+[31;1mand cc @paultcochrane, @hoelzro, @ugexe, and @tony-o[0m
+[33;1mInstalling Rakudo (MoarVM)[0m
+Cloning into '/home/travis/.rakudobrew'...
+remote: Counting objects: 737, done.[K
+Receiving objects:   0% (1/737)   
+...
+Receiving objects:  86% (634/737)   
+remote: Total 737 (delta 0), reused 0 (delta 0), pack-reused 737[K
+Receiving objects:  87% (642/737)   
+...
+Receiving objects: 100% (737/737), 153.98 KiB | 0 bytes/s, done.
+Resolving deltas:   0% (0/325)   
+...
+Resolving deltas: 100% (325/325), done.
+Checking connectivity... done.
+travis_fold:start:git.checkout
+[0Ktravis_time:start:037d3be6
+[0K$ git clone --depth=50 --branch=master https://github.com/MARTIMM/mongo-perl6-driver.git MARTIMM/mongo-perl6-driver
+Cloning into 'MARTIMM/mongo-perl6-driver'...
+remote: Counting objects: 2168, done.[K
+remote: Compressing objects:   0% (1/850)   [K
+...
+remote: Compressing objects: 100% (850/850)   [K
+remote: Compressing objects: 100% (850/850), done.[K
+Receiving objects:   0% (1/2168)   
+...
+Receiving objects:  97% (2103/2168)   
+remote: Total 2168 (delta 1479), reused 1924 (delta 1288), pack-reused 0[K
+Receiving objects:  98% (2125/2168)   
+Receiving objects:  99% (2147/2168)   
+Receiving objects: 100% (2168/2168)   
+Receiving objects: 100% (2168/2168), 1.38 MiB | 0 bytes/s, done.
+Resolving deltas:   0% (0/1479)   
+...
+Resolving deltas: 100% (1479/1479), done.
+Checking connectivity... done.
+
+travis_time:end:037d3be6:start=1463551074372084349,finish=1463551074876956464,duration=504872115
+[0K$ cd MARTIMM/mongo-perl6-driver
+$ git checkout -qf b4d47ef538d938657c00c0e4663b46f05108a32b
+travis_fold:end:git.checkout
+[0K
+[33;1mThis job is running on container-based infrastructure, which does not allow use of 'sudo', setuid and setguid executables.[0m
+[33;1mIf you require sudo, add 'sudo: required' to your .travis.yml[0m
+[33;1mSee https://docs.travis-ci.com/user/workers/container-based-infrastructure/ for details.[0m
+travis_fold:start:setup
+[0Ktravis_time:start:022cea65
+[0K$ rakudobrew build moar
+Update git reference: rakudo
+Cloning into 'rakudo'...
+remote: Counting objects: 131346, done.[K
+remote: Compressing objects:   0% (1/175)   [K
+...
+remote: Compressing objects: 100% (175/175), done.[K
+Receiving objects:   0% (1/131346)   
+...
+Receiving objects:  99% (130033/131346), 28.83 MiB | 28.76 MiB/s   
+remote: Total 131346 (delta 93), reused 1 (delta 1), pack-reused 131162[K
+Receiving objects: 100% (131346/131346), 28.83 MiB | 28.76 MiB/s   
+Receiving objects: 100% (131346/131346), 34.62 MiB | 28.76 MiB/s, done.
+Resolving deltas:   0% (0/96614)   
+...
+Resolving deltas: 100% (96614/96614), done.
+Checking connectivity... done.
+Already up-to-date.
+Update git reference: nqp
+Cloning into 'nqp'...
+remote: Counting objects: 58353, done.[K
+Receiving objects:   0% (1/58353)   
+...
+Receiving objects:  99% (57770/58353), 97.23 MiB | 38.81 MiB/s   
+remote: Total 58353 (delta 0), reused 0 (delta 0), pack-reused 58353[K
+Receiving objects: 100% (58353/58353), 97.23 MiB | 38.81 MiB/s   
+Receiving objects: 100% (58353/58353), 100.15 MiB | 38.81 MiB/s, done.
+Resolving deltas:   0% (0/36879)   
+...
+Resolving deltas: 100% (36879/36879), done.
+Checking connectivity... done.
+Already up-to-date.
+Update git reference: MoarVM
+Cloning into 'MoarVM'...
+remote: Counting objects: 48438, done.[K
+remote: Compressing objects:  50% (1/2)   [K
+remote: Compressing objects: 100% (2/2)   [K
+remote: Compressing objects: 100% (2/2), done.[K
+Receiving objects:   0% (1/48438)   
+...
+Receiving objects:  99% (47954/48438), 14.96 MiB | 29.86 MiB/s   
+remote: Total 48438 (delta 1), reused 0 (delta 0), pack-reused 48436[K
+Receiving objects: 100% (48438/48438), 14.96 MiB | 29.86 MiB/s   
+Receiving objects: 100% (48438/48438), 26.99 MiB | 29.86 MiB/s, done.
+Resolving deltas:   0% (0/34004)   
+...
+esolving deltas: 100% (34004/34004)   
+Resolving deltas: 100% (34004/34004), done.
+Checking connectivity... done.
+Already up-to-date.
+Cloning into 'moar-nom'...
+Checking connectivity... done.
+e39ce3dbfd9ec635f04611f64f8806fa02ded497
+Note: checking out 'origin/nom'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -b with the checkout command again. Example:
+
+  git checkout -b new_branch_name
+
+HEAD is now at e39ce3d... Fix stupid editing mistake in install-dist.pl
+ATTENTION: no --prefix supplied, building and installing to /home/travis/.rakudobrew/moar-nom/install
+sh: 1: /home/travis/.rakudobrew/moar-nom/install/bin/nqp-m: not found
+Cloning into 'nqp'...
+Checking connectivity... done.
+Note: checking out '2016.04-86-g618c6be'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -b with the checkout command again. Example:
+
+  git checkout -b new_branch_name
+
+HEAD is now at 618c6be... Bump Moar to get JIT fixes
+Building NQP ...
+/usr/bin/perl Configure.pl --prefix=/home/travis/.rakudobrew/moar-nom/install --backends=moar --make-install --git-protocol=https --git-reference=/home/travis/.rakudobrew/bin/../git_reference --gen-moar
+
+Creating tools/build/install-jvm-runner.pl ...
+Can't exec "/home/travis/.rakudobrew/moar-nom/install/bin/moar": No such file or directory at tools/lib/NQP/Configure.pm line 450.
+Cloning into 'MoarVM'...
+Checking connectivity... done.
+Note: checking out '2016.04-134-g9879233'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -b with the checkout command again. Example:
+
+  git checkout -b new_branch_name
+
+HEAD is now at 9879233... Revert "Disable JIT on OSX for a little bit; it's bust."
+
+Configuring and building MoarVM ...
+/usr/bin/perl Configure.pl --optimize --prefix=/home/travis/.rakudobrew/moar-nom/install --make-install
+Welcome to MoarVM!
+
+Updating submodules .................................... OK
+Configuring native build environment ................... 
+Testing pkgconfig ... 0.26
+OK
+    probing whether your compiler thinks that it is gcc  YES
+    probing how your compiler does static inline ....... static __inline__
+    your CPU can read unaligned values for all of int32 int64 num64
+    probing the size of pointers ....................... 8
+    probing C type support for: _Bool, bool ............ YES: _Bool,bool
+    probing computed goto support ...................... YES
+    probing pthread_yield support ...................... YES
+
+        make: make
+     compile: gcc -Wdeclaration-after-statement -Werror=declaration-after-statement -O3 -DNDEBUG  -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fPIC
+    includes:  -I3rdparty/libuv/include -I3rdparty/libuv/src -I3rdparty/libatomic_ops/src -I3rdparty/libtommath -I3rdparty/dynasm -I3rdparty/dyncall/dynload -I3rdparty/dyncall/dyncall -I3rdparty/dyncall/dyncallback
+        link: gcc  -O3 -DNDEBUG -Wl,-rpath,/@libdir@ -Wl,-rpath,@prefix@/share/perl6/site/lib
+        libs: -lm -lpthread -lrt -ldl
+
+  byte order: little endian
+
+Configuring 3rdparty libs .............................. OK
+
+  3rdparty: 3rdparty/dyncall/dyncall/libdyncall_s.a
+            3rdparty/dyncall/dyncallback/libdyncallback_s.a
+            3rdparty/dyncall/dynload/libdynload_s.a
+            3rdparty/libatomic_ops/src/libatomic_ops.a
+            3rdparty/libtommath/libtommath.a
+            3rdparty/libuv/libuv.a
+            3rdparty/sha1/libsha1.a
+            3rdparty/tinymt/libtinymt.a
+
+Generating src/gen/config.c ............................ OK
+Generating src/gen/config.h ............................ OK
+Generating Makefile .................................... OK
+Generating tools/check.mk .............................. OK
+Generating build/mk-moar-pc.pl ......................... OK
+
+Configuration SUCCESS.
+
+Type 'make' to build and 'make help' to see a list of
+available make targets.
+compiling src/main.o
+compiling src/core/callsite.o
+compiling src/core/args.o
+compiling src/core/exceptions.o
+compiling src/core/interp.o
+compiling src/core/threadcontext.o
+compiling src/core/compunit.o
+compiling src/core/bytecode.o
+compiling src/core/frame.o
+src/core/frame.c: In function â\u20ac\u02dcMVM_frame_find_contextual_by_nameâ\u20ac\u2122:
+src/core/frame.c:1390:37: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 8 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1390:37: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 9 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1390:37: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 10 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+src/core/frame.c:1427:37: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 8 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1427:37: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 9 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1427:37: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 10 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+src/core/frame.c:1449:21: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 8 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1449:21: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 9 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1449:21: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 10 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+src/core/frame.c:1480:21: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 8 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1480:21: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 9 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1480:21: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 10 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+src/core/frame.c:1495:9: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 8 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1495:9: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 9 has type â\u20ac\u02dcMVMuint64â\u20ac\u2122 [-Wformat]
+src/core/frame.c:1495:9: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 10 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+compiling src/core/callstack.o
+compiling src/core/validation.o
+compiling src/core/bytecodedump.o
+compiling src/core/threads.o
+compiling src/core/ops.o
+compiling src/core/hll.o
+compiling src/core/loadbytecode.o
+compiling src/math/num.o
+compiling src/core/coerce.o
+compiling src/core/dll.o
+compiling src/core/ext.o
+compiling src/core/nativecall.o
+compiling src/core/nativecall_dyncall.o
+compiling src/core/continuation.o
+compiling src/core/intcache.o
+compiling src/core/fixedsizealloc.o
+compiling src/gen/config.o
+compiling src/gc/orchestrate.o
+compiling src/gc/allocation.o
+compiling src/gc/worklist.o
+compiling src/gc/roots.o
+compiling src/gc/collect.o
+compiling src/gc/gen2.o
+compiling src/gc/wb.o
+compiling src/gc/objectid.o
+compiling src/gc/finalize.o
+compiling src/io/io.o
+compiling src/io/eventloop.o
+compiling src/io/syncfile.o
+compiling src/io/syncstream.o
+compiling src/io/syncpipe.o
+compiling src/io/syncsocket.o
+compiling src/io/fileops.o
+compiling src/io/dirops.o
+compiling src/io/procops.o
+compiling src/io/timers.o
+compiling src/io/filewatchers.o
+compiling src/io/signals.o
+compiling src/io/asyncsocket.o
+compiling src/io/asyncsocketudp.o
+compiling src/6model/reprs.o
+compiling src/6model/reprconv.o
+compiling src/6model/containers.o
+compiling src/6model/parametric.o
+compiling src/6model/reprs/MVMString.o
+compiling src/6model/reprs/MVMArray.o
+compiling src/6model/reprs/MVMHash.o
+compiling src/6model/reprs/MVMCFunction.o
+compiling src/6model/reprs/KnowHOWREPR.o
+compiling src/6model/reprs/KnowHOWAttributeREPR.o
+compiling src/6model/reprs/P6str.o
+compiling src/6model/reprs/P6opaque.o
+src/6model/reprs/P6opaque.c: In function â\u20ac\u02dccomposeâ\u20ac\u2122:
+src/6model/reprs/P6opaque.c:709:17: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 3 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+src/6model/reprs/P6opaque.c:757:41: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+src/6model/reprs/P6opaque.c:763:41: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+src/6model/reprs/P6opaque.c:769:41: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+src/6model/reprs/P6opaque.c:810:25: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+src/6model/reprs/P6opaque.c:820:25: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+compiling src/6model/reprs/MVMCode.o
+compiling src/6model/reprs/MVMOSHandle.o
+compiling src/6model/reprs/MVMCompUnit.o
+compiling src/6model/reprs/MVMStaticFrame.o
+compiling src/6model/reprs/P6int.o
+compiling src/6model/reprs/P6num.o
+compiling src/6model/reprs/Uninstantiable.o
+compiling src/6model/reprs/HashAttrStore.o
+compiling src/6model/reprs/MVMThread.o
+compiling src/6model/reprs/MVMIter.o
+compiling src/6model/reprs/MVMContext.o
+compiling src/6model/reprs/SCRef.o
+compiling src/6model/reprs/Lexotic.o
+compiling src/6model/reprs/MVMCallCapture.o
+compiling src/6model/reprs/P6bigint.o
+compiling src/6model/reprs/NFA.o
+src/6model/reprs/NFA.c: In function â\u20ac\u02dcnqp_nfa_runâ\u20ac\u2122:
+src/6model/reprs/NFA.c:457:17: warning: format â\u20ac\u02dc%lldâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long intâ\u20ac\u2122, but argument 6 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+compiling src/6model/reprs/MVMException.o
+compiling src/6model/reprs/MVMDLLSym.o
+compiling src/6model/reprs/MVMMultiCache.o
+compiling src/6model/reprs/MVMContinuation.o
+compiling src/6model/reprs/NativeCall.o
+compiling src/6model/reprs/CPointer.o
+compiling src/6model/reprs/CStr.o
+compiling src/6model/reprs/CArray.o
+compiling src/6model/reprs/CStruct.o
+compiling src/6model/reprs/CUnion.o
+compiling src/6model/reprs/ReentrantMutex.o
+compiling src/6model/reprs/ConditionVariable.o
+compiling src/6model/reprs/Semaphore.o
+compiling src/6model/reprs/ConcBlockingQueue.o
+compiling src/6model/reprs/MVMAsyncTask.o
+compiling src/6model/reprs/MVMNull.o
+compiling src/6model/reprs/CPPStruct.o
+compiling src/6model/reprs/NativeRef.o
+compiling src/6model/reprs/MultiDimArray.o
+compiling src/6model/6model.o
+compiling src/6model/bootstrap.o
+compiling src/6model/sc.o
+compiling src/6model/serialization.o
+src/6model/serialization.c: In function â\u20ac\u02dcMVM_serialization_read_cstrâ\u20ac\u2122:
+src/6model/serialization.c:1656:9: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcsize_tâ\u20ac\u2122 [-Wformat]
+compiling src/mast/compiler.o
+compiling src/mast/driver.o
+compiling src/spesh/dump.o
+compiling src/spesh/graph.o
+compiling src/spesh/codegen.o
+compiling src/spesh/candidate.o
+compiling src/spesh/manipulate.o
+compiling src/spesh/args.o
+compiling src/spesh/facts.o
+compiling src/spesh/optimize.o
+compiling src/spesh/deopt.o
+compiling src/spesh/log.o
+compiling src/spesh/threshold.o
+compiling src/spesh/inline.o
+compiling src/spesh/osr.o
+compiling src/jit/graph.o
+compiling src/jit/compile.o
+src/jit/compile.c: In function â\u20ac\u02dcMVM_jit_enter_codeâ\u20ac\u2122:
+src/jit/compile.c:135:18: warning: format â\u20ac\u02dc%xâ\u20ac\u2122 expects argument of type â\u20ac\u02dcunsigned intâ\u20ac\u2122, but argument 3 has type â\u20ac\u02dcvoid *â\u20ac\u2122 [-Wformat]
+src/jit/compile.c:135:18: warning: format â\u20ac\u02dc%xâ\u20ac\u2122 expects argument of type â\u20ac\u02dcunsigned intâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcMVMJitFuncâ\u20ac\u2122 [-Wformat]
+src/jit/compile.c:135:18: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 5 has type â\u20ac\u02dcsize_tâ\u20ac\u2122 [-Wformat]
+src/jit/compile.c:135:18: warning: format â\u20ac\u02dc%dâ\u20ac\u2122 expects argument of type â\u20ac\u02dcintâ\u20ac\u2122, but argument 6 has type â\u20ac\u02dclong intâ\u20ac\u2122 [-Wformat]
+compiling src/jit/log.o
+compiling src/strings/decode_stream.o
+compiling src/strings/ascii.o
+compiling src/strings/utf8.o
+compiling src/strings/utf8_c8.o
+compiling src/strings/nfg.o
+compiling src/strings/ops.o
+generating src/strings/unicode.c
+compiling src/strings/unicode.o
+compiling src/strings/normalize.o
+compiling src/strings/latin1.o
+compiling src/strings/utf16.o
+compiling src/strings/windows1252.o
+compiling src/math/bigintops.o
+compiling src/profiler/instrument.o
+compiling src/profiler/log.o
+compiling src/profiler/profile.o
+compiling src/profiler/heapsnapshot.o
+compiling src/instrument/crossthreadwrite.o
+compiling src/moar.o
+src/moar.c: In function â\u20ac\u02dcMVM_vm_create_instanceâ\u20ac\u2122:
+src/moar.c:230:9: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 3 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+src/moar.c: In function â\u20ac\u02dcMVM_vm_exitâ\u20ac\u2122:
+src/moar.c:347:9: warning: format â\u20ac\u02dc%lldâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long intâ\u20ac\u2122, but argument 3 has type â\u20ac\u02dcMVMint64â\u20ac\u2122 [-Wformat]
+src/moar.c:347:9: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 4 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+src/moar.c:347:9: warning: format â\u20ac\u02dc%lluâ\u20ac\u2122 expects argument of type â\u20ac\u02dclong long unsigned intâ\u20ac\u2122, but argument 5 has type â\u20ac\u02dcuint64_tâ\u20ac\u2122 [-Wformat]
+compiling src/platform/posix/mmap.o
+compiling src/platform/posix/time.o
+compiling src/platform/posix/sys.o
+gcc -Wdeclaration-after-statement -Werror=declaration-after-statement -O3 -DNDEBUG  -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fPIC -DMVM_TRACING=0 -DMVM_CGOTO=1 -O3 -DNDEBUG -Wl,-rpath,//home/travis/.rakudobrew/moar-nom/install/lib -Wl,-rpath,/home/travis/.rakudobrew/moar-nom/install/share/perl6/site/lib 3rdparty/dynasm/minilua.c -o 3rdparty/dynasm/minilua -lm -lpthread -lrt -ldl
+./3rdparty/dynasm/minilua ./3rdparty/dynasm/dynasm.lua -D POSIX=1 -o src/jit/emit_posix_x64.c src/jit/emit_x64.dasc
+compiling src/jit/emit_posix_x64.o
+building dyncall...
+ar: creating libdyncall_s.a
+ar: creating libdyncallback_s.a
+ar: creating libdynload_s.a
+done.
+linking 3rdparty/libatomic_ops/src/libatomic_ops.a
+checking build system type... x86_64-unknown-linux-gnu
+checking host system type... x86_64-unknown-linux-gnu
+checking target system type... x86_64-unknown-linux-gnu
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for a thread-safe mkdir -p... /bin/mkdir -p
+checking for gawk... gawk
+checking whether make sets $(MAKE)... yes
+checking whether make supports nested variables... yes
+checking whether to enable maintainer-specific portions of Makefiles... no
+checking for style of include used by make... GNU
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to accept ISO C89... none needed
+checking whether gcc understands -c and -o together... yes
+checking dependency style of gcc... gcc3
+checking dependency style of gcc... gcc3
+checking for ranlib... ranlib
+checking how to run the C preprocessor... gcc -E
+checking for grep that handles long lines and -e... /bin/grep
+checking for egrep... /bin/grep -E
+checking for ANSI C header files... yes
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking for stdlib.h... (cached) yes
+checking for unistd.h... (cached) yes
+checking for sys/param.h... yes
+checking for getpagesize... yes
+checking for working mmap... yes
+checking for PIC compiler flag... -fPIC
+checking whether gcc -fPIC causes __PIC__ definition... yes
+checking for gcc -Wextra... yes
+checking for pthread_self in -lpthread... yes
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating src/Makefile
+config.status: creating src/config.h
+config.status: executing depfiles commands
+config.status: executing default commands
+make[1]: Entering directory `/home/travis/.rakudobrew/moar-nom/nqp/MoarVM/3rdparty/libatomic_ops/src'
+make  all-am
+make[2]: Entering directory `/home/travis/.rakudobrew/moar-nom/nqp/MoarVM/3rdparty/libatomic_ops/src'
+gcc -DHAVE_CONFIG_H   -I../src -I../src  -fPIC -Wall -Wextra -Wdeclaration-after-statement -Werror=declaration-after-statement -O3 -DNDEBUG  -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fPIC -DMVM_TRACING=0 -DMVM_CGOTO=1 -MT atomic_ops.o -MD -MP -MF .deps/atomic_ops.Tpo -c -o atomic_ops.o atomic_ops.c
+mv -f .deps/atomic_ops.Tpo .deps/atomic_ops.Po
+rm -f libatomic_ops.a
+ar cru libatomic_ops.a atomic_ops.o 
+ranlib libatomic_ops.a
+make[2]: Leaving directory `/home/travis/.rakudobrew/moar-nom/nqp/MoarVM/3rdparty/libatomic_ops/src'
+make[1]: Leaving directory `/home/travis/.rakudobrew/moar-nom/nqp/MoarVM/3rdparty/libatomic_ops/src'
+compiling 3rdparty/tinymt/tinymt64.o
+linking 3rdparty/tinymt/libtinymt.a
+compiling 3rdparty/sha1/sha1.o
+linking 3rdparty/sha1/libsha1.a
+compiling 3rdparty/libtommath/bn_error.o
+compiling 3rdparty/libtommath/bn_fast_mp_invmod.o
+compiling 3rdparty/libtommath/bn_fast_mp_montgomery_reduce.o
+compiling 3rdparty/libtommath/bn_fast_s_mp_mul_digs.o
+compiling 3rdparty/libtommath/bn_fast_s_mp_mul_high_digs.o
+compiling 3rdparty/libtommath/bn_fast_s_mp_sqr.o
+compiling 3rdparty/libtommath/bn_mp_2expt.o
+compiling 3rdparty/libtommath/bn_mp_abs.o
+compiling 3rdparty/libtommath/bn_mp_add.o
+compiling 3rdparty/libtommath/bn_mp_add_d.o
+compiling 3rdparty/libtommath/bn_mp_addmod.o
+compiling 3rdparty/libtommath/bn_mp_and.o
+compiling 3rdparty/libtommath/bn_mp_clamp.o
+compiling 3rdparty/libtommath/bn_mp_clear.o
+compiling 3rdparty/libtommath/bn_mp_clear_multi.o
+compiling 3rdparty/libtommath/bn_mp_cmp.o
+compiling 3rdparty/libtommath/bn_mp_cmp_d.o
+compiling 3rdparty/libtommath/bn_mp_cmp_mag.o
+compiling 3rdparty/libtommath/bn_mp_cnt_lsb.o
+compiling 3rdparty/libtommath/bn_mp_copy.o
+compiling 3rdparty/libtommath/bn_mp_count_bits.o
+compiling 3rdparty/libtommath/bn_mp_div.o
+compiling 3rdparty/libtommath/bn_mp_div_2.o
+compiling 3rdparty/libtommath/bn_mp_div_2d.o
+compiling 3rdparty/libtommath/bn_mp_div_3.o
+compiling 3rdparty/libtommath/bn_mp_div_d.o
+compiling 3rdparty/libtommath/bn_mp_dr_is_modulus.o
+compiling 3rdparty/libtommath/bn_mp_dr_reduce.o
+compiling 3rdparty/libtommath/bn_mp_dr_setup.o
+compiling 3rdparty/libtommath/bn_mp_exch.o
+compiling 3rdparty/libtommath/bn_mp_expt_d.o
+compiling 3rdparty/libtommath/bn_mp_exptmod.o
+compiling 3rdparty/libtommath/bn_mp_exptmod_fast.o
+compiling 3rdparty/libtommath/bn_mp_exteuclid.o
+compiling 3rdparty/libtommath/bn_mp_fread.o
+compiling 3rdparty/libtommath/bn_mp_fwrite.o
+compiling 3rdparty/libtommath/bn_mp_gcd.o
+compiling 3rdparty/libtommath/bn_mp_get_int.o
+compiling 3rdparty/libtommath/bn_mp_get_long.o
+compiling 3rdparty/libtommath/bn_mp_grow.o
+compiling 3rdparty/libtommath/bn_mp_init.o
+compiling 3rdparty/libtommath/bn_mp_init_copy.o
+compiling 3rdparty/libtommath/bn_mp_init_multi.o
+compiling 3rdparty/libtommath/bn_mp_init_set.o
+compiling 3rdparty/libtommath/bn_mp_init_set_int.o
+compiling 3rdparty/libtommath/bn_mp_init_size.o
+compiling 3rdparty/libtommath/bn_mp_invmod.o
+compiling 3rdparty/libtommath/bn_mp_invmod_slow.o
+compiling 3rdparty/libtommath/bn_mp_is_square.o
+compiling 3rdparty/libtommath/bn_mp_jacobi.o
+compiling 3rdparty/libtommath/bn_mp_karatsuba_mul.o
+compiling 3rdparty/libtommath/bn_mp_karatsuba_sqr.o
+compiling 3rdparty/libtommath/bn_mp_lcm.o
+compiling 3rdparty/libtommath/bn_mp_lshd.o
+compiling 3rdparty/libtommath/bn_mp_mod.o
+compiling 3rdparty/libtommath/bn_mp_mod_2d.o
+compiling 3rdparty/libtommath/bn_mp_mod_d.o
+compiling 3rdparty/libtommath/bn_mp_montgomery_calc_normalization.o
+compiling 3rdparty/libtommath/bn_mp_montgomery_reduce.o
+compiling 3rdparty/libtommath/bn_mp_montgomery_setup.o
+compiling 3rdparty/libtommath/bn_mp_mul.o
+compiling 3rdparty/libtommath/bn_mp_mul_2.o
+compiling 3rdparty/libtommath/bn_mp_mul_2d.o
+compiling 3rdparty/libtommath/bn_mp_mul_d.o
+compiling 3rdparty/libtommath/bn_mp_mulmod.o
+compiling 3rdparty/libtommath/bn_mp_n_root.o
+compiling 3rdparty/libtommath/bn_mp_neg.o
+compiling 3rdparty/libtommath/bn_mp_or.o
+compiling 3rdparty/libtommath/bn_mp_prime_fermat.o
+compiling 3rdparty/libtommath/bn_mp_prime_is_divisible.o
+compiling 3rdparty/libtommath/bn_mp_prime_is_prime.o
+compiling 3rdparty/libtommath/bn_mp_prime_miller_rabin.o
+compiling 3rdparty/libtommath/bn_mp_prime_next_prime.o
+compiling 3rdparty/libtommath/bn_mp_prime_rabin_miller_trials.o
+compiling 3rdparty/libtommath/bn_mp_prime_random_ex.o
+compiling 3rdparty/libtommath/bn_mp_radix_size.o
+compiling 3rdparty/libtommath/bn_mp_radix_smap.o
+compiling 3rdparty/libtommath/bn_mp_rand.o
+compiling 3rdparty/libtommath/bn_mp_read_radix.o
+compiling 3rdparty/libtommath/bn_mp_read_signed_bin.o
+compiling 3rdparty/libtommath/bn_mp_read_unsigned_bin.o
+compiling 3rdparty/libtommath/bn_mp_reduce.o
+compiling 3rdparty/libtommath/bn_mp_reduce_2k.o
+compiling 3rdparty/libtommath/bn_mp_reduce_2k_l.o
+compiling 3rdparty/libtommath/bn_mp_reduce_2k_setup.o
+compiling 3rdparty/libtommath/bn_mp_reduce_2k_setup_l.o
+compiling 3rdparty/libtommath/bn_mp_reduce_is_2k.o
+compiling 3rdparty/libtommath/bn_mp_reduce_is_2k_l.o
+compiling 3rdparty/libtommath/bn_mp_reduce_setup.o
+compiling 3rdparty/libtommath/bn_mp_rshd.o
+compiling 3rdparty/libtommath/bn_mp_set.o
+compiling 3rdparty/libtommath/bn_mp_set_int.o
+compiling 3rdparty/libtommath/bn_mp_set_long.o
+compiling 3rdparty/libtommath/bn_mp_shrink.o
+compiling 3rdparty/libtommath/bn_mp_signed_bin_size.o
+compiling 3rdparty/libtommath/bn_mp_sqr.o
+compiling 3rdparty/libtommath/bn_mp_sqrmod.o
+compiling 3rdparty/libtommath/bn_mp_sqrt.o
+compiling 3rdparty/libtommath/bn_mp_sub.o
+compiling 3rdparty/libtommath/bn_mp_sub_d.o
+compiling 3rdparty/libtommath/bn_mp_submod.o
+compiling 3rdparty/libtommath/bn_mp_to_signed_bin.o
+compiling 3rdparty/libtommath/bn_mp_to_signed_bin_n.o
+compiling 3rdparty/libtommath/bn_mp_to_unsigned_bin.o
+compiling 3rdparty/libtommath/bn_mp_to_unsigned_bin_n.o
+compiling 3rdparty/libtommath/bn_mp_toom_mul.o
+compiling 3rdparty/libtommath/bn_mp_toom_sqr.o
+compiling 3rdparty/libtommath/bn_mp_toradix.o
+compiling 3rdparty/libtommath/bn_mp_toradix_n.o
+compiling 3rdparty/libtommath/bn_mp_unsigned_bin_size.o
+compiling 3rdparty/libtommath/bn_mp_xor.o
+compiling 3rdparty/libtommath/bn_mp_zero.o
+compiling 3rdparty/libtommath/bn_prime_tab.o
+compiling 3rdparty/libtommath/bn_reverse.o
+compiling 3rdparty/libtommath/bn_s_mp_add.o
+compiling 3rdparty/libtommath/bn_s_mp_exptmod.o
+compiling 3rdparty/libtommath/bn_s_mp_mul_digs.o
+compiling 3rdparty/libtommath/bn_s_mp_mul_high_digs.o
+compiling 3rdparty/libtommath/bn_s_mp_sqr.o
+compiling 3rdparty/libtommath/bn_s_mp_sub.o
+compiling 3rdparty/libtommath/bncore.o
+linking 3rdparty/libtommath/libtommath.a
+compiling 3rdparty/libuv/src/unix/linux-core.o
+compiling 3rdparty/libuv/src/unix/linux-inotify.o
+compiling 3rdparty/libuv/src/unix/linux-syscalls.o
+compiling 3rdparty/libuv/src/unix/proctitle.o
+compiling 3rdparty/libuv/src/fs-poll.o
+compiling 3rdparty/libuv/src/inet.o
+compiling 3rdparty/libuv/src/uv-common.o
+compiling 3rdparty/libuv/src/version.o
+compiling 3rdparty/libuv/src/unix/async.o
+compiling 3rdparty/libuv/src/unix/core.o
+compiling 3rdparty/libuv/src/unix/dl.o
+compiling 3rdparty/libuv/src/unix/fs.o
+compiling 3rdparty/libuv/src/unix/getaddrinfo.o
+compiling 3rdparty/libuv/src/unix/loop-watcher.o
+compiling 3rdparty/libuv/src/unix/loop.o
+compiling 3rdparty/libuv/src/unix/pipe.o
+compiling 3rdparty/libuv/src/unix/poll.o
+compiling 3rdparty/libuv/src/unix/process.o
+compiling 3rdparty/libuv/src/unix/signal.o
+compiling 3rdparty/libuv/src/unix/stream.o
+compiling 3rdparty/libuv/src/unix/tcp.o
+compiling 3rdparty/libuv/src/unix/thread.o
+compiling 3rdparty/libuv/src/threadpool.o
+compiling 3rdparty/libuv/src/unix/timer.o
+compiling 3rdparty/libuv/src/unix/tty.o
+compiling 3rdparty/libuv/src/unix/udp.o
+linking 3rdparty/libuv/libuv.a
+linking libmoar.so
+linking moar
+/usr/bin/perl build/mk-moar-pc.pl pkgconfig/moar.pc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/bin
+/usr/bin/perl -MExtUtils::Command -e cp moar /home/travis/.rakudobrew/moar-nom/install/bin
+/usr/bin/perl -MExtUtils::Command -e chmod 755 /home/travis/.rakudobrew/moar-nom/install/bin/moar
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/lib
+/usr/bin/perl -MExtUtils::Command -e cp libmoar.so  /home/travis/.rakudobrew/moar-nom/install/lib
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MAST
+/usr/bin/perl -MExtUtils::Command -e cp lib/MAST/Nodes.nqp /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MAST
+/usr/bin/perl -MExtUtils::Command -e cp lib/MAST/Ops.nqp /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MAST
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/share/pkgconfig
+/usr/bin/perl -MExtUtils::Command -e cp pkgconfig/moar.pc /home/travis/.rakudobrew/moar-nom/install/share/pkgconfig
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar
+/usr/bin/perl -MExtUtils::Command -e cp src/gen/config.h /home/travis/.rakudobrew/moar-nom/install/include/moar
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/6model/reprs
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/core
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/gc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/gen
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/io
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/mast
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/math
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/platform
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/profiler
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/spesh
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/strings
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/jit
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/moar/instrument
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar
+/usr/bin/perl -MExtUtils::Command -e cp src/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar
+/usr/bin/perl -MExtUtils::Command -e cp src/6model/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/6model
+/usr/bin/perl -MExtUtils::Command -e cp src/6model/reprs/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/6model/reprs
+/usr/bin/perl -MExtUtils::Command -e cp src/core/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/core
+/usr/bin/perl -MExtUtils::Command -e cp src/gc/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/gc
+/usr/bin/perl -MExtUtils::Command -e cp src/gen/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/gen
+/usr/bin/perl -MExtUtils::Command -e cp src/io/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/io
+/usr/bin/perl -MExtUtils::Command -e cp src/mast/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/mast
+/usr/bin/perl -MExtUtils::Command -e cp src/math/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/math
+/usr/bin/perl -MExtUtils::Command -e cp src/platform/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/platform
+/usr/bin/perl -MExtUtils::Command -e cp src/profiler/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/profiler
+/usr/bin/perl -MExtUtils::Command -e cp src/spesh/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/spesh
+/usr/bin/perl -MExtUtils::Command -e cp src/strings/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/strings
+/usr/bin/perl -MExtUtils::Command -e cp src/jit/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/jit
+/usr/bin/perl -MExtUtils::Command -e cp src/instrument/*.h /home/travis/.rakudobrew/moar-nom/install/include/moar/instrument
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libuv
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libuv/include/*.h /home/travis/.rakudobrew/moar-nom/install/include/libuv
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/armcc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/gcc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/hpc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/ibmc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/icc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/loadstore
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/msftc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/sunc
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/armcc/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/armcc
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/gcc/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/gcc
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/hpc/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/hpc
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/ibmc/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/ibmc
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/icc/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/icc
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/loadstore/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/loadstore
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/msftc/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/msftc
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libatomic_ops/src/atomic_ops/sysdeps/sunc/*.h /home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops/atomic_ops/sysdeps/sunc
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/libtommath
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/libtommath/*.h /home/travis/.rakudobrew/moar-nom/install/include/libtommath
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/include/dyncall
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/dyncall/dynload/*.h /home/travis/.rakudobrew/moar-nom/install/include/dyncall
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/dyncall/dyncall/*.h /home/travis/.rakudobrew/moar-nom/install/include/dyncall
+/usr/bin/perl -MExtUtils::Command -e cp 3rdparty/dyncall/dyncallback/*.h /home/travis/.rakudobrew/moar-nom/install/include/dyncall
+Cleaning up ...
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/how/Archetypes.nqp src/how/RoleToRoleApplier.nqp src/how/NQPConcreteRoleHOW.nqp src/how/RoleToClassApplier.nqp src/how/NQPCurriedRoleHOW.nqp src/how/NQPParametricRoleHOW.nqp src/how/NQPClassHOW.nqp src/how/NQPNativeHOW.nqp src/how/NQPAttribute.nqp src/how/NQPModuleHOW.nqp src/how/EXPORTHOW.nqp  > gen/moar/stage1/nqpmo.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --setting=NULL --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/nqpmo.moarvm gen/moar/stage1/nqpmo.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --setting=NULL --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/ModuleLoader.moarvm src/vm/moar/ModuleLoader.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/core/NativeTypes.nqp src/core/NQPRoutine.nqp src/core/NQPMu.nqp src/core/NQPCapture.nqp src/core/IO.nqp src/core/Regex.nqp src/core/Hash.nqp src/core/NQPLock.nqp src/core/testing.nqp src/core/YOUAREHERE.nqp  > gen/moar/stage1/NQPCORE.setting
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting=NULL --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/NQPCORE.setting.moarvm gen/moar/stage1/NQPCORE.setting
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/QAST/CompileTimeValue.nqp src/QAST/SpecialArg.nqp src/QAST/Children.nqp src/QAST/Node.nqp src/QAST/NodeList.nqp src/QAST/Regex.nqp src/QAST/IVal.nqp src/QAST/NVal.nqp src/QAST/SVal.nqp src/QAST/BVal.nqp src/QAST/WVal.nqp src/QAST/Want.nqp src/QAST/Var.nqp src/QAST/VarWithFallback.nqp src/QAST/ParamTypeCheck.nqp src/QAST/Op.nqp src/QAST/VM.nqp src/QAST/Stmts.nqp src/QAST/Stmt.nqp src/QAST/Block.nqp src/QAST/Unquote.nqp src/QAST/CompUnit.nqp src/QAST/InlinePlaceholder.nqp  > gen/moar/stage1/QASTNode.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/QASTNode.moarvm gen/moar/stage1/QASTNode.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/QRegex/NFA.nqp src/QRegex/Cursor.nqp  > gen/moar/stage1/QRegex.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/QRegex.moarvm gen/moar/stage1/QRegex.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/vm/moar/HLL/Backend.nqp src/HLL/Grammar.nqp src/HLL/Actions.nqp src/HLL/Compiler.nqp src/HLL/CommandLine.nqp src/HLL/World.nqp src/HLL/sprintf.nqp  > gen/moar/stage1/NQPHLL.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/NQPHLL.moarvm gen/moar/stage1/NQPHLL.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/MASTOps.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MAST/Ops.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/MASTNodes.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MAST/Nodes.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/vm/moar/QAST/QASTRegexCompilerMAST.nqp src/vm/moar/QAST/QASTOperationsMAST.nqp src/vm/moar/QAST/QASTCompilerMAST.nqp  > gen/moar/stage1/QAST.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/QAST.moarvm gen/moar/stage1/QAST.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/QRegex/P6Regex/Grammar.nqp src/QRegex/P6Regex/Actions.nqp src/QRegex/P6Regex/Compiler.nqp src/QRegex/P6Regex/Optimizer.nqp  > gen/moar/stage1/NQPP6QRegex.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage1/NQPP6QRegex.moarvm gen/moar/stage1/NQPP6QRegex.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage1/gen
+/usr/bin/perl tools/build/gen-version.pl > gen/moar/stage1/nqp-config.nqp
+/usr/bin/perl tools/build/gen-cat.pl moar src/vm/moar/NQP/Ops.nqp src/NQP/World.nqp src/NQP/Grammar.nqp src/NQP/Optimizer.nqp src/NQP/Actions.nqp src/NQP/Compiler.nqp  gen/moar/stage1/nqp-config.nqp > gen/moar/stage1/NQP.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=src/vm/moar/stage0 src/vm/moar/stage0/nqp.moarvm --bootstrap --module-path=gen/moar/stage1 --setting-path=gen/moar/stage1 \
+	    --setting=NQPCORE --target=mbc --no-regex-lib \
+	    --output=gen/moar/stage1/nqp.moarvm gen/moar/stage1/NQP.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/how/Archetypes.nqp src/how/RoleToRoleApplier.nqp src/how/NQPConcreteRoleHOW.nqp src/how/RoleToClassApplier.nqp src/how/NQPCurriedRoleHOW.nqp src/how/NQPParametricRoleHOW.nqp src/how/NQPClassHOW.nqp src/how/NQPNativeHOW.nqp src/how/NQPAttribute.nqp src/how/NQPModuleHOW.nqp src/how/EXPORTHOW.nqp  > gen/moar/stage2/nqpmo.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --setting=NULL --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/nqpmo.moarvm gen/moar/stage2/nqpmo.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --setting=NULL --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/ModuleLoader.moarvm src/vm/moar/ModuleLoader.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/core/NativeTypes.nqp src/core/NQPRoutine.nqp src/core/NQPMu.nqp src/core/NQPCapture.nqp src/core/IO.nqp src/core/Regex.nqp src/core/Hash.nqp src/core/NQPLock.nqp src/core/testing.nqp src/core/YOUAREHERE.nqp  > gen/moar/stage2/NQPCORE.setting
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting=NULL --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/NQPCORE.setting.moarvm gen/moar/stage2/NQPCORE.setting
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/QAST/CompileTimeValue.nqp src/QAST/SpecialArg.nqp src/QAST/Children.nqp src/QAST/Node.nqp src/QAST/NodeList.nqp src/QAST/Regex.nqp src/QAST/IVal.nqp src/QAST/NVal.nqp src/QAST/SVal.nqp src/QAST/BVal.nqp src/QAST/WVal.nqp src/QAST/Want.nqp src/QAST/Var.nqp src/QAST/VarWithFallback.nqp src/QAST/ParamTypeCheck.nqp src/QAST/Op.nqp src/QAST/VM.nqp src/QAST/Stmts.nqp src/QAST/Stmt.nqp src/QAST/Block.nqp src/QAST/Unquote.nqp src/QAST/CompUnit.nqp src/QAST/InlinePlaceholder.nqp  > gen/moar/stage2/QASTNode.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/QASTNode.moarvm gen/moar/stage2/QASTNode.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/QRegex/NFA.nqp src/QRegex/Cursor.nqp  > gen/moar/stage2/QRegex.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/QRegex.moarvm gen/moar/stage2/QRegex.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/vm/moar/HLL/Backend.nqp src/HLL/Grammar.nqp src/HLL/Actions.nqp src/HLL/Compiler.nqp src/HLL/CommandLine.nqp src/HLL/World.nqp src/HLL/sprintf.nqp  > gen/moar/stage2/NQPHLL.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/NQPHLL.moarvm gen/moar/stage2/NQPHLL.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/MASTOps.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MAST/Ops.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/MASTNodes.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MAST/Nodes.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/vm/moar/QAST/QASTRegexCompilerMAST.nqp src/vm/moar/QAST/QASTOperationsMAST.nqp src/vm/moar/QAST/QASTCompilerMAST.nqp  > gen/moar/stage2/QAST.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/QAST.moarvm gen/moar/stage2/QAST.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/QRegex/P6Regex/Grammar.nqp src/QRegex/P6Regex/Actions.nqp src/QRegex/P6Regex/Compiler.nqp src/QRegex/P6Regex/Optimizer.nqp  > gen/moar/stage2/NQPP6QRegex.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --no-regex-lib --target=mbc \
+	    --output=gen/moar/stage2/NQPP6QRegex.moarvm gen/moar/stage2/NQPP6QRegex.nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-version.pl > gen/moar/stage2/nqp-config.nqp
+/usr/bin/perl tools/build/gen-cat.pl moar src/vm/moar/NQP/Ops.nqp src/NQP/World.nqp src/NQP/Grammar.nqp src/NQP/Optimizer.nqp src/NQP/Actions.nqp src/NQP/Compiler.nqp  gen/moar/stage2/nqp-config.nqp > gen/moar/stage2/NQP.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath=gen/moar/stage1 gen/moar/stage1/nqp.moarvm --bootstrap --module-path=gen/moar/stage2 --setting-path=gen/moar/stage2 \
+	    --setting=NQPCORE --target=mbc --no-regex-lib \
+	    --output=gen/moar/stage2/nqp.moarvm gen/moar/stage2/NQP.nqp
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/nqpmo.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/ModuleLoader.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/NQPCORE.setting.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/QASTNode.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/QRegex.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/NQPHLL.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/MASTOps.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/MASTNodes.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/QAST.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/NQPP6QRegex.moarvm .
+/usr/bin/perl -MExtUtils::Command -e cp gen/moar/stage2/nqp.moarvm .
+/usr/bin/perl tools/build/gen-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar"
+/usr/bin/perl -MExtUtils::Command -e mkpath gen/moar/stage2/gen
+/usr/bin/perl tools/build/gen-cat.pl moar src/QRegex/P5Regex/Grammar.nqp src/QRegex/P5Regex/Actions.nqp src/QRegex/P5Regex/Compiler.nqp  > gen/moar/stage2/NQPP5QRegex.nqp
+./nqp-m --target=mbc --output=NQPP5QRegex.moarvm \
+	    gen/moar/stage2/NQPP5QRegex.nqp
+/usr/bin/perl -MExtUtils::Command -e cp nqp-m nqp
+/usr/bin/perl -MExtUtils::Command -e chmod 755 nqp
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/bin
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e mkpath /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/profiler
+/usr/bin/perl -MExtUtils::Command -e cp nqpmo.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp ModuleLoader.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp NQPCORE.setting.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp QASTNode.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp QRegex.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp NQPHLL.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp MASTOps.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp MASTNodes.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp QAST.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp NQPP6QRegex.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp nqp.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp NQPP5QRegex.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib
+/usr/bin/perl -MExtUtils::Command -e cp src/vm/moar/profiler/template.html /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/profiler/template.html
+/usr/bin/perl tools/build/install-moar-runner.pl "" /home/travis/.rakudobrew/moar-nom/install
+/usr/bin/perl -MExtUtils::Command -e cp nqp-m nqp
+/usr/bin/perl -MExtUtils::Command -e chmod 755 nqp
+/usr/bin/perl -MExtUtils::Command -e cp /home/travis/.rakudobrew/moar-nom/install/bin/nqp-m /home/travis/.rakudobrew/moar-nom/install/bin/nqp
+/usr/bin/perl -MExtUtils::Command -e chmod 755 /home/travis/.rakudobrew/moar-nom/install/bin/nqp
+
+NQP has been built and installed.
+Using /home/travis/.rakudobrew/moar-nom/install/bin/nqp-m (version 2016.04-86-g618c6be / MoarVM 2016.04-134-g9879233).
+Cleaning up ...
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar src/vm/moar/ModuleLoaderVMConfig.nqp src/Perl6/ModuleLoader.nqp > gen/moar/m-ModuleLoader.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/ModuleLoader.moarvm --encoding=utf8 \
+	    gen/moar/m-ModuleLoader.nqp
+gcc -c -fPIC -Wdeclaration-after-statement -Werror=declaration-after-statement -O3 -DNDEBUG  -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fPIC -Wdeclaration-after-statement -Werror=declaration-after-statement -O3 -DNDEBUG  -I/home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops \
+	    -I/home/travis/.rakudobrew/moar-nom/install/include/dyncall -I/home/travis/.rakudobrew/moar-nom/install/include/moar \
+	    -I/home/travis/.rakudobrew/moar-nom/install/include/sha1 -I/home/travis/.rakudobrew/moar-nom/install/include/tinymt  -I/home/travis/.rakudobrew/moar-nom/install/include/libtommath \
+	    -I/home/travis/.rakudobrew/moar-nom/install/include/libuv -I/home/travis/.rakudobrew/moar-nom/install/include  -I3rdparty/libuv/include -I3rdparty/libuv/src -I3rdparty/libatomic_ops/src -I3rdparty/libtommath -I3rdparty/dynasm -I3rdparty/dyncall/dynload -I3rdparty/dyncall/dyncall -I3rdparty/dyncall/dyncallback -o dynext/perl6_ops.o src/vm/moar/ops/perl6_ops.c
+gcc -c -fPIC -Wdeclaration-after-statement -Werror=declaration-after-statement -O3 -DNDEBUG  -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fPIC -Wdeclaration-after-statement -Werror=declaration-after-statement -O3 -DNDEBUG  -I/home/travis/.rakudobrew/moar-nom/install/include/libatomic_ops \
+	    -I/home/travis/.rakudobrew/moar-nom/install/include/dyncall -I/home/travis/.rakudobrew/moar-nom/install/include/moar \
+	    -I/home/travis/.rakudobrew/moar-nom/install/include/sha1 -I/home/travis/.rakudobrew/moar-nom/install/include/tinymt  -I/home/travis/.rakudobrew/moar-nom/install/include/libtommath \
+	    -I/home/travis/.rakudobrew/moar-nom/install/include/libuv -I/home/travis/.rakudobrew/moar-nom/install/include  -I3rdparty/libuv/include -I3rdparty/libuv/src -I3rdparty/libatomic_ops/src -I3rdparty/libtommath -I3rdparty/dynasm -I3rdparty/dyncall/dynload -I3rdparty/dyncall/dyncall -I3rdparty/dyncall/dyncallback -o dynext/container.o src/vm/moar/ops/container.c
+gcc  -L/home/travis/.rakudobrew/moar-nom/install/lib -shared -fPIC -O3 -DNDEBUG -Wl,-rpath,//home/travis/.rakudobrew/moar-nom/install/lib -Wl,-rpath,/home/travis/.rakudobrew/moar-nom/install/share/perl6/site/lib  -O3 -DNDEBUG -lm -lpthread -lrt -ldl -o dynext/libperl6_ops_moar.so dynext/perl6_ops.o dynext/container.o -lmoar 
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/Ops.moarvm --encoding=utf8 \
+	    src/vm/moar/Perl6/Ops.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/Pod.moarvm --encoding=utf8 \
+	    src/Perl6/Pod.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/World.moarvm --encoding=utf8 \
+	    src/Perl6/World.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar src/Perl6/Actions.nqp > gen/moar/m-Perl6-Actions.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/Actions.moarvm --encoding=utf8 \
+	    gen/moar/m-Perl6-Actions.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/Grammar.moarvm --encoding=utf8 \
+	    src/Perl6/Grammar.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar src/Perl6/Optimizer.nqp > gen/moar/m-Perl6-Optimizer.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/Optimizer.moarvm --encoding=utf8 \
+	    gen/moar/m-Perl6-Optimizer.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/Compiler.moarvm --encoding=utf8 \
+	    src/Perl6/Compiler.nqp
+/usr/bin/perl tools/build/gen-version.pl > gen/moar/main-version.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar src/main.nqp gen/moar/main-version.nqp > gen/moar/m-main.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=perl6.moarvm \
+	    --vmlibs=dynext/libperl6_ops_moar.so=Rakudo_ops_init gen/moar/m-main.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar -f tools/build/common_bootstrap_sources > gen/moar/m-Metamodel.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/Metamodel.moarvm --encoding=utf8 \
+	    gen/moar/m-Metamodel.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar src/Perl6/Metamodel/BOOTSTRAP.nqp src/Perl6/Metamodel/EXPORTHOW.nqp  > gen/moar/m-BOOTSTRAP.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=blib/Perl6/BOOTSTRAP.moarvm --encoding=utf8 \
+        --vmlibs=dynext/libperl6_ops_moar.so=Rakudo_ops_init gen/moar/m-BOOTSTRAP.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar -f tools/build/moar_core_sources > gen/moar/m-CORE.setting
+The following step can take a long time, please be patient.
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath="/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" perl6.moarvm --setting=NULL --ll-exception --optimize=3 --target=mbc --stagestats --output=CORE.setting.moarvm gen/moar/m-CORE.setting
+Stage start      :   0.000
+Stage parse      :  65.122
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :  11.354
+Stage mast       :  18.166
+Stage mbc        :   0.205
+/home/travis/.rakudobrew/moar-nom/install/bin/moar --libpath="/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" perl6.moarvm --target=mbc --ll-exception --output=RESTRICTED.setting.moarvm src/RESTRICTED.setting
+rm -f -- perl6-m
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6.moarvm perl6-m . "" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" .
+chmod -- 755 perl6-m
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m tools/build/gen-cat.nqp moar src/perl6-debug.nqp gen/moar/main-version.nqp > gen/moar/m-perl6-debug.nqp
+/home/travis/.rakudobrew/moar-nom/install/bin/nqp-m --target=mbc --output=perl6-debug.moarvm \
+	    --vmlibs=dynext/libperl6_ops_moar.so=Rakudo_ops_init gen/moar/m-perl6-debug.nqp
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6-debug.moarvm perl6-debug-m . "" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" .
+rm -f -- perl6-gdb-m
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6.moarvm perl6-gdb-m . "gdb" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" .
+chmod -- 755 perl6-gdb-m
+rm -f -- perl6-valgrind-m
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6.moarvm perl6-valgrind-m . "valgrind" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" .
+chmod -- 755 perl6-valgrind-m
+rm -f -- perl6
+cp -- perl6-m perl6
+chmod -- 755 perl6
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/bin
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6
+cp -- blib/Perl6/ModuleLoader.moarvm blib/Perl6/World.moarvm blib/Perl6/Grammar.moarvm blib/Perl6/Ops.moarvm blib/Perl6/Actions.moarvm blib/Perl6/Optimizer.moarvm blib/Perl6/Pod.moarvm blib/Perl6/Compiler.moarvm blib/Perl6/Metamodel.moarvm blib/Perl6/BOOTSTRAP.moarvm /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/lib
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime
+cp -- CORE.setting.moarvm RESTRICTED.setting.moarvm /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime
+cp -- perl6.moarvm perl6-debug.moarvm /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/dynext
+cp -- dynext/libperl6_ops_moar.so /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/dynext
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/dist
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/sources
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/resources
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/bin
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/short
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/precomp
+echo 1 >  /home/travis/.rakudobrew/moar-nom/install/share/perl6/version
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/dist
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/sources
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/resources
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/bin
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/short
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/precomp
+echo 1 >  /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/version
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/vendor/dist
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/dist
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/sources
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/resources
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/bin
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/short
+mkdir -p -- /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp
+echo 1 >  /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/version
+./perl6-m tools/build/install-core-dist.pl /home/travis/.rakudobrew/moar-nom/install/share/perl6
+installed!
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6.moarvm /home/travis/.rakudobrew/moar-nom/install/bin/perl6-m "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime" "" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime"
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6-debug.moarvm /home/travis/.rakudobrew/moar-nom/install/bin/perl6-debug-m "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime" "" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime"
+chmod -- 755 /home/travis/.rakudobrew/moar-nom/install/bin/perl6-m
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6.moarvm /home/travis/.rakudobrew/moar-nom/install/bin/perl6-gdb-m "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime" "gdb" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime"
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6.moarvm /home/travis/.rakudobrew/moar-nom/install/bin/perl6-valgrind-m "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime" "valgrind" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime"
+/usr/bin/perl tools/build/create-moar-runner.pl "/home/travis/.rakudobrew/moar-nom/install/bin/moar" perl6.moarvm /home/travis/.rakudobrew/moar-nom/install/bin/perl6-m "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime" "" "/home/travis/.rakudobrew/moar-nom/install/share/nqp/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/lib" "/home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime"
+cp -- /home/travis/.rakudobrew/moar-nom/install/bin/perl6-m /home/travis/.rakudobrew/moar-nom/install/bin/perl6
+chmod -- 755 /home/travis/.rakudobrew/moar-nom/install/bin/perl6
+
+Rakudo has been built and installed.
+Updating shims
+Switching to moar-nom
+Done, moar-nom built
+
+travis_time:end:022cea65:start=1463551077855334415,finish=1463551322093271023,duration=244237936608
+[0Ktravis_fold:end:setup
+[0Ktravis_fold:start:cache.1
+[0KSetting up build cache
+$ export CASHER_DIR=$HOME/.casher
+travis_time:start:0c984908
+[0K$ Installing caching utilities
+
+travis_time:end:0c984908:start=1463551322262454514,finish=1463551322361661199,duration=99206685
+[0Ktravis_time:start:0891c7de
+[0K
+travis_time:end:0891c7de:start=1463551322366083611,finish=1463551322369141813,duration=3058202
+[0Ktravis_time:start:1aa4aab0
+[0K[32;1mattempting to download cache archive[0m
+[32;1mfetching master/cache-linux-precise-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855--perl6-latest.tgz[0m
+[32;1mfound cache[0m
+
+travis_time:end:1aa4aab0:start=1463551322372644918,finish=1463551323556926251,duration=1184281333
+[0Ktravis_time:start:0cc6f4c0
+[0K
+travis_time:end:0cc6f4c0:start=1463551323560544417,finish=1463551323563711654,duration=3167237
+[0Ktravis_time:start:069ee0b6
+[0K[32;1madding /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci to cache[0m
+
+travis_time:end:069ee0b6:start=1463551323567293457,finish=1463551324819235097,duration=1251941640
+[0Ktravis_fold:end:cache.1
+[0K$ perl6 --version
+This is Rakudo version 2016.04-208-ge39ce3d built on MoarVM version 2016.04-134-g9879233
+implementing Perl 6.c.
+travis_fold:start:before_install
+[0Ktravis_time:start:08890f2c
+[0K$ sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
+Installing MongoDB version 3.0.5
+mongodb-linux-x86_64-3.0.5/bin/mongod
+
+travis_time:end:08890f2c:start=1463551324866056419,finish=1463551325809751611,duration=943695192
+[0Ktravis_fold:end:before_install
+[0Ktravis_fold:start:install.1
+[0Ktravis_time:start:0b3df9e5
+[0K$ rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
+Cloning into 'panda'...
+remote: Counting objects: 4895, done.[K
+Receiving objects:   0% (1/4895)   
+...
+Receiving objects:  91% (4455/4895)   
+remote: Total 4895 (delta 0), reused 0 (delta 0), pack-reused 4895[K
+Receiving objects:  92% (4504/4895)   
+...
+Receiving objects: 100% (4895/4895)   
+Receiving objects: 100% (4895/4895), 861.11 KiB | 0 bytes/s, done.
+Resolving deltas:   0% (0/2206)   
+...
+Resolving deltas: 100% (2206/2206)   
+Resolving deltas: 100% (2206/2206), done.
+Checking connectivity... done.
+Already on 'master'
+Your branch is up-to-date with 'origin/master'.
+error: pathspec 'nom' did not match any file(s) known to git.
+panda for nom not found
+Installing latest panda instead.
+==> Bootstrapping Panda
+==> Installing panda from a local directory '/home/travis/.rakudobrew/moar-nom/panda'
+==> panda depends on File::Find, Shell::Command, JSON::Fast
+==> Shell::Command depends on File::Find
+==> Fetching File::Find
+==> Building File::Find
+==> Testing File::Find
+t/01-file-find.t .. ok
+All tests successful.
+Files=1, Tests=11,  2 wallclock secs ( 0.01 usr  0.00 sys +  1.47 cusr  0.09 csys =  1.57 CPU)
+Result: PASS
+==> Installing File::Find
+==> Successfully installed File::Find
+==> Fetching Shell::Command
+==> Building Shell::Command
+==> Testing Shell::Command
+t/02-shell-command.t .. ok
+All tests successful.
+Files=1, Tests=16,  3 wallclock secs ( 0.02 usr  0.00 sys +  2.16 cusr  0.15 csys =  2.33 CPU)
+Result: PASS
+==> Installing Shell::Command
+==> Successfully installed Shell::Command
+==> Fetching JSON::Fast
+==> Building JSON::Fast
+==> Testing JSON::Fast
+t/01-parse.t ...... ok
+t/02-structure.t .. ok
+t/03-unicode.t .... ok
+t/04-roundtrip.t .. ok
+All tests successful.
+Files=4, Tests=122,  4 wallclock secs ( 0.03 usr  0.00 sys +  3.41 cusr  0.24 csys =  3.68 CPU)
+Result: PASS
+==> Installing JSON::Fast
+==> Successfully installed JSON::Fast
+==> Fetching panda
+==> Building panda
+==> Testing panda
+t/build-hook.t .. ok
+t/builder.t ..... ok
+t/common.t ...... ok
+t/ecosystem.t ... ok
+Copying lib/bar.pod to /home/travis/.rakudobrew/moar-nom/panda/.panda-work/1463551356_4/removeme/lib/bar.pod
+Copying lib/baz.js to /home/travis/.rakudobrew/moar-nom/panda/.panda-work/1463551356_4/removeme/lib/baz.js
+Copying lib/foo.jar to /home/travis/.rakudobrew/moar-nom/panda/.panda-work/1463551356_4/removeme/lib/foo.jar
+Copying lib/foo.pir to /home/travis/.rakudobrew/moar-nom/panda/.panda-work/1463551356_4/removeme/lib/foo.pir
+Copying lib/foo.pm to /home/travis/.rakudobrew/moar-nom/panda/.panda-work/1463551356_4/removeme/lib/foo.pm
+Copying lib/foo.moarvm to /home/travis/.rakudobrew/moar-nom/panda/.panda-work/1463551356_4/removeme/lib/foo.moarvm
+Copying bin/bar to /home/travis/.rakudobrew/moar-nom/panda/.panda-work/1463551356_4/removeme/bin/bar
+t/installer.t ... ok
+t/tester.t ...... ok
+All tests successful.
+Files=6, Tests=33, 14 wallclock secs ( 0.04 usr  0.00 sys + 13.31 cusr  0.83 csys = 14.18 CPU)
+Result: PASS
+==> Installing panda
+==> Successfully installed panda
+==> Please make sure that /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/bin is in your PATH
+Updating shims
+Done, built panda HEAD for moar-nom
+Updating shims
+
+travis_time:end:0b3df9e5:start=1463551325813641689,finish=1463551389041705131,duration=63228063442
+[0Ktravis_fold:end:install.1
+[0Ktravis_fold:start:install.2
+[0Ktravis_time:start:08b91cd0
+[0K$ panda installdeps .
+==> MongoDB depends on BSON, Digest::MD5, Config::TOML
+==> BSON depends on Digest::MD5, UUID
+==> Config::TOML depends on Crane
+==> Fetching Digest::MD5
+==> Building Digest::MD5
+==> Testing Digest::MD5
+t/0-load-module.t .. ok
+t/1-readme.t ....... ok
+t/perl5-compat.t ... ok
+All tests successful.
+Files=3, Tests=28,  5 wallclock secs ( 0.03 usr  0.00 sys +  4.61 cusr  0.22 csys =  4.86 CPU)
+Result: PASS
+==> Installing Digest::MD5
+==> Successfully installed Digest::MD5
+==> Fetching UUID
+==> Building UUID
+==> Testing UUID
+t/01-basic.t .. ok
+All tests successful.
+Files=1, Tests=1,  1 wallclock secs ( 0.01 usr  0.01 sys +  0.66 cusr  0.10 csys =  0.78 CPU)
+Result: PASS
+==> Installing UUID
+==> Successfully installed UUID
+==> Fetching BSON
+==> Building BSON
+==> Testing BSON
+# Object id encoding/decoding
+t/110-objectid.t .. ok
+# Initialize document
+# Ban the hash
+# Test document, associative
+# Test document, positional
+# Test document, other
+# Document nesting 1
+# Document nesting 2
+# Exception tests
+t/300-document.t .. ok
+# Document encoding positional
+# Document decoding
+t/310-document.t .. ok
+t/320-document.t .. ok
+t/330-document.t .. ok
+t/340-document.t .. ok
+All tests successful.
+Files=6, Tests=17, 15 wallclock secs ( 0.04 usr  0.00 sys + 15.28 cusr  0.73 csys = 16.05 CPU)
+Result: PASS
+==> Installing BSON
+==> Successfully installed BSON
+==> Fetching Crane
+==> Building Crane
+==> Testing Crane
+t/exported-subroutines/at.t .. ok
+    # In fails when Positional index invalid
+    # In fails when Positional index invalid
+t/exported-subroutines/in.t .. ok
+    # Add operation fails when requests mutating immutable values
+    # Add operation fails when requests splicing List type
+    # Positional index invalid
+    # Positional index invalid
+    # Add operation fails when path not found
+    # Add operation fails when positional index out of range
+    # Add operation fails when positional index out of range
+    # Add operation fails when attempts to create a sparse Positional
+    # Add operation fails when attempts to create a sparse Positional
+    # Add operation fails when attempts to create a sparse Positional
+t/methods/add.t .............. ok
+    # Not allowed to copy parent into child
+    # Not allowed to copy parent into child
+    # Not allowed to copy parent into child
+    # Not allowed to copy parent into child
+    # Not allowed to copy parent into child
+    # Not allowed to copy parent into child
+    # Not allowed to copy parent into child
+    # Copy operation fails when from not found
+    # Copy operation fails when path not found
+    # Copy operation fails when path is immutable
+    # Positional index invalid
+    # Copy operation fails when positional index out of range
+    # Copy operation fails when attempts to create a sparse Positional
+    # Copy operation fails when attempts to create a sparse Positional
+t/methods/copy.t ............. ok
+t/methods/exists.t ........... ok
+t/methods/flatten.t .......... ok
+    # Get operation on root container key fails
+    # Get operation on root container pair fails
+    # Get operation on invalid positional index fails
+    # Get operation on nonexistent path fails
+    # Get operation on nonexistent path fails
+    # Get operation on nonexistent path fails
+    # Get operation fails when path not found
+t/methods/get.t .............. ok
+t/methods/list.t ............. ok
+    # Not allowed to move parent into child
+    # Not allowed to move parent into child
+    # Not allowed to move parent into child
+    # Not allowed to move parent into child
+    # Not allowed to move parent into child
+    # Not allowed to move parent into child
+    # Not allowed to move parent into child
+    # Move operation fails when from not found
+    # Move operation fails when path not found
+    # Move operation fails when from is immutable
+    # Move operation fails when path is immutable
+    # Positional index invalid
+    # Move operation fails when positional index out of range
+    # Move operation fails when attempts to create a sparse Positional
+    # Move operation fails when attempts to create a sparse Positional
+t/methods/move.t ............. ok
+    # Patch operation fails when remove operation fails
+    # Patch operation fails when replace operation fails
+    # Patch operation fails when move operation fails
+    # Patch operation fails when copy operation fails
+    # Patch operation fails when test operation fails
+t/methods/patch.t ............ ok
+    # Remove operation fails when target is immutable
+    # Remove operation fails when path not found
+    # Remove operation fails when target is immutable
+    # Remove operation fails when path not found
+    # Remove operation fails when Positional index invalid
+t/methods/remove.t ........... ok
+    # Replace operation fails when target is immutable
+    # Replace operation fails when path not found
+    # Replace operation fails when target is immutable
+    # Replace operation fails when path not found
+    # Replace operation fails when Positional index invalid
+t/methods/replace.t .......... ok
+    # Set operation fails when target is immutable
+    # Set operation fails when Positional index invalid
+t/methods/set.t .............. ok
+    # Test operation fails when path not found
+t/methods/test.t ............. ok
+    # Transform operation fails when callable raises exception
+    # Transform operation fails with faulty callable signature (params)
+    # Transform operation fails when path is immutable
+t/methods/transform.t ........ ok
+All tests successful.
+Files=15, Tests=50, 20 wallclock secs ( 0.08 usr  0.02 sys + 19.02 cusr  0.76 csys = 19.88 CPU)
+Result: PASS
+==> Installing Crane
+==> Successfully installed Crane
+==> Fetching Config::TOML
+==> Building Config::TOML
+==> Testing Config::TOML
+t/api/01-perl6.t ................................ ok
+t/dumper/01-basic.t ............................. ok
+t/exceptions/01-parser.t ........................ ok
+    # Raise exception when key is not of type Str
+    # Raise exception when key is not of type Str
+    # Raise exception when value is invalid
+    # Raise exception when value is invalid
+    # Raise exception when value is invalid
+    # Raise exception when value is invalid
+    # Raise exception when value is invalid
+    # Raise exception when value is invalid
+    # Raise exception when value is invalid
+    # Raise exception when value is invalid
+    # Raise exception when array contains more than one TOML type
+    # Raise exception when array contains more than one TOML type
+    # Raise exception when array contains more than one TOML type
+    # Raise exception when array contains more than one TOML type
+    # Raise exception when array contains more than one TOML type
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+    # Raise exception when array contains undefined values
+t/exceptions/02-dumper.t ........................ ok
+t/grammar-actions/01-primitives.t ............... ok
+t/grammar-actions/02-arrays.t ................... ok
+t/grammar-actions/03-inline-tables.t ............ ok
+t/grammar-actions/04-document.t ................. ok
+t/grammar/01-primitives.t ....................... ok
+t/grammar/02-arrays.t ........................... ok
+t/grammar/03-inline-tables.t .................... ok
+t/grammar/04-document.t ......................... ok
+t/special-cases/01-table-unordered.t ............ ok
+t/special-cases/02-arraytable-table-repeat.t .... ok
+t/special-cases/03-txn.t ........................ ok
+t/special-cases/04-string-literal-keys.t ........ ok
+t/special-cases/05-empty-quoted-keypair-keys.t .. ok
+All tests successful.
+Files=17, Tests=65, 36 wallclock secs ( 0.18 usr  0.01 sys + 34.43 cusr  1.42 csys = 36.04 CPU)
+Result: PASS
+==> Installing Config::TOML
+==> Successfully installed Config::TOML
+
+travis_time:end:08b91cd0:start=1463551389045909104,finish=1463551498749400177,duration=109703491073
+[0Ktravis_fold:end:install.2
+[0Ktravis_time:start:05dd661d
+[0K$ PERL6LIB=lib prove -v -r --exec=perl6 t/
+t/000-mk-sandbox.t ...... 
+2016-05-18 06:05:44 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/000-mk-sandbox.t start[0m
+[0m
+[0m
+# Setting up involves initializing mongodb data files which takes time[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 6593[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:05:44 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.data --port 65010 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.log --smallfiles  --quiet  --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.pid --nojournal [0m
+ok 1 - Server 1 started[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 6605[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:05:44 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server2/m.data --port 65011 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server2/m.log --smallfiles  --quiet  --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server2/m.pid --nojournal [0m
+ok 2 - Server 2 started[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 6617[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:05:44 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.data --port 65012 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.log --smallfiles  --quiet  --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.pid --nojournal [0m
+ok 3 - Server 3 started[0m
+2016-05-18 06:05:44 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/000-mk-sandbox.t stop[0m
+1..3[0m
+ok
+t/060-header.t .......... 
+# Header encode/decode[0m
+    ok 1 - Length of encoded buf is 19[0m
+    ok 2 - Size of header is 16[0m
+    ok 3 - First request encoding[0m
+    ok 4 - Message length received 16[0m
+    ok 5 - First request is 0[0m
+    ok 6 - Operation code is 2004[0m
+    ok 7 - Total encoded size is 59[0m
+    ok 8 - Second request encoding[0m
+    1..8[0m
+ok 1 - Header encode/decode[0m
+# query/reply
+    ok 1 - Request id is 1[0m
+    ok 2 - Number of docs is 1[0m
+    ok 3 - Empty document[0m
+    1..3[0m
+ok 2 - query/reply[0m
+# encoding get more
+    ok 1 - Third encoded request[0m
+    ok 2 - Encoded get more request[0m
+    1..2[0m
+ok 3 - encoding get more[0m
+1..3[0m
+ok
+t/070-uri.t ............. 
+# Uri parsing[0m
+    ok 1 - is url type[0m
+    ok 2 - url initialized[0m
+    ok 3 - mongodb:// --> protocol ok[0m
+    ok 4 - mongodb:// --> auth database = admin[0m
+    ok 5 - mongodb:// --> no username[0m
+    ok 6 - mongodb:// --> no password[0m
+    ok 7 - mongodb:// --> server = localhost[0m
+    ok 8 - mongodb:// --> port = 27017[0m
+    ok 9 - mongodb:// --> no options[0m
+    ok 10 - mongodb://localhost --> auth database = admin[0m
+    ok 11 - mongodb://localhost --> server = localhost[0m
+    ok 12 - mongodb://localhost --> port = 27017[0m
+    ok 13 - mongodb:/// ->> auth database = admin[0m
+    ok 14 - mongodb:/// ->> server = localhost[0m
+    ok 15 - mongodb:/// ->> port = 27017[0m
+    ok 16 - mongodb:///users --> auth database = users[0m
+    ok 17 - mongodb:///users --> server = localhost[0m
+    ok 18 - mongodb:///users --> port = 27017[0m
+    ok 19 - mongodb://h2:2345 --> auth database = admin[0m
+    ok 20 - mongodb://h2:2345 --> server = h2[0m
+    ok 21 - mongodb://h2:2345 --> port = 2345[0m
+    ok 22 - mongodb://:2345 --> server = localhost[0m
+    ok 23 - mongodb://:2345 --> port = 2345[0m
+    ok 24 - mongodb://:9875,:456 --> server1 = localhost[0m
+    ok 25 - mongodb://:9875,:456 --> port1 = 9875[0m
+    ok 26 - mongodb://:9875,:456 --> server2 = localhost[0m
+    ok 27 - mongodb://:9875,:456 --> port2 = 456[0m
+    ok 28 - mongodb://h2:2345/users --> auth database = users[0m
+    ok 29 - mongodb://h2:2345/users --> server = h2[0m
+    ok 30 - mongodb://h2:2345/users --> port = 2345[0m
+    ok 31 - mongodb://h1,h2,localhost:2000/ --> server1 = h1[0m
+    ok 32 - mongodb://h1,h2,localhost:2000/ --> port1 = 27017[0m
+    ok 33 - mongodb://h1,h2,localhost:2000/ --> server2 = h2[0m
+    ok 34 - mongodb://h1,h2,localhost:2000/ --> port2 = 27017[0m
+    ok 35 - mongodb://h1,h2,localhost:2000/ --> server3 = localhost[0m
+    ok 36 - mongodb://h1,h2,localhost:2000/ --> port3 = 2000[0m
+    ok 37 - mongodb:///?a=b --> server = localhost[0m
+    ok 38 - mongodb:///?a=b --> port = 27017[0m
+    ok 39 - mongodb:///?a=b --> auth database = admin[0m
+    ok 40 - mongodb:///?a=b --> option a => b[0m
+    ok 41 - mongodb:///users?test=2&list=jhg3 --> server = localhost[0m
+    ok 42 - mongodb:///users?test=2&list=jhg3 --> port = 27017[0m
+    ok 43 - mongodb:///users?test=2&list=jhg3 --> auth database = users[0m
+    ok 44 - mongodb:///users?test=2&list=jhg3 --> option test = 2[0m
+    ok 45 - mongodb:///users?test=2&list=jhg3 --> option list = jhg3[0m
+    ok 46 - mongodb://mt:pw@ --> server = localhost[0m
+    ok 47 - mongodb://mt:pw@ --> port = 27017[0m
+    ok 48 - mongodb://mt:pw@ --> auth database = admin[0m
+    ok 49 - mongodb://mt:pw@ --> username = mt[0m
+    ok 50 - mongodb://mt:pw@ --> password = pw[0m
+    ok 51 - mongodb://mt:pw@h2:9876/users --> server = h2[0m
+    ok 52 - mongodb://mt:pw@h2:9876/users --> port = 9876[0m
+    ok 53 - mongodb://mt:pw@h2:9876/users --> auth database = users[0m
+    ok 54 - mongodb://mt:pw@h2:9876/users --> username = mt[0m
+    ok 55 - mongodb://mt:pw@h2:9876/users --> password = pw[0m
+    1..55[0m
+ok 1 - Uri parsing[0m
+# Uri parsing utf-8
+    ok 1 - mongodb://lÃ¸calhÃ¼st --> server = lÃ¸calhÃ¼st[0m
+    1..1[0m
+ok 2 - Uri parsing utf-8[0m
+# Uri parsing errors
+    ok 1 - Parse error 'mongo://'[0m
+    ok 2 - Parse error 'mongodb://?a=b'[0m
+    1..2[0m
+ok 3 - Uri parsing errors[0m
+1..3[0m
+ok
+t/100-Server.t .......... 
+2016-05-18 06:05:58 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/100-Server.t start[0m
+# Monitor test[0m
+2016-05-18 06:05:59 [D] Start localhost:65012 monitoring[0m
+2016-05-18 06:05:59 [D] Weighted mean RTT: 0.010661 for server localhost:65012[0m
+    ok 1 - Monitoring is ok[0m
+    ok 2 - Weighted mean is 0.010661[0m
+    ok 3 - Ok response from server[0m
+    ok 4 - Is master[0m
+    1..4[0m
+ok 1 - Monitor test[0m
+# Non existent server test
+    ok 1 - Status is Unknown[0m
+2016-05-18 06:06:03 [D] Start an-unknown-server.with-unknown-domain:65535 monitoring[0m
+2016-05-18 06:06:03 [E] [0m
+  Server an-unknown-server.with-unknown-domain:65535 error Failed to resolve host name. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+    ok 2 - Monitoring is not ok[0m
+2016-05-18 06:06:04 [E] [0m
+  Server an-unknown-server.with-unknown-domain:65535 error Failed to resolve host name. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+    ok 3 - Monitoring is not ok[0m
+    ok 4 - Server is non existent[0m
+    1..4[0m
+ok 2 - Non existent server test[0m
+# Down server test
+    ok 1 - Status is unknown[0m
+2016-05-18 06:06:05 [D] Start localhost:65535 monitoring[0m
+2016-05-18 06:06:05 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+    ok 2 - Monitoring is not ok[0m
+2016-05-18 06:06:06 [I] Server monitoring stopped for an-unknown-server.with-unknown-domain:65535[0m
+2016-05-18 06:06:06 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+    ok 3 - Monitoring is not ok[0m
+    ok 4 - Server is down[0m
+    1..4[0m
+ok 3 - Down server test[0m
+# Server test
+    ok 1 - Status is Unknown[0m
+2016-05-18 06:06:08 [D] Start localhost:65012 monitoring[0m
+2016-05-18 06:06:08 [I] Server monitoring stopped for localhost:65535[0m
+2016-05-18 06:06:08 [D] Weighted mean RTT: 0.006965 for server localhost:65012[0m
+    ok 2 - Monitoring is ok[0m
+    ok 3 - Weighted mean is 0.006965[0m
+    ok 4 - Ok response from server[0m
+    ok 5 - Is master[0m
+2016-05-18 06:06:09 [I] Server monitoring stopped for localhost:65012[0m
+    ok 6 - Status is standalone master[0m
+    1..6[0m
+ok 4 - Server test[0m
+2016-05-18 06:06:10 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/100-Server.t end[0m
+1..4[0m
+ok
+t/101-Server.t .......... 
+2016-05-18 06:06:15 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/101-Server.t start[0m
+# Client, Server, Socket tests[0m
+2016-05-18 06:06:16 [D] parse mongodb://localhost:65012[0m
+2016-05-18 06:06:16 [D] Found 1 servers in uri[0m
+2016-05-18 06:06:16 [T] Processing server localhost:65012[0m
+2016-05-18 06:06:16 [D] Start localhost:65012 monitoring[0m
+2016-05-18 06:06:16 [D] Weighted mean RTT: 0.006443 for server localhost:65012[0m
+2016-05-18 06:06:17 [I] Master server localhost:65012 selected[0m
+    ok 1 - Connection server available[0m
+    ok 2 - Socket is open[0m
+    ok 3 - Socket is closed[0m
+2016-05-18 06:06:17 [F] [0m
+  Too many sockets opened, max is 3.[0m
+  From method get-socket at ./lib/MongoDB/Server.pm6 (MongoDB::Server):234[0m
+    ok 4 - Constraint type check failed for parameter '$max-sockets'[0m
+    1..4[0m
+ok 1 - Client, Server, Socket tests[0m
+2016-05-18 06:06:17 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/101-Server.t end[0m
+1..1[0m
+ok
+t/110-Client.t .......... 
+2016-05-18 06:06:22 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/110-Client.t start[0m
+# Non existent server[0m
+2016-05-18 06:06:22 [D] parse mongodb://non-existent-server.with-unknown.domain:65535[0m
+2016-05-18 06:06:22 [D] Found 1 servers in uri[0m
+    ok 1 - Client isa MongoDB::Client[0m
+2016-05-18 06:06:27 [T] Processing server non-existent-server.with-unknown.domain:65535[0m
+2016-05-18 06:06:27 [D] Start non-existent-server.with-unknown.domain:65535 monitoring[0m
+2016-05-18 06:06:27 [E] [0m
+  Server non-existent-server.with-unknown.domain:65535 error Failed to resolve host name. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:06:27 [E] [0m
+  Stopping monitor: Failed to resolve host name.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:06:28 [I] Server monitoring stopped for non-existent-server.with-unknown.domain:65535[0m
+2016-05-18 06:06:34 [E] [0m
+  No master server selected.[0m
+  From method select-server at ./lib/MongoDB/Client.pm6 (MongoDB::Client):435[0m
+    ok 2 - No servers selected[0m
+    ok 3 - One server found[0m
+    ok 4 - Status of server is non existent[0m
+    1..4[0m
+ok 1 - Non existent server[0m
+# Down server
+2016-05-18 06:06:34 [D] parse mongodb://localhost:65535[0m
+2016-05-18 06:06:34 [D] Found 1 servers in uri[0m
+2016-05-18 06:06:39 [T] Processing server localhost:65535[0m
+2016-05-18 06:06:39 [D] Start localhost:65535 monitoring[0m
+2016-05-18 06:06:39 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:06:39 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:06:40 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:06:40 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:06:42 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:06:42 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:06:45 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:06:45 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:06:46 [E] [0m
+  No master server selected.[0m
+  From method select-server at ./lib/MongoDB/Client.pm6 (MongoDB::Client):435[0m
+    ok 1 - No servers selected[0m
+    ok 2 - One server found[0m
+    ok 3 - Status of server is down[0m
+    1..3[0m
+ok 2 - Down server[0m
+# Standalone server
+2016-05-18 06:06:46 [D] parse mongodb://:65010[0m
+2016-05-18 06:06:46 [D] Found 1 servers in uri[0m
+2016-05-18 06:06:49 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:06:49 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:06:51 [T] Processing server localhost:65010[0m
+2016-05-18 06:06:51 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:06:51 [D] Weighted mean RTT: 0.004977 for server localhost:65010[0m
+2016-05-18 06:06:52 [I] Master server localhost:65010 selected[0m
+    ok 1 - One server found[0m
+    ok 2 - Status of server is master[0m
+    1..2[0m
+ok 3 - Standalone server[0m
+# Two equal servers
+2016-05-18 06:06:52 [D] parse mongodb://localhost:65010,localhost:65010[0m
+2016-05-18 06:06:52 [D] Found 1 servers in uri[0m
+2016-05-18 06:06:54 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:06:54 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:06:57 [T] Processing server localhost:65010[0m
+2016-05-18 06:06:57 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:06:57 [D] Weighted mean RTT: 0.003484 for server localhost:65010[0m
+2016-05-18 06:06:58 [I] Master server localhost:65010 selected[0m
+    ok 1 - One server accepted, two were equal[0m
+    1..1[0m
+ok 4 - Two equal servers[0m
+# Two standalone servers
+2016-05-18 06:06:58 [D] parse mongodb://:65010,:65011[0m
+2016-05-18 06:06:58 [D] Found 2 servers in uri[0m
+2016-05-18 06:07:00 [E] [0m
+  Server localhost:65535 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:07:00 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:07:01 [D] Weighted mean RTT: 0.008540 for server localhost:65010[0m
+2016-05-18 06:07:03 [T] Processing server localhost:65010[0m
+2016-05-18 06:07:03 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:07:03 [T] Processing server localhost:65011[0m
+2016-05-18 06:07:03 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:07:03 [D] Weighted mean RTT: 0.008210 for server localhost:65010[0m
+2016-05-18 06:07:03 [D] Weighted mean RTT: 0.006593 for server localhost:65011[0m
+2016-05-18 06:07:03 [E] [0m
+  Server localhost:65011 rejected, second master.[0m
+  From method protect at gen/moar/m-CORE.setting:31809[0m
+2016-05-18 06:07:04 [I] Master server localhost:65010 selected[0m
+    ok 1 - Server localhost:65010 is master[0m
+    ok 2 - Server localhost:65011 is rejected[0m
+    ok 3 - Two servers found[0m
+    1..3[0m
+ok 5 - Two standalone servers[0m
+2016-05-18 06:07:04 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/110-Client.t end[0m
+1..5[0m
+ok
+t/111-Client.t .......... 
+2016-05-18 06:07:09 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/111-Client.t start[0m
+# Shutdown and start server[0m
+2016-05-18 06:07:09 [D] parse mongodb://:65010[0m
+2016-05-18 06:07:09 [D] Found 1 servers in uri[0m
+2016-05-18 06:07:14 [T] Processing server localhost:65010[0m
+2016-05-18 06:07:14 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:07:15 [D] Weighted mean RTT: 0.006673 for server localhost:65010[0m
+2016-05-18 06:07:15 [I] Master server localhost:65010 selected[0m
+    ok 1 - One server found[0m
+    ok 2 - Status of server is master[0m
+killing process with pid: 6593[0m
+2016-05-18 06:07:16 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --shutdown --dbpath '/home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.data'[0m
+    ok 3 - Server 1 is stopped[0m
+2016-05-18 06:07:25 [E] [0m
+  Server localhost:65010 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:07:25 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:07:26 [E] [0m
+  Server localhost:65010 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:07:26 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:07:28 [E] [0m
+  Server localhost:65010 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:07:28 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:07:31 [E] [0m
+  Server localhost:65010 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:07:31 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:07:35 [E] [0m
+  Server localhost:65010 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:07:35 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31807[0m
+2016-05-18 06:07:38 [E] [0m
+  No master server selected.[0m
+  From method select-server at ./lib/MongoDB/Client.pm6 (MongoDB::Client):435[0m
+    ok 4 - Server not defined[0m
+    ok 5 - Status of server is down[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 6784[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:07:39 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.data --port 65010 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.log --smallfiles  --quiet  --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.pid --nojournal [0m
+    ok 6 - Server 1 started[0m
+2016-05-18 06:07:40 [D] Weighted mean RTT: 0.008963 for server localhost:65010[0m
+2016-05-18 06:07:44 [I] Master server localhost:65010 selected[0m
+    ok 7 - Server is defined[0m
+    ok 8 - Status of server is master again[0m
+    1..8[0m
+ok 1 - Shutdown and start server[0m
+# Shutdown/restart server 3 while inserting records
+2016-05-18 06:07:44 [D] parse mongodb://:65012[0m
+2016-05-18 06:07:44 [D] Found 1 servers in uri[0m
+2016-05-18 06:07:49 [T] Processing server localhost:65012[0m
+2016-05-18 06:07:49 [D] Start localhost:65012 monitoring[0m
+2016-05-18 06:07:49 [D] Weighted mean RTT: 0.003529 for server localhost:65012[0m
+2016-05-18 06:07:50 [I] Master server localhost:65012 selected[0m
+    ok 1 - One server found[0m
+    ok 2 - Server is master[0m
+2016-05-18 06:07:50 [T] create collection test.$cmd[0m
+2016-05-18 06:07:50 [T] create database test[0m
+2016-05-18 06:07:50 [D] run command dropDatabase[0m
+2016-05-18 06:07:50 [I] Master server localhost:65012 selected[0m
+    ok 3 - Database test dropped[0m
+2016-05-18 06:07:50 [I] save several records[0m
+2016-05-18 06:07:50 [T] create collection test.$cmd[0m
+2016-05-18 06:07:50 [T] create database test[0m
+2016-05-18 06:07:50 [T] create collection test.myColl[0m
+2016-05-18 06:07:50 [D] run command insert[0m
+2016-05-18 06:07:50 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:50 [D] Weighted mean RTT: 0.010445 for server localhost:65010[0m
+2016-05-18 06:07:50 [I] doc returned ok[0m
+2016-05-18 06:07:51 [D] run command insert[0m
+2016-05-18 06:07:51 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:51 [I] doc returned ok[0m
+2016-05-18 06:07:52 [I] shutdown server[0m
+killing process with pid: 6617[0m
+2016-05-18 06:07:52 [D] run command insert[0m
+2016-05-18 06:07:52 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:52 [E] [0m
+  Failed to connect: connection refused. at ./lib/MongoDB/Wire.pm6 (MongoDB::Wire):89[0m
+2016-05-18 06:07:52 [E] [0m
+  No server reply on query.[0m
+  From method find at ./lib/MongoDB/Collection.pm6 (MongoDB::Collection):116[0m
+2016-05-18 06:07:53 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --shutdown --dbpath '/home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.data'[0m
+    ok 4 - Server 3 is stopped[0m
+2016-05-18 06:07:53 [E] [0m
+  No cursor returned.[0m
+  From method run-command at ./lib/MongoDB/Database.pm6 (MongoDB::Database):89[0m
+2016-05-18 06:07:53 [I] no document[0m
+2016-05-18 06:07:54 [D] run command insert[0m
+2016-05-18 06:07:54 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:54 [E] [0m
+  Failed to connect: connection refused. at ./lib/MongoDB/Wire.pm6 (MongoDB::Wire):89[0m
+2016-05-18 06:07:54 [E] [0m
+  No server reply on query.[0m
+  From method find at ./lib/MongoDB/Collection.pm6 (MongoDB::Collection):116[0m
+2016-05-18 06:07:54 [E] [0m
+  No cursor returned.[0m
+  From method run-command at ./lib/MongoDB/Database.pm6 (MongoDB::Database):89[0m
+2016-05-18 06:07:54 [I] no document[0m
+2016-05-18 06:07:55 [D] run command insert[0m
+2016-05-18 06:07:55 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:55 [E] [0m
+  Failed to connect: connection refused. at ./lib/MongoDB/Wire.pm6 (MongoDB::Wire):89[0m
+2016-05-18 06:07:55 [E] [0m
+  No server reply on query.[0m
+  From method find at ./lib/MongoDB/Collection.pm6 (MongoDB::Collection):116[0m
+2016-05-18 06:07:55 [E] [0m
+  No cursor returned.[0m
+  From method run-command at ./lib/MongoDB/Database.pm6 (MongoDB::Database):89[0m
+2016-05-18 06:07:55 [I] no document[0m
+2016-05-18 06:07:56 [D] run command insert[0m
+2016-05-18 06:07:56 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:56 [E] [0m
+  Failed to connect: connection refused. at ./lib/MongoDB/Wire.pm6 (MongoDB::Wire):89[0m
+2016-05-18 06:07:56 [E] [0m
+  No server reply on query.[0m
+  From method find at ./lib/MongoDB/Collection.pm6 (MongoDB::Collection):116[0m
+2016-05-18 06:07:56 [E] [0m
+  No cursor returned.[0m
+  From method run-command at ./lib/MongoDB/Database.pm6 (MongoDB::Database):89[0m
+2016-05-18 06:07:56 [I] no document[0m
+2016-05-18 06:07:57 [D] run command insert[0m
+2016-05-18 06:07:57 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:57 [E] [0m
+  Failed to connect: connection refused. at ./lib/MongoDB/Wire.pm6 (MongoDB::Wire):89[0m
+2016-05-18 06:07:57 [E] [0m
+  No server reply on query.[0m
+  From method find at ./lib/MongoDB/Collection.pm6 (MongoDB::Collection):116[0m
+2016-05-18 06:07:57 [E] [0m
+  No cursor returned.[0m
+  From method run-command at ./lib/MongoDB/Database.pm6 (MongoDB::Database):89[0m
+2016-05-18 06:07:57 [I] no document[0m
+2016-05-18 06:07:58 [D] run command insert[0m
+2016-05-18 06:07:58 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:07:58 [E] [0m
+  Failed to connect: connection refused. at ./lib/MongoDB/Wire.pm6 (MongoDB::Wire):89[0m
+2016-05-18 06:07:58 [E] [0m
+  No server reply on query.[0m
+  From method find at ./lib/MongoDB/Collection.pm6 (MongoDB::Collection):116[0m
+2016-05-18 06:07:58 [E] [0m
+  No cursor returned.[0m
+  From method run-command at ./lib/MongoDB/Database.pm6 (MongoDB::Database):89[0m
+2016-05-18 06:07:58 [I] no document[0m
+2016-05-18 06:07:59 [E] [0m
+  Server localhost:65012 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:07:59 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31808[0m
+2016-05-18 06:07:59 [D] run command insert[0m
+2016-05-18 06:08:00 [E] [0m
+  Server localhost:65012 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:08:00 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31808[0m
+2016-05-18 06:08:00 [D] Weighted mean RTT: 0.011360 for server localhost:65010[0m
+2016-05-18 06:08:02 [E] [0m
+  Server localhost:65012 error Failed to connect: connection refused. at ./lib/MongoDB/Server/Monitor.pm6 (MongoDB::Server::Monitor):195[0m
+2016-05-18 06:08:02 [W] [0m
+  Server is down: Failed to connect: connection refused.[0m
+  From method protect at gen/moar/m-CORE.setting:31809[0m
+    ok 5 - Server is down[0m
+2016-05-18 06:08:03 [I] start server[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 6813[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:08:03 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.data --port 65012 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.log --smallfiles  --quiet  --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.pid --nojournal [0m
+    ok 6 - Server 1 started[0m
+2016-05-18 06:08:05 [D] Weighted mean RTT: 0.006363 for server localhost:65012[0m
+2016-05-18 06:08:05 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:08:05 [I] doc returned ok[0m
+2016-05-18 06:08:06 [D] run command insert[0m
+2016-05-18 06:08:06 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:08:06 [I] doc returned ok[0m
+2016-05-18 06:08:07 [D] run command insert[0m
+2016-05-18 06:08:07 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:08:07 [I] doc returned ok[0m
+2016-05-18 06:08:08 [I] wait for writer[0m
+    ok 7 - Writer still busy[0m
+2016-05-18 06:08:08 [D] run command insert[0m
+2016-05-18 06:08:08 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:08:08 [I] doc returned ok[0m
+2016-05-18 06:08:09 [D] run command insert[0m
+2016-05-18 06:08:09 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:08:09 [I] doc returned ok[0m
+2016-05-18 06:08:10 [D] Weighted mean RTT: 0.012117 for server localhost:65010[0m
+2016-05-18 06:08:10 [D] run command insert[0m
+2016-05-18 06:08:10 [I] Master server localhost:65012 selected[0m
+2016-05-18 06:08:10 [I] doc returned ok[0m
+    1..7[0m
+ok 2 - Shutdown/restart server 3 while inserting records[0m
+2016-05-18 06:08:11 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/111-Client.t end[0m
+1..2[0m
+ok
+t/200-Database.t ........ 
+2016-05-18 06:08:16 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/200-Database.t start[0m
+2016-05-18 06:08:17 [D] parse mongodb://localhost:65010[0m
+2016-05-18 06:08:17 [D] Found 1 servers in uri[0m
+2016-05-18 06:08:17 [T] create collection test.$cmd[0m
+2016-05-18 06:08:17 [T] create database test[0m
+2016-05-18 06:08:17 [T] create collection admin.$cmd[0m
+2016-05-18 06:08:17 [T] create database admin[0m
+2016-05-18 06:08:17 [D] parse mongodb://localhost:65011[0m
+2016-05-18 06:08:17 [D] Found 1 servers in uri[0m
+2016-05-18 06:08:17 [T] create collection test.$cmd[0m
+2016-05-18 06:08:17 [T] create database test[0m
+2016-05-18 06:08:17 [T] create collection admin.$cmd[0m
+2016-05-18 06:08:17 [T] create database admin[0m
+2016-05-18 06:08:17 [D] run command dropDatabase[0m
+2016-05-18 06:08:22 [T] Processing server localhost:65010[0m
+2016-05-18 06:08:22 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:08:22 [T] Processing server localhost:65011[0m
+2016-05-18 06:08:22 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:08:22 [D] Weighted mean RTT: 0.013963 for server localhost:65010[0m
+2016-05-18 06:08:22 [D] Weighted mean RTT: 0.017264 for server localhost:65011[0m
+2016-05-18 06:08:23 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:08:23 [D] run command dropDatabase[0m
+2016-05-18 06:08:23 [I] Master server localhost:65011 selected[0m
+# Database, create collection, drop[0m
+    ok 1 - The object is-a '"MongoDB::Database"'[0m
+    ok 2 - Check database name[0m
+2016-05-18 06:08:23 [D] run command create[0m
+2016-05-18 06:08:23 [I] Master server localhost:65010 selected[0m
+    ok 3 - Created collection cl1[0m
+2016-05-18 06:08:23 [D] run command create[0m
+2016-05-18 06:08:23 [I] Master server localhost:65010 selected[0m
+    ok 4 - Second collection cl1 not created[0m
+    ok 5 - collection already exists[0m
+BSON::Document.new(([0m
+  ok => 0e0,[0m
+  errmsg => "collection already exists",[0m
+  code => 48,[0m
+))[0m
+    1..5[0m
+ok 1 - Database, create collection, drop[0m
+# Error checking
+2016-05-18 06:08:23 [D] run command getLastError[0m
+2016-05-18 06:08:23 [I] Master server localhost:65010 selected[0m
+    ok 1 - No last errors[0m
+2016-05-18 06:08:23 [D] run command getPrevError[0m
+2016-05-18 06:08:23 [I] Master server localhost:65010 selected[0m
+    ok 2 - No previous errors[0m
+2016-05-18 06:08:23 [D] run command resetError[0m
+2016-05-18 06:08:23 [I] Master server localhost:65010 selected[0m
+    ok 3 - Rest errors ok[0m
+    1..3[0m
+ok 2 - Error checking[0m
+# Database admin tests
+    ok 1 - Name admin database ok[0m
+2016-05-18 06:08:23 [T] create collection admin.my-collection[0m
+    1..1[0m
+ok 3 - Database admin tests[0m
+# Database statistics server 1
+2016-05-18 06:08:23 [D] run command listDatabases[0m
+2016-05-18 06:08:23 [I] Master server localhost:65010 selected[0m
+    ok 1 - Run command ran ok[0m
+    ok 2 - Total size at least bigger than one byte ;-)[0m
+    ok 3 - test found[0m
+    ok 4 - Database test is not empty[0m
+    1..4[0m
+ok 4 - Database statistics server 1[0m
+# Database statistics server 2
+2016-05-18 06:08:23 [D] run command listDatabases[0m
+2016-05-18 06:08:23 [I] Master server localhost:65011 selected[0m
+    ok 1 - Run command ran ok[0m
+    ok 2 - Total size at least bigger than one byte ;-)[0m
+    ok 3 - test database not found[0m
+    1..3[0m
+ok 5 - Database statistics server 2[0m
+# Drop a database
+2016-05-18 06:08:24 [D] run command dropDatabase[0m
+2016-05-18 06:08:24 [I] Master server localhost:65010 selected[0m
+    ok 1 - Drop command went well[0m
+2016-05-18 06:08:24 [D] run command listDatabases[0m
+2016-05-18 06:08:24 [I] Master server localhost:65010 selected[0m
+    ok 2 - test not found[0m
+    1..2[0m
+ok 6 - Drop a database[0m
+2016-05-18 06:08:24 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/200-Database.t stop[0m
+1..6[0m
+ok
+t/300-Collection.t ...... 
+2016-05-18 06:08:29 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/300-Collection.t start[0m
+2016-05-18 06:08:29 [D] parse mongodb://localhost:65010[0m
+2016-05-18 06:08:29 [D] Found 1 servers in uri[0m
+2016-05-18 06:08:29 [T] create collection test.$cmd[0m
+2016-05-18 06:08:29 [T] create database test[0m
+2016-05-18 06:08:29 [T] create collection test.cl1[0m
+ok 1 - The object is-a '"MongoDB::Collection"'[0m
+2016-05-18 06:08:29 [D] run command drop[0m
+2016-05-18 06:08:34 [T] Processing server localhost:65010[0m
+2016-05-18 06:08:34 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:08:34 [D] Weighted mean RTT: 0.010483 for server localhost:65010[0m
+2016-05-18 06:08:34 [I] Master server localhost:65010 selected[0m
+# Several inserts
+2016-05-18 06:08:34 [D] run command insert[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+BSON::Document.new(([0m
+  ok => 1,[0m
+  n => 4,[0m
+))[0m
+    ok 1 - Result is ok[0m
+    ok 2 - Inserted 4 documents[0m
+2016-05-18 06:08:35 [D] run command count[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+BSON::Document.new(([0m
+  n => 1,[0m
+  ok => 1e0,[0m
+))[0m
+    ok 3 - count request ok[0m
+    ok 4 - count 1 record of "Me T"[0m
+2016-05-18 06:08:35 [D] run command count[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+BSON::Document.new(([0m
+  n => 1,[0m
+  ok => 1e0,[0m
+))[0m
+    ok 5 - count 1 record of "Di D"[0m
+2016-05-18 06:08:35 [D] run command count[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+BSON::Document.new(([0m
+  n => 1,[0m
+  ok => 1e0,[0m
+))[0m
+    ok 6 - 1 record of "Jan Klaassen"[0m
+2016-05-18 06:08:35 [D] run command insert[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+BSON::Document.new(([0m
+  ok => 1,[0m
+  n => 6,[0m
+))[0m
+    ok 7 - Result is ok[0m
+    ok 8 - Inserted 6 documents[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:08:35 [D] run command insert[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+BSON::Document.new(([0m
+  ok => 1,[0m
+  n => 6,[0m
+))[0m
+    ok 9 - 6 records of Test(0)[0m
+    1..9[0m
+ok 2 - Several inserts[0m
+2016-05-18 06:08:35 [D] run command drop[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+ok 3 - Dropping cl1 ok[0m
+BSON::Document.new(([0m
+  ns => "test.cl1",[0m
+  nIndexesWas => 1,[0m
+  ok => 1e0,[0m
+))[0m
+ok 4 - Dropped collection[0m
+ok 5 - Number of dropped indexes[0m
+2016-05-18 06:08:35 [D] run command drop[0m
+2016-05-18 06:08:35 [I] Master server localhost:65010 selected[0m
+1..5[0m
+ok
+t/301-Collection.t ...... 
+2016-05-18 06:08:40 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/301-Collection.t start[0m
+2016-05-18 06:08:41 [D] parse mongodb://localhost:65010[0m
+2016-05-18 06:08:41 [D] Found 1 servers in uri[0m
+2016-05-18 06:08:41 [T] create collection test.$cmd[0m
+2016-05-18 06:08:41 [T] create database test[0m
+2016-05-18 06:08:41 [T] create collection admin.$cmd[0m
+2016-05-18 06:08:41 [T] create database admin[0m
+2016-05-18 06:08:41 [T] create collection test.cl1[0m
+# simple collection operations[0m
+2016-05-18 06:08:41 [D] run command insert[0m
+2016-05-18 06:08:46 [T] Processing server localhost:65010[0m
+2016-05-18 06:08:46 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:08:46 [D] Weighted mean RTT: 0.006129 for server localhost:65010[0m
+2016-05-18 06:08:46 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:08:46 [D] run command count[0m
+2016-05-18 06:08:46 [I] Master server localhost:65010 selected[0m
+    ok 1 - Count request ok[0m
+    ok 2 - Three documents in collection[0m
+2016-05-18 06:08:46 [D] run command count[0m
+2016-05-18 06:08:46 [I] Master server localhost:65010 selected[0m
+    ok 3 - One document found[0m
+2016-05-18 06:08:46 [D] run command distinct[0m
+2016-05-18 06:08:46 [I] Master server localhost:65010 selected[0m
+    ok 4 - Distinct request ok[0m
+    ok 5 - Codes found are 14, 20[0m
+2016-05-18 06:08:46 [D] run command distinct[0m
+2016-05-18 06:08:46 [I] Master server localhost:65010 selected[0m
+    ok 6 - Code found is 20[0m
+    1..6[0m
+ok 1 - simple collection operations[0m
+2016-05-18 06:08:46 [D] run command dropDatabase[0m
+2016-05-18 06:08:46 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:08:46 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/301-Collection.t stop[0m
+1..1[0m
+ok
+t/400-run-command.t ..... 
+2016-05-18 06:08:51 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/400-run-command.t start[0m
+2016-05-18 06:08:52 [D] parse mongodb://localhost:65010[0m
+2016-05-18 06:08:52 [D] Found 1 servers in uri[0m
+2016-05-18 06:08:52 [T] create collection test.$cmd[0m
+2016-05-18 06:08:52 [T] create database test[0m
+2016-05-18 06:08:52 [T] create collection admin.$cmd[0m
+2016-05-18 06:08:52 [T] create database admin[0m
+2016-05-18 06:08:52 [D] run command dropDatabase[0m
+2016-05-18 06:08:57 [T] Processing server localhost:65010[0m
+2016-05-18 06:08:57 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:08:57 [D] Weighted mean RTT: 0.007240 for server localhost:65010[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+# Query and Write Operation Commands[0m
+2016-05-18 06:08:58 [D] run command insert[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+    ok 1 - Result is ok[0m
+    ok 2 - Inserted 1 document[0m
+2016-05-18 06:08:58 [D] run command findAndModify[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+    ok 3 - Result is ok[0m
+    ok 4 - Old data returned[0m
+    ok 5 - Existing document updated[0m
+2016-05-18 06:08:58 [D] run command insert[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+    ok 6 - Result is ok[0m
+    ok 7 - Inserted 5 documents[0m
+    1..7[0m
+ok 1 - Query and Write Operation Commands[0m
+# Diagnostic Commands
+2016-05-18 06:08:58 [D] run command listDatabases[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+    ok 1 - List databases response ok[0m
+    ok 2 - name field in doc[0] ok[0m
+    ok 3 - sizeOnDisk field in do[0]c ok[0m
+    ok 4 - empty field in doc[0] ok[0m
+    ok 5 - database test found[0m
+    ok 6 - Database test is not empty[0m
+2016-05-18 06:08:58 [D] run command insert[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:08:58 [D] run command insert[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:08:58 [D] run command listCollections[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+    ok 7 - list collections request ok[0m
+    ok 8 - Collection cl1 listed[0m
+    ok 9 - Collection cl2 listed[0m
+2016-05-18 06:08:58 [D] run command listCollections[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+    ok 10 - Collection cl1 listed[0m
+    ok 11 - Collection cl2 listed[0m
+    1..11[0m
+ok 2 - Diagnostic Commands[0m
+# Instance Administration Commands
+2016-05-18 06:08:58 [D] run command dropDatabase[0m
+2016-05-18 06:08:58 [I] Master server localhost:65010 selected[0m
+    ok 1 - Drop database test ok[0m
+    1..1[0m
+ok 3 - Instance Administration Commands[0m
+# Error tests
+2016-05-18 06:08:59 [D] run command unknownDbCommand[0m
+2016-05-18 06:08:59 [I] Master server localhost:65010 selected[0m
+    ok 1 - unknown request[0m
+    ok 2 - Err: no such command[0m
+    ok 3 - Code 59[0m
+    1..3[0m
+ok 4 - Error tests[0m
+2016-05-18 06:08:59 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/400-run-command.t stop[0m
+1..4[0m
+ok
+t/401-rc-query-write.t .. 
+2016-05-18 06:09:04 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/401-rc-query-write.t start[0m
+2016-05-18 06:09:04 [D] parse mongodb://localhost:65010[0m
+2016-05-18 06:09:04 [D] Found 1 servers in uri[0m
+2016-05-18 06:09:04 [T] create collection test.$cmd[0m
+2016-05-18 06:09:04 [T] create database test[0m
+2016-05-18 06:09:04 [T] create collection admin.$cmd[0m
+2016-05-18 06:09:04 [T] create database admin[0m
+2016-05-18 06:09:04 [D] run command dropDatabase[0m
+2016-05-18 06:09:09 [T] Processing server localhost:65010[0m
+2016-05-18 06:09:09 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:09:09 [D] Weighted mean RTT: 0.006557 for server localhost:65010[0m
+2016-05-18 06:09:10 [I] Master server localhost:65010 selected[0m
+# Insert[0m
+2016-05-18 06:09:10 [D] run command insert[0m
+2016-05-18 06:09:10 [I] Master server localhost:65010 selected[0m
+    ok 1 - insert request ok[0m
+    ok 2 - inserted 1 document[0m
+2016-05-18 06:09:11 [D] run command insert[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 3 - insert request ok[0m
+    ok 4 - inserted 6 documents[0m
+    1..4[0m
+ok 1 - Insert[0m
+# delete
+2016-05-18 06:09:11 [D] run command delete[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 1 - delete request ok[0m
+    ok 2 - deleted 1 doc[0m
+    1..2[0m
+ok 2 - delete[0m
+# update
+2016-05-18 06:09:11 [D] run command update[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 1 - update request ok[0m
+    ok 2 - selected 2 docs[0m
+    ok 3 - modified 2 docs using multi[0m
+    1..3[0m
+ok 3 - update[0m
+# findAndModify
+2016-05-18 06:09:11 [D] run command findAndModify[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 1 - findAndModify request ok[0m
+    ok 2 - old data returned[0m
+    ok 3 - existing document updated[0m
+2016-05-18 06:09:11 [D] run command findAndModify[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 4 - findAndModify request ok[0m
+    ok 5 - record not found[0m
+    1..5[0m
+ok 4 - findAndModify[0m
+# getLastError
+2016-05-18 06:09:11 [D] run command getLastError[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 1 - getLastError request ok[0m
+    ok 2 - no errors[0m
+    ok 3 - No message[0m
+    1..3[0m
+ok 5 - getLastError[0m
+# parallelCollectionScan
+2016-05-18 06:09:11 [D] run command parallelCollectionScan[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 1 - parallelCollectionScan request ok[0m
+    ok 2 - found array of cursors[0m
+    ok 3 - returned 1 cursor[0m
+    ok 4 - returned cursor ok[0m
+2016-05-18 06:09:11 [I] Master server localhost:65010 selected[0m
+    ok 5 - First name Larry[0m
+    ok 6 - Last name Wall[0m
+    ok 7 - men with 'y' in name[0m
+    1..7[0m
+ok 6 - parallelCollectionScan[0m
+2016-05-18 06:09:11 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/401-rc-query-write.t stop[0m
+1..6[0m
+ok
+t/450-find.t ............ 
+2016-05-18 06:09:17 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/450-find.t start[0m
+2016-05-18 06:09:17 [D] parse mongodb://localhost:65010[0m
+2016-05-18 06:09:17 [D] Found 1 servers in uri[0m
+2016-05-18 06:09:17 [T] create collection test.$cmd[0m
+2016-05-18 06:09:17 [T] create database test[0m
+2016-05-18 06:09:18 [T] create collection admin.$cmd[0m
+2016-05-18 06:09:18 [T] create database admin[0m
+2016-05-18 06:09:18 [T] create collection test.testf[0m
+2016-05-18 06:09:18 [D] run command dropDatabase[0m
+2016-05-18 06:09:22 [T] Processing server localhost:65010[0m
+2016-05-18 06:09:23 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:09:23 [D] Weighted mean RTT: 0.009848 for server localhost:65010[0m
+2016-05-18 06:09:24 [I] Master server localhost:65010 selected[0m
+Time create request: 0.00769983[0m
+2016-05-18 06:09:24 [D] run command insert[0m
+2016-05-18 06:09:24 [I] Master server localhost:65010 selected[0m
+Time insert in database: 2.1728821[0m
+ok 1 - insert ok[0m
+ok 2 - inserted 200 docs[0m
+2016-05-18 06:09:26 [I] Master server localhost:65010 selected[0m
+Time to get cursor with some docs: 2.9162158[0m
+Time after reading all docs: 3.63544601[0m
+# Find tests
+2016-05-18 06:09:27 [I] Master server localhost:65010 selected[0m
+    ok 1 - Key '_id' exists[0m
+    ok 2 - Key 'code' exists[0m
+    ok 3 - Key 'name' exists[0m
+    ok 4 - Key 'some-name' does not exist[0m
+2016-05-18 06:09:27 [I] Master server localhost:65010 selected[0m
+    ok 5 - Key '_id' exists[0m
+    ok 6 - Key 'code' exists[0m
+    ok 7 - Key 'name' does not exist[0m
+    ok 8 - Key 'address' does not exist[0m
+    ok 9 - Key 'city' does not exist[0m
+2016-05-18 06:09:27 [I] Master server localhost:65010 selected[0m
+    ok 10 - Key '_id' does not exist[0m
+    ok 11 - Key 'code' does not exist[0m
+    ok 12 - Key 'name' exists[0m
+    ok 13 - Key 'address' exists[0m
+    ok 14 - Key 'city' exists[0m
+    1..14[0m
+ok 3 - Find tests[0m
+# Count tests
+2016-05-18 06:09:27 [D] run command count[0m
+2016-05-18 06:09:27 [I] Master server localhost:65010 selected[0m
+    ok 1 - 200 records[0m
+2016-05-18 06:09:27 [D] run command count[0m
+2016-05-18 06:09:27 [I] Master server localhost:65010 selected[0m
+    ok 2 - 1 record[0m
+2016-05-18 06:09:27 [D] run command count[0m
+2016-05-18 06:09:27 [I] Master server localhost:65010 selected[0m
+    ok 3 - 3 records with limit[0m
+2016-05-18 06:09:28 [D] run command count[0m
+2016-05-18 06:09:28 [I] Master server localhost:65010 selected[0m
+    ok 4 - 2 records using skip and limit[0m
+    1..4[0m
+ok 4 - Count tests[0m
+# Testing explain and performance using cursor
+2016-05-18 06:09:28 [D] run command explain[0m
+2016-05-18 06:09:28 [I] Master server localhost:65010 selected[0m
+    ok 1 - One doc found[0m
+    ok 2 - Scanned 200 docs, bad searching[0m
+2016-05-18 06:09:28 [D] run command createIndexes[0m
+2016-05-18 06:09:28 [I] Master server localhost:65010 selected[0m
+    ok 3 - Not created automatically[0m
+    ok 4 - Only 1 index before call[0m
+    ok 5 - Now there are 2[0m
+2016-05-18 06:09:28 [D] run command explain[0m
+2016-05-18 06:09:28 [I] Master server localhost:65010 selected[0m
+    ok 6 - One doc found[0m
+    ok 7 - Scanned 1 doc, great searching[0m
+    1..7[0m
+ok 5 - Testing explain and performance using cursor[0m
+# Testing explain and performance using hint
+2016-05-18 06:09:28 [I] Master server localhost:65010 selected[0m
+    ok 1 - One doc found, explain via bad hint[0m
+    ok 2 - Scanned 200 docs, bad searching, explain via bad hint[0m
+2016-05-18 06:09:28 [I] Master server localhost:65010 selected[0m
+    ok 3 - One doc found, explain via a good hint[0m
+    ok 4 - Scanned 1 doc, great indexing, explain via good hint[0m
+    1..4[0m
+ok 6 - Testing explain and performance using hint[0m
+2016-05-18 06:09:28 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/450-find.t stop[0m
+1..6[0m
+ok
+t/500-Users.t ........... 
+2016-05-18 06:09:38 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/500-Users.t start[0m
+2016-05-18 06:09:38 [D] parse mongodb://localhost:65010[0m
+2016-05-18 06:09:38 [D] Found 1 servers in uri[0m
+2016-05-18 06:09:38 [T] create collection test.$cmd[0m
+2016-05-18 06:09:38 [T] create database test[0m
+2016-05-18 06:09:38 [T] create collection test.testf[0m
+2016-05-18 06:09:38 [D] run command dropDatabase[0m
+2016-05-18 06:09:43 [T] Processing server localhost:65010[0m
+2016-05-18 06:09:43 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:09:43 [D] Weighted mean RTT: 0.006803 for server localhost:65010[0m
+2016-05-18 06:09:44 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:09:44 [D] run command dropAllUsersFromDatabase[0m
+2016-05-18 06:09:44 [I] Master server localhost:65010 selected[0m
+# Test user management[0m
+2016-05-18 06:09:45 [D] run command createUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 1 - User mt created[0m
+2016-05-18 06:09:45 [D] run command createUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 2 - Request failed this time[0m
+    ok 3 - User "mt@test" already exists[0m
+2016-05-18 06:09:45 [D] run command dropUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 4 - User mt deleted[0m
+    1..4[0m
+ok 1 - Test user management[0m
+# Test username and password checks
+2016-05-18 06:09:45 [F] [0m
+  Username too short, must be >= 5.[0m
+  Request data: mt[0m
+  Collection namespace test[0m
+  From method create-user at ./lib/MongoDB/Users.pm6 (MongoDB::Users):79[0m
+    ok 1 - Username too short[0m
+2016-05-18 06:09:45 [F] [0m
+  Password too short, must be >= 6.[0m
+  Request data: mt++[0m
+  Collection namespace test[0m
+  From method create-user at ./lib/MongoDB/Users.pm6 (MongoDB::Users):89[0m
+    ok 2 - Password too short[0m
+2016-05-18 06:09:45 [F] [0m
+  Password does not have the right properties.[0m
+  Request data: mt++tdt[0m
+  Collection namespace test[0m
+  From method create-user at ./lib/MongoDB/Users.pm6 (MongoDB::Users):89[0m
+    ok 3 - Password does not have the right properties[0m
+2016-05-18 06:09:45 [D] run command createUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+BSON::Document.new(([0m
+  ok => 1e0,[0m
+))[0m
+    ok 4 - User mt-and-another-few-chars created[0m
+2016-05-18 06:09:45 [D] run command dropUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 5 - User mt-and-another-few-chars deleted[0m
+    1..5[0m
+ok 2 - Test username and password checks[0m
+# account info and drop all users
+2016-05-18 06:09:45 [D] run command createUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 1 - User mt created[0m
+2016-05-18 06:09:45 [D] run command usersInfo[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 2 - test.mt[0m
+    ok 3 - readWrite[0m
+2016-05-18 06:09:45 [D] run command updateUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 4 - User mt updated[0m
+2016-05-18 06:09:45 [D] run command usersInfo[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 5 - readWrite[0m
+    ok 6 - test1[0m
+    ok 7 - dbAdmin[0m
+    ok 8 - test2[0m
+2016-05-18 06:09:45 [D] run command grantRolesToUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 9 - User roles mt updated[0m
+2016-05-18 06:09:45 [D] run command usersInfo[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 10 - Now 3 roles defined[0m
+    ok 11 - dbAdmin[0m
+    ok 12 - dbOwner[0m
+2016-05-18 06:09:45 [D] run command revokeRolesFromUser[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 13 - User roles mt revoked[0m
+2016-05-18 06:09:45 [D] run command usersInfo[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 14 - Now 2 roles left[0m
+    ok 15 - dbOwner[0m
+2016-05-18 06:09:45 [D] run command usersInfo[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 16 - Only one user defined[0m
+2016-05-18 06:09:45 [D] run command dropAllUsersFromDatabase[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 17 - All users dropped[0m
+2016-05-18 06:09:45 [D] run command usersInfo[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+    ok 18 - No users in database[0m
+    1..18[0m
+ok 3 - account info and drop all users[0m
+2016-05-18 06:09:45 [D] run command dropDatabase[0m
+2016-05-18 06:09:45 [I] Master server localhost:65010 selected[0m
+2016-05-18 06:09:46 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/500-Users.t start[0m
+1..3[0m
+ok
+t/510-Authenticate.t .... 
+1..1[0m
+ok 1 - \# SKIP Some modules needed for authentication are not yet supported in perl 6[0m
+ok
+t/610-repl-start.t ...... 
+2016-05-18 06:10:00 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/610-repl-start.t start[0m
+# Replica server pre-init rejected[0m
+killing process with pid: 6605[0m
+2016-05-18 06:10:02 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --shutdown --dbpath '/home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server2/m.data'[0m
+    ok 1 - Server 2 stopped[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 7114[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:10:02 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server2/m.data --port 65011 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server2/m.log --smallfiles  --quiet  --replSet first_replicate --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server2/m.pid --nojournal [0m
+    ok 2 - Start server 2 in replica set 'first_replicate'[0m
+2016-05-18 06:10:02 [D] parse mongodb://:65011[0m
+2016-05-18 06:10:02 [D] Found 1 servers in uri[0m
+2016-05-18 06:10:07 [T] Processing server localhost:65011[0m
+2016-05-18 06:10:07 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:10:07 [D] Weighted mean RTT: 0.011655 for server localhost:65011[0m
+2016-05-18 06:10:14 [E] [0m
+  No master server selected.[0m
+  From method select-server at ./lib/MongoDB/Client.pm6 (MongoDB::Client):435[0m
+    ok 3 - No master server found[0m
+    ok 4 - Server 2 is rejected[0m
+    1..4[0m
+ok 1 - Replica server pre-init rejected[0m
+# Replica server pre-init
+2016-05-18 06:10:14 [D] parse mongodb://:65011/?replicaSet=first_replicate[0m
+2016-05-18 06:10:14 [D] Found 1 servers in uri[0m
+2016-05-18 06:10:14 [T] create collection test.$cmd[0m
+2016-05-18 06:10:14 [T] create database test[0m
+2016-05-18 06:10:14 [T] create collection test.mycll[0m
+2016-05-18 06:10:17 [D] Weighted mean RTT: 0.014585 for server localhost:65011[0m
+2016-05-18 06:10:19 [T] Processing server localhost:65011[0m
+2016-05-18 06:10:19 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:10:19 [D] Weighted mean RTT: 0.003493 for server localhost:65011[0m
+2016-05-18 06:10:26 [E] [0m
+  No master server selected.[0m
+  From method select-server at ./lib/MongoDB/Client.pm6 (MongoDB::Client):435[0m
+    ok 1 - No master server found[0m
+    ok 2 - Server is in replica initialization state[0m
+2016-05-18 06:10:26 [I] Server localhost:65011 selected[0m
+    ok 3 - Selected server is in replica initialization state[0m
+2016-05-18 06:10:26 [D] run command insert[0m
+    ok 4 - Command not accepted[0m
+    ok 5 - write to non-master[0m
+    ok 6 - not master and slaveOk=false[0m
+    1..6[0m
+ok 2 - Replica server pre-init[0m
+# Replica server initialization and modification
+2016-05-18 06:10:26 [D] parse mongodb://:65011/?replicaSet=first_replicate[0m
+2016-05-18 06:10:26 [D] Found 1 servers in uri[0m
+2016-05-18 06:10:27 [D] Weighted mean RTT: 0.015472 for server localhost:65011[0m
+2016-05-18 06:10:29 [D] Weighted mean RTT: 0.006218 for server localhost:65011[0m
+2016-05-18 06:10:31 [T] Processing server localhost:65011[0m
+2016-05-18 06:10:31 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:10:31 [D] Weighted mean RTT: 0.007266 for server localhost:65011[0m
+2016-05-18 06:10:32 [I] Server localhost:65011 selected[0m
+    ok 1 - Selected server is in replica initialization state[0m
+2016-05-18 06:10:32 [T] create collection test.$cmd[0m
+2016-05-18 06:10:32 [T] create database test[0m
+2016-05-18 06:10:32 [T] create collection admin.$cmd[0m
+2016-05-18 06:10:32 [T] create database admin[0m
+2016-05-18 06:10:32 [D] run command isMaster[0m
+    ok 2 - Is a pre-init replica set server[0m
+    ok 3 - Name not set[0m
+2016-05-18 06:10:32 [D] run command replSetInitiate[0m
+2016-05-18 06:10:37 [D] Weighted mean RTT: 0.034020 for server localhost:65011[0m
+2016-05-18 06:10:39 [D] Weighted mean RTT: 0.017855 for server localhost:65011[0m
+2016-05-18 06:10:41 [D] Weighted mean RTT: 0.024412 for server localhost:65011[0m
+2016-05-18 06:10:42 [D] run command isMaster[0m
+    ok 4 - Name now set[0m
+    ok 5 - Name ok[0m
+    ok 6 - Repl set version 1[0m
+    ok 7 - Server is master[0m
+    ok 8 - And not secondary[0m
+    1..8[0m
+ok 3 - Replica server initialization and modification[0m
+# Replica servers update replica data
+2016-05-18 06:10:42 [D] parse mongodb://:65011/?replicaSet=first_replicate[0m
+2016-05-18 06:10:42 [D] Found 1 servers in uri[0m
+2016-05-18 06:10:47 [D] Weighted mean RTT: 0.040590 for server localhost:65011[0m
+2016-05-18 06:10:47 [T] Processing server localhost:65011[0m
+2016-05-18 06:10:47 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:10:47 [D] Weighted mean RTT: 0.028992 for server localhost:65011[0m
+2016-05-18 06:10:48 [I] Master server localhost:65011 selected[0m
+    ok 1 - One server found[0m
+    ok 2 - Server is replica server primary[0m
+2016-05-18 06:10:48 [T] create collection test.$cmd[0m
+2016-05-18 06:10:48 [T] create database test[0m
+2016-05-18 06:10:48 [T] create collection admin.$cmd[0m
+2016-05-18 06:10:48 [T] create database admin[0m
+2016-05-18 06:10:48 [D] run command isMaster[0m
+2016-05-18 06:10:48 [I] Master server localhost:65011 selected[0m
+2016-05-18 06:10:48 [D] run command replSetReconfig[0m
+2016-05-18 06:10:48 [I] Master server localhost:65011 selected[0m
+2016-05-18 06:10:48 [D] run command isMaster[0m
+2016-05-18 06:10:48 [I] Master server localhost:65011 selected[0m
+    ok 3 - Repl set version 2[0m
+    ok 4 - servers in replica: localhost:65011[0m
+    1..4[0m
+ok 4 - Replica servers update replica data[0m
+2016-05-18 06:10:49 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/610-repl-start.t stop[0m
+1..4[0m
+ok
+t/611-Client.t .......... 
+2016-05-18 06:10:54 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/611-Client.t start[0m
+# Client behaviour[0m
+    # mongodb://:65011,:65010[0m
+2016-05-18 06:10:54 [D] parse mongodb://:65011,:65010[0m
+2016-05-18 06:10:54 [D] Found 2 servers in uri[0m
+2016-05-18 06:10:59 [T] Processing server localhost:65011[0m
+2016-05-18 06:10:59 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:10:59 [T] Processing server localhost:65010[0m
+2016-05-18 06:10:59 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:11:00 [D] Weighted mean RTT: 0.021643 for server localhost:65010[0m
+2016-05-18 06:11:00 [D] Weighted mean RTT: 0.065343 for server localhost:65011[0m
+2016-05-18 06:11:00 [I] Master server localhost:65010 selected[0m
+    ok 1 - Two servers found[0m
+    ok 2 - Server localhost:65010 accepted[0m
+    ok 3 - Server localhost:65011 rejected[0m
+    # mongodb://:65011
+2016-05-18 06:11:00 [D] parse mongodb://:65011[0m
+2016-05-18 06:11:00 [D] Found 1 servers in uri[0m
+2016-05-18 06:11:05 [T] Processing server localhost:65011[0m
+2016-05-18 06:11:05 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:11:05 [D] Weighted mean RTT: 0.020836 for server localhost:65011[0m
+2016-05-18 06:11:10 [D] Weighted mean RTT: 0.020542 for server localhost:65010[0m
+2016-05-18 06:11:10 [D] Weighted mean RTT: 0.070508 for server localhost:65011[0m
+2016-05-18 06:11:12 [E] [0m
+  No master server selected.[0m
+  From method select-server at ./lib/MongoDB/Client.pm6 (MongoDB::Client):435[0m
+    ok 4 - One server found[0m
+    ok 5 - Server localhost:65011 rejected[0m
+    # mongodb://:65010,:65011/?replicaSet=unknownRS
+2016-05-18 06:11:12 [D] parse mongodb://:65010,:65011/?replicaSet=unknownRS[0m
+2016-05-18 06:11:12 [D] Found 2 servers in uri[0m
+2016-05-18 06:11:16 [D] Weighted mean RTT: 0.030186 for server localhost:65011[0m
+2016-05-18 06:11:17 [T] Processing server localhost:65010[0m
+2016-05-18 06:11:17 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:11:17 [T] Processing server localhost:65011[0m
+2016-05-18 06:11:17 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:11:17 [D] Weighted mean RTT: 0.004642 for server localhost:65010[0m
+2016-05-18 06:11:17 [D] Weighted mean RTT: 0.015723 for server localhost:65011[0m
+2016-05-18 06:11:20 [D] Weighted mean RTT: 0.019447 for server localhost:65010[0m
+2016-05-18 06:11:20 [D] Weighted mean RTT: 0.068412 for server localhost:65011[0m
+2016-05-18 06:11:24 [E] [0m
+  No master server selected.[0m
+  From method select-server at ./lib/MongoDB/Client.pm6 (MongoDB::Client):435[0m
+    ok 6 - Two servers found[0m
+    ok 7 - Server localhost:65010 rejected[0m
+    ok 8 - Server localhost:65011 rejected[0m
+    # mongodb://:65010,:65011/?replicaSet=first_replicate
+2016-05-18 06:11:24 [D] parse mongodb://:65010,:65011/?replicaSet=first_replicate[0m
+2016-05-18 06:11:24 [D] Found 2 servers in uri[0m
+2016-05-18 06:11:26 [D] Weighted mean RTT: 0.037022 for server localhost:65011[0m
+2016-05-18 06:11:27 [D] Weighted mean RTT: 0.007160 for server localhost:65010[0m
+2016-05-18 06:11:28 [D] Weighted mean RTT: 0.074988 for server localhost:65011[0m
+2016-05-18 06:11:29 [T] Processing server localhost:65010[0m
+2016-05-18 06:11:29 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:11:29 [T] Processing server localhost:65011[0m
+2016-05-18 06:11:29 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:11:29 [D] Weighted mean RTT: 0.007439 for server localhost:65010[0m
+2016-05-18 06:11:29 [D] Weighted mean RTT: 0.014918 for server localhost:65011[0m
+2016-05-18 06:11:30 [D] Weighted mean RTT: 0.023320 for server localhost:65010[0m
+2016-05-18 06:11:30 [D] Weighted mean RTT: 0.066641 for server localhost:65011[0m
+2016-05-18 06:11:30 [I] Master server localhost:65011 selected[0m
+    ok 9 - Two servers found[0m
+    ok 10 - Server localhost:65011 returned[0m
+    ok 11 - Server localhost:65010 rejected[0m
+    ok 12 - Server localhost:65011 replicaset primary[0m
+    1..12[0m
+ok 1 - Client behaviour[0m
+2016-05-18 06:11:30 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/611-Client.t stop[0m
+1..1[0m
+ok
+t/612-repl-start.t ...... 
+2016-05-18 06:11:36 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/612-repl-start.t start[0m
+# Adding replica servers[0m
+    # Start server 1 pre-init in replicaset first_replicate[0m
+killing process with pid: 6784[0m
+2016-05-18 06:11:37 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --shutdown --dbpath '/home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.data'[0m
+    ok 1 - Server 1 stopped[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 7253[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:11:37 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.data --port 65010 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.log --smallfiles  --quiet  --replSet first_replicate --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server1/m.pid --nojournal [0m
+    ok 2 - Server 1 started in replica set 'first_replicate'[0m
+    # Start server 2 pre-init in replicaset first_replicate
+killing process with pid: 6813[0m
+2016-05-18 06:11:38 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --shutdown --dbpath '/home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.data'[0m
+    ok 3 - Server 3 stopped[0m
+about to fork child process, waiting until server is ready for connections.[0m
+forked process: 7272[0m
+child process started successfully, parent exiting[0m
+2016-05-18 06:11:38 [D] /home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod --dbpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.data --port 65012 --fork  --logpath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.log --smallfiles  --quiet  --replSet first_replicate --oplogSize 128 --pidfilepath /home/travis/build/MARTIMM/mongo-perl6-driver/Sandbox/Server3/m.pid --nojournal [0m
+    ok 4 - Server 3 started in replica set 'first_replicate'[0m
+    # Connect to server replica primary of first_replicate
+2016-05-18 06:11:39 [D] parse mongodb://:65011/?replicaSet=first_replicate[0m
+2016-05-18 06:11:39 [D] Found 1 servers in uri[0m
+2016-05-18 06:11:44 [T] Processing server localhost:65011[0m
+2016-05-18 06:11:44 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:11:44 [D] Weighted mean RTT: 0.035726 for server localhost:65011[0m
+2016-05-18 06:11:45 [I] Master server localhost:65011 selected[0m
+    ok 5 - Server localhost:65011 seleced[0m
+    ok 6 - Server 2 is primary[0m
+    # Get server info. Get the repl version and update version
+2016-05-18 06:11:45 [T] create collection admin.$cmd[0m
+2016-05-18 06:11:45 [T] create database admin[0m
+2016-05-18 06:11:45 [D] run command isMaster[0m
+2016-05-18 06:11:45 [I] Master server localhost:65011 selected[0m
+2016-05-18 06:11:45 [D] run command replSetReconfig[0m
+2016-05-18 06:11:45 [I] Master server localhost:65011 selected[0m
+    ok 7 - Servers are added[0m
+2016-05-18 06:11:47 [D] run command isMaster[0m
+2016-05-18 06:11:47 [I] Master server localhost:65011 selected[0m
+    ok 8 - servers in replica: localhost:65011 localhost:65010 localhost:65012[0m
+    1..8[0m
+ok 1 - Adding replica servers[0m
+2016-05-18 06:11:47 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/612-repl-start.t stop[0m
+1..1[0m
+ok
+t/613-Client.t .......... 
+2016-05-18 06:11:52 [I] Test /home/travis/build/MARTIMM/mongo-perl6-driver/t/613-Client.t start[0m
+# Client behaviour[0m
+    # checkout uri 'mongodb://:65010/?replicaSet=first_replicate'[0m
+2016-05-18 06:11:53 [D] parse mongodb://:65010/?replicaSet=first_replicate[0m
+2016-05-18 06:11:53 [D] Found 1 servers in uri[0m
+2016-05-18 06:11:58 [T] Processing server localhost:65010[0m
+2016-05-18 06:11:58 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:11:58 [D] Weighted mean RTT: 0.011111 for server localhost:65010[0m
+2016-05-18 06:12:03 [T] Processing server localhost:65011[0m
+2016-05-18 06:12:03 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:12:03 [D] Weighted mean RTT: 0.040711 for server localhost:65011[0m
+2016-05-18 06:12:04 [I] Master server localhost:65011 selected[0m
+2016-05-18 06:12:08 [T] Processing server localhost:65011[0m
+2016-05-18 06:12:08 [T] Server localhost:65011 already managed[0m
+2016-05-18 06:12:08 [T] Processing server localhost:65012[0m
+2016-05-18 06:12:08 [D] Start localhost:65012 monitoring[0m
+2016-05-18 06:12:08 [D] Weighted mean RTT: 0.030205 for server localhost:65010[0m
+2016-05-18 06:12:08 [D] Weighted mean RTT: 0.022719 for server localhost:65012[0m
+    ok 1 - 3 servers in replica[0m
+    ok 2 - Server defined[0m
+    ok 3 - Selected server is primary[0m
+2016-05-18 06:12:09 [I] Server localhost:65010 selected[0m
+    ok 4 - Secondary server found[0m
+    ok 5 - Server 1 is secondary[0m
+    # checkout uri 'mongodb://:65011/?replicaSet=first_replicate'
+2016-05-18 06:12:09 [D] parse mongodb://:65011/?replicaSet=first_replicate[0m
+2016-05-18 06:12:09 [D] Found 1 servers in uri[0m
+2016-05-18 06:12:13 [D] Weighted mean RTT: 0.051471 for server localhost:65011[0m
+2016-05-18 06:12:14 [T] Processing server localhost:65011[0m
+2016-05-18 06:12:14 [D] Start localhost:65011 monitoring[0m
+2016-05-18 06:12:14 [D] Weighted mean RTT: 0.019082 for server localhost:65011[0m
+2016-05-18 06:12:15 [I] Master server localhost:65011 selected[0m
+2016-05-18 06:12:18 [D] Weighted mean RTT: 0.071632 for server localhost:65010[0m
+2016-05-18 06:12:18 [D] Weighted mean RTT: 0.065362 for server localhost:65012[0m
+2016-05-18 06:12:19 [T] Processing server localhost:65011[0m
+2016-05-18 06:12:19 [T] Server localhost:65011 already managed[0m
+2016-05-18 06:12:19 [T] Processing server localhost:65010[0m
+2016-05-18 06:12:19 [D] Start localhost:65010 monitoring[0m
+2016-05-18 06:12:19 [T] Processing server localhost:65012[0m
+2016-05-18 06:12:19 [D] Start localhost:65012 monitoring[0m
+2016-05-18 06:12:19 [D] Weighted mean RTT: 0.017513 for server localhost:65010[0m
+2016-05-18 06:12:19 [D] Weighted mean RTT: 0.020526 for server localhost:65012[0m
+2016-05-18 06:12:23 [D] Weighted mean RTT: 0.055455 for server localhost:65011[0m
+2016-05-18 06:12:24 [D] Weighted mean RTT: 0.048656 for server localhost:65011[0m
+    ok 6 - 3 servers in replica[0m
+    ok 7 - Server selected[0m
+    ok 8 - Server 2 is primary[0m
+    # checkout uri 'mongodb://:65012/?replicaSet=first_replicate'
+2016-05-18 06:12:25 [D] parse mongodb://:65012/?replicaSet=first_replicate[0m
+2016-05-18 06:12:25 [D] Found 1 servers in uri[0m
+2016-05-18 06:12:28 [D] Weighted mean RTT: 0.069597 for server localhost:65010[0m
+2016-05-18 06:12:28 [D] Weighted mean RTT: 0.064378 for server localhost:65012[0m
+2016-05-18 06:12:29 [D] Weighted mean RTT: 0.020871 for server localhost:65010[0m
+2016-05-18 06:12:29 [D] Weighted mean RTT: 0.026778 for server localhost:65012[0m
+2016-05-18 06:12:30 [T] Processing server localhost:65012[0m
+2016-05-18 06:12:30 [D] Start localhost:65012 monitoring[0m
+*** glibc detected *** /home/travis/.rakudobrew/moar-nom/install/bin/moar: double free or corruption (fasttop): 0x00007f6f002e6650 ***
+======= Backtrace: =========
+/lib/x86_64-linux-gnu/libc.so.6(+0x7db26)[0x7f6f2c6e8b26]
+/lib/x86_64-linux-gnu/libc.so.6(+0x80d10)[0x7f6f2c6ebd10]
+/lib/x86_64-linux-gnu/libc.so.6(realloc+0xee)[0x7f6f2c6ed6ee]
+//home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so(+0x1a5b88)[0x7f6f2cbceb88]
+//home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so(+0x1a6889)[0x7f6f2cbcf889]
+//home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so(MVM_interp_run+0x13b88)[0x7f6f2cb90e38]
+//home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so(+0x1784de)[0x7f6f2cba14de]
+//home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so(+0x232e9f)[0x7f6f2cc5be9f]
+/lib/x86_64-linux-gnu/libpthread.so.0(+0x7e9a)[0x7f6f2c159e9a]
+/lib/x86_64-linux-gnu/libc.so.6(clone+0x6d)[0x7f6f2c75e38d]
+======= Memory map: ========
+00400000-00402000 r-xp 00000000 fc:0b 33993935                           /home/travis/.rakudobrew/moar-nom/install/bin/moar
+00601000-00602000 r--p 00001000 fc:0b 33993935                           /home/travis/.rakudobrew/moar-nom/install/bin/moar
+00602000-00603000 rw-p 00002000 fc:0b 33993935                           /home/travis/.rakudobrew/moar-nom/install/bin/moar
+011d1000-0cdf1000 rw-p 00000000 00:00 0                                  [heap]
+7f6ed33fd000-7f6ed4000000 rw-p 00000000 00:00 0 
+7f6ed4000000-7f6ed41e0000 rw-p 00000000 00:00 0 
+7f6ed41e0000-7f6ed8000000 ---p 00000000 00:00 0 
+7f6ed8000000-7f6ed827c000 rw-p 00000000 00:00 0 
+7f6ed827c000-7f6edc000000 ---p 00000000 00:00 0 
+7f6edc000000-7f6edc5ca000 rw-p 00000000 00:00 0 
+7f6edc5ca000-7f6ee0000000 ---p 00000000 00:00 0 
+7f6ee0000000-7f6ee0136000 rw-p 00000000 00:00 0 
+7f6ee0136000-7f6ee4000000 ---p 00000000 00:00 0 
+7f6ee4000000-7f6ee4230000 rw-p 00000000 00:00 0 
+7f6ee4230000-7f6ee8000000 ---p 00000000 00:00 0 
+7f6ee8000000-7f6ee8412000 rw-p 00000000 00:00 0 
+7f6ee8412000-7f6eec000000 ---p 00000000 00:00 0 
+7f6eec000000-7f6eece7c000 rw-p 00000000 00:00 0 
+7f6eece7c000-7f6ef0000000 ---p 00000000 00:00 0 
+7f6ef0000000-7f6ef0485000 rw-p 00000000 00:00 0 
+7f6ef0485000-7f6ef4000000 ---p 00000000 00:00 0 
+7f6ef4000000-7f6ef436a000 rw-p 00000000 00:00 0 
+7f6ef436a000-7f6ef8000000 ---p 00000000 00:00 0 
+7f6ef8000000-7f6ef81dd000 rw-p 00000000 00:00 0 
+7f6ef81dd000-7f6efc000000 ---p 00000000 00:00 0 
+7f6efc000000-7f6efc672000 rw-p 00000000 00:00 0 
+7f6efc672000-7f6f00000000 ---p 00000000 00:00 0 
+7f6f00000000-7f6f002f7000 rw-p 00000000 00:00 0 
+7f6f002f7000-7f6f04000000 ---p 00000000 00:00 0 
+7f6f04000000-7f6f04185000 rw-p 00000000 00:00 0 
+7f6f04185000-7f6f08000000 ---p 00000000 00:00 0 
+7f6f083e8000-7f6f0b3f4000 rw-p 00000000 00:00 0 
+7f6f0b3f4000-7f6f0b3f5000 ---p 00000000 00:00 0 
+7f6f0b3f5000-7f6f0bbf5000 rwxp 00000000 00:00 0                          [stack:130321]
+7f6f0bbf5000-7f6f0bff6000 rw-p 00000000 00:00 0 
+7f6f0bff6000-7f6f0bff7000 ---p 00000000 00:00 0 
+7f6f0bff7000-7f6f0c7f7000 rwxp 00000000 00:00 0                          [stack:130319]
+7f6f0c7f7000-7f6f0cbf8000 rw-p 00000000 00:00 0 
+7f6f0cbf8000-7f6f0cbf9000 ---p 00000000 00:00 0 
+7f6f0cbf9000-7f6f0d3f9000 rwxp 00000000 00:00 0                          [stack:130318]
+7f6f0d3f9000-7f6f0d7fa000 rw-p 00000000 00:00 0 
+7f6f0d7fa000-7f6f0d7fb000 ---p 00000000 00:00 0 
+7f6f0d7fb000-7f6f0dffb000 rwxp 00000000 00:00 0                          [stack:130317]
+7f6f0dffb000-7f6f0e3fc000 rw-p 00000000 00:00 0 
+7f6f0e3fc000-7f6f0e3fd000 ---p 00000000 00:00 0 
+7f6f0e3fd000-7f6f0ebfd000 rwxp 00000000 00:00 0                          [stack:130316]
+7f6f0ebfd000-7f6f0effe000 rw-p 00000000 00:00 0 
+7f6f0effe000-7f6f0efff000 ---p 00000000 00:00 0 
+7f6f0efff000-7f6f0f7ff000 rwxp 00000000 00:00 0                          [stack:130315]
+7f6f0f7ff000-7f6f0f800000 ---p 00000000 00:00 0 
+7f6f0f800000-7f6f10000000 rwxp 00000000 00:00 0                          [stack:130314]
+7f6f10000000-7f6f1028c000 rw-p 00000000 00:00 0 
+7f6f1028c000-7f6f14000000 ---p 00000000 00:00 0 
+7f6f141e0000-7f6f141f5000 r-xp 00000000 fc:0b 92274877                   /lib/x86_64-linux-gnu/libgcc_s.so.1
+7f6f141f5000-7f6f143f4000 ---p 00015000 fc:0b 92274877                   /lib/x86_64-linux-gnu/libgcc_s.so.1
+7f6f143f4000-7f6f143f5000 r--p 00014000 fc:0b 92274877                   /lib/x86_64-linux-gnu/libgcc_s.so.1
+7f6f143f5000-7f6f143f6000 rw-p 00015000 fc:0b 92274877                   /lib/x86_64-linux-gnu/libgcc_s.so.1
+7f6f143f6000-7f6f14bf8000 rw-p 00000000 00:00 0 
+7f6f14bf8000-7f6f14bf9000 ---p 00000000 00:00 0 
+7f6f14bf9000-7f6f153f9000 rwxp 00000000 00:00 0                          [stack:130313]
+7f6f153f9000-7f6f157fa000 rw-p 00000000 00:00 0 
+7f6f157fa000-7f6f157fb000 ---p 00000000 00:00 0 
+7f6f157fb000-7f6f15ffb000 rwxp 00000000 00:00 0                          [stack:130312]
+7f6f15ffb000-7f6f163fc000 rw-p 00000000 00:00 0 
+7f6f163fc000-7f6f163fd000 ---p 00000000 00:00 0 
+7f6f163fd000-7f6f16bfd000 rwxp 00000000 00:00 0                          [stack:130311]
+7f6f16bfd000-7f6f16ffe000 rw-p 00000000 00:00 0 
+7f6f16ffe000-7f6f16fff000 ---p 00000000 00:00 0 
+7f6f16fff000-7f6f177ff000 rwxp 00000000 00:00 0                          [stack:130310]
+7f6f177ff000-7f6f17800000 ---p 00000000 00:00 0 
+7f6f17800000-7f6f18000000 rwxp 00000000 00:00 0                          [stack:130309]
+7f6f18000000-7f6f18705000 rw-p 00000000 00:00 0 
+7f6f18705000-7f6f1c000000 ---p 00000000 00:00 0 
+7f6f1c000000-7f6f1c021000 rw-p 00000000 00:00 0 
+7f6f1c021000-7f6f20000000 ---p 00000000 00:00 0 
+7f6f200ab000-7f6f200ac000 rw-p 00000000 00:00 0 
+7f6f200ac000-7f6f2020d000 r-xp 00000000 00:00 0 
+7f6f2020d000-7f6f20a0f000 rw-p 00000000 00:00 0 
+7f6f20a0f000-7f6f20a1b000 r-xp 00000000 fc:0b 92400768                   /lib/x86_64-linux-gnu/libnss_files-2.15.so
+7f6f20a1b000-7f6f20c1a000 ---p 0000c000 fc:0b 92400768                   /lib/x86_64-linux-gnu/libnss_files-2.15.so
+7f6f20c1a000-7f6f20c1b000 r--p 0000b000 fc:0b 92400768                   /lib/x86_64-linux-gnu/libnss_files-2.15.so
+7f6f20c1b000-7f6f20c1c000 rw-p 0000c000 fc:0b 92400768                   /lib/x86_64-linux-gnu/libnss_files-2.15.so
+7f6f20c1c000-7f6f20c2b000 r-xp 00000000 00:00 0 
+7f6f20c2b000-7f6f20c2c000 ---p 00000000 00:00 0 
+7f6f20c2c000-7f6f2142c000 rwxp 00000000 00:00 0                          [stack:130307]
+7f6f2142c000-7f6f2182d000 rw-p 00000000 00:00 0 
+7f6f2182d000-7f6f21830000 r-xp 00000000 00:00 0 
+7f6f21830000-7f6f21831000 ---p 00000000 00:00 0 
+7f6f21831000-7f6f22031000 rwxp 00000000 00:00 0                          [stack:130306]
+7f6f22031000-7f6f22432000 rw-p 00000000 00:00 0 
+7f6f22432000-7f6f2243c000 r-xp 00000000 00:00 0 
+7f6f2243c000-7f6f2243d000 ---p 00000000 00:00 0 
+7f6f2243d000-7f6f22c3d000 rwxp 00000000 00:00 0                          [stack:129366]
+7f6f22c3d000-7f6f2303e000 rw-p 00000000 00:00 0 
+7f6f2303e000-7f6f231a4000 r-xp 00000000 00:00 0 
+7f6f231a4000-7f6f231ce000 r--p 00000000 fc:0b 85517604                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/4C/4CF16A0F0ADA18B97A35A304898347D2EBC8DBB7
+7f6f231ce000-7f6f231dd000 r--p 00000000 fc:0b 68222522                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/78/7819088EE8CD97E5D4D4767959F5303D1DDE837F
+7f6f231dd000-7f6f231e4000 r--p 00000000 fc:0b 76808760                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/AF/AFDF6C6E2514788BBD8E2A250ED529CD9F36B22E
+7f6f231e4000-7f6f231e5000 r-xp 00000000 00:00 0 
+7f6f231e5000-7f6f231f3000 r--p 00000000 fc:0b 17611928                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/9E/9EB55AD6BFC23ABC8FD573106EF2D9A1F6AA4C5E
+7f6f231f3000-7f6f231fb000 r-xp 00000000 00:00 0 
+7f6f231fb000-7f6f23201000 r--p 00000000 fc:0b 44467985                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/C8/C8CBBCB776829D428E190689736FD4EB64E03E63
+7f6f23201000-7f6f23205000 r-xp 00000000 00:00 0 
+7f6f23205000-7f6f23238000 r--p 00000000 fc:0b 1072241                    /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/43/43BCE09FD3F2CBA3DC8FDBC35A88AED124A05BE2
+7f6f23238000-7f6f232a4000 r--p 00000000 fc:0b 126456414                  /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/73/735B026FCD0B30C674D2B9CB2B4E13848327D98B
+7f6f232a4000-7f6f232a9000 r-xp 00000000 00:00 0 
+7f6f232a9000-7f6f232cd000 r--p 00000000 fc:0b 118222158                  /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/90/907822B86722B8A1D0E8348917FA6B92DA4E88FA
+7f6f232cd000-7f6f232cf000 r-xp 00000000 00:00 0 
+7f6f232cf000-7f6f232ec000 r--p 00000000 fc:0b 26740718                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/B3/B318A84DFDBF60DC2FFC07A12792D301A6B6B822
+7f6f232ec000-7f6f232f7000 r-xp 00000000 00:00 0 
+7f6f232f7000-7f6f2333c000 r--p 00000000 fc:0b 35609848                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/65/655BF8F68885A2545C6D6F4A81470EECA10B6AF7
+7f6f2333c000-7f6f2333d000 r-xp 00000000 00:00 0 
+7f6f2333d000-7f6f23356000 r--p 00000000 fc:0b 10279317                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/D9/D947AB8E57C02386E710F66C8889095CB20D7A5F
+7f6f23356000-7f6f23357000 r-xp 00000000 00:00 0 
+7f6f23357000-7f6f2337f000 r--p 00000000 fc:0b 93530054                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/5B/5BDE41837F2AEA74B1982E21A8B063C5949A12AE
+7f6f2337f000-7f6f23395000 r-xp 00000000 00:00 0 
+7f6f23395000-7f6f233a9000 r--p 00000000 fc:0b 35609838                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/82/82B518C666FADE2710C576716FF1FB3D892D3A08
+7f6f233a9000-7f6f233af000 r-xp 00000000 00:00 0 
+7f6f233af000-7f6f233c6000 r--p 00000000 fc:0b 44467974                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/58/58169CF6A247A877B34C82105DFA2EAD01F02D56
+7f6f233c6000-7f6f23434000 r-xp 00000000 00:00 0 
+7f6f23434000-7f6f23445000 r--p 00000000 fc:0b 59513751                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/BB/BB61EA95F7B298C27B100B57D6771F2A710929EB
+7f6f23445000-7f6f23469000 r-xp 00000000 00:00 0 
+7f6f23469000-7f6f23482000 r--p 00000000 fc:0b 51518286                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/F3/F3066A12F25EFE7C1F8CCDE7DF373322C8C79ADD
+7f6f23482000-7f6f23489000 r-xp 00000000 00:00 0 
+7f6f23489000-7f6f234a0000 r--p 00000000 fc:0b 126456409                  /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/3A/3AEF805EF44EFEEC9B78F3CFF4A378F7D3EC6091
+7f6f234a0000-7f6f234a9000 r-xp 00000000 00:00 0 
+7f6f234a9000-7f6f234be000 r--p 00000000 fc:0b 1072230                    /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/E5/E5750EB6B5C5ADAFF17BE28E2EFDE3DDACDE52E5
+7f6f234be000-7f6f23554000 r-xp 00000000 00:00 0 
+7f6f23554000-7f6f23561000 r--p 00000000 fc:0b 17611889                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/57/57A5917606C28CF68C2A2ABEC614B18F662BD982
+7f6f23561000-7f6f2356a000 r-xp 00000000 00:00 0 
+7f6f2356a000-7f6f235d2000 rw-p 00000000 00:00 0 
+7f6f235d2000-7f6f237fe000 r--p 00000000 fc:0b 59513754                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/1C/1C5ACA43B6DD808589DC82D5531212341342570E
+7f6f237fe000-7f6f24000000 rw-p 00000000 00:00 0 
+7f6f24000000-7f6f24532000 rw-p 00000000 00:00 0 
+7f6f24532000-7f6f28000000 ---p 00000000 00:00 0 
+7f6f28000000-7f6f2803f000 r-xp 00000000 00:00 0 
+7f6f2803f000-7f6f2804b000 r--p 00000000 fc:0b 51518277                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/0E/0EB6304640A855688E8F760B5478726840FD12B3
+7f6f2804b000-7f6f28057000 r-xp 00000000 00:00 0 
+7f6f28057000-7f6f2805c000 r--p 00000000 fc:0b 85517619                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/F5/F5639D96F8563A94CA7A4BEF15E2BF33AA6E76E6
+7f6f2805c000-7f6f28061000 r-xp 00000000 00:00 0 
+7f6f28061000-7f6f28065000 r--p 00000000 fc:0b 76808757                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/55/55FF56FF33DDCD732D6F2581F4C4ED7599E617FA
+7f6f28065000-7f6f28069000 r-xp 00000000 00:00 0 
+7f6f28069000-7f6f2807a000 r--p 00000000 fc:0b 68222526                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/C3/C36CFBF2ED36DA08C0A09131A54E7289F3040511
+7f6f2807a000-7f6f280a2000 r-xp 00000000 00:00 0 
+7f6f280a2000-7f6f28103000 rw-p 00000000 00:00 0 
+7f6f28103000-7f6f282e4000 r--p 00000000 fc:0b 126456410                  /home/travis/.rakudobrew/moar-nom/install/share/perl6/site/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/13/1321C8B276AAD066998C9C60A2441ABE34BBF06A
+7f6f282e4000-7f6f282ef000 r-xp 00000000 00:00 0 
+7f6f282ef000-7f6f28312000 r--p 00000000 fc:0b 68222502                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/24/24DD121B5B4774C04A7084827BFAD92199756E03
+7f6f28312000-7f6f28332000 r-xp 00000000 00:00 0 
+7f6f28332000-7f6f28342000 r--p 00000000 fc:0b 17571707                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/2A/2ACCA56EF5582D3ED623105F00BD76D7449263F7
+7f6f28342000-7f6f2834f000 r-xp 00000000 00:00 0 
+7f6f2834f000-7f6f28358000 r--p 00000000 fc:0b 59513737                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/FE/FE7156F9200E802D3DB8FA628CF91AD6B020539B
+7f6f28358000-7f6f28364000 r-xp 00000000 00:00 0 
+7f6f28364000-7f6f2837c000 r--p 00000000 fc:0b 25258281                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/51/51E302443A2C8FF185ABC10CA1E5520EFEE885A1
+7f6f2837c000-7f6f28388000 r-xp 00000000 00:00 0 
+7f6f28388000-7f6f2838d000 r--p 00000000 fc:0b 10279301                   /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/D7/D768B4C5D73443DF5E212F1127AD8DF71867E10A
+7f6f2838d000-7f6f283a1000 r-xp 00000000 00:00 0 
+7f6f283a1000-7f6f283b4000 r--p 00000000 fc:0b 118222154                  /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/A2/A20CD7E66E23B4ADDA256B0A6FD9C76886E7EBDA
+7f6f283b4000-7f6f283c0000 r-xp 00000000 00:00 0 
+7f6f283c0000-7f6f283c1000 ---p 00000000 00:00 0 
+7f6f283c1000-7f6f28bc1000 rwxp 00000000 00:00 0                          [stack:127601]
+7f6f28bc1000-7f6f28fc2000 rw-p 00000000 00:00 0 
+7f6f28fc2000-7f6f28fc3000 ---p 00000000 00:00 0 
+7f6f28fc3000-7f6f297c3000 rwxp 00000000 00:00 0                          [stack:127600]
+7f6f297c3000-7f6f29bc4000 rw-p 00000000 00:00 0 
+7f6f29bc4000-7f6f29be1000 r-xp 00000000 00:00 0 
+7f6f29be1000-7f6f29bed000 r--p 00000000 fc:0b 102240898                  /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/2D/2DAC9CAE92F2577EF9EFA45619825AF24796D990
+7f6f29bed000-7f6f29c03000 r-xp 00000000 00:00 0 
+7f6f29c03000-7f6f29c17000 r--p 00000000 fc:0b 112371395                  /home/travis/build/MARTIMM/mongo-perl6-driver/t/.precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/DF/DF8449D21A49352EBACB0FA1C521572E7D3B5BFD
+7f6f29c17000-7f6f29f46000 r-xp 00000000 00:00 0 
+7f6f29f46000-7f6f29f68000 r--p 00000000 fc:0b 76732511                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/precomp/55A2ABABA68010A29A6566A09EDF0141F8226AE9.1463551269.5883/C7/C712FE6969F786C9380D643DF17E85D06868219E
+7f6f29f68000-7f6f2a01f000 r-xp 00000000 00:00 0 
+7f6f2a01f000-7f6f2a420000 rw-p 00000000 00:00 0 
+7f6f2a420000-7f6f2a44f000 r-xp 00000000 00:00 0 
+7f6f2a44f000-7f6f2a5a9000 rw-p 00000000 00:00 0 
+7f6f2a5a9000-7f6f2a5f4000 r--p 00000000 fc:0b 118222129                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/Metamodel.moarvm
+7f6f2a5f4000-7f6f2a622000 r--p 00000000 fc:0b 118222130                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/BOOTSTRAP.moarvm
+7f6f2a622000-7f6f2a64d000 rw-p 00000000 00:00 0 
+7f6f2a64d000-7f6f2b15b000 r--p 00000000 fc:0b 10217380                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/CORE.setting.moarvm
+7f6f2b15b000-7f6f2b161000 r-xp 00000000 fc:0b 17571703                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/dynext/libperl6_ops_moar.so
+7f6f2b161000-7f6f2b360000 ---p 00006000 fc:0b 17571703                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/dynext/libperl6_ops_moar.so
+7f6f2b360000-7f6f2b361000 r--p 00005000 fc:0b 17571703                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/dynext/libperl6_ops_moar.so
+7f6f2b361000-7f6f2b362000 rw-p 00006000 fc:0b 17571703                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/dynext/libperl6_ops_moar.so
+7f6f2b362000-7f6f2b389000 r--p 00000000 fc:0b 118222126                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/Optimizer.moarvm
+7f6f2b389000-7f6f2b38f000 r--p 00000000 fc:0b 118222128                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/Compiler.moarvm
+7f6f2b38f000-7f6f2b412000 rw-p 00000000 00:00 0 
+7f6f2b412000-7f6f2b417000 r--p 00000000 fc:0b 118222121                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/ModuleLoader.moarvm
+7f6f2b417000-7f6f2b464000 r--p 00000000 fc:0b 118222122                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/World.moarvm
+7f6f2b464000-7f6f2b474000 r--p 00000000 fc:0b 118222124                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/Ops.moarvm
+7f6f2b474000-7f6f2b558000 r--p 00000000 fc:0b 118222125                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/Actions.moarvm
+7f6f2b558000-7f6f2b593000 r--p 00000000 fc:0b 68208991                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/NQPP5QRegex.moarvm
+7f6f2b593000-7f6f2b945000 r--p 00000000 fc:0b 118222123                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/Grammar.moarvm
+7f6f2b945000-7f6f2bd46000 rw-p 00000000 00:00 0 
+7f6f2bd46000-7f6f2bd48000 r-xp 00000000 fc:0b 92400570                   /lib/x86_64-linux-gnu/libdl-2.15.so
+7f6f2bd48000-7f6f2bf48000 ---p 00002000 fc:0b 92400570                   /lib/x86_64-linux-gnu/libdl-2.15.so
+7f6f2bf48000-7f6f2bf49000 r--p 00002000 fc:0b 92400570                   /lib/x86_64-linux-gnu/libdl-2.15.so
+7f6f2bf49000-7f6f2bf4a000 rw-p 00003000 fc:0b 92400570                   /lib/x86_64-linux-gnu/libdl-2.15.so
+7f6f2bf4a000-7f6f2bf51000 r-xp 00000000 fc:0b 92400574                   /lib/x86_64-linux-gnu/librt-2.15.so
+7f6f2bf51000-7f6f2c150000 ---p 00007000 fc:0b 92400574                   /lib/x86_64-linux-gnu/librt-2.15.so
+7f6f2c150000-7f6f2c151000 r--p 00006000 fc:0b 92400574                   /lib/x86_64-linux-gnu/librt-2.15.so
+7f6f2c151000-7f6f2c152000 rw-p 00007000 fc:0b 92400574                   /lib/x86_64-linux-gnu/librt-2.15.so
+7f6f2c152000-7f6f2c16a000 r-xp 00000000 fc:0b 92400667                   /lib/x86_64-linux-gnu/libpthread-2.15.so
+7f6f2c16a000-7f6f2c369000 ---p 00018000 fc:0b 92400667                   /lib/x86_64-linux-gnu/libpthread-2.15.so
+7f6f2c369000-7f6f2c36a000 r--p 00017000 fc:0b 92400667                   /lib/x86_64-linux-gnu/libpthread-2.15.so
+7f6f2c36a000-7f6f2c36b000 rw-p 00018000 fc:0b 92400667                   /lib/x86_64-linux-gnu/libpthread-2.15.so
+7f6f2c36b000-7f6f2c36f000 rw-p 00000000 00:00 0 
+7f6f2c36f000-7f6f2c46a000 r-xp 00000000 fc:0b 92400769                   /lib/x86_64-linux-gnu/libm-2.15.so
+7f6f2c46a000-7f6f2c669000 ---p 000fb000 fc:0b 92400769                   /lib/x86_64-linux-gnu/libm-2.15.so
+7f6f2c669000-7f6f2c66a000 r--p 000fa000 fc:0b 92400769                   /lib/x86_64-linux-gnu/libm-2.15.so
+7f6f2c66a000-7f6f2c66b000 rw-p 000fb000 fc:0b 92400769                   /lib/x86_64-linux-gnu/libm-2.15.so
+7f6f2c66b000-7f6f2c81f000 r-xp 00000000 fc:0b 92400664                   /lib/x86_64-linux-gnu/libc-2.15.so
+7f6f2c81f000-7f6f2ca1e000 ---p 001b4000 fc:0b 92400664                   /lib/x86_64-linux-gnu/libc-2.15.so
+7f6f2ca1e000-7f6f2ca22000 r--p 001b3000 fc:0b 92400664                   /lib/x86_64-linux-gnu/libc-2.15.so
+7f6f2ca22000-7f6f2ca24000 rw-p 001b7000 fc:0b 92400664                   /lib/x86_64-linux-gnu/libc-2.15.so
+7f6f2ca24000-7f6f2ca29000 rw-p 00000000 00:00 0 
+7f6f2ca29000-7f6f2cdda000 r-xp 00000000 fc:0b 41947771                   /home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so
+7f6f2cdda000-7f6f2cfd9000 ---p 003b1000 fc:0b 41947771                   /home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so
+7f6f2cfd9000-7f6f2d073000 r--p 003b0000 fc:0b 41947771                   /home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so
+7f6f2d073000-7f6f2d085000 rw-p 0044a000 fc:0b 41947771                   /home/travis/.rakudobrew/moar-nom/install/lib/libmoar.so
+7f6f2d085000-7f6f2d086000 rw-p 00000000 00:00 0 
+7f6f2d086000-7f6f2d0a8000 r-xp 00000000 fc:0b 92400670                   /lib/x86_64-linux-gnu/ld-2.15.so
+7f6f2d0a8000-7f6f2d0bb000 r--p 00000000 fc:0b 118222127                  /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/Perl6/Pod.moarvm
+7f6f2d0bb000-7f6f2d0d6000 r--p 00000000 fc:0b 68208986                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MASTOps.moarvm
+7f6f2d0d6000-7f6f2d0e3000 r--p 00000000 fc:0b 68208987                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/MASTNodes.moarvm
+7f6f2d0e3000-7f6f2d157000 r--p 00000000 fc:0b 68208988                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/QAST.moarvm
+7f6f2d157000-7f6f2d1af000 r--p 00000000 fc:0b 68208985                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/NQPHLL.moarvm
+7f6f2d1af000-7f6f2d1c8000 r--p 00000000 fc:0b 68208983                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/QASTNode.moarvm
+7f6f2d1c8000-7f6f2d1ed000 r--p 00000000 fc:0b 68208984                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/QRegex.moarvm
+7f6f2d1ed000-7f6f2d251000 r--p 00000000 fc:0b 68208989                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/NQPP6QRegex.moarvm
+7f6f2d251000-7f6f2d265000 r--p 00000000 fc:0b 68208980                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/nqpmo.moarvm
+7f6f2d265000-7f6f2d271000 r--p 00000000 fc:0b 68208982                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/NQPCORE.setting.moarvm
+7f6f2d271000-7f6f2d297000 rw-p 00000000 00:00 0 
+7f6f2d297000-7f6f2d298000 r-xp 00000000 00:00 0 
+7f6f2d298000-7f6f2d2a0000 r-xp 00000000 00:00 0 
+7f6f2d2a0000-7f6f2d2a3000 r--p 00000000 fc:0b 68208981                   /home/travis/.rakudobrew/moar-nom/install/share/nqp/lib/ModuleLoader.moarvm
+7f6f2d2a3000-7f6f2d2a6000 r--p 00000000 fc:0b 10217382                   /home/travis/.rakudobrew/moar-nom/install/share/perl6/runtime/perl6.moarvm
+7f6f2d2a6000-7f6f2d2a8000 rw-p 00000000 00:00 0 
+7f6f2d2a8000-7f6f2d2a9000 r--p 00022000 fc:0b 92400670                   /lib/x86_64-linux-gnu/ld-2.15.so
+7f6f2d2a9000-7f6f2d2ab000 rw-p 00023000 fc:0b 92400670                   /lib/x86_64-linux-gnu/ld-2.15.so
+7ffff2c46000-7ffff2c65000 rwxp 00000000 00:00 0                          [stack]
+7ffff2c65000-7ffff2c67000 rw-p 00000000 00:00 0 
+7ffff2dfe000-7ffff2e00000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+[31mNo subtests run [0m
+t/999-rm-sandbox.t ...... 
+killing process with pid: 7253[0m
+ok 1 - Server 1 is stopped[0m
+killing process with pid: 7114[0m
+ok 2 - Server 2 is stopped[0m
+killing process with pid: 7272[0m
+ok 3 - Server 3 is stopped[0m
+1..3[0m
+
+Test Summary Report
+-------------------
+[31mt/613-Client.t        (Wstat: 134 Tests: 0 Failed: 0)[0m
+[31m  Non-zero wait status: 134[0m
+[31m  Parse errors: No plan found in TAP output[0m
+Files=20, Tests=62, 465 wallclock secs ( 0.25 usr  0.04 sys + 194.65 cusr  7.65 csys = 202.59 CPU)
+Result: FAIL
+
+travis_time:end:05dd661d:start=1463551498753458665,finish=1463551963108273602,duration=464354814937
+[0K
+[31;1mThe command "PERL6LIB=lib prove -v -r --exec=perl6 t/" exited with 1.[0m
+travis_fold:start:cache.2
+[0Kstore build cache
+travis_time:start:007ce8fc
+[0K
+travis_time:end:007ce8fc:start=1463551963112433134,finish=1463551963116051874,duration=3618740
+[0Ktravis_time:start:34cabc11
+[0K[32;1mchange detected:
+/home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/mongodb-linux-x86_64-3.0.5/bin/mongod
+/home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/mongodb-linux-x86_64-3.0.5.tgz
+/home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod
+
+[0m
+[32;1mchanges detected, packing new archive[0m
+[32;1muploading archive[0m
+
+travis_time:end:34cabc11:start=1463551963119868167,finish=1463551968372622662,duration=5252754495
+[0Ktravis_fold:end:cache.2
+[0K
+Done. Your build exited with 1.
+
+
+Test Summary Report
+-------------------
+[31mt/613-Client.t        (Wstat: 134 Tests: 0 Failed: 0)[0m
+[31m  Non-zero wait status: 134[0m
+[31m  Parse errors: No plan found in TAP output[0m
+Files=20, Tests=62, 465 wallclock secs ( 0.25 usr  0.04 sys + 194.65 cusr  7.65 csys = 202.59 CPU)
+Result: FAIL
+
+travis_time:end:05dd661d:start=1463551498753458665,finish=1463551963108273602,duration=464354814937
+[0K
+[31;1mThe command "PERL6LIB=lib prove -v -r --exec=perl6 t/" exited with 1.[0m
+travis_fold:start:cache.2
+[0Kstore build cache
+travis_time:start:007ce8fc
+[0K
+travis_time:end:007ce8fc:start=1463551963112433134,finish=1463551963116051874,duration=3618740
+[0Ktravis_time:start:34cabc11
+[0K[32;1mchange detected:
+/home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/mongodb-linux-x86_64-3.0.5/bin/mongod
+/home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/mongodb-linux-x86_64-3.0.5.tgz
+/home/travis/build/MARTIMM/mongo-perl6-driver/Travis-ci/MongoDB/mongod
+
+[0m
+[32;1mchanges detected, packing new archive[0m
+[32;1muploading archive[0m
+
+travis_time:end:34cabc11:start=1463551963119868167,finish=1463551968372622662,duration=5252754495
+[0Ktravis_fold:end:cache.2
+[0K
+Done. Your build exited with 1.
