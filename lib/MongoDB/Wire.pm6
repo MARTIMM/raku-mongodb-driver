@@ -89,6 +89,11 @@ class Wire {
           error-message(.message);
         }
 
+        # From BSON::Document
+        when X::Parse-document {
+          error-message(.message);
+        }
+
         # If not one of the above errors, rethrow the error
         default {
           .rethrow;
@@ -164,6 +169,11 @@ say "Error wire get-more: ", .message;
           error-message(.message);
         }
 
+        # From BSON::Document
+        when X::Parse-document {
+          error-message(.message);
+        }
+
         # If not one of the above errors, rethrow the error
         default {
           .rethrow;
@@ -227,6 +237,11 @@ say "Error wire kill-cursors: ", .message;
         when .message ~~ m:s/Failed to resolve host name/ ||
              .message ~~ m:s/Failed to connect\: connection refused/ {
 
+          error-message(.message);
+        }
+
+        # From BSON::Document
+        when X::Parse-document {
           error-message(.message);
         }
 

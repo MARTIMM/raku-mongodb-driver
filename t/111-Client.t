@@ -92,6 +92,13 @@ subtest {
         sleep 1;
       }
 
+#      CATCH {
+#        default {
+#          .note.WHAT;
+#          .note;
+#        }
+#      }
+
       True;
     }
   );

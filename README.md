@@ -288,25 +288,8 @@ MongoDB versions are supported from 2.6 and up. Versions lower that this are not
   * Also take native types for simple things such as counters
   * Also setting constraints like (un)definedness etc on parameters
   * Furthermore the speedup of the language perl6 itself would have more impact than the programming of a several month student(me) can accomplish ;-). In september and also in december 2015 great improvements are made.
-  * The compile step of perl6 takes some time before running. This obviously depends on the code base of the programs. One thing I have done is removing all exception classes from the modules and replace them by only one class defined in MongoDB.pm.
-
-Below is the output of a small benchmark test taken at 20th of October 2015. With an extra perl6 option one can see what time is used at each stage. The program loads the Bench and MongoDB::Connection. The last one triggers the loading of several other MongoDB modules. This takes much processing time. Comand used is ```perl6 --stagestats Tests/bench-connect.pl6```
-
--|10/20 2015|29/1 2016
--||
-Stage start|0.000|0.000
-Stage parse|8.462|0.558
-Stage syntaxcheck|0.000|0.000
-Stage ast|0.000|0.000
-Stage optimize|0.003|0.003
-Stage mast|0.010|0.010
-Stage mbc|0.000|0.000
-Stage moar|0.000|0.000
-Benchmark 50 iter|1.0916|1.6775
-
-Test taken at 29th of January 2016 shows considerable improvements in parsing time. The test however was changed because of changes in the module and increased in complexity so the run time is slower.
-
-The perl6 behaviour is also changed. One thing is that it generates parsed code in directory .precomp. The first time after a change in code it takes more time at the parse stage. After the first run the parsing time is shorter.
+  * The compile step of perl6 takes some time before running. This obviously depends on the code base of the programs. One thing I have done is removing all exception classes from the modules and replace them by only one class defined in MongoDB/Log.pm.
+  * The perl6 behaviour is also changed. One thing is that it generates parsed code in directory .precomp. The first time after a change in code it takes more time at the parse stage. After the first run the parsing time is shorter.
 
 * Testing $mod in queries seems to have problems in version 3.0.5
 * While we can add users to the database we cannot authenticate due to the lack of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to authenticate with.
@@ -316,7 +299,7 @@ The perl6 behaviour is also changed. One thing is that it generates parsed code 
   * send the output to a separate class of which the object of it is in a thread. The information is then sent via a channel. This way it will always be synchronized (need to check that though).
   * The output to the log should be changed. Perhaps files and line numbers are not really needed. More something like an error code of a combination of class and line number of \*-message() function.
   * Use macros to get info at the calling point before sending to \*-message(). This will make the search through the stack unnecessary
-* Use semaphores in Server to get a Socket. Use the socket limit as a parameter. Need also to modify this.
+* Use semaphores in Server to get a Socket. Use the socket limit as a parameter.
 * Must check for max BSON document size
 * Handle read/write concerns.
 * Handle more options from the mongodb uri
@@ -333,6 +316,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.30.1
+  * Monitor loop-time control via Client and Server interface to quicken the tests
 * 0.30.0
   * Client, Server and Monitor working together to handle replicasets properly
 * 0.29.0
