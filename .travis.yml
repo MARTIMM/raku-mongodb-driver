@@ -42,7 +42,7 @@ install: true
 #  - mongodb
 
 script:
-  - $TRAVIS_BUILD_DIR/test-script.sh
+  - $TRAVIS_BUILD_DIR/Travis-ci/test-script.sh
 
 git:
   depth: 5
