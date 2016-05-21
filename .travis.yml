@@ -12,24 +12,29 @@ perl6:
 #
 #before_install:
 #  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
-
-env:
-#  - PATH=.:$TRAVIS_BUILD_DIR/Travis-ci/MongoDB:$PATH
-  - TCI=${TRAVIS_BUILD_DIR}/Travis-ci
-  - MDB=${TCI}/MongoDB
-  - P6=${TCI}/P6Software/rakudo/install
-  - PATH=${P6}/bin:${P6}/share/perl6/site/bin:$PATH
-  - PERL6LIB=.,lib
-
-install:
+before_install:
   - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
-  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh ${TRAVIS_PERL6_VERSION}
+  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
+
+#env:
+#  - PATH=.:$TRAVIS_BUILD_DIR/Travis-ci/MongoDB:$PATH
+#  - TCI=${TRAVIS_BUILD_DIR}/Travis-ci
+#  - MDB=${TCI}/MongoDB
+#  - P6=${TCI}/P6Software/rakudo/install
+#  - PATH=${P6}/bin:${P6}/share/perl6/site/bin:$PATH
+#  - PERL6LIB=lib
+
+#install:
+#  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
+#  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
 
 #  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
 #  - rakudobrew build-panda
 #  - panda installdeps .
 #  - panda update
 #  - panda install BSON Digest::MD5
+
+install: true
 
 cache:
   directories:
@@ -40,5 +45,9 @@ cache:
 #services:
 #  - mongodb
 
+script:
+  - PERL6LIB=lib,TCI=${TRAVIS_BUILD_DIR}/Travis-ci,MDB=${TCI}/MongoDB,P6=${TCI}/P6Software/rakudo/install,PATH=${P6}/bin:${P6}/share/perl6/site/bin:$PATH prove -v -r --exec=perl6 t/
 
+git:
+  depth: 5
 
