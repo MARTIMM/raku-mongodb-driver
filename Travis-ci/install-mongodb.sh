@@ -15,6 +15,8 @@ fi
 
 echo Installing MongoDB version $1
 
+/bin/ls -l
+
 cd ${TRAVIS_BUILD_DIR}/Travis-ci
 if [ ! -e mongodb-linux-x86_64-${version}.tgz ]
 then
