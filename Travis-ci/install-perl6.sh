@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -ev
+
 #perl6branch=$1
 
 #if [ -z $perlbranch ]

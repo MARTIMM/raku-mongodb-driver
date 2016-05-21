@@ -4,9 +4,9 @@ branches:
 
 language: perl6
 
+# Torpede the install with a wrong git version
 perl6:
-  - 2016.04-134-g9879233
-#  - latest
+  - 2016.04-000-aaaaaaa
 
 # Install mongodb server at ./Travis-ci/MongoDB
 #
@@ -36,18 +36,19 @@ before_install:
 
 install: true
 
-cache:
-  directories:
-    - $TRAVIS_BUILD_DIR/Travis-ci
-
 # Cannot use the mongod service because the version is too low (2.4.12)
 #
 #services:
 #  - mongodb
 
 script:
-  - PERL6LIB=lib,TCI=${TRAVIS_BUILD_DIR}/Travis-ci,MDB=${TCI}/MongoDB,P6=${TCI}/P6Software/rakudo/install,PATH=${P6}/bin:${P6}/share/perl6/site/bin:$PATH prove -v -r --exec=perl6 t/
+  - $TRAVIS_BUILD_DIR/test-script.sh
 
 git:
   depth: 5
 
+
+cache:
+  directories:
+    - $HOME/Travis-ci/P6Software
+    - $HOME/Travis-ci/MongoDB
