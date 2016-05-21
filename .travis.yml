@@ -23,6 +23,7 @@ before_install:
 #  - P6=${TCI}/P6Software/rakudo/install
 #  - PATH=${P6}/bin:${P6}/share/perl6/site/bin:$PATH
 #  - PERL6LIB=lib
+env: CACHE_NAME=JOB1
 
 #install:
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
