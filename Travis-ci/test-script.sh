@@ -10,6 +10,6 @@ export PATH
 #export PERL6LIB
 
 pwd
+ls -l
 
-prove --verbose --recurse --lib --exec=perl6 t
-
+prove --verbose --recurse -Ilib --exec=perl6 t
