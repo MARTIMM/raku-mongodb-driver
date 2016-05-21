@@ -316,6 +316,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.30.2
+  * Try different perl6 installment on Travis-ci
 * 0.30.1
   * Monitor loop-time control via Client and Server interface to quicken the tests
 * 0.30.0

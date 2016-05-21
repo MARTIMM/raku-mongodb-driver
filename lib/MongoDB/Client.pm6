@@ -322,7 +322,7 @@ say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
         $!todo-servers-semaphore.acquire;
         $!processing-todo-list = $found-new-servers;
         $!todo-servers-semaphore.release;
-say "H6f: Processing after $server.name: $!processing-todo-list";
+say "H6f: Processing after $server.name(): $!processing-todo-list";
 #say "\nWait for next from monitor";
 #say ' ';
       }
