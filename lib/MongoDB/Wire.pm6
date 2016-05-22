@@ -1,3 +1,4 @@
+
 use v6.c;
 
 use BSON::Document;
@@ -30,18 +31,18 @@ class Wire {
     $d does MongoDB::Header;
     my BSON::Document $result;
 
-    my Bool $write-operation = False;
-    my $client;
+#    my Bool $write-operation = False;
+#    my $client;
 
     try {
-      $client = $collection.database.client;
+#      $client = $collection.database.client;
 
       # Check if the server ticket is defined and thus a server is reserved
       # for this communication.
       #
       fatal-message("No server available") unless $!server.defined;
 
-      $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
+#      $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
 #say "Need master for {$d.find-key(0)} $write-operation";
       my $full-collection-name = $collection.full-collection-name;
 
@@ -117,7 +118,7 @@ class Wire {
 
     my BSON::Document $d .= new;
     $d does MongoDB::Header;
-    my $client;
+#    my $client;
     my BSON::Document $result;
 
     try {
@@ -126,7 +127,7 @@ class Wire {
         $cursor.full-collection-name, $cursor.id, :$number-to-return
       );
 
-      $client = $cursor.client;
+#      $client = $cursor.client;
 
       fatal-message("No server available") unless $!server.defined;
       $!socket = $server.get-socket;
@@ -196,7 +197,7 @@ say "Error wire get-more: ", .message;
 
     my BSON::Document $d .= new;
     $d does MongoDB::Header;
-    my $client;
+#    my $client;
 
     # Gather the ids only when they are non-zero.i.e. still active.
     #
@@ -207,7 +208,7 @@ say "Error wire get-more: ", .message;
 
     # Kill the cursors if found any
     #
-    $client = @cursors[0].client;
+#    $client = @cursors[0].client;
 
     try {
       fatal-message("No server available") unless $server.defined;
