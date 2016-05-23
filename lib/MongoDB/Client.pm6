@@ -1,3 +1,4 @@
+
 use v6.c;
 
 use MongoDB;
@@ -85,11 +86,29 @@ say 'new client 1';
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 
+    # Setup todo list with servers to be processed
+#    $!todo-servers-semaphore.acquire;
+    for @($uri-obj.server-data<servers>) -> Hash $server-data {
+      $!todo-servers.push("$server-data<host>:$server-data<port>");
+    }
+#    $!todo-servers-semaphore.release;
+
 
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
-    
+
         loop {
+          # Make a note. Doing this test above will turn this to False too fast
+          $!todo-servers-semaphore.acquire;
+          $!processing-todo-list = True;
+          $!todo-servers-semaphore.release;
+
+          # This reading of the todo list might start too quick, reading before
+          # anything is pushed onto the list by the main thread. Then
+          # $!processing-todo-list togles to False which then produces failures
+          # later when select-server or nbr-servers is called.
+          #
+          sleep 1;
 
           # Start processing when something is found in todo hash
           $!todo-servers-semaphore.acquire;
@@ -99,13 +118,13 @@ say 'new client 1';
           if $server-name.defined {
 
             # Make a note. Doing this test above will turn this to False too fast
-            $!todo-servers-semaphore.acquire;
-            $!processing-todo-list = True;
-            $!todo-servers-semaphore.release;
+#            $!todo-servers-semaphore.acquire;
+#            $!processing-todo-list = True;
+#            $!todo-servers-semaphore.release;
 
             trace-message("Processing server $server-name");
 
-say "a0: $server-name: $!processing-todo-list";
+#say "a0: $server-name: $!processing-todo-list";
             $!servers-semaphore.acquire;
 #say "a1: $server-name";
             my Bool $server-processed = $!servers{$server-name}:exists;
@@ -130,20 +149,16 @@ say "a0: $server-name: $!processing-todo-list";
 
           else {
 
-            # When no work take a nap!
+            $!todo-servers-semaphore.acquire;
+            $!processing-todo-list = False;
+            $!todo-servers-semaphore.release;
+
+            # When there is no work take a nap!
             sleep 5;
           }
         }
       }
     );
-
-
-    # Feed background process with hosts.via todo list
-    $!todo-servers-semaphore.acquire;
-    for @($uri-obj.server-data<servers>) -> Hash $server-data {
-      $!todo-servers.push("$server-data<host>:$server-data<port>");
-    }
-    $!todo-servers-semaphore.release;
   }
 
   #-----------------------------------------------------------------------------
@@ -315,14 +330,14 @@ say "a0: $server-name: $!processing-todo-list";
         # Store result
         $!servers-semaphore.acquire;
         $!servers{$server.name} = $h;
-say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
+#say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
         $!servers-semaphore.release;
 
         # Make a note if more servers are to be processed
         $!todo-servers-semaphore.acquire;
         $!processing-todo-list = $found-new-servers;
         $!todo-servers-semaphore.release;
-say "H6f: Processing after $server.name(): $!processing-todo-list";
+#say "H6f: Processing after $server.name(): $!processing-todo-list";
 #say "\nWait for next from monitor";
 #say ' ';
       }
@@ -340,7 +355,7 @@ say "H6f: Processing after $server.name(): $!processing-todo-list";
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
-say "Still processing: $still-processing";
+#say "nbr-servers, still processing: $still-processing";
       sleep 1;
     }
 
@@ -363,7 +378,7 @@ say "Still processing: $still-processing";
                  !! {};
     $!servers-semaphore.release;
 
-    my MongoDB::ServerStatus $sts = $h<status> if $h<status>:exists;
+    my MongoDB::ServerStatus $sts = $h<status> // MongoDB::C-UNKNOWN-SERVER;
   }
 
   #-----------------------------------------------------------------------------
@@ -400,7 +415,7 @@ say "Still processing: $still-processing";
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
-say "Still processing: $still-processing";
+#say "select-server 2, still processing: $still-processing";
       sleep 1;
     }
 
@@ -450,7 +465,7 @@ say "Still processing: $still-processing";
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
-say "Still processing: $still-processing";
+#say "select-server 3, still processing: $still-processing";
       sleep 1;
     }
 
@@ -481,7 +496,7 @@ say "Still processing: $still-processing";
     else {
       error-message('No master server selected');
     }
-
+#say 'Select server: ', ($h // {}).perl;
     $h<server> // MongoDB::Server;
   }
 

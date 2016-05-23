@@ -26,14 +26,6 @@ my MongoDB::Cursor $cursor;
 
 $database.run-command: (dropDatabase => 1,);
 
-$req .= new: (
-  insert => $collection.name,
-  documents => []
-);
-
-#say "RP: ", $req.perl;
-#exit(0);
-
 # Insert many documents to see proper working of get-more docs request
 # using wireshark
 #
@@ -62,7 +54,7 @@ $doc = $database.run-command($req);
 
 is $doc<ok>, 1, 'insert ok';
 is $doc<n>, 200, 'inserted 200 docs';
-say $doc<errmsg> unless $doc<ok>;
+#say $doc<errmsg> unless $doc<ok>;
 
 # Request to get all documents listed to generate a get-more request
 #

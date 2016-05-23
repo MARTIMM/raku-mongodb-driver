@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+#set -ev
+
 #perl6branch=$1
 
 #if [ -z $perlbranch ]
@@ -56,5 +58,5 @@ panda --notests install BSON
 panda --notests install Config::TOML
 
 #panda --notests install MongoDB
-#panda --notests install 
-#panda --notests install 
+#panda --notests install
+#panda --notests install
