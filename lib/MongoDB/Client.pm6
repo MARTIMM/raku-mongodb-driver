@@ -86,6 +86,13 @@ say 'new client 1';
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 
+    # Setup todo list with servers to be processed
+#    $!todo-servers-semaphore.acquire;
+    for @($uri-obj.server-data<servers>) -> Hash $server-data {
+      $!todo-servers.push("$server-data<host>:$server-data<port>");
+    }
+#    $!todo-servers-semaphore.release;
+
 
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
@@ -152,14 +159,6 @@ say 'new client 1';
         }
       }
     );
-
-
-    # Feed background process with hosts.via todo list
-    $!todo-servers-semaphore.acquire;
-    for @($uri-obj.server-data<servers>) -> Hash $server-data {
-      $!todo-servers.push("$server-data<host>:$server-data<port>");
-    }
-    $!todo-servers-semaphore.release;
   }
 
   #-----------------------------------------------------------------------------
