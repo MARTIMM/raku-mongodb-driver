@@ -117,7 +117,7 @@ say 'new client 1';
 
             trace-message("Processing server $server-name");
 
-say "a0: $server-name: $!processing-todo-list";
+#say "a0: $server-name: $!processing-todo-list";
             $!servers-semaphore.acquire;
 #say "a1: $server-name";
             my Bool $server-processed = $!servers{$server-name}:exists;
@@ -331,14 +331,14 @@ say "a0: $server-name: $!processing-todo-list";
         # Store result
         $!servers-semaphore.acquire;
         $!servers{$server.name} = $h;
-say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
+#say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
         $!servers-semaphore.release;
 
         # Make a note if more servers are to be processed
         $!todo-servers-semaphore.acquire;
         $!processing-todo-list = $found-new-servers;
         $!todo-servers-semaphore.release;
-say "H6f: Processing after $server.name(): $!processing-todo-list";
+#say "H6f: Processing after $server.name(): $!processing-todo-list";
 #say "\nWait for next from monitor";
 #say ' ';
       }
@@ -356,7 +356,7 @@ say "H6f: Processing after $server.name(): $!processing-todo-list";
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
-say "nbr-servers, still processing: $still-processing";
+#say "nbr-servers, still processing: $still-processing";
       sleep 1;
     }
 
@@ -416,7 +416,7 @@ say "nbr-servers, still processing: $still-processing";
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
-say "select-server 2, still processing: $still-processing";
+#say "select-server 2, still processing: $still-processing";
       sleep 1;
     }
 
@@ -466,7 +466,7 @@ say "select-server 2, still processing: $still-processing";
       $!todo-servers-semaphore.acquire;
       $still-processing = $!processing-todo-list;
       $!todo-servers-semaphore.release;
-say "select-server 3, still processing: $still-processing";
+#say "select-server 3, still processing: $still-processing";
       sleep 1;
     }
 
@@ -497,7 +497,7 @@ say "select-server 3, still processing: $still-processing";
     else {
       error-message('No master server selected');
     }
-say 'Select server: ', ($h // {}).perl;
+#say 'Select server: ', ($h // {}).perl;
     $h<server> // MongoDB::Server;
   }
 
