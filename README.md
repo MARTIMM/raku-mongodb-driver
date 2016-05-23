@@ -154,11 +154,7 @@ while $cursor.fetch -> BSON::Document $d {
 
 As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup.
 
-This testing might put some presure on your system so when installing it not all tests will be executed. However on the Travis-ci system everything will be tested.
-
-We're not yet there so watch this space to see when it comes to that. Btw, on Travis-ci this package is tested in full so you can also study the test results there. Just click on the link (green hopefully) above at the top of this page.
-
-Because all helper functions are torn out of the modules the support is now increased to 2.6 and above. When using run-command() the documentation of MongoDB will tell for which version it applies to. 2.4 is not supported because not all of the wire protocol is supported anymore. Since version 2.6 it is possible to do insert, update and delete by using run-command() and therefore those parts of the wire protocol are not needed anymore.
+Because all helper functions are torn out of the modules the support is now increased to 2.6 and above (see below). When using run-command() the documentation of MongoDB will tell for which version it applies to. 2.4 is not supported because not all of the wire protocol is supported anymore. Since version 2.6 it is possible to do insert, update and delete by using run-command() and therefore those parts of the wire protocol are not needed anymore.
 
 ## IMPLEMENTATION TRACK
 
@@ -170,15 +166,17 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 This is done now and it has a tremendous effect on parsing time. When someone needs a particular action often, the user can make a method for him/her-self on a higher level then in this driver.
 
-* The use of hashes to send and receive mongodb documents is wrong. It is wrong because the key-value pairs in the hash are getting a different order then is entered in the hash. Mongodb needs the command at the front of the document for example. Another place that order matters are sub document queries. A subdocument is matched as encoded documents.  So if the server has ```{ a: {b:1, c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since Perl 6 randomizes key order you never know what the order is.
+* The use of hashes to send and receive mongodb documents is wrong. It is wrong because the key-value pairs in the hash often get a different order then is entered in the hash. Also mongodb needs the command pair at the front of the document. Another place where order matters are sub document queries. A sub document is matched as encoded documents.  So if the server has ```{ a: {b:1, c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since Perl 6 hashes randomizes its key order you never know what the order is.
 
 * Experiments are done using List of Pair to keep the order the same as entered. In the mean time thoughts about how to implement parallel encoding to and decoding from BSON byte strings have been past my mind. These thoughts are crystalized into a Document class in the BSON package which a) keeps the order, 2) have the same capabilities as Hashes, 3) can do encoding and decoding in parallel.
 
-This BSON::Document is now available in the BSON package and many inserting actions can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a BSON::Document. This will be converted internally into this type.
+This BSON::Document is now available in the BSON package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a BSON::Document. This will be converted internally into this type.
 
 * In the future, host/port arguments to Client must be replaced by using a URI in the format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```. See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/).
 
 This is done now. The Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The supported options are; *replicaSet*.
+
+I could not use the URI module because of small differences in how the mongodb url is defined.
 
 * Authentication of users. Users can be administered in the database but authentication needs some encryption techniques which are not implemented yet. Might be me to write those using the modules from the perl5 driver which have been offered to use by David Golden.
 
@@ -191,23 +189,23 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
 
   ### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
 
-Tested|Test Filename|Test Purpose
--|-
-x|110-Client|Unknown server, fails DNS lookup
-x||Down server, no connection
-x||Standalone server, not in replicaset
-x||Two standalone servers, one gets rejected
-x|111-client|Standalone server brought down and revived, Client object must follow
-x||Shutdown server and restart while inserting records
-x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.
-x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.
-x||Replicaset pre-init initialization to master server and update master info
-x|612-repl-start|Convert pre init replica server to master
-x|611-client|Replicaserver rejected when there is no replica option in uri
-x||Standalone server rejected when used in mix with replica option defined
-x|612-repl-start|Add servers to replicaset
-x|613-Client|Replicaset server master in uri, must search for secondaries and add them
-x||Replicaset server secondary or arbiter, must get master server and then search for secondary servers
+|Tested|Test Filename|Test Purpose|
+|-|-|-|
+|x|110-Client|Unknown server, fails DNS lookup|
+|x||Down server, no connection|
+|x||Standalone server, not in replicaset|
+|x||Two standalone servers, one gets rejected|
+|x|111-client|Standalone server brought down and revived, Client object must follow|
+|x||Shutdown server and restart while inserting records|
+|x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.|
+|x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.|
+|x||Replicaset pre-init initialization to master server and update master info|
+|x|612-repl-start|Convert pre init replica server to master|
+|x|611-client|Replicaserver rejected when there is no replica option in uri|
+|x||Standalone server rejected when used in mix with replica option defined|
+|x|612-repl-start|Add servers to replicaset|
+|x|613-Client|Replicaset server master in uri, must search for secondaries and add them|
+|x||Replicaset server secondary or arbiter, must get master server and then search for secondary servers|
 
 ## API CHANGES
 
@@ -277,8 +275,9 @@ $ panda install MongoDB
 
 This project is tested with Rakudo built on MoarVM implementing Perl v6.c.
 
-MongoDB versions are supported from 2.6 and up. Versions lower that this are not supported because of not completely implementing the wire protocol.
+MongoDB versions are supported from 2.6 and up. Versions lower than this are not supported because of not completely implementing the wire protocol.
 
+At this moment rakudobrew has too many differences with the perl6 directly from github. It is therefore important to know that this version is tested against the newest github version. Also it is the intention to support above mentioned mongo versions, it is only tested against 3.0.5.
 
 ## BUGS, KNOWN LIMITATIONS AND TODO
 
@@ -316,8 +315,10 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.30.3
+  * bugfix race conditions in Client module
 * 0.30.2
-  * Try different perl6 installment on Travis-ci
+  * Try different perl6 installment on Travis-ci. From now on the tests on travis are done with the newest perl6 version from git instead of using rakudobrew. There were always too many differences with the implementation at home. I expect that these perl6 differences will eventually disappear.
 * 0.30.1
   * Monitor loop-time control via Client and Server interface to quicken the tests
 * 0.30.0

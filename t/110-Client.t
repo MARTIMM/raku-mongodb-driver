@@ -24,11 +24,11 @@ subtest {
 
   my Str $server-name = 'non-existent-server.with-unknown.domain:65535';
   $client .= new(:uri("mongodb://$server-name"));
-  is $client.^name, 'MongoDB::Client', "Client isa {$client.^name}";
+  isa-ok $client, MongoDB::Client;
 
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
-  is $client.nbr-servers, 1, 'One server found';
+  is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status($server-name ), MongoDB::C-NON-EXISTENT-SERVER,
      "Status of server is non existent";
 
@@ -40,7 +40,7 @@ subtest {
   $client .= new(:uri("mongodb://localhost:65535"));
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
-  is $client.nbr-servers, 1, 'One server found';
+  is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status('localhost:65535'), MongoDB::C-DOWN-SERVER,
      "Status of server is down";
 

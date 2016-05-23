@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-set -ev
+set -e
 
 P6="${TRAVIS_BUILD_DIR}/Travis-ci/P6Software/rakudo/install"
 PATH="${P6}/bin:${P6}/share/perl6/site/bin:/usr/bin:/bin"
@@ -9,6 +9,25 @@ PERL6LIB="lib"
 export PATH
 export PERL6LIB
 
+#CMD='prove --exec=perl6'
+
+#testcount=0
+#for entry in `find . -name '*.t' | grep '^./t'`
+#do
+#  test[$testcount]=$entry
+#  testcount=`expr $testcount + 1`
+#done
+
 prove --exec=perl6 t/0*
-prove --verbose --recurse --exec=perl6 t/[1-6]*
+echo
+prove --verbose --exec=perl6 t/1*
+echo
+prove --exec=perl6 t/[23]*
+echo
+prove --verbose --exec=perl6 t/4*
+echo
+prove --exec=perl6 t/[5]*
+echo
+prove --verbose --exec=perl6 t/6*
+echo
 prove --exec=perl6 t/9*

@@ -96,6 +96,13 @@ say 'new client 1';
           $!processing-todo-list = True;
           $!todo-servers-semaphore.release;
 
+          # This reading of the todo list might start too quick, reading before
+          # anything is pushed onto the list by the main thread. Then
+          # $!processing-todo-list togles to False which then produces failures
+          # later when select-server or nbr-servers is called.
+          #
+          sleep 1;
+
           # Start processing when something is found in todo hash
           $!todo-servers-semaphore.acquire;
           my Str $server-name = $!todo-servers.shift if $!todo-servers.elems;
@@ -139,7 +146,7 @@ say "a0: $server-name: $!processing-todo-list";
             $!processing-todo-list = False;
             $!todo-servers-semaphore.release;
 
-            # When no work take a nap!
+            # When there is no work take a nap!
             sleep 5;
           }
         }
