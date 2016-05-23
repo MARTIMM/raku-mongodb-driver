@@ -9,7 +9,7 @@ PERL6LIB="lib"
 export PATH
 export PERL6LIB
 
-if [ 1 ]
+if [ 1 == 1 ]
 then
 #  testcount=0
   for entry in `find . -name '*.t' | grep '^./t'`
@@ -17,23 +17,6 @@ then
 #    test[$testcount]=$entry
 #    testcount=`expr $testcount + 1`
     prove --exec=perl6 --verbose $entry
-  echo
+    echo
   done
-fi
-
-if [ 0 ]
-then
-  prove --exec=perl6 t/0*
-  echo
-  prove --verbose --exec=perl6 t/1*
-  echo
-  prove --exec=perl6 t/[23]*
-  echo
-  prove --verbose --exec=perl6 t/4*
-  echo
-  prove --exec=perl6 t/[5]*
-  echo
-  prove --verbose --exec=perl6 t/6*
-  echo
-  prove --exec=perl6 t/9*
 fi
