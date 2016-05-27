@@ -60,8 +60,9 @@ say 'new client 1';
     $!servers = {};
     $!servers-semaphore .= new(1);
 
+    # Start as if we must process servers so the Boolean is set to True
     $!todo-servers = [];
-    $!processing-todo-list = False;
+    $!processing-todo-list = True;
     $!todo-servers-semaphore .= new(1);
 
     $!master-servername = Nil;
@@ -98,11 +99,6 @@ say 'new client 1';
     $!Background-discovery = Promise.start( {
 
         loop {
-          # Make a note. Doing this test above will turn this to False too fast
-          $!todo-servers-semaphore.acquire;
-          $!processing-todo-list = True;
-          $!todo-servers-semaphore.release;
-
           # This reading of the todo list might start too quick, reading before
           # anything is pushed onto the list by the main thread. Then
           # $!processing-todo-list togles to False which then produces failures
@@ -116,11 +112,6 @@ say 'new client 1';
           $!todo-servers-semaphore.release;
 
           if $server-name.defined {
-
-            # Make a note. Doing this test above will turn this to False too fast
-#            $!todo-servers-semaphore.acquire;
-#            $!processing-todo-list = True;
-#            $!todo-servers-semaphore.release;
 
             trace-message("Processing server $server-name");
 
@@ -149,12 +140,17 @@ say 'new client 1';
 
           else {
 
+            # When there is no work take a nap!
+            # This sleeping period is the moment we do not process the todo list
             $!todo-servers-semaphore.acquire;
             $!processing-todo-list = False;
             $!todo-servers-semaphore.release;
 
-            # When there is no work take a nap!
             sleep 5;
+
+            $!todo-servers-semaphore.acquire;
+            $!processing-todo-list = True;
+            $!todo-servers-semaphore.release;
           }
         }
       }
@@ -334,9 +330,11 @@ say 'new client 1';
         $!servers-semaphore.release;
 
         # Make a note if more servers are to be processed
-        $!todo-servers-semaphore.acquire;
-        $!processing-todo-list = $found-new-servers;
-        $!todo-servers-semaphore.release;
+# Not necessary to do that here because the list is processed before setting
+# the boolean
+#        $!todo-servers-semaphore.acquire;
+#        $!processing-todo-list = $found-new-servers;
+#        $!todo-servers-semaphore.release;
 #say "H6f: Processing after $server.name(): $!processing-todo-list";
 #say "\nWait for next from monitor";
 #say ' ';
