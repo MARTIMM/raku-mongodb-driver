@@ -66,6 +66,7 @@ subtest {
 subtest {
 
   my MongoDB::Server $server .= new(:server-name("localhost:65535"));
+  sleep 1;
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is unknown";
 
   $server.server-init;
@@ -74,9 +75,11 @@ subtest {
     }
   );
 
-  sleep 3;
+  sleep 2;
   $server.stop-monitor;
 
+  # Race conditions
+  sleep 2;
   is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
 
 }, 'Down server test';
@@ -86,6 +89,7 @@ subtest {
 
   my $p3 = $ts.server-control.get-port-number('s3');
   my MongoDB::Server $server .= new(:server-name("localhost:$p3"));
+  sleep 1;
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
   $server.server-init;
@@ -100,6 +104,7 @@ subtest {
   sleep 2;
   $server.stop-monitor;
 
+  sleep 2;
   is $server.get-status, MongoDB::C-MASTER-SERVER,
      "Status is standalone master";
 
