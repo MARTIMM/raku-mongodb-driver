@@ -315,6 +315,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.30.5
+  * Change boolean checking on todo list
 * 0.30.4
   * Setup todo list before starting thread. I should have done that before.
 * 0.30.3

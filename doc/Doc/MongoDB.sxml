@@ -6,11 +6,12 @@ options/doctype/show:           1;
 options/doctype/definition: [
         <!ENTITY library "Library">
         <!ENTITY nbsp " ">
+];
+
 #        <!ENTITY % isoamsa SYSTEM "/home/marcel/Languages/Perl/Lib/Modules/Data2any-Xml/Entities/isoamsa.ent">
 #        %isoamsa\;
 #        <!ENTITY % isopub SYSTEM "/home/marcel/Languages/Perl/Lib/Modules/Data2any-Xml/Entities/isopub.ent">
 #        #%isopub\;
-];
 
 output/filepath:                .;
 
@@ -54,10 +55,18 @@ $article xmlns=http://docbook.org/ns/docbook
     $date [ $!SxmlCore.date [] ]
     $abstract [
       $para [
-        MongoDB is a $*citation[NoSQL] database which uses $*abbrev[BSON] to 
-        store and load information in a database. For Perl 6 there are two
-        driver libraries $*citation[MongoDB] and $*citation[BSON]. BSON is a
-        binary version of the javascript JSON.
+        MongoDB is a $*citation[NoSQL] database which uses $*citation[BSON] to 
+        store and load information in a database. With the mongodb package a
+        shell program called mongo is available to give instructions to a
+        mongodb server.
+      ]
+
+      $para [ To work with data on the server from within a program a driver is
+        needed. There are drivers for many program languages. This document
+        introduces a driver for the Perl6 language. In the perl6 ecosystem,
+        which might grow into a cpan like system later, there are two packages
+        needed to work with the driver. These are $*citation[MongoDB] and
+        BSON.
       ]
 
       $para [
@@ -66,11 +75,12 @@ $article xmlns=http://docbook.org/ns/docbook
       ]
     ]
   ]
-  
+
   $sect1 [
     $title [Introduction]
     $para [
-    ]
+ BSON is a binary version of the javascript JSON.
+     ]
   ]
 
   $sect1 [
