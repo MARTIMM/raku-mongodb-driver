@@ -73,7 +73,7 @@ subtest {
       # Setup collection and database
       my MongoDB::Collection $collection = $client.collection('test.myColl');
       $database = $collection.database;
-      
+
       # Setup document
       my BSON::Document $req .= new: (
         insert => $collection.name,
@@ -92,12 +92,12 @@ subtest {
         sleep 1;
       }
 
-#      CATCH {
-#        default {
-#          .note.WHAT;
-#          .note;
-#        }
-#      }
+      CATCH {
+        default {
+          .note.WHAT;
+          .note;
+        }
+      }
 
       True;
     }

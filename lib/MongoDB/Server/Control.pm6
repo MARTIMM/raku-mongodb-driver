@@ -28,16 +28,17 @@ class Server::Control {
     }
 
     my Bool $started = False;
+    info-message($cmdstr);
     my Proc $proc = shell($cmdstr);
     if $proc.exitcode != 0 {
 
-      fatal-message($cmdstr);
+      fatal-message('Failed to execute command');
     }
 
     else {
 
       $started = True;
-      debug-message($cmdstr);
+      debug-message('Command executed ok');
     }
 
     $started;
@@ -53,15 +54,16 @@ class Server::Control {
     $cmdstr ~= ' --quiet' if $options<quiet>;
 
     my Bool $stopped = False;
+    info-message($cmdstr);
     my Proc $proc = shell($cmdstr);
     if $proc.exitcode != 0 {
 
-      fatal-message($cmdstr);
+      fatal-message('Failed to execute command');
     }
 
     else {
 
-      debug-message($cmdstr);
+      debug-message('Command executed ok');
       $stopped = True;
     }
 

@@ -52,7 +52,7 @@ subtest {
   $client .= new(:uri("mongodb://:$p1"));
   $server = $client.select-server;
 
-  todo 'Seems to finish processing too soon', 2;
+#  todo 'Seems to finish processing too soon', 2;
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master";

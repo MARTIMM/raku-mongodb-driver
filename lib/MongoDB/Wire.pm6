@@ -55,10 +55,14 @@ class Wire {
       $!socket.send($encoded-query);
 
       # Read 4 bytes for int32 response size
-      #
       my Buf $size-bytes = self!get-bytes(4);
 
+      # Convert Buf to Int and substract 4 to get remaining size of data
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+
+      # Assert that number of bytes is still positive
+      fatal-message("Wrong number of bytes to read from socket: $response-size")
+        unless $response-size > 0;
 
       # Receive remaining response bytes from socket. Prefix it with the
       # already read bytes and decode. Return the resulting document.
@@ -68,7 +72,6 @@ class Wire {
       $result = $d.decode-reply($server-reply);
 
       # Assert that the request-id and response-to are the same
-      #
       fatal-message("Id in request is not the same as in the response")
         unless $request-id == $result<message-header><response-to>;
 

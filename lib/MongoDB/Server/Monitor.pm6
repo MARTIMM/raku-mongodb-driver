@@ -86,14 +86,6 @@ class Server::Monitor {
   }
 
   #-----------------------------------------------------------------------------
-#  method emit ( |c ) {
-#
-#say "Start emit: ", c.perl;
-#    callsame;
-#say "Done emit";
-#  }
-
-  #-----------------------------------------------------------------------------
 #  method monitor-looptime ( Int $mlt ) {
 #
 #    $!looptime-semaphore.acquire;

@@ -25,12 +25,15 @@ subtest {
   $monitor.start-monitor;
 
   my Supply $s = $monitor.get-supply;
-  $s.act( -> Hash $mdata {
-      ok $mdata<ok>, 'Monitoring is ok';
-      ok $mdata<weighted-mean-rtt> > 0.0,
-         "Weighted mean is $mdata<weighted-mean-rtt>";
-      ok $mdata<monitor><ok>, 'Ok response from server';
-      ok $mdata<monitor><ismaster>, 'Is master';
+  $s.tap( -> Hash $mdata {
+      # Possible to get empty data
+      if $mdata.defined and $mdata<ok>:exists {
+        ok $mdata<ok>, 'Monitoring is ok';
+        ok $mdata<weighted-mean-rtt> > 0.0,
+           "Weighted mean is $mdata<weighted-mean-rtt>";
+        ok $mdata<monitor><ok>, 'Ok response from server';
+        ok $mdata<monitor><ismaster>, 'Is master';
+      }
     }
   );
 

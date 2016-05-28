@@ -69,7 +69,6 @@ say 'new client 1';
     $!servername-semaphore .= new(1);
 
     # Store read concern
-    #
     $!read-concern =
       $read-concern.defined ?? $read-concern !! BSON::Document.new;
 
@@ -87,13 +86,11 @@ say 'new client 1';
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 
-    # Setup todo list with servers to be processed
-#    $!todo-servers-semaphore.acquire;
+    # Setup todo list with servers to be processed, Safety net not needed yet
+    # because threads are not started.
     for @($uri-obj.server-data<servers>) -> Hash $server-data {
       $!todo-servers.push("$server-data<host>:$server-data<port>");
     }
-#    $!todo-servers-semaphore.release;
-
 
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
@@ -115,9 +112,8 @@ say 'new client 1';
 
             trace-message("Processing server $server-name");
 
-#say "a0: $server-name: $!processing-todo-list";
             $!servers-semaphore.acquire;
-#say "a1: $server-name";
+
             my Bool $server-processed = $!servers{$server-name}:exists;
             $!servers-semaphore.release;
 
@@ -127,11 +123,9 @@ say 'new client 1';
               next;
             }
 
-#say "a2: $server-name";
             my MongoDB::Server $server .= new(
               :$server-name, :$uri-data, :$loop-time
             );
-#say "a3a: $server-name";
 
             # Start server monitoring process its data
             $server.server-init();
@@ -165,179 +159,155 @@ say 'new client 1';
     # Tap into the stream of monitor data
     my Tap $t = $server.tap-monitor( -> Hash $monitor-data {
 
-        my Bool $found-new-servers = False;
-#say "Monitor $server.name(): $monitor-data<ok>" if $monitor-data.defined;
+        if $monitor-data.defined and $monitor-data<ok>:exists {
+          my Bool $found-new-servers = False;
 #say "Monitor $server.name(): ", $monitor-data.perl if $monitor-data.defined;
 
-        $!servers-semaphore.acquire;
-        my Hash $prev-server = $!servers{$server-name}:exists
-                       ?? $!servers{$server-name}
-                       !! Nil;
-        $!servers-semaphore.release;
+          $!servers-semaphore.acquire;
+          my Hash $prev-server = $!servers{$server-name}:exists
+                         ?? $!servers{$server-name}
+                         !! Nil;
+          $!servers-semaphore.release;
 
-        $!servername-semaphore.acquire;
-        my $sname = $!master-servername;
-        $!servername-semaphore.release;
+          $!servername-semaphore.acquire;
+          my $sname = $!master-servername;
+          $!servername-semaphore.release;
 
-        my Hash $h = {
-          server => $server,
-          status => $server.get-status,
-          timestamp => now,
-          server-data => $monitor-data // {}
-        };
+          my Hash $h = {
+            server => $server,
+            status => $server.get-status,
+            timestamp => now,
+            server-data => $monitor-data // {}
+          };
 
-        # Only when data is ok
-        if not $monitor-data.defined {
+          # Only when data is ok
+          if not $monitor-data.defined {
 
-          error-message("No monitor data received");
-        }
-
-        # There are errors while monitoring
-        elsif not $monitor-data<ok> {
-
-          # Not found by DNS so big chance that it doesn't exist
-          if $h<status> ~~ MongoDB::C-NON-EXISTENT-SERVER {
-
-            $server.stop-monitor;
-            error-message("Stopping monitor: $monitor-data<reason>");
+            error-message("No monitor data received");
           }
 
-          # Connection failure
-          elsif $h<status> ~~ MongoDB::C-DOWN-SERVER {
+          # There are errors while monitoring
+          elsif not $monitor-data<ok> {
 
-            # Check if the master server went down
-            if $sname.defined and ($sname eq $server.name) {
+            # Not found by DNS so big chance that it doesn't exist
+            if $h<status> ~~ MongoDB::C-NON-EXISTENT-SERVER {
 
-#say "H1: $h<status>, ", $sname // '-', ', ', $server.name;
-              $!servername-semaphore.acquire;
-              $!master-servername = Nil;
-              $!servername-semaphore.release;
+              $server.stop-monitor;
+              error-message("Stopping monitor: $monitor-data<reason>");
             }
 
-            warn-message("Server is down: $monitor-data<reason>");
+            # Connection failure
+            elsif $h<status> ~~ MongoDB::C-DOWN-SERVER {
+
+              # Check if the master server went down
+              if $sname.defined and ($sname eq $server.name) {
+
+                $!servername-semaphore.acquire;
+                $!master-servername = Nil;
+                $!servername-semaphore.release;
+              }
+
+              warn-message("Server is down: $monitor-data<reason>");
+            }
           }
-        }
 
 
-        # Monitoring data is ok
-        else {
+          # Monitoring data is ok
+          else {
 
 #say 'Master server name: ', $sname // '-';
 #say 'Master prev stat: ', $prev-server<status>:exists 
 #                  ?? $prev-server<status>
 #                  !! '-';
 
-          # Don't ever modify a rejected server
-          if $prev-server<status>:exists
-             and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
+            # Don't ever modify a rejected server
+            if $prev-server<status>:exists
+               and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
 
-#say "H0: $h<status>, ", $sname // '-', ', ', $server.name;
-            $h<status> = MongoDB::C-REJECTED-SERVER;
-          }
+              $h<status> = MongoDB::C-REJECTED-SERVER;
+            }
 
-#`{{
-          # Check if the master server went down
-          elsif $h<status> ~~ MongoDB::C-DOWN-SERVER 
-                and $sname eq $server.name {
+            # Check for double master servers
+            elsif $h<status> ~~ any(
+              MongoDB::C-MASTER-SERVER |
+              MongoDB::C-REPLICASET-PRIMARY
+            ) {
+              # Is defined, be the second and rejected master server
+              if $sname.defined {
+                if $sname ne $server.name {
+                  $h<status> = MongoDB::C-REJECTED-SERVER;
+                  error-message("Server $server.name() rejected, second master");
+                }
+              }
 
-#say "H1: $h<status>, ", $sname // '-', ', ', $server.name;
-            $!servername-semaphore.acquire;
-            $!master-servername = Nil;
-            $!servername-semaphore.release;
-          }
-}}
-
-          # Check for double master servers
-          elsif $h<status> ~~ any(
-            MongoDB::C-MASTER-SERVER |
-            MongoDB::C-REPLICASET-PRIMARY
-          ) {
-#say "H2: $h<status>, ", $sname // '-', ', ', $server.name;
-            # Is defined, be the second and rejected master server
-            if $sname.defined {
-              if $sname ne $server.name {
-                $h<status> = MongoDB::C-REJECTED-SERVER;
-                error-message("Server $server.name() rejected, second master");
+              # Not defined, be the first master server
+              else {
+                $!servername-semaphore.acquire;
+                $!master-servername = $server.name;
+                $!servername-semaphore.release;
               }
             }
 
-            # Not defined, be the first master server
             else {
-#say "H3: $h<status>, ", $sname // '-', ', ', $server.name;
-              $!servername-semaphore.acquire;
-              $!master-servername = $server.name;
-              $!servername-semaphore.release;
-            }
-          }
-
-          else {
 
 #say "H4: $h<status>, ", $sname // '-', ', ', $server.name;
-          }
-
-          # When primary, find all servers and process them
-          if $h<status> ~~ MongoDB::C-REPLICASET-PRIMARY {
-
-#say "H5: $h<server-data>.perl()";
-            my Array $hosts = $h<server-data><monitor><hosts>;
-#say "H6a: $hosts";
-            for @$hosts -> $hostspec {
-              $!servers-semaphore.acquire;
-              my Bool $processed = $!servers{$hostspec}:exists;
-              $!servers-semaphore.release;
-
-#say "H6b: $hostspec, $processed";
-              next if $processed;
-
-              $!todo-servers-semaphore.acquire;
-              $!todo-servers.push($hostspec);
-              $found-new-servers = True;
-              $!todo-servers-semaphore.release;
-            }
-          }
-
-          # When secondary get its primary and process if not yet found
-          elsif $h<status> ~~ MongoDB::C-REPLICASET-SECONDARY {
-
-            # Error when current master is not same as primary
-            my $primary = $h<server-data><monitor><primary>;
-#say "H6c: $primary, ", $sname // '-';
-            if $sname.defined and $sname ne $primary {
-              error-message(
-                "Server $primary found but != current master $sname"
-              );
             }
 
-            # When defined w've already processed it, if not, go for it
-            elsif not $sname.defined {
-#say "H6d: $primary";
-              $!todo-servers-semaphore.acquire;
-              $!todo-servers.push($primary);
-              $found-new-servers = True;
-              $!todo-servers-semaphore.release;
-#say "H6e";
+            # When primary, find all servers and process them
+            if $h<status> ~~ MongoDB::C-REPLICASET-PRIMARY {
+
+              my Array $hosts = $h<server-data><monitor><hosts>;
+              for @$hosts -> $hostspec {
+
+#              # Check if server is processed before
+#              $!servers-semaphore.acquire;
+#              my Bool $processed = $!servers{$hostspec}:exists;
+#              $!servers-semaphore.release;
+#
+#              next if $processed;
+#
+#              # If not push onto todo list
+                $!todo-servers-semaphore.acquire;
+                $!todo-servers.push($hostspec);
+                $found-new-servers = True;
+                $!todo-servers-semaphore.release;
+              }
             }
-          }
+
+            # When secondary get its primary and process if not yet found
+            elsif $h<status> ~~ MongoDB::C-REPLICASET-SECONDARY {
+
+              # Error when current master is not same as primary
+              my $primary = $h<server-data><monitor><primary>;
+              if $sname.defined and $sname ne $primary {
+                error-message(
+                  "Server $primary found but != current master $sname"
+                );
+              }
+
+              # When defined w've already processed it, if not, go for it
+              elsif not $sname.defined {
+
+                $!todo-servers-semaphore.acquire;
+                $!todo-servers.push($primary);
+                $found-new-servers = True;
+                $!todo-servers-semaphore.release;
+              }
+            }
 
 #TODO $!master-servername must be able to change when server roles are changed
 #TODO Define client topology
-        }
+          }
 
-        # Store result
-        $!servers-semaphore.acquire;
-        $!servers{$server.name} = $h;
+          # Store result
+          $!servers-semaphore.acquire;
+          $!servers{$server.name} = $h;
 #say "Saved monitor data for $server.name() = ", $!servers{$server.name}.perl;
-        $!servers-semaphore.release;
+          $!servers-semaphore.release;
 
-        # Make a note if more servers are to be processed
-# Not necessary to do that here because the list is processed before setting
-# the boolean
-#        $!todo-servers-semaphore.acquire;
-#        $!processing-todo-list = $found-new-servers;
-#        $!todo-servers-semaphore.release;
-#say "H6f: Processing after $server.name(): $!processing-todo-list";
-#say "\nWait for next from monitor";
-#say ' ';
+# Not necessary to check todo list and change the boolean here because the list
+# is processed before setting the boolean
+        }
       }
     );
   }
@@ -347,15 +317,7 @@ say 'new client 1';
   method nbr-servers ( --> Int ) {
 
     self!check-discovery-process;
-
-    my Bool $still-processing = True;
-    while $still-processing {
-      $!todo-servers-semaphore.acquire;
-      $still-processing = $!processing-todo-list;
-      $!todo-servers-semaphore.release;
-#say "nbr-servers, still processing: $still-processing";
-      sleep 1;
-    }
+    self!check-todo-process;
 
     $!servers-semaphore.acquire;
     my $nservers = $!servers.elems;
@@ -410,38 +372,22 @@ say 'new client 1';
     self!check-discovery-process;
     self!check-todo-process;
 
-#    my Bool $still-processing = True;
-#    while $still-processing {
-#      $!todo-servers-semaphore.acquire;
-#      $still-processing = $!processing-todo-list;
-#      $!todo-servers-semaphore.release;
-#say "select-server 2, still processing: $still-processing";
-#      sleep 1;
-#    }
-
-#    my Int $test-count = 12;
     my Hash $h;
 
-#    whileLoopLabel: while $test-count-- {
+    $!servers-semaphore.acquire;
+    my @server-names = $!servers.keys;
+    $!servers-semaphore.release;
 
+    for @server-names -> $sname {
       $!servers-semaphore.acquire;
-      my @server-names = $!servers.keys;
+      my Hash $shash = $!servers{$sname};
       $!servers-semaphore.release;
 
-      for @server-names -> $sname {
-        $!servers-semaphore.acquire;
-        my Hash $shash = $!servers{$sname};
-        $!servers-semaphore.release;
-
-        if $shash<status> ~~ $needed-state {
-          $h = $shash;
-          last;
-#          last whileLoopLabel;
-        }
+      if $shash<status> ~~ $needed-state {
+        $h = $shash;
+        last;
       }
-
-#      sleep 1;
-#    }
+    }
 
     if $h.defined and $h<server> {
       info-message("Server $h<server>.name() selected");
@@ -461,34 +407,18 @@ say 'new client 1';
     self!check-discovery-process;
     self!check-todo-process;
 
-#    my Bool $still-processing = True;
-#    while $still-processing {
-#      $!todo-servers-semaphore.acquire;
-#      $still-processing = $!processing-todo-list;
-#      $!todo-servers-semaphore.release;
-#say "select-server 3, still processing: $still-processing";
-#      sleep 1;
-#    }
-
-#    my Int $test-count = 12;
     my Hash $h;
     my Str $msname;
 
-#    while $test-count-- {
+    $!servername-semaphore.acquire;
+    $msname = $!master-servername;
+    $!servername-semaphore.release;
 
-      $!servername-semaphore.acquire;
-      $msname = $!master-servername;
-      $!servername-semaphore.release;
-
-      if $msname.defined {
-        $!servers-semaphore.acquire;
-        $h = $!servers{$msname};
-        $!servers-semaphore.release;
-#        last;
-      }
-#
-#      sleep 1;
-#    }
+    if $msname.defined {
+      $!servers-semaphore.acquire;
+      $h = $!servers{$msname};
+      $!servers-semaphore.release;
+    }
 
     if ?$msname {
       info-message("Master server $msname selected");
@@ -497,7 +427,7 @@ say 'new client 1';
     else {
       error-message('No master server selected');
     }
-#say 'Select server: ', ($h // {}).perl;
+
     $h<server> // MongoDB::Server;
   }
 
