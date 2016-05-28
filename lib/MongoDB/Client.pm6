@@ -369,6 +369,7 @@ say 'new client 1';
   method server-status ( Str:D $server-name --> MongoDB::ServerStatus ) {
 
     self!check-discovery-process;
+    self!check-todo-process;
 
     $!servers-semaphore.acquire;
     my Hash $h = $!servers{$server-name}:exists
@@ -407,15 +408,16 @@ say 'new client 1';
   ) {
 
     self!check-discovery-process;
+    self!check-todo-process;
 
-    my Bool $still-processing = True;
-    while $still-processing {
-      $!todo-servers-semaphore.acquire;
-      $still-processing = $!processing-todo-list;
-      $!todo-servers-semaphore.release;
+#    my Bool $still-processing = True;
+#    while $still-processing {
+#      $!todo-servers-semaphore.acquire;
+#      $still-processing = $!processing-todo-list;
+#      $!todo-servers-semaphore.release;
 #say "select-server 2, still processing: $still-processing";
-      sleep 1;
-    }
+#      sleep 1;
+#    }
 
 #    my Int $test-count = 12;
     my Hash $h;
@@ -457,15 +459,16 @@ say 'new client 1';
   multi method select-server ( --> MongoDB::Server ) {
 
     self!check-discovery-process;
+    self!check-todo-process;
 
-    my Bool $still-processing = True;
-    while $still-processing {
-      $!todo-servers-semaphore.acquire;
-      $still-processing = $!processing-todo-list;
-      $!todo-servers-semaphore.release;
+#    my Bool $still-processing = True;
+#    while $still-processing {
+#      $!todo-servers-semaphore.acquire;
+#      $still-processing = $!processing-todo-list;
+#      $!todo-servers-semaphore.release;
 #say "select-server 3, still processing: $still-processing";
-      sleep 1;
-    }
+#      sleep 1;
+#    }
 
 #    my Int $test-count = 12;
     my Hash $h;
@@ -510,6 +513,20 @@ say 'new client 1';
                          !! ''
         )
       );
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  # Check if thread is working on todo list
+  method !check-todo-process ( ) {
+
+    my Bool $still-processing = True;
+    while $still-processing {
+      $!todo-servers-semaphore.acquire;
+      $still-processing = $!processing-todo-list;
+      $!todo-servers-semaphore.release;
+#say "select-server 2, still processing: $still-processing";
+      sleep 1;
     }
   }
 
