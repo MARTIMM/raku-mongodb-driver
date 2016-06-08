@@ -54,9 +54,13 @@ class Test-support {
         [mongod]
           nojournal = true
           fork = true
-          quiet = true
           smallfiles = true
           oplogSize = 128
+          #ipv6 = true
+          #quiet = true
+          #verbose = '=command=v =nework=v'
+          verbose = 'vv'
+          logappend = true
 
         EOCONFIG
 
