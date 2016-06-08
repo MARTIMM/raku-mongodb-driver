@@ -1,5 +1,7 @@
 use v6.c;
+use MongoDB;
 use Config::TOML;
+#use Config::DataLang::Refine;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -10,12 +12,14 @@ unit package MongoDB;
 class Config {
 
   has Hash $.config;
+#  has Config::DataLang::Refine  $.cfg handles 'config';
   my MongoDB::Config $instance;
 
   #-----------------------------------------------------------------------------
   submethod BUILD ( Str :$file ) {
 
     $!config = from-toml(:$file);
+#    $!cfg .= new(:config-name($file));
   }
 
   #-----------------------------------------------------------------------------

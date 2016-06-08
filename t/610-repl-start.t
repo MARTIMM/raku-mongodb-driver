@@ -34,7 +34,7 @@ subtest {
 
   # Cannot find server now, need replicaSet option
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2"));
-  my MongoDB::Server $server = $client.select-server;
+  my MongoDB::Server $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No master server found';
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
      "Server 2 is rejected";
@@ -51,7 +51,7 @@ subtest {
   my MongoDB::Database $database = $client.database('test');
   my MongoDB::Collection $collection = $database.collection('mycll');
 
-  my MongoDB::Server $server = $client.select-server;
+  my MongoDB::Server $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No master server found';
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICA-PRE-INIT,
      "Server is in replica initialization state";

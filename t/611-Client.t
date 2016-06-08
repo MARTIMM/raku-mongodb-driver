@@ -42,14 +42,14 @@ subtest {
 
   diag "mongodb://:$p2";
   $client .= new(:uri("mongodb://:$p2"));
-  $server = $client.select-server;
+  $server = $client.select-server(:2check-cycles);
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
      "Server localhost:$p2 rejected";
 
   diag "mongodb://:$p1,:$p2/?replicaSet=unknownRS";
   $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=unknownRS"));
-  $server = $client.select-server;
+  $server = $client.select-server(:2check-cycles);
   is $client.nbr-servers, 2, 'Two servers found';
   is $client.server-status('localhost:' ~ $p1), MongoDB::C-REJECTED-SERVER,
      "Server localhost:$p1 rejected";

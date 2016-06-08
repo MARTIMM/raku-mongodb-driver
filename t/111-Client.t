@@ -30,9 +30,9 @@ subtest {
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
-  sleep 2;
+  sleep 10;
 
-  $server = $client.select-server;
+  $server = $client.select-server(:5check-cycles);
   nok $server.defined, 'Server not defined';
   is $client.server-status("localhost:$p1"), MongoDB::C-DOWN-SERVER,
      "Status of server is down";
@@ -83,7 +83,7 @@ subtest {
         ]
       );
 
-      my Int $c = 14;
+      my Int $c = 8;
       while $c-- {
         my BSON::Document $doc = $database.run-command($req);
         my Str $msg = 'no document';

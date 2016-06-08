@@ -1,4 +1,3 @@
-
 use v6.c;
 
 use MongoDB;
@@ -78,6 +77,8 @@ class Server {
       # Tap into monitor data
       self.tap-monitor( -> Hash $monitor-data {
 
+#say "\nIn server, data from Monitor: ", ($monitor-data // {}).perl;
+
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
@@ -86,7 +87,7 @@ class Server {
             # Does the caller want to have a replicaset
             if $!uri-data<options><replicaSet> {
 
-              # Is the server in a replicaset
+              # Server is in a replicaset and initialized
               if $mdata<isreplicaset>:!exists and $mdata<setName> {
 
                 # Is the server in the replicaset matching the callers request
@@ -109,10 +110,7 @@ class Server {
                 }
               }
 
-              # Replicaset must be initialized. When an other name for
-              # replicaset is used the next state should be C-REJECTED-SERVER.
-              # Otherwise it becomes any of MongoDB::C-REPLICASET-*
-              #
+              # Server is in a replicaset but not initialized.
               elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
                 $server-status = MongoDB::C-REPLICA-PRE-INIT
               }
@@ -172,9 +170,19 @@ class Server {
   #-----------------------------------------------------------------------------
   method get-status ( --> MongoDB::ServerStatus ) {
 
-    $!status-semaphore.acquire;
-    my MongoDB::ServerStatus $server-status = $!server-status;
-    $!status-semaphore.release;
+    my int $count = 0;
+    my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
+
+    # Wait until changed, After 4 sec it must be known or stays unknown forever
+    while $count < 4 and $server-status ~~ MongoDB::C-UNKNOWN-SERVER {
+      $!status-semaphore.acquire;
+      $server-status = $!server-status;
+      $!status-semaphore.release;
+
+      sleep 1;
+      $count++;
+    }
+
     $server-status;
   }
 

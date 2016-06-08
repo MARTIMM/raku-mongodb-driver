@@ -26,7 +26,7 @@ subtest {
   $client .= new(:uri("mongodb://$server-name"));
   isa-ok $client, MongoDB::Client;
 
-  $server = $client.select-server;
+  $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
   is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status($server-name ), MongoDB::C-NON-EXISTENT-SERVER,
@@ -38,7 +38,7 @@ subtest {
 subtest {
 
   $client .= new(:uri("mongodb://localhost:65535"));
-  $server = $client.select-server;
+  $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
   is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status('localhost:65535'), MongoDB::C-DOWN-SERVER,
@@ -75,7 +75,11 @@ subtest {
   $server = $client.select-server;
   is $server.get-status, MongoDB::C-MASTER-SERVER,
      "Server $server.name() is master";
+say $client.server-status("localhost:$p1"),
+    ', ', $client.server-status("localhost:$p2");
 
+#  sleep 2;
+  # If server has port from $p1 than the other must be rejected
   if $server.name ~~ m/$p1/ {
     is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
        "Server localhost:$p2 is rejected";

@@ -1,4 +1,3 @@
-
 use v6.c;
 
 use MongoDB;
@@ -39,8 +38,7 @@ class Server::Monitor {
   has Bool $!monitor-loop;
   has Semaphore $!loop-semaphore;
   has Int $!monitor-looptime;
-
-  has Semaphore $!looptime-semaphore;
+#  has Semaphore $!looptime-semaphore;
   has Supplier $!monitor-data-supplier;
 
   has BSON::Document $!monitor-command;
@@ -59,7 +57,7 @@ class Server::Monitor {
     $!server-monitor-control .= new(1);
     $!loop-semaphore .= new(1);
     $!monitor-looptime = $loop-time;
-    $!looptime-semaphore .= new(1);
+#    $!looptime-semaphore .= new(1);
     $!monitor-data-supplier .= new;
 
     $!monitor-command .= new: (isMaster => 1);
@@ -164,16 +162,13 @@ class Server::Monitor {
             }
 
             # Rest for a while
-#            sleep($!monitor-looptime);
+#            $!looptime-semaphore.acquire;
+            my Int $sleeptime = $!monitor-looptime;
+#            $!looptime-semaphore.release;
+            $sleeptime = $looptime-trottle++
+              if $looptime-trottle < $sleeptime;
 
-                # Rest for a while$looptime
-                $!looptime-semaphore.acquire;
-                my Int $sleeptime = $!monitor-looptime;
-                $!looptime-semaphore.release;
-                $sleeptime = $looptime-trottle++
-                  if $looptime-trottle < $sleeptime;
-
-                sleep($sleeptime);
+            sleep($sleeptime);
 
             # Capture errors. When there are any, On older servers before
             # version 3.2 the server just stops communicating when a shutdown
@@ -205,9 +200,11 @@ class Server::Monitor {
                 );
 
                 # Rest for a while$looptime
-                $!looptime-semaphore.acquire;
+#                $!looptime-semaphore.acquire;
                 my Int $sleeptime = $!monitor-looptime;
-                $!looptime-semaphore.release;
+#                $!looptime-semaphore.release;
+                
+                
                 $sleeptime = $looptime-trottle++
                   if $looptime-trottle < $sleeptime;
 

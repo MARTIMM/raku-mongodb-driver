@@ -20,7 +20,7 @@ my MongoDB::Test-support $ts .= new;
 subtest {
 
   my Hash $config = MongoDB::Config.instance.config;
-  my Str $host = 'localhost';
+#  my Str $host = 'localhost';
 
   my Int $p1 = $ts.server-control.get-port-number('s1');
   my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
@@ -35,7 +35,6 @@ subtest {
   $s-s1 = $c-s1.select-server(:needed-state(MongoDB::C-REPLICASET-SECONDARY));
   ok $s-s1.defined, 'Secondary server found';
   is $s-s1.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 1 is secondary';
-
 
 
   my Int $p2 = $ts.server-control.get-port-number('s2');

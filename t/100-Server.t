@@ -69,7 +69,6 @@ subtest {
 subtest {
 
   my MongoDB::Server $server .= new(:server-name("localhost:65535"));
-  sleep 1;
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is unknown";
 
   $server.server-init;
@@ -92,7 +91,6 @@ subtest {
 
   my $p3 = $ts.server-control.get-port-number('s3');
   my MongoDB::Server $server .= new(:server-name("localhost:$p3"));
-  sleep 1;
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
   $server.server-init;

@@ -1,4 +1,3 @@
-
 use v6.c;
 
 use BSON::Document;
@@ -158,8 +157,8 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-say .WHAT;
-say "Error wire get-more: ", .message;
+#say .WHAT;
+#say "Error wire get-more: ", .message;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -229,8 +228,8 @@ say "Error wire get-more: ", .message;
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-say .WHAT;
-say "Error wire kill-cursors: ", .message;
+#say .WHAT;
+#say "Error wire kill-cursors: ", .message;
 
         # Fatal messages from the program
         when MongoDB::Message {
