@@ -142,7 +142,7 @@ subtest {
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
-  is $client.nbr-servers, 1, 'One server found';
+#  is $client.nbr-servers, 1, 'One server found';
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICASET-PRIMARY,
      "Server is replica server primary";
 

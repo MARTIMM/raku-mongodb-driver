@@ -28,7 +28,7 @@ subtest {
 
   $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
-  is $client.nbr-servers, 1, 'One server object set';
+#  is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status($server-name ), MongoDB::C-NON-EXISTENT-SERVER,
      "Status of server is non existent";
 
@@ -40,7 +40,7 @@ subtest {
   $client .= new(:uri("mongodb://localhost:65535"));
   $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
-  is $client.nbr-servers, 1, 'One server object set';
+#  is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status('localhost:65535'), MongoDB::C-DOWN-SERVER,
      "Status of server is down";
 
@@ -53,20 +53,11 @@ subtest {
   $server = $client.select-server;
 
 #  todo 'Seems to finish processing too soon', 2;
-  is $client.nbr-servers, 1, 'One server found';
+#  is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master";
 
 }, "Standalone server";
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  $client .= new(:uri("mongodb://localhost:$p1,localhost:$p1"));
-  $server = $client.select-server;
-  is $client.nbr-servers, 1, 'One server accepted, two were equal';
-
-}, "Two equal servers";
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -90,9 +81,9 @@ say $client.server-status("localhost:$p1"),
        "Server localhost:$p1 is rejected";
   }
 
-  is $client.nbr-servers, 2, 'Two servers found';
+#  is $client.nbr-servers, 2, 'Two servers found';
 
-}, "Two standalone servers";
+}, "Two equal standalone servers";
 
 #-------------------------------------------------------------------------------
 # Cleanup

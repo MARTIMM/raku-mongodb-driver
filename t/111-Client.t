@@ -24,7 +24,7 @@ subtest {
   my MongoDB::Client $client .= new( :uri("mongodb://:$p1"), :loop-time(1));
   my MongoDB::Server $server = $client.select-server;
 
-  is $client.nbr-servers, 1, 'One server found';
+#  is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master";
 
@@ -55,7 +55,7 @@ subtest {
   my Int $p3 = $ts.server-control.get-port-number('s3');
   my MongoDB::Client $client .= new( :uri("mongodb://:$p3"), :loop-time(3));
   my MongoDB::Server $server = $client.select-server;
-  is $client.nbr-servers, 1, 'One server found';
+#  is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p3"), MongoDB::C-MASTER-SERVER,
      "Server is master";
 

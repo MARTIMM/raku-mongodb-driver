@@ -23,7 +23,7 @@ class Client {
   has Semaphore $!servers-semaphore;
 
   has Array $!todo-servers;
-  has Bool $!processing-todo-list;
+#  has Bool $!processing-todo-list;
   has Semaphore $!todo-servers-semaphore;
 
   has Str $!master-servername;
@@ -62,7 +62,7 @@ say 'new client 1';
 
     # Start as if we must process servers so the Boolean is set to True
     $!todo-servers = [];
-    $!processing-todo-list = True;
+#    $!processing-todo-list = True;
     $!todo-servers-semaphore .= new(1);
 
     $!master-servername = Nil;
@@ -138,15 +138,15 @@ say 'new client 1';
 
             # When there is no work take a nap!
             # This sleeping period is the moment we do not process the todo list
-            $!todo-servers-semaphore.acquire;
-            $!processing-todo-list = False;
-            $!todo-servers-semaphore.release;
+#            $!todo-servers-semaphore.acquire;
+#            $!processing-todo-list = False;
+#            $!todo-servers-semaphore.release;
 
             sleep 1;
 
-            $!todo-servers-semaphore.acquire;
-            $!processing-todo-list = True;
-            $!todo-servers-semaphore.release;
+#            $!todo-servers-semaphore.acquire;
+#            $!processing-todo-list = True;
+#            $!todo-servers-semaphore.release;
           }
         }
       }
@@ -197,7 +197,7 @@ say 'new client 1';
             timestamp => now,
             server-data => $monitor-data
           };
-say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
+#say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
 #          $!servers-semaphore.release;
 
           # Only when data is ok
@@ -359,7 +359,7 @@ say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
   method nbr-servers ( --> Int ) {
 
     self!check-discovery-process;
-    self!check-todo-process;
+#    self!check-todo-process;
 
     $!servers-semaphore.acquire;
     my $nservers = $!servers.elems;
@@ -373,7 +373,7 @@ say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
   method server-status ( Str:D $server-name --> MongoDB::ServerStatus ) {
 
     self!check-discovery-process;
-    self!check-todo-process;
+#    self!check-todo-process;
 
     $!servers-semaphore.acquire;
     my Hash $h = $!servers{$server-name}:exists
@@ -408,28 +408,38 @@ say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
   #-----------------------------------------------------------------------------
   # State of server selection
   multi method select-server (
-    MongoDB::ServerStatus:D :$needed-state!
+    MongoDB::ServerStatus:D :$needed-state!,
+    Int :$check-cycles is copy = -1
     --> MongoDB::Server
   ) {
 
     self!check-discovery-process;
-    self!check-todo-process;
+#    self!check-todo-process;
 
     my Hash $h;
 
-    $!servers-semaphore.acquire;
-    my @server-names = $!servers.keys;
-    $!servers-semaphore.release;
+    WHILELOOP:
+    while $check-cycles != 0 {
 
-    for @server-names -> $msname {
+      # Take this into the loop because array can still change, might even
+      # be empty when hastely called right after new()
       $!servers-semaphore.acquire;
-      my Hash $shash = $!servers{$msname};
+      my @server-names = $!servers.keys;
       $!servers-semaphore.release;
 
-      if $shash<status> ~~ $needed-state {
-        $h = $shash;
-        last;
+      for @server-names -> $msname {
+        $!servers-semaphore.acquire;
+        my Hash $shash = $!servers{$msname};
+        $!servers-semaphore.release;
+
+        if $shash<status> == $needed-state {
+          $h = $shash;
+          last WHILELOOP;
+        }
       }
+
+      $check-cycles--;
+      sleep 1;
     }
 
     if $h.defined and $h<server> {
@@ -498,22 +508,22 @@ say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
 
   #-----------------------------------------------------------------------------
   # Check if thread is working on todo list
-  method !check-todo-process ( ) {
-
-    my Bool $still-processing = True;
-    while $still-processing {
-
-      # Wait a little if a replicaset is to be handled it takes several cycles
-      # to find all servers
+#  method !check-todo-process ( ) {
+#
+#    my Bool $still-processing = True;
+#    while $still-processing {
+#
+#      # Wait a little if a replicaset is to be handled it takes several cycles
+#      # to find all servers
 #      sleep 2 if $!uri-data<options><replicaSet>:exists;
-
-      $!todo-servers-semaphore.acquire;
-      $still-processing = $!processing-todo-list;
-      $!todo-servers-semaphore.release;
-
-      sleep 1 if $still-processing;
-    }
-  }
+#
+#      $!todo-servers-semaphore.acquire;
+#      $still-processing = $!processing-todo-list;
+#      $!todo-servers-semaphore.release;
+#
+#      sleep 1 if $still-processing;
+#    }
+#  }
 
   #-----------------------------------------------------------------------------
   method database (
