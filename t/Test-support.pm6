@@ -18,7 +18,7 @@ class Test-support {
   has MongoDB::Server::Control $.server-control;
 
   submethod BUILD ( ) {
-  
+
     # Init here because of need in BUILD later
     $!nbr-of-servers = 3;
     $!server-range = (^$!nbr-of-servers + 1);

@@ -203,8 +203,8 @@ class Server::Monitor {
 #                $!looptime-semaphore.acquire;
                 my Int $sleeptime = $!monitor-looptime;
 #                $!looptime-semaphore.release;
-                
-                
+
+
                 $sleeptime = $looptime-trottle++
                   if $looptime-trottle < $sleeptime;
 

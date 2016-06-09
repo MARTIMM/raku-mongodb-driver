@@ -464,6 +464,7 @@ say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
       $msname = $!master-servername;
       $!master-servername-semaphore.release;
 
+#note "select-server, {$msname//'-'}";
       if $msname.defined {
         $!servers-semaphore.acquire;
         $h = $!servers{$msname};

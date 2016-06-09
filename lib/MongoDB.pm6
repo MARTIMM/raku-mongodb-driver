@@ -93,7 +93,7 @@ package MongoDB {
 
   # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
   subset PortType of Int where 0 < $_ <= 65535;
-  
+
   subset SocketLimit of Int where $_ >= 3;
 
   # Helper constraints when module cannot be loaded(use)

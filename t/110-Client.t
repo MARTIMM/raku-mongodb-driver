@@ -56,7 +56,7 @@ subtest {
   is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master";
-  
+
 }, "Standalone server";
 
 #-------------------------------------------------------------------------------

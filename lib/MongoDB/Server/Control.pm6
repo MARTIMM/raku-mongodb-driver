@@ -187,7 +187,7 @@ class Server::Control {
     # Hopefully it can be found in any other path
     #
     if not $mongodb-server-path.defined and %*ENV<PATH> {
-      
+
       for %*ENV<PATH>.split(':') -> $path {
         if "$path/$binary".IO ~~ :x {
           $mongodb-server-path = "$path/$binary";
