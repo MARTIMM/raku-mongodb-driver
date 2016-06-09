@@ -455,11 +455,12 @@ say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
 
     my Hash $h;
     my Str $msname;
-    my Bool $found-master-server = False;
+#    my Bool $found-master-server = False;
 
     # When $check-cycles in not set it will be -1, therefore $check-cycles
     # will not reach 0 and loop becomes infinite.
-    while not $found-master-server and $check-cycles != 0 {
+#    while not $found-master-server and $check-cycles != 0 {
+    while $check-cycles != 0 {
       $!master-servername-semaphore.acquire;
       $msname = $!master-servername;
       $!master-servername-semaphore.release;
@@ -469,9 +470,10 @@ say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
         $!servers-semaphore.acquire;
         $h = $!servers{$msname};
         $!servers-semaphore.release;
+#        $found-master-server = ?$msname;
+        last;
       }
 
-      $found-master-server = ?$msname;
       $check-cycles--;
       sleep 1;
     }
