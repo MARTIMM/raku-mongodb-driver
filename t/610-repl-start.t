@@ -32,12 +32,13 @@ subtest {
   ok $ts.server-control.start-mongod( 's2', 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
-  # Cannot find server now, need replicaSet option
+  # Should not find a server, need replicaSet option
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2"));
-  my MongoDB::Server $server = $client.select-server(:2check-cycles);
-  nok $server.defined, 'No master server found';
-  is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
-     "Server 2 is rejected";
+  my MongoDB::Server $server = $client.select-server(
+    :needed-state(MongoDB::C-REJECTED-SERVER)
+  );
+#  nok $server.defined, 'No master server found';
+  is $server.get-status, MongoDB::C-REJECTED-SERVER, "Server 2 is rejected";
 
 }, "Replica server pre-init rejected";
 

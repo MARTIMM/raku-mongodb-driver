@@ -24,22 +24,16 @@ subtest {
   my MongoDB::Client $client .= new( :uri("mongodb://:$p1"), :loop-time(1));
   my MongoDB::Server $server = $client.select-server;
 
-#  is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master";
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
-  sleep 10;
-
-  $server = $client.select-server(:5check-cycles);
-  nok $server.defined, 'Server not defined';
-  is $client.server-status("localhost:$p1"), MongoDB::C-DOWN-SERVER,
-     "Status of server is down";
+  $server = $client.select-server(:needed-state(MongoDB::C-DOWN-SERVER));
+  is $server.get-status, MongoDB::C-DOWN-SERVER, "Status of server is down";
 
   # Bring server up again to see ift Client recovers...
   ok $ts.server-control.start-mongod("s1"), "Server 1 started";
-  sleep 2;
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
@@ -55,7 +49,6 @@ subtest {
   my Int $p3 = $ts.server-control.get-port-number('s3');
   my MongoDB::Client $client .= new( :uri("mongodb://:$p3"), :loop-time(3));
   my MongoDB::Server $server = $client.select-server;
-#  is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p3"), MongoDB::C-MASTER-SERVER,
      "Server is master";
 
@@ -64,8 +57,7 @@ subtest {
   my $doc = $database.run-command: (dropDatabase => 1,);
   ok $doc<ok>, "Database test dropped";
 
-
-  # Write untill it goes wrong
+  # Write untill it goes wrong because we'll shutdown the server
   my Promise $p .= start( {
 
       info-message('save several records');
@@ -109,24 +101,16 @@ subtest {
   # Bring server down to see what Client does...
   info-message('shutdown server');
   ok $ts.server-control.stop-mongod('s3'), "Server 3 is stopped";
-  sleep 5;
 
-  is $client.server-status("localhost:$p3"), MongoDB::C-DOWN-SERVER,
-     "Server is down";
+  $server = $client.select-server(:needed-state(MongoDB::C-DOWN-SERVER));
+  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');
   ok $ts.server-control.start-mongod("s3"), "Server 1 started";
-  sleep 2;
 
-  # Wait for concurrent writer
-  info-message('wait for writer');
-  is $p.status, PromiseStatus::Planned, 'Writer still busy';
+  # Wait for inserts to finish
   $p.result;
-
-#  info-message('insert same records again');
-#  $doc = $database.run-command($req);
-#  nok $doc.defined, 'Document not defined caused by server shutdown';
 
 }, "Shutdown/restart server 3 while inserting records";
 

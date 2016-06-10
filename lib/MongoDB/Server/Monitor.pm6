@@ -139,7 +139,7 @@ class Server::Monitor {
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
 
-#say "\nMonitor info: ", $doc.perl;
+#say "\nMonitor info $!server.name(): ", $doc.perl;
 
               debug-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
@@ -165,9 +165,8 @@ class Server::Monitor {
 #            $!looptime-semaphore.acquire;
             my Int $sleeptime = $!monitor-looptime;
 #            $!looptime-semaphore.release;
-            $sleeptime = $looptime-trottle++
-              if $looptime-trottle < $sleeptime;
-
+            $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
+say "Sleep $!server.name(): $!monitor-looptime, $looptime-trottle, $sleeptime";
             sleep($sleeptime);
 
             # Capture errors. When there are any, On older servers before
@@ -177,7 +176,7 @@ class Server::Monitor {
             #
             CATCH {
 #say .WHAT;
-#say "Error monitor: ", $_;
+#say "Error monitor $!server.name(): ", $_;
               when .message ~~ m:s/Failed to resolve host name/ ||
                    .message ~~ m:s/Failed to connect\: connection refused/ {
 
