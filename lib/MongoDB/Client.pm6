@@ -7,6 +7,7 @@ use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Wire;
 use BSON::Document;
+use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -20,14 +21,16 @@ class Client {
   # the server address/ip and its port number. This should be unique.
   #
   has Hash $!servers;
-  has Semaphore $!servers-semaphore;
+#  has Semaphore $!servers-semaphore;
 
   has Array $!todo-servers;
 #  has Bool $!processing-todo-list;
-  has Semaphore $!todo-servers-semaphore;
+#  has Semaphore $!todo-servers-semaphore;
 
   has Str $!master-servername;
-  has Semaphore $!master-servername-semaphore;
+#  has Semaphore $!master-servername-semaphore;
+
+  has Semaphore::ReadersWriters $!rw-sem;
 
   has Str $!uri;
   has Hash $!uri-data;
@@ -58,15 +61,21 @@ say 'new client 1';
     $!topology-type = MongoDB::C-UNKNOWN-TPLGY;
 
     $!servers = {};
-    $!servers-semaphore .= new(1);
+#    $!servers-semaphore .= new(1);
 
     # Start as if we must process servers so the Boolean is set to True
     $!todo-servers = [];
 #    $!processing-todo-list = True;
-    $!todo-servers-semaphore .= new(1);
+#    $!todo-servers-semaphore .= new(1);
 
     $!master-servername = Nil;
-    $!master-servername-semaphore .= new(1);
+#    $!master-servername-semaphore .= new(1);
+
+    $!rw-sem .= new;
+    $!rw-sem.add-mutex-names(
+      <servers todo master>,
+      :RWPatternType(C-RW-WRITERPRIO)
+    );
 
     # Store read concern
     $!read-concern =
@@ -104,17 +113,29 @@ say 'new client 1';
 #          sleep 1;
 
           # Start processing when something is found in todo hash
-          $!todo-servers-semaphore.acquire;
-          my Str $server-name = $!todo-servers.shift if $!todo-servers.elems;
-          $!todo-servers-semaphore.release;
+#          $!todo-servers-semaphore.acquire;
+          my Str $server-name = $!rw-sem.writer(
+            'todo', {
+              my Str $s;
+              if $!todo-servers.elems {
+                $s = $!todo-servers.shift;
+              }
+              
+              $s;
+            }
+          );
+#          $!todo-servers-semaphore.release;
 
           if $server-name.defined {
 
             trace-message("Processing server $server-name");
 
-            $!servers-semaphore.acquire;
-            my Bool $server-processed = $!servers{$server-name}:exists;
-            $!servers-semaphore.release;
+#            $!servers-semaphore.acquire;
+            my Bool $server-processed = $!rw-sem.reader(
+              'servers',
+              { $!servers{$server-name}:exists; }
+            );
+#            $!servers-semaphore.release;
 
             # Check if server was managed before
             if $server-processed {
@@ -148,6 +169,15 @@ say 'new client 1';
 #            $!processing-todo-list = True;
 #            $!todo-servers-semaphore.release;
           }
+
+          CATCH {
+            default {
+               # Keep this .say in. It helps debugging when an error takes place
+               # The error will not be seen before the result of Promise is read
+               .say;
+              .rethrow;
+            }
+          }
         }
       }
     );
@@ -160,7 +190,7 @@ say 'new client 1';
 
     # Tap into the stream of monitor data
     my Tap $t = $server.tap-monitor( -> Hash $monitor-data {
-#say "\nIn client, data from Monitor: ", ($monitor-data // {}).perl;
+say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
 
 #        if $monitor-data.defined and $monitor-data<ok>:exists {
 #          my Bool $found-new-servers = False;
@@ -168,18 +198,22 @@ say 'new client 1';
 
           # Make the processing of the monitor data atomic
 #note "servers-semaphore.acquire";
-          $!servers-semaphore.acquire;
+#          $!servers-semaphore.acquire;
 
-          my Hash $prev-server = $!servers{$server-name}:exists
-                         ?? $!servers{$server-name}
-                         !! Nil;
+say "$*THREAD.id() get prev server data";
+          my Hash $prev-server = $!rw-sem.reader(
+            'servers', {
+say "$*THREAD.id() Reader code $server-name";
+            $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
+          });
+say "$*THREAD.id() prev server data retrieved";
 #          $!servers-semaphore.release;
 
-          $!master-servername-semaphore.acquire;
-          my $msname = $!master-servername;
-          $!master-servername-semaphore.release;
+#          $!master-servername-semaphore.acquire;
+          my $msname = $!rw-sem.reader( 'master', {$!master-servername;});
+#          $!master-servername-semaphore.release;
 
-#say "MS ($server-name) name: {$msname//'-'}";
+say "$*THREAD.id() MS ($server-name) name: {$msname//'-'}";
 
 #          my Hash $h = {
 #            server => $server,
@@ -191,13 +225,16 @@ say 'new client 1';
           # Store partial result as soon as possible
 #          $!servers-semaphore.acquire;
 #overschreven????
-          $!servers{$server-name} = {
-            server => $server,
-            status => $server.get-status,
-            timestamp => now,
-            server-data => $monitor-data
-          };
-#say "Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
+          $!rw-sem.writer(
+            'servers', {
+            $!servers{$server-name} = {
+              server => $server,
+              status => $server.get-status,
+              timestamp => now,
+              server-data => $monitor-data
+            };
+          });
+say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
 #          $!servers-semaphore.release;
 
           # Only when data is ok
@@ -209,22 +246,25 @@ say 'new client 1';
           # There are errors while monitoring
           elsif not $monitor-data<ok> {
 
+            my MongoDB::ServerStatus $status =
+               $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>});
+
             # Not found by DNS so big chance that it doesn't exist
-            if $!servers{$server-name}<status> ~~ MongoDB::C-NON-EXISTENT-SERVER {
+            if $status ~~ MongoDB::C-NON-EXISTENT-SERVER {
 
               $server.stop-monitor;
               error-message("Stopping monitor: $monitor-data<reason>");
             }
 
             # Connection failure
-            elsif $!servers{$server-name}<status> ~~ MongoDB::C-DOWN-SERVER {
+            elsif $status ~~ MongoDB::C-DOWN-SERVER {
 
               # Check if the master server went down
               if $msname.defined and ($msname eq $server-name) {
 
-                $!master-servername-semaphore.acquire;
-                $!master-servername = Nil;
-                $!master-servername-semaphore.release;
+#                $!master-servername-semaphore.acquire;
+                $!rw-sem.writer( 'master', {$!master-servername = Nil;});
+#                $!master-servername-semaphore.release;
               }
 
               warn-message("Server is down: $monitor-data<reason>");
@@ -235,23 +275,27 @@ say 'new client 1';
           # Monitoring data is ok
           else {
 
-#say 'Master server name: ', $msname // '-';
-#say 'Master prev stat: ', $prev-server<status>:exists 
-#                  ?? $prev-server<status>
-#                  !! '-';
+say "$*THREAD.id() Master server name: ", $msname // '-';
+say "$*THREAD.id() Master prev stat: ", $prev-server<status>:exists 
+                  ?? $prev-server<status>
+                  !! '-';
 
-#say "PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
+say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
             # Don't ever modify a rejected server
             if $prev-server<status>:exists
                and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
 
 #              $!servers-semaphore.acquire;
-              $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
+              $!rw-sem.writer(
+                'servers', {
+                $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
+              });
 #              $!servers-semaphore.release;
             }
 
             # Check for double master servers
-            elsif $!servers{$server-name}<status> ~~ any(
+            elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
+              ~~ any(
               MongoDB::C-MASTER-SERVER |
               MongoDB::C-REPLICASET-PRIMARY
             ) {
@@ -259,7 +303,10 @@ say 'new client 1';
               if $msname.defined {
                 if $msname ne $server-name {
 #                  $!servers-semaphore.acquire;
-                  $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
+                  $!rw-sem.writer(
+                    'servers', {
+                    $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
+                  });
 #                  $!servers-semaphore.release;
                   error-message("Server $server-name rejected, second master");
                 }
@@ -268,9 +315,9 @@ say 'new client 1';
               # Not defined, be the first master server
               else {
 
-                $!master-servername-semaphore.acquire;
-                $!master-servername = $server-name;
-                $!master-servername-semaphore.release;
+#                $!master-servername-semaphore.acquire;
+                $!rw-sem.writer( 'master', {$!master-servername = $server-name;});
+#                $!master-servername-semaphore.release;
               }
             }
 
@@ -280,9 +327,14 @@ say 'new client 1';
             }
 
             # When primary, find all servers and add to todo list
-            if $!servers{$server-name}<status> ~~ MongoDB::C-REPLICASET-PRIMARY {
+            if $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
+               ~~ MongoDB::C-REPLICASET-PRIMARY {
 
-              my Array $hosts = $!servers{$server-name}<server-data><monitor><hosts>;
+              my Array $hosts = $!rw-sem.reader(
+                'servers', {
+                $!servers{$server-name}<server-data><monitor><hosts>;
+              });
+
               for @$hosts -> $hostspec {
 
 #              # Check if server is processed before
@@ -294,19 +346,24 @@ say 'new client 1';
 #
 #              # If not push onto todo list
                 trace-message("Push $hostspec from primary list on todo list");
-                $!todo-servers-semaphore.acquire;
-                $!todo-servers.push($hostspec);
+#                $!todo-servers-semaphore.acquire;
+                $!rw-sem.writer( 'todo', {$!todo-servers.push($hostspec);});
 #                $found-new-servers = True;
-                $!todo-servers-semaphore.release;
+#                $!todo-servers-semaphore.release;
 #say "Add $hostspec, $!todo-servers.elems()";
               }
             }
 
             # When secondary get its primary and add to todo list
-            elsif $!servers{$server-name}<status> ~~ MongoDB::C-REPLICASET-SECONDARY {
+            elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
+                  ~~ MongoDB::C-REPLICASET-SECONDARY {
 
               # Error when current master is not same as primary
-              my $primary = $!servers{$server-name}<server-data><monitor><primary>;
+              my $primary = $!rw-sem.reader(
+                'servers', {
+                $!servers{$server-name}<server-data><monitor><primary>;
+              });
+
               if $msname.defined and $msname ne $primary {
                 error-message(
                   "Server $primary found but != current master $msname"
@@ -317,10 +374,10 @@ say 'new client 1';
               elsif not $msname.defined {
 
                 trace-message("Push primary $primary on todo list");
-                $!todo-servers-semaphore.acquire;
-                $!todo-servers.push($primary);
+#                $!todo-servers-semaphore.acquire;
+                $!rw-sem.writer( 'todo', {$!todo-servers.push($primary);});
 #                $found-new-servers = True;
-                $!todo-servers-semaphore.release;
+#                $!todo-servers-semaphore.release;
 #say "Add primary $primary, $!todo-servers.elems()";
               }
             }
@@ -342,11 +399,12 @@ say 'new client 1';
           # Release semaphore and also force unlocking when an exception
           # was thrown
 #note "servers-semaphore.release";
-          $!servers-semaphore.release;
+#          $!servers-semaphore.release;
           CATCH {
             default {
-#note "servers-semaphore.release in exception";
-              $!servers-semaphore.release;
+               # Keep this .say in. It helps debugging when an error takes place
+               # The error will not be seen before the result of Promise is read
+               .say;
               .rethrow;
             }
           }
@@ -361,11 +419,12 @@ say 'new client 1';
     self!check-discovery-process;
 #    self!check-todo-process;
 
-    $!servers-semaphore.acquire;
-    my $nservers = $!servers.elems;
-    $!servers-semaphore.release;
+#    $!servers-semaphore.acquire;
+#    my $nservers = $!servers.elems;
+#    $!servers-semaphore.release;
 
-    $nservers;
+#    $nservers;
+    $!rw-sem.reader( 'servers', {$!servers.elems;});
   }
 
   #-----------------------------------------------------------------------------
@@ -375,11 +434,12 @@ say 'new client 1';
     self!check-discovery-process;
 #    self!check-todo-process;
 
-    $!servers-semaphore.acquire;
-    my Hash $h = $!servers{$server-name}:exists
-                 ?? $!servers{$server-name}
-                 !! {};
-    $!servers-semaphore.release;
+#    $!servers-semaphore.acquire;
+    my Hash $h = $!rw-sem.reader(
+      'servers', {
+      $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
+    });
+#    $!servers-semaphore.release;
 #say "server-status: $server-name, ", $h.perl;
 
     my MongoDB::ServerStatus $sts = $h<status> // MongoDB::C-UNKNOWN-SERVER;
@@ -423,14 +483,14 @@ say 'new client 1';
 
       # Take this into the loop because array can still change, might even
       # be empty when hastely called right after new()
-      $!servers-semaphore.acquire;
-      my @server-names = $!servers.keys;
-      $!servers-semaphore.release;
+#      $!servers-semaphore.acquire;
+      my @server-names = $!rw-sem.reader( 'servers', {$!servers.keys;});
+#      $!servers-semaphore.release;
 
       for @server-names -> $msname {
-        $!servers-semaphore.acquire;
-        my Hash $shash = $!servers{$msname};
-        $!servers-semaphore.release;
+#        $!servers-semaphore.acquire;
+        my Hash $shash = $!rw-sem.reader( 'servers', {$!servers{$msname};});
+#        $!servers-semaphore.release;
 
         if $shash<status> == $needed-state {
           $h = $shash;
@@ -471,21 +531,22 @@ say 'new client 1';
     # will not reach 0 and loop becomes infinite.
 #    while not $found-master-server and $check-cycles != 0 {
     while $check-cycles != 0 {
-      $!master-servername-semaphore.acquire;
-      $msname = $!master-servername;
-      $!master-servername-semaphore.release;
+#      $!master-servername-semaphore.acquire;
+      $msname = $!rw-sem.reader( 'master', {$!master-servername;});
+#      $!master-servername-semaphore.release;
 
-#note "select-server, {$msname//'-'}";
+say "$*THREAD.id() select-server, {$msname//'-'}";
       if $msname.defined {
-        $!servers-semaphore.acquire;
-        $h = $!servers{$msname};
-        $!servers-semaphore.release;
+#        $!servers-semaphore.acquire;
+        $h = $!rw-sem.reader( 'servers', {$!servers{$msname};});
+#        $!servers-semaphore.release;
 #        $found-master-server = ?$msname;
         last;
       }
 
       $check-cycles--;
-      sleep 1;
+#prompt("type return to continue ...");
+      sleep(1.5);
     }
 
     $h<server> // MongoDB::Server;
@@ -565,20 +626,24 @@ say 'new client 1';
   method DESTROY ( ) {
 
     # Remove all servers concurrently. Shouldn't be many per client.
-    $!servers-semaphore.acquire;
-    for $!servers.values.race(batch => 1) -> Hash $srv-struct {
+#    $!servers-semaphore.acquire;
+    $!rw-sem.writer(
+      'servers', {
+        for $!servers.values.race(batch => 1) -> Hash $srv-struct {
 
-      if $srv-struct<server>.defined {
+          if $srv-struct<server>.defined {
 
-        # Stop monitoring on server
-        #
-        $srv-struct<server>.stop-monitor;
-        debug-message("Undefine server $srv-struct<server>.name()");
-        $srv-struct<server> = Nil;
+            # Stop monitoring on server
+            #
+            $srv-struct<server>.stop-monitor;
+            debug-message("Undefine server $srv-struct<server>.name()");
+            $srv-struct<server> = Nil;
+          }
+        }
       }
-    }
+    );
 
-    $!servers-semaphore.release;
+#    $!servers-semaphore.release;
     debug-message("Client destroyed");
   }
 }

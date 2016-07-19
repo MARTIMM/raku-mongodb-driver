@@ -51,6 +51,15 @@ subtest {
     }
   }
 
+}, 'max nbr sockets tests - default';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $client = $ts.get-connection(:server(3));
+  my MongoDB::Server $server = $client.select-server;
+  ok $server.defined, 'Connection server available';
+
   try {
     $server.set-max-sockets(5);
     is $server.max-sockets, 5, "Maximum socket $server.max-sockets()";
@@ -75,6 +84,15 @@ subtest {
     }
   }
 
+}, 'max nbr sockets tests - 5';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  $client = $ts.get-connection(:server(3));
+  my MongoDB::Server $server = $client.select-server;
+  ok $server.defined, 'Connection server available';
+
   try {
     $server.set-max-sockets(2);
 
@@ -87,11 +105,13 @@ subtest {
     }
   }
 
-}, 'Client, Server, Socket tests';
+}, 'Client, Server, Socket tests - 2';
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
 info-message("Test $?FILE end");
+
 done-testing();
-exit(0);
+
+#exit(0);

@@ -83,7 +83,7 @@ package MongoDB {
       my Str $dt-str = $.date-time.utc.Str;
       $dt-str ~~ s/\.\d+Z$//;
       $dt-str ~~ s/T/ /;
-      my Str $etxt ~= [~] $dt-str,
+      my Str $etxt ~= [~] $*THREAD.id().fmt('%2d '), $dt-str,
                    " [{(uc self.severity).substr(0,1)}] ",
                    self."{lc(self.severity)}"(),
                    "\n";
