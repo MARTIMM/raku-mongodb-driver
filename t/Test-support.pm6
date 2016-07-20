@@ -117,9 +117,7 @@ class Test-support {
     $server = 1 unless $server ~~ any $!server-range;
 
     my Int $port-number = $!server-control.get-port-number("s$server");
-    my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
-
-    return $client;
+    MongoDB::Client.new(:uri("mongodb://localhost:$port-number"));
   }
 
   #-----------------------------------------------------------------------------

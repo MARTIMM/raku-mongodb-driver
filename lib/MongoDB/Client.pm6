@@ -120,7 +120,7 @@ say 'new client 1';
               if $!todo-servers.elems {
                 $s = $!todo-servers.shift;
               }
-              
+
               $s;
             }
           );
@@ -489,7 +489,21 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
 
       for @server-names -> $msname {
 #        $!servers-semaphore.acquire;
-        my Hash $shash = $!rw-sem.reader( 'servers', {$!servers{$msname};});
+        my Hash $shash = $!rw-sem.reader(
+          'servers', {
+say "$*THREAD.id(), $msname, $!servers{$msname}.defined()";
+            my Hash $h;
+            if $!servers{$msname}.defined {
+              $h = $!servers{$msname};
+            }
+
+            else {
+              $h = {};
+            }
+
+            $h;
+          }
+        );
 #        $!servers-semaphore.release;
 
         if $shash<status> == $needed-state {
