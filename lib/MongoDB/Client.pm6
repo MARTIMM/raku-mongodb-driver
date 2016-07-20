@@ -484,14 +484,16 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
       # Take this into the loop because array can still change, might even
       # be empty when hastely called right after new()
 #      $!servers-semaphore.acquire;
-      my @server-names = $!rw-sem.reader( 'servers', {$!servers.keys;});
+      my Array $server-names = $!rw-sem.reader(
+        'servers', {
+           [$!servers.keys];
+         }
+       );
 #      $!servers-semaphore.release;
-
-      for @server-names -> $msname {
+      for @$server-names -> $msname {
 #        $!servers-semaphore.acquire;
         my Hash $shash = $!rw-sem.reader(
           'servers', {
-say "$*THREAD.id(), $msname, $!servers{$msname}.defined()";
             my Hash $h;
             if $!servers{$msname}.defined {
               $h = $!servers{$msname};
