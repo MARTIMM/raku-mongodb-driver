@@ -4,6 +4,7 @@ use MongoDB;
 use MongoDB::Server::Socket;
 use MongoDB::Header;
 use BSON::Document;
+use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -36,7 +37,7 @@ class Server::Monitor {
   has Semaphore $!server-monitor-control;
 
   has Bool $!monitor-loop;
-  has Semaphore $!loop-semaphore;
+#  has Semaphore $!loop-semaphore;
   has Int $!monitor-looptime;
 #  has Semaphore $!looptime-semaphore;
   has Supplier $!monitor-data-supplier;
@@ -44,18 +45,26 @@ class Server::Monitor {
   has BSON::Document $!monitor-command;
   has BSON::Document $!monitor-result;
 
+  has Semaphore::ReadersWriters $!rw-sem;
+
   #-----------------------------------------------------------------------------
   # Call before monitor-server to set the $!server object!
   # Inheriting from Supplier prevents use of proper BUILD 
   #
   submethod BUILD ( MongoDB::ServerType:D :$server, Int :$loop-time = 10 ) {
 
+    $!rw-sem .= new;
+    $!rw-sem.add-mutex-names(
+      <mloop mlooptime>,
+      :RWPatternType(C-RW-WRITERPRIO)
+    );
+
     $!server = $server;
 
     $!weighted-mean-rtt .= new(0);
 
     $!server-monitor-control .= new(1);
-    $!loop-semaphore .= new(1);
+#    $!loop-semaphore .= new(1);
     $!monitor-looptime = $loop-time;
 #    $!looptime-semaphore .= new(1);
     $!monitor-data-supplier .= new;
@@ -68,28 +77,29 @@ class Server::Monitor {
   #-----------------------------------------------------------------------------
   method done ( ) {
 
-    $!loop-semaphore.acquire;
-    $!monitor-loop = False;
-    $!loop-semaphore.release;
+#    $!loop-semaphore.acquire;
+    $!rw-sem.writer( 'mloop', {$!monitor-loop = False;});
+#    $!loop-semaphore.release;
     $!monitor-data-supplier.done;
   }
 
   #-----------------------------------------------------------------------------
   method quit ( ) {
 
-    $!loop-semaphore.acquire;
-    $!monitor-loop = False;
-    $!loop-semaphore.release;
+#    $!loop-semaphore.acquire;
+    $!rw-sem.writer( 'mloop', {$!monitor-loop = False;});
+#    $!loop-semaphore.release;
     $!monitor-data-supplier.quit('Monitor forced to quit');
   }
 
   #-----------------------------------------------------------------------------
-#  method monitor-looptime ( Int $mlt ) {
+  method monitor-looptime ( Int $mlt ) {
 #
 #    $!looptime-semaphore.acquire;
 #    $!monitor-looptime = $mlt;
+     $!rw-sem.writer( 'mlooptime', {$!monitor-looptime = $mlt;});
 #    $!looptime-semaphore.release;
-#  }
+  }
 
   #-----------------------------------------------------------------------------
   method get-supply ( --> Supply ) {
@@ -113,14 +123,14 @@ class Server::Monitor {
         my BSON::Document $doc;
 
         # Start loops frequently and slow it down to $!monitor-looptime
-        my $looptime-trottle = 1;
+        my Int $looptime-trottle = 1;
 
         # As long as the server lives test it. Changes are possible when 
         # server conditions change.
         #
-        $!loop-semaphore.acquire;
-        my $mloop = $!monitor-loop = True;
-        $!loop-semaphore.release;
+#        $!loop-semaphore.acquire;
+        my $mloop = $!rw-sem.reader( 'mloop', {$!monitor-loop = True;});
+#        $!loop-semaphore.release;
         while $mloop {
 
           # Temporary try block to catch typos
@@ -139,7 +149,7 @@ class Server::Monitor {
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
 
-#say "\nMonitor info $!server.name(): ", $doc.perl;
+#say "\n$*THREAD.id() monitor info $!server.name(): ", $doc.perl;
 
               debug-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
@@ -163,10 +173,14 @@ class Server::Monitor {
 
             # Rest for a while
 #            $!looptime-semaphore.acquire;
-            my Int $sleeptime = $!monitor-looptime;
+            my Int $sleeptime = $!rw-sem.reader(
+              'mlooptime', {
+                $!monitor-looptime;
+              }
+            );
 #            $!looptime-semaphore.release;
+note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $looptime-trottle, $sleeptime";
             $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
-say "Sleep $!server.name(): $!monitor-looptime, $looptime-trottle, $sleeptime";
             sleep($sleeptime);
 
             # Capture errors. When there are any, On older servers before
@@ -175,8 +189,6 @@ say "Sleep $!server.name(): $!monitor-looptime, $looptime-trottle, $sleeptime";
             # Send ok False to mention the fact that the server is down.
             #
             CATCH {
-#say .WHAT;
-#say "Error monitor $!server.name(): ", $_;
               when .message ~~ m:s/Failed to resolve host name/ ||
                    .message ~~ m:s/Failed to connect\: connection refused/ {
 
@@ -200,7 +212,11 @@ say "Sleep $!server.name(): $!monitor-looptime, $looptime-trottle, $sleeptime";
 
                 # Rest for a while$looptime
 #                $!looptime-semaphore.acquire;
-                my Int $sleeptime = $!monitor-looptime;
+                my Int $sleeptime = $!rw-sem.reader(
+                  'mlooptime', {
+                    $!monitor-looptime;
+                  }
+                );
 #                $!looptime-semaphore.release;
 
 
@@ -212,14 +228,15 @@ say "Sleep $!server.name(): $!monitor-looptime, $looptime-trottle, $sleeptime";
 
               # If not one of the above errors, rethrow the error
               default {
+                .say;
                 .rethrow;
               }
             }
           }
 
-          $!loop-semaphore.acquire;
-          $mloop = $!monitor-loop;
-          $!loop-semaphore.release;
+#          $!loop-semaphore.acquire;
+          $!rw-sem.reader( 'mloop', {$mloop = $!monitor-loop;});
+#          $!loop-semaphore.release;
         }
 
         $!server-monitor-control.release;
