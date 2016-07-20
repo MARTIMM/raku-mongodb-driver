@@ -643,7 +643,7 @@ say "$*THREAD.id() select-server, {$msname//'-'}";
 #    $!servers-semaphore.acquire;
     $!rw-sem.writer(
       'servers', {
-        for $!servers.values.race(batch => 1) -> Hash $srv-struct {
+        for $!servers.values -> Hash $srv-struct {
 
           if $srv-struct<server>.defined {
 
