@@ -23,6 +23,7 @@ subtest {
 
   my MongoDB::Server::Monitor $monitor .= new(:$server);
   $monitor.start-monitor;
+  sleep 1.5;
 
   my Supply $s = $monitor.get-supply;
   $s.tap( -> Hash $mdata {

@@ -73,17 +73,15 @@ class Server {
   # Server initialization 
   method server-init ( ) {
 
-    # Don't start monitoring if dns failed to return an ip address
-#    if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
+    # Start monitoring
+    $!monitor-promise = $!server-monitor.start-monitor;
+    return unless $!monitor-promise.defined;
 
-      # Start monitoring
-      $!monitor-promise = $!server-monitor.start-monitor;
-      return unless $!monitor-promise.defined;
+    # Tap into monitor data
+    self.tap-monitor( -> Hash $monitor-data {
+        try {
 
-      # Tap into monitor data
-      self.tap-monitor( -> Hash $monitor-data {
-
-#say "\nIn server, data from Monitor: ", ($monitor-data // {}).perl;
+say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
@@ -164,11 +162,22 @@ class Server {
             }
           }
 
+say "$*THREAD.id() status $server-status";
+
           # Set the status with the new value
-          $!rw-sem.writer( 's-status', {$!server-status = $server-status;});
+          $!rw-sem.writer( 's-status', {
+            say "$*THREAD.id() set status";
+            $!server-status = $server-status;});
+
+          CATCH {
+            default {
+              .say;
+              .rethrow;
+            }
+          }
         }
-      );
-#    }
+      }
+    );
   }
 
   #-----------------------------------------------------------------------------
