@@ -53,7 +53,7 @@ class Server::Monitor {
 
     $!rw-sem .= new;
     $!rw-sem.add-mutex-names(
-      <mloop mlooptime>,
+      <m-loop m-looptime>,
       :RWPatternType(C-RW-WRITERPRIO)
     );
 
@@ -73,21 +73,21 @@ class Server::Monitor {
   #-----------------------------------------------------------------------------
   method done ( ) {
 
-    $!rw-sem.writer( 'mloop', {$!monitor-loop = False;});
+    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
     $!monitor-data-supplier.done;
   }
 
   #-----------------------------------------------------------------------------
   method quit ( ) {
 
-    $!rw-sem.writer( 'mloop', {$!monitor-loop = False;});
+    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
     $!monitor-data-supplier.quit('Monitor forced to quit');
   }
 
   #-----------------------------------------------------------------------------
   method monitor-looptime ( Int $mlt ) {
 
-    $!rw-sem.writer( 'mlooptime', {$!monitor-looptime = $mlt;});
+    $!rw-sem.writer( 'm-looptime', {$!monitor-looptime = $mlt;});
   }
 
   #-----------------------------------------------------------------------------
@@ -116,12 +116,10 @@ class Server::Monitor {
 
         # As long as the server lives test it. Changes are possible when 
         # server conditions change.
-        #
-        my $mloop = $!rw-sem.reader( 'mloop', {$!monitor-loop = True;});
-        while $mloop {
+        my Bool $mloop = $!rw-sem.writer( 'm-loop', {$!monitor-loop = True;});
 
-          # Temporary try block to catch typos
-          try {
+        while $mloop {
+#          try {
 
             # Save time stamp for RTT measurement
             $t0 = now;
@@ -160,12 +158,11 @@ class Server::Monitor {
 
             # Rest for a while
             my Int $sleeptime = $!rw-sem.reader(
-              'mlooptime', {
+              'm-looptime', {
                 $!monitor-looptime;
               }
             );
 
-note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $looptime-trottle, $sleeptime";
             $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
             sleep($sleeptime);
 
@@ -198,11 +195,10 @@ note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $loop
 
                 # Rest for a while$looptime
                 my Int $sleeptime = $!rw-sem.reader(
-                  'mlooptime', {
+                  'm-looptime', {
                     $!monitor-looptime;
                   }
                 );
-
 
                 $sleeptime = $looptime-trottle++
                   if $looptime-trottle < $sleeptime;
@@ -216,9 +212,9 @@ note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $loop
                 .rethrow;
               }
             }
-          }
+#          }
 
-          $!rw-sem.reader( 'mloop', {$mloop = $!monitor-loop;});
+          $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
         }
 
         $!server-monitor-control.release;
