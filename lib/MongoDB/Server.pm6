@@ -43,7 +43,7 @@ class Server {
   # must be done in the background so Client starts this process in a thread.
   #
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
-    MongoDB::SocketLimit :$max-sockets = 3, Int :$loop-time
+    MongoDB::SocketLimit :$max-sockets = 3, Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
@@ -81,7 +81,7 @@ class Server {
     self.tap-monitor( -> Hash $monitor-data {
         try {
 
-say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+#say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
@@ -162,7 +162,7 @@ say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl
             }
           }
 
-say "$*THREAD.id() status $server-status";
+#say "$*THREAD.id() status $server-status";
 
           # Set the status with the new value
           $!rw-sem.writer( 's-status', {
