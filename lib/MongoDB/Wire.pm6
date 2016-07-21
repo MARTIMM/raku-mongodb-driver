@@ -30,9 +30,6 @@ class Wire {
     $d does MongoDB::Header;
     my BSON::Document $result;
 
-#    my Bool $write-operation = False;
-#    my $client;
-
     try {
 #      $client = $collection.database.client;
 
@@ -41,8 +38,6 @@ class Wire {
       #
       fatal-message("No server available") unless $!server.defined;
 
-#      $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
-#say "Need master for {$d.find-key(0)} $write-operation";
       my $full-collection-name = $collection.full-collection-name;
 
       ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
@@ -79,7 +74,8 @@ class Wire {
       #
       CATCH {
 #say .WHAT;
-#say "Error wire query: ", $_;
+#say "$*THREAD.id() Error wire query: ", $_;
+        $!socket.close if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -161,6 +157,7 @@ class Wire {
       CATCH {
 #say .WHAT;
 #say "Error wire get-more: ", .message;
+        $!socket.close if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -233,6 +230,7 @@ class Wire {
       CATCH {
 #say .WHAT;
 #say "Error wire kill-cursors: ", .message;
+        $!socket.close if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
