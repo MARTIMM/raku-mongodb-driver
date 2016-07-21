@@ -55,7 +55,7 @@ say 'new client 1';
 }}
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time
+    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10
   ) {
 
     $!topology-type = MongoDB::C-UNKNOWN-TPLGY;
@@ -150,7 +150,7 @@ say 'new client 1';
 
             # Start server monitoring process its data
 #say "Init server object and start monitoring: $server-name";
-            $server.server-init();
+            $server.server-init;
 #say "Tap from monitor: $server-name";
             self!process-monitor-data($server);
           }
@@ -197,7 +197,6 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
 #say "Monitor $server-name: ", $monitor-data.perl if $monitor-data.defined;
 
           # Make the processing of the monitor data atomic
-#note "servers-semaphore.acquire";
 #          $!servers-semaphore.acquire;
 
 say "$*THREAD.id() get prev server data";
@@ -211,9 +210,9 @@ say "$*THREAD.id() prev server data retrieved";
 
 #          $!master-servername-semaphore.acquire;
           my $msname = $!rw-sem.reader( 'master', {$!master-servername;});
+say "$*THREAD.id() get master {$msname//'-'}";
 #          $!master-servername-semaphore.release;
 
-say "$*THREAD.id() MS ($server-name) name: {$msname//'-'}";
 
 #          my Hash $h = {
 #            server => $server,
@@ -234,7 +233,7 @@ say "$*THREAD.id() MS ($server-name) name: {$msname//'-'}";
               server-data => $monitor-data
             };
           });
-say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
+#say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
 #          $!servers-semaphore.release;
 
           # Only when data is ok
@@ -263,7 +262,9 @@ say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-na
               if $msname.defined and ($msname eq $server-name) {
 
 #                $!master-servername-semaphore.acquire;
+#say "$*THREAD.id() reset master";
                 $!rw-sem.writer( 'master', {$!master-servername = Nil;});
+                $msname = Nil;
 #                $!master-servername-semaphore.release;
               }
 
@@ -275,12 +276,12 @@ say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-na
           # Monitoring data is ok
           else {
 
-say "$*THREAD.id() Master server name: ", $msname // '-';
-say "$*THREAD.id() Master prev stat: ", $prev-server<status>:exists 
-                  ?? $prev-server<status>
-                  !! '-';
+#say "$*THREAD.id() Master server name: ", $msname // '-';
+#say "$*THREAD.id() Master prev stat: ", $prev-server<status>:exists 
+#                  ?? $prev-server<status>
+#                  !! '-';
 
-say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
+#say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
             # Don't ever modify a rejected server
             if $prev-server<status>:exists
                and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
@@ -288,6 +289,7 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
 #              $!servers-semaphore.acquire;
               $!rw-sem.writer(
                 'servers', {
+#say "$*THREAD.id() PMD: set server $server-name status to reject";
                 $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
               });
 #              $!servers-semaphore.release;
@@ -305,6 +307,7 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
 #                  $!servers-semaphore.acquire;
                   $!rw-sem.writer(
                     'servers', {
+#say "$*THREAD.id() PMD: set server $server-name status to reject";
                     $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
                   });
 #                  $!servers-semaphore.release;
@@ -316,7 +319,20 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
               else {
 
 #                $!master-servername-semaphore.acquire;
-                $!rw-sem.writer( 'master', {$!master-servername = $server-name;});
+                $msname = $!rw-sem.writer(
+                  'master', {
+#say "$*THREAD.id() set master to $server-name";
+                    $!master-servername = $server-name;
+                  }
+                );
+
+                $!rw-sem.writer(
+                  'servers', {
+                    $!servers{$server-name}<status> = MongoDB::C-MASTER-SERVER;
+                  }
+                );
+#say "$*THREAD.id() msname=$msname";
+
 #                $!master-servername-semaphore.release;
               }
             }
@@ -431,13 +447,17 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
   # Called from thread above where Server object is created.
   method server-status ( Str:D $server-name --> MongoDB::ServerStatus ) {
 
+#say "$*THREAD.id() before check";
     self!check-discovery-process;
+#say "$*THREAD.id() after check";
 #    self!check-todo-process;
 
 #    $!servers-semaphore.acquire;
     my Hash $h = $!rw-sem.reader(
       'servers', {
-      $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
+      my $x = $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
+#say "$*THREAD.id() Reader server status: $x";
+      $x;
     });
 #    $!servers-semaphore.release;
 #say "server-status: $server-name, ", $h.perl;
@@ -473,7 +493,9 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
     --> MongoDB::Server
   ) {
 
+#say "$*THREAD.id() select-server";
     self!check-discovery-process;
+#say "$*THREAD.id() select-server check done";
 #    self!check-todo-process;
 
     my Hash $h;
@@ -490,12 +512,15 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
          }
        );
 #      $!servers-semaphore.release;
+#say "$*THREAD.id() select-server {@$server-names}";
       for @$server-names -> $msname {
 #        $!servers-semaphore.acquire;
         my Hash $shash = $!rw-sem.reader(
           'servers', {
+#say "$*THREAD.id() select-server :needed-state, {$msname//'-'}";
             my Hash $h;
             if $!servers{$msname}.defined {
+#say "$*THREAD.id() select-server :needed-state, $!servers{$msname}<status>";
               $h = $!servers{$msname};
             }
 
@@ -551,7 +576,7 @@ say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msnam
       $msname = $!rw-sem.reader( 'master', {$!master-servername;});
 #      $!master-servername-semaphore.release;
 
-say "$*THREAD.id() select-server, {$msname//'-'}";
+#say "$*THREAD.id() select-server, {$msname//'-'}";
       if $msname.defined {
 #        $!servers-semaphore.acquire;
         $h = $!rw-sem.reader( 'servers', {$!servers{$msname};});

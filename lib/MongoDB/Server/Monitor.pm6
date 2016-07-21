@@ -179,7 +179,7 @@ class Server::Monitor {
               }
             );
 #            $!looptime-semaphore.release;
-note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $looptime-trottle, $sleeptime";
+#note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $looptime-trottle, $sleeptime";
             $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
             sleep($sleeptime);
 
