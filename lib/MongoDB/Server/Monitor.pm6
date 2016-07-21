@@ -37,9 +37,7 @@ class Server::Monitor {
   has Semaphore $!server-monitor-control;
 
   has Bool $!monitor-loop;
-#  has Semaphore $!loop-semaphore;
   has Int $!monitor-looptime;
-#  has Semaphore $!looptime-semaphore;
   has Supplier $!monitor-data-supplier;
 
   has BSON::Document $!monitor-command;
@@ -64,9 +62,7 @@ class Server::Monitor {
     $!weighted-mean-rtt .= new(0);
 
     $!server-monitor-control .= new(1);
-#    $!loop-semaphore .= new(1);
     $!monitor-looptime = $loop-time;
-#    $!looptime-semaphore .= new(1);
     $!monitor-data-supplier .= new;
 
     $!monitor-command .= new: (isMaster => 1);
@@ -77,28 +73,21 @@ class Server::Monitor {
   #-----------------------------------------------------------------------------
   method done ( ) {
 
-#    $!loop-semaphore.acquire;
     $!rw-sem.writer( 'mloop', {$!monitor-loop = False;});
-#    $!loop-semaphore.release;
     $!monitor-data-supplier.done;
   }
 
   #-----------------------------------------------------------------------------
   method quit ( ) {
 
-#    $!loop-semaphore.acquire;
     $!rw-sem.writer( 'mloop', {$!monitor-loop = False;});
-#    $!loop-semaphore.release;
     $!monitor-data-supplier.quit('Monitor forced to quit');
   }
 
   #-----------------------------------------------------------------------------
   method monitor-looptime ( Int $mlt ) {
-#
-#    $!looptime-semaphore.acquire;
-#    $!monitor-looptime = $mlt;
-     $!rw-sem.writer( 'mlooptime', {$!monitor-looptime = $mlt;});
-#    $!looptime-semaphore.release;
+
+    $!rw-sem.writer( 'mlooptime', {$!monitor-looptime = $mlt;});
   }
 
   #-----------------------------------------------------------------------------
@@ -128,9 +117,7 @@ class Server::Monitor {
         # As long as the server lives test it. Changes are possible when 
         # server conditions change.
         #
-#        $!loop-semaphore.acquire;
         my $mloop = $!rw-sem.reader( 'mloop', {$!monitor-loop = True;});
-#        $!loop-semaphore.release;
         while $mloop {
 
           # Temporary try block to catch typos
@@ -172,14 +159,13 @@ class Server::Monitor {
             }
 
             # Rest for a while
-#            $!looptime-semaphore.acquire;
             my Int $sleeptime = $!rw-sem.reader(
               'mlooptime', {
                 $!monitor-looptime;
               }
             );
-#            $!looptime-semaphore.release;
-#note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $looptime-trottle, $sleeptime";
+
+note "$*THREAD.id() Sleep $!server.name(): $!monitor-looptime, $sleeptime, $looptime-trottle, $sleeptime";
             $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
             sleep($sleeptime);
 
@@ -211,13 +197,11 @@ class Server::Monitor {
                 );
 
                 # Rest for a while$looptime
-#                $!looptime-semaphore.acquire;
                 my Int $sleeptime = $!rw-sem.reader(
                   'mlooptime', {
                     $!monitor-looptime;
                   }
                 );
-#                $!looptime-semaphore.release;
 
 
                 $sleeptime = $looptime-trottle++
@@ -234,9 +218,7 @@ class Server::Monitor {
             }
           }
 
-#          $!loop-semaphore.acquire;
           $!rw-sem.reader( 'mloop', {$mloop = $!monitor-loop;});
-#          $!loop-semaphore.release;
         }
 
         $!server-monitor-control.release;
