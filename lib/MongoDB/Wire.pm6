@@ -52,6 +52,7 @@ class Wire {
 
       $!socket = $server.get-socket;
       $!socket.send($encoded-query);
+#say "$*THREAD.id() sock $!socket";
 
       # Read 4 bytes for int32 response size
       my Buf $size-bytes = self!get-bytes(4);
@@ -99,6 +100,7 @@ class Wire {
 
         # If not one of the above errors, rethrow the error
         default {
+          .say;
           .rethrow;
         }
       }
@@ -179,6 +181,7 @@ class Wire {
 
         # If not one of the above errors, rethrow the error
         default {
+          .say;
           .rethrow;
         }
       }
@@ -250,6 +253,7 @@ class Wire {
 
         # If not one of the above errors, rethrow the error
         default {
+          .say;
           .rethrow;
         }
       }
@@ -264,6 +268,7 @@ class Wire {
   #
   method !get-bytes ( int $n --> Buf ) {
 
+#say "$*THREAD.id() get-bytes $!socket";
     my Buf $bytes = $!socket.receive($n);
     if $bytes.elems == 0 {
 

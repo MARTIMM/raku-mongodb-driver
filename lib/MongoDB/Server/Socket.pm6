@@ -38,12 +38,14 @@ class Server::Socket {
   #-----------------------------------------------------------------------------
   method send ( Buf:D $b --> Nil ) {
 #TODO Check if sock is usable
+#say "$*THREAD.id() send to sock $!sock";
     $!sock.write($b);
   }
 
   #-----------------------------------------------------------------------------
   method receive ( int $nbr-bytes --> Buf ) {
 #TODO Check if sock is usable
+#say "$*THREAD.id() receive from sock $!sock";
     return $!sock.read($nbr-bytes);
   }
 
