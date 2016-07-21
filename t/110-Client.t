@@ -66,20 +66,11 @@ subtest {
   $server = $client.select-server;
   is $server.get-status, MongoDB::C-MASTER-SERVER,
      "Server $server.name() is master";
-say $client.server-status("localhost:$p1"),
-    ', ', $client.server-status("localhost:$p2");
 
-#  sleep 2;
-  # If server has port from $p1 than the other must be rejected
-  if $server.name ~~ m/$p1/ {
-    is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
-       "Server localhost:$p2 is rejected";
-  }
-
-  else {
-    is $client.server-status('localhost:' ~ $p1), MongoDB::C-REJECTED-SERVER,
-       "Server localhost:$p1 is rejected";
-  }
+  # If server has port from $p1 than the other must have status rejected
+  my $other-server = $client.select-server(:needed-state(MongoDB::C-REJECTED-SERVER));
+  is $client.server-status( $other-server.name), MongoDB::C-REJECTED-SERVER,
+     "Server $other-server.name() is rejected";
 
 #  is $client.nbr-servers, 2, 'Two servers found';
 
