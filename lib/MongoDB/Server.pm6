@@ -4,6 +4,7 @@ use MongoDB;
 use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 use BSON::Document;
+use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -27,14 +28,15 @@ class Server {
 
   has MongoDB::SocketLimit $!max-sockets;
   has MongoDB::Server::Socket @!sockets;
-  has Semaphore $!server-socket-selection;
+
 #TODO semaphores using $!max-sockets
 
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
   # Set status to its default starting status
   has MongoDB::ServerStatus $!server-status;
-  has Semaphore $!status-semaphore;
+
+  has Semaphore::ReadersWriters $!rw-sem;
 
   #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
@@ -43,6 +45,12 @@ class Server {
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
     MongoDB::SocketLimit :$max-sockets = 3, Int :$loop-time
   ) {
+
+    $!rw-sem .= new;
+    $!rw-sem.add-mutex-names(
+      <s-select s-status>,
+      :RWPatternType(C-RW-WRITERPRIO)
+    );
 
     # Save name andd port of the server
     ( my $host, my $port) = split( ':', $server-name);
@@ -57,10 +65,8 @@ class Server {
     $!max-sockets = $max-sockets;
 
     @!sockets = ();
-    $!server-socket-selection .= new(1);
 
     $!server-status = MongoDB::C-UNKNOWN-SERVER;
-    $!status-semaphore .= new(1);
   }
 
   #-----------------------------------------------------------------------------
@@ -159,9 +165,7 @@ class Server {
           }
 
           # Set the status with the new value
-          $!status-semaphore.acquire;
-          $!server-status = $server-status;
-          $!status-semaphore.release;
+          $!rw-sem.writer( 's-status', {$!server-status = $server-status;});
         }
       );
 #    }
@@ -175,9 +179,7 @@ class Server {
 
     # Wait until changed, After 4 sec it must be known or stays unknown forever
     while $count < 4 and $server-status ~~ MongoDB::C-UNKNOWN-SERVER {
-      $!status-semaphore.acquire;
-      $server-status = $!server-status;
-      $!status-semaphore.release;
+      $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
 
       sleep 1;
       $count++;
@@ -217,55 +219,41 @@ class Server {
     my MongoDB::Server::Socket $sock;
 
     # Get a free socket entry
-    $!server-socket-selection.acquire;
-    for ^(@!sockets.elems) -> $si {
+    $!rw-sem.writer( 's-select', {
+        for ^(@!sockets.elems) -> $si {
 
-      # Skip all active sockets
-      #
-      next if @!sockets[$si].is-open;
+          # Skip all active sockets
+          #
+          next if @!sockets[$si].is-open;
 
-      $sock = @!sockets[$si];
-      last;
-    }
-    $!server-socket-selection.release;
-
-    # Setup a try block to catch socket new() exceptions
-    #
-#    try {
-
-      # If none is found insert a new Socket in the array
-      #
-      if ! $sock.defined {
-
-        # Protect against too many open sockets.
-        #
-        if @!sockets.elems >= $!max-sockets {
-          fatal-message("Too many sockets opened, max is $!max-sockets");
+          $sock = @!sockets[$si];
+          last;
         }
+      }
+    );
 
-        $sock .= new(:server(self));
+    # If none is found insert a new Socket in the array
+    #
+    if ! $sock.defined {
+
+      # Protect against too many open sockets.
+      #
+      if @!sockets.elems >= $!max-sockets {
+        fatal-message("Too many sockets opened, max is $!max-sockets");
       }
 
-      # Return a usable socket which is opened. The user has the responsibility
-      # to close the socket. Otherwise there will be new sockets created every
-      # time get-socket() is called. When limit is reached, an exception
-      # is thrown.
-      #
-      $sock.open();
+      $sock .= new(:server(self));
+    }
 
-#      CATCH {
-#say "Error server: ", $_;
-#        default {
-#          die .message;
-#        }
-#      }
+    # Return a usable socket which is opened. The user has the responsibility
+    # to close the socket. Otherwise there will be new sockets created every
+    # time get-socket() is called. When limit is reached, an exception
+    # is thrown.
+    #
+    $sock.open;
 
-      $!server-socket-selection.acquire;
-      @!sockets.push($sock);
-      $!server-socket-selection.release;
-#    }
+    $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
 
-    $!server-socket-selection.release;
     return $sock;
   }
 
