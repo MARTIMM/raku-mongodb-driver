@@ -70,6 +70,7 @@ package MongoDB {
       :$server
       --> BSON::Document
     ) {
+#TODO :$server still needed ?
 
       debug-message("run command {$command.find-key(0)}");
 
@@ -103,6 +104,7 @@ package MongoDB {
       :$server
       --> BSON::Document
     ) {
+#TODO :$server still needed ?
 #TODO check on arguments
 #say "\nrun-command c: ", c.perl;
 

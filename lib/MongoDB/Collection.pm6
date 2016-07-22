@@ -93,6 +93,7 @@ package MongoDB {
     ) {
 
 #TODO Check provided structure for the fields.
+#TODO :$server still needed ?
 
       my MongoDB::Wire $wire .= new;
 
