@@ -48,8 +48,9 @@ class Server::Socket {
   method receive ( int $nbr-bytes --> Buf ) {
 
 #TODO Check if sock is usable
+    debug-message("socket receive, request size $nbr-bytes");
     my Buf $b = $!sock.read($nbr-bytes);
-    debug-message("socket receive, sizes: request=$nbr-bytes, received=$b.elems()");
+    debug-message("socket receive, received size $b.elems()");
     $b;
   }
 
@@ -62,6 +63,7 @@ class Server::Socket {
 
     trace-message("close socket");
     $!is-open = False;
+    $!server.release-socket;
   }
 }
 

@@ -30,6 +30,7 @@ class Server {
   has MongoDB::Server::Socket @!sockets;
 
 #TODO semaphores using $!max-sockets
+  has Semaphore $!max-sockets-semaphore;
 
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
@@ -43,14 +44,20 @@ class Server {
   # must be done in the background so Client starts this process in a thread.
   #
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
-    MongoDB::SocketLimit :$max-sockets = 3, Int :$loop-time = 10
+    SocketLimit :$max-sockets = 3, Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
+    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
-      <s-select s-status>,
+      <s-select s-status sock-max>,
       :RWPatternType(C-RW-WRITERPRIO)
     );
+
+    # Define number of available sockets and its semaphore
+    $!max-sockets-semaphore .= new($max-sockets);
+    $!max-sockets = $max-sockets;
+    @!sockets = ();
 
     # Save name andd port of the server
     ( my $host, my $port) = split( ':', $server-name);
@@ -60,12 +67,6 @@ class Server {
     $!uri-data = $uri-data;
 
     $!server-monitor .= new( :server(self), :$loop-time);
-
-    # Define number of available sockets and its semaphore
-    $!max-sockets = $max-sockets;
-
-    @!sockets = ();
-
     $!server-status = MongoDB::C-UNKNOWN-SERVER;
   }
 
@@ -225,10 +226,23 @@ class Server {
   #
   method get-socket ( --> MongoDB::Server::Socket ) {
 
+    # Get hold of a socket or otherwise wait
+    $!max-sockets-semaphore.acquire;
+
     my MongoDB::Server::Socket $sock;
 
     # Get a free socket entry
     $!rw-sem.writer( 's-select', {
+
+# count total opened
+my Int $c = 0;
+for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
+say "$*THREAD.id() total sockets open: $c of @!sockets.elems()";
+#        debug-message(
+#          "total sockets open: ",
+#          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
+#        );
+
         for ^(@!sockets.elems) -> $si {
 
           # Skip all active sockets
@@ -242,14 +256,15 @@ class Server {
     );
 
     # If none is found insert a new Socket in the array
-    #
     if ! $sock.defined {
 
       # Protect against too many open sockets.
-      #
-      if @!sockets.elems >= $!max-sockets {
-        fatal-message("Too many sockets opened, max is $!max-sockets");
-      }
+#      my $sock-max = $!rw-sem.reader( 'sock-max', {$!max-sockets;});
+#      if @!sockets.elems >= $sock-max {
+#        fatal-message("Too many sockets opened, max is $sock-max");
+#      }
+
+say "$*THREAD.id() new socket";
 
       $sock .= new(:server(self));
     }
@@ -267,20 +282,49 @@ class Server {
   }
 
   #-----------------------------------------------------------------------------
-  #
+  method release-socket ( ) {
+    $!max-sockets-semaphore.release;
+  }
+
+  #-----------------------------------------------------------------------------
   method name ( --> Str ) {
 
     return [~] $!server-name // '-', ':', $!server-port // '-';
   }
 
   #-----------------------------------------------------------------------------
+  # Modify the number of sockets allowed. Whern decreasing it will never go
+  # lower than the number of already opened sockets if higher than 3.
   #
-  method set-max-sockets ( Int $max-sockets where $_ >= 3 ) {
-    $!max-sockets = $max-sockets;
+  method set-max-sockets ( SocketLimit $max-sockets ) {
+#    $!max-sockets = $max-sockets;
+    my SocketLimit $prev-max = $!rw-sem.reader( 'sock-max', {$!max-sockets;});
+    my SocketLimit $new-max = $max-sockets;
+
+    my SocketLimit $pmx = $prev-max;
+    if $prev-max > $new-max {
+      for $new-max ..^ $prev-max {
+        last unless $!max-sockets-semaphore.try_acquire;
+        $pmx--;
+      }
+    }
+
+    elsif $prev-max < $new-max {
+      for $prev-max ^.. $new-max {
+        $!max-sockets-semaphore.release;
+      }
+      
+      $pmx = $new-max;
+    }
+    
+    $!rw-sem.writer( 'sock-max', {$!max-sockets = $pmx;});
   }
 }
 
 
+
+
+=finish
 #-------------------------------------------------------------------------------
 sub dump-callframe ( $fn-max = 10 --> Str ) {
 
