@@ -64,6 +64,7 @@ say 'new client 1';
     $!master-servername = Nil;
 
     $!rw-sem .= new;
+#    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
       <servers todo master>,
       :RWPatternType(C-RW-WRITERPRIO)
@@ -187,11 +188,12 @@ say "$*THREAD.id() get master {$msname//'-'}";
 
 
           # Store partial result as soon as possible
+          my $server-status = $server.get-status;
           $!rw-sem.writer(
             'servers', {
             $!servers{$server-name} = {
               server => $server,
-              status => $server.get-status,
+              status => $server-status,
               timestamp => now,
               server-data => $monitor-data
             };

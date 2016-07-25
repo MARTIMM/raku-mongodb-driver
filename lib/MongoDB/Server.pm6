@@ -48,7 +48,7 @@ class Server {
   ) {
 
     $!rw-sem .= new;
-    $!rw-sem.debug = True;
+#    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
       <s-select s-status sock-max>,
       :RWPatternType(C-RW-WRITERPRIO)
@@ -167,7 +167,7 @@ class Server {
 
           # Set the status with the new value
           $!rw-sem.writer( 's-status', {
-            say "$*THREAD.id() set status";
+            say "$*THREAD.id() set status $server-status";
             $!server-status = $server-status;});
 
           CATCH {
@@ -229,10 +229,8 @@ class Server {
     # Get hold of a socket or otherwise wait
     $!max-sockets-semaphore.acquire;
 
-    my MongoDB::Server::Socket $sock;
-
     # Get a free socket entry
-    $!rw-sem.writer( 's-select', {
+    my MongoDB::Server::Socket $sock = $!rw-sem.reader( 's-select', {
 
 # count total opened
 my Int $c = 0;
@@ -243,15 +241,18 @@ say "$*THREAD.id() total sockets open: $c of @!sockets.elems()";
 #          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
 #        );
 
+        my MongoDB::Server::Socket $s;
         for ^(@!sockets.elems) -> $si {
 
           # Skip all active sockets
           #
           next if @!sockets[$si].is-open;
 
-          $sock = @!sockets[$si];
+          $s = @!sockets[$si];
           last;
         }
+        
+        $s;
       }
     );
 
@@ -283,6 +284,7 @@ say "$*THREAD.id() new socket";
 
   #-----------------------------------------------------------------------------
   method release-socket ( ) {
+
     $!max-sockets-semaphore.release;
   }
 
@@ -293,7 +295,7 @@ say "$*THREAD.id() new socket";
   }
 
   #-----------------------------------------------------------------------------
-  # Modify the number of sockets allowed. Whern decreasing it will never go
+  # Modify the number of sockets allowed. When decreasing it will never go
   # lower than the number of already opened sockets if higher than 3.
   #
   method set-max-sockets ( SocketLimit $max-sockets ) {
@@ -313,10 +315,10 @@ say "$*THREAD.id() new socket";
       for $prev-max ^.. $new-max {
         $!max-sockets-semaphore.release;
       }
-      
+
       $pmx = $new-max;
     }
-    
+
     $!rw-sem.writer( 'sock-max', {$!max-sockets = $pmx;});
   }
 }
