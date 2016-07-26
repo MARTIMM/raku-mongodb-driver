@@ -550,7 +550,7 @@ say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-na
 
   #-----------------------------------------------------------------------------
   #
-  method DESTROY ( ) {
+  submethod DESTROY ( ) {
 
     # Remove all servers concurrently. Shouldn't be many per client.
     $!rw-sem.writer(
