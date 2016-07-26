@@ -61,44 +61,58 @@ class MdbMeta {
   ) {
 
     # class $db-$cl is MdbTable {
-    my $name = "$db.name()-$cl.name()";
+    my $name = "$db.name.tc()::$cl.name.tc()";
     my $A := Metamodel::ClassHOW.new_type(:$name);
     $A.^add_parent( MdbTable, :!hides);
 
-    $A.^add_attribute(
-      Attribute.new(
-        :name<$!db>,
-        :type(MongoDB::Database),
-        :package($A)
-      )
+    my $db-attr = Attribute.new(
+      :name<$!db>,
+      :type(MongoDB::Database),
+      :package($A)
     );
 
-    $A.^add_attribute(
-      Attribute.new(
-        :name<$!cl>,
-        :type(MongoDB::Collection),
-        :package($name)
-      )
+    my $cl-attr = Attribute.new(
+      :name<$!cl>,
+      :type(MongoDB::Collection),
+      :package($name)
     );
 
-    $A.^add_attribute(
-      Attribute.new(
-        :name<$!schema>,
-        :type(BSON::Document),
-        :package($name)
-      )
+    my $schema-attr = Attribute.new(
+      :name<$!schema>,
+      :type(BSON::Document),
+      :package($name)
     );
 
-#`{{}}
-    # method set
+    $A.^add_attribute($db-attr);
+    $A.^add_attribute($cl-attr);
+    $A.^add_attribute($schema-attr);
+
+    # Need a new to bless the object after which the BUILD can access the
+    # attributes
+    #
+    $A.^add_method(
+      'new',
+      my method new ( $A: ) {
+say "Self: ", self;
+
+        # Bless the object into the proper class
+        "$name".bless;
+
+        # Return proper object
+        $A;
+      }
+    );
+
     $A.^add_method(
       'BUILD',
-      my submethod BUILD ( $A: ) {
+      my submethod BUILD ( ) {
 say "Self: ", self;
-say self.^attributes;
 #        $self!schema = $schema;
 #        self!db = $db;
-        $!cl = $cl;
+say $cl-attr.name;
+        $db-attr.set_value( $A, $db);
+        $cl-attr.set_value( $A, $cl);
+        $schema-attr.set_value( $A, $schema);
       }
     );
 
@@ -113,9 +127,9 @@ say self.^name;
     }
 }}
     
-say $A.^parents(:all).perl;
-say $A.^attributes;
-say $A.^methods;
+say "0: $A.^parents(:all).perl()";
+say "1: ", $A.^attributes.Str();
+say "2: ", $A.^methods();
 
     $A;
   }
@@ -135,9 +149,11 @@ my BSON::Document $schema .= new: (
 );
 
 my $table-class = MdbMeta.gen-table-class( $db, $cl, $schema);
-is $table-class.^name, 'contacts-address', "class type is $table-class.^name()";
+is $table-class.^name, 'Contacts::Address', "class type is $table-class.^name()";
 
 my $table = $table-class.new;
+say $table.^name;
+say $table.^methods;
 
 ok $table.^can('read'), 'table can read';
 ok $table.^can('write'), 'table can write';
