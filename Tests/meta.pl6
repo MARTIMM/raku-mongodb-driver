@@ -115,28 +115,33 @@ say self.^attributes;
     $A.^add_method(
       'new',
       my method new ( $A: ) {
+say "Self new: ", self, ', ', $A;
         # Bless the object into the proper class
 #        "$name".bless;
 
         # Return proper object
+        $A.bless;
 #        $A;
-        $name.bless;
+#        self.bless;
+#        my $x = self.CREATE;
+#        $x.BUILD;
       }
     );
 
     $A.^add_method(
       'BUILD',
-      my submethod BUILD ( ) {
-say "Self: ", self;
+      my submethod BUILD ( $A: ) {
+say "Self BUILD: ", self;
         my Attribute $attr-list-attr;
         my Hash $attrs;
         for self.^attributes -> $a {
           $attrs{$a.name} = $a;
           $attr-list-attr = $a if $a.name eq '$attr-list';
         }
-        $attr-list-attr.set-value( $A, $attrs);
+say "Attr meth: ", $attr-list-attr.^methods;
+#        $attr-list-attr.set-value( $A, $attrs);
 
-        $db-attr.set_value( $A, my $client = MongoDB::Client.new($uri));
+        $db-attr.set_value( $A, my $client = MongoDB::Client.new(:$uri));
         $db-attr.set_value( $A, my $db = $client.database($db-name));
         $cl-attr.set_value( $A, $db.collection($cl-name));
         $schema-attr.set_value( $A, $schema);
