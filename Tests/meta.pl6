@@ -15,9 +15,9 @@ use MongoDB::Collection;
 class MdbMeta {
 
   #-----------------------------------------------------------------------------
-  my class MdbTable {
+  class MdbTable {
 
-    has $.attr-list;
+    has Hash $.attr-list;
 
     #---------------------------------------------------------------------------
     method check( :%fields) {
@@ -109,12 +109,35 @@ say self.^attributes;
     $A.^add_attribute($cl-attr);
     $A.^add_attribute($schema-attr);
 
+    # Make it so
+    $A.^compose;
+
+    my $blessed = $A.bless;
+say "Blessed: ", $blessed.WHAT;
+
+    my Attribute $attr-list-attr;
+    my Hash $attrs = {};
+    for $blessed.^attributes -> $a {
+say "Attr: $a.name() = ", $a;
+      $attrs{$a.name} = $a;
+      $attr-list-attr = $a if $a.name eq '$attr-list';
+    }
+say "Attr meth: ", $attr-list-attr.^methods;
+say "Defs: ", $attr-list-attr.defined, ', ', $attrs.defined;
+    $attr-list-attr.set_value( $blessed, $attrs);
+
+    $db-attr.set_value( $blessed, my $client = MongoDB::Client.new(:$uri));
+    $db-attr.set_value( $blessed, my $db = $client.database($db-name));
+    $cl-attr.set_value( $blessed, $db.collection($cl-name));
+    $schema-attr.set_value( $blessed, $schema);
+
+#`{{
     # Need a new to bless the object after which the BUILD can access the
     # attributes
     #
     $A.^add_method(
       'new',
-      my method new ( $A: ) {
+      method new ( $A: ) {
 say "Self new: ", self, ', ', $A;
         # Bless the object into the proper class
 #        "$name".bless;
@@ -130,7 +153,7 @@ say "Self new: ", self, ', ', $A;
 
     $A.^add_method(
       'BUILD',
-      my submethod BUILD ( $A: ) {
+      submethod BUILD ( $A: ) {
 say "Self BUILD: ", self;
         my Attribute $attr-list-attr;
         my Hash $attrs;
@@ -147,10 +170,10 @@ say "Attr meth: ", $attr-list-attr.^methods;
         $schema-attr.set_value( $A, $schema);
       }
     );
-
     # Make it so
     $A.^compose;
 
+}}
 #`{{
     augment class $A {
       submethod BUILD ( ) {
@@ -181,10 +204,11 @@ my BSON::Document $schema .= new: (
   country => [ 1, Str],
 );
 
-my $table-class = MdbMeta.gen-table-class( $uri, $db-name, $cl-name, $schema);
+my MdbMeta $table-class .= gen-table-class( $uri, $db-name, $cl-name, $schema);
 is $table-class.^name, 'Contacts::Address', "class type is $table-class.^name()";
 
-my $table = $table-class.new;
+#my $table = $table-class.new;
+my $table = $table-class;
 say $table.^name;
 say $table.^methods;
 say $table.defined;
