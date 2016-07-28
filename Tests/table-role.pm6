@@ -52,6 +52,11 @@ package MongoDB {
     has MongoDB::Collection $!cl;
 
     #---------------------------------------------------------------------------
+    method reset( *%fields ) {
+      $!record .= new;
+    }
+
+    #---------------------------------------------------------------------------
     method set( *%fields ) {
 
       # Define the record in the same order as noted in schema
@@ -63,6 +68,13 @@ package MongoDB {
 
         else {
 #          $!record{$field-name} = Nil unless $!record{$field-name}.defined;
+        }
+      }
+
+      # Add the rest of the fields not in schema. These are failed later
+      for %fields.keys -> $field-name {
+        if $!schema{$field-name}:!exists {
+          $!record{$field-name} = %fields{$field-name};
         }
       }
     }
@@ -145,6 +157,7 @@ package MongoDB {
       }
 
       for $record.keys -> $field-name {
+say "Check $field-name: ", $schema{$field-name}:exists;
         if $schema{$field-name}:!exists {
           $!failed-fields.push: [
             $field-name,                        # failed fieldname
@@ -177,6 +190,10 @@ package MongoDB {
           $error-doc<fields>{$field-spec[0]} = 
             [~] 'type failure, is ', $field-spec[2].WHAT.perl, " but must be ",
             $field-spec[3].WHAT.perl;
+        }
+
+        elsif $field-spec[1] ~~ C-NOTINSCHEMA {
+          $error-doc<fields>{$field-spec[0]} = 'not described in schema';
         }
       }
 

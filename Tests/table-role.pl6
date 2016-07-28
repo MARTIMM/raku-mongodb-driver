@@ -48,9 +48,11 @@ say $doc.perl;
 ok !$doc<ok>, 'Document has problems';
 is $doc<fields><number>, 'missing', 'field number is missing';
 is $doc<fields><zip>, 'type failure, is Num but must be Str', $doc<fields><zip>;
+is $doc<fields><extra>, 'not described in schema', 'extra is not described in schema';
 
 
 
+$table.reset;
 $table.set(
   street => 'Jan Gestelsteeg',
   number => 253,
