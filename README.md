@@ -315,9 +315,11 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.31.0
+  * New module for higher level access of collection MongoDB::HL::Collection
 * 0.30.7
   * used Semaphore::ReadersWriters and modified use of semaphores in Client.
-   
+  * hangups are taken care of by Jonathan Worthington in next release of perl.
 * 0.30.6
   * reordering statements to tackle race conditions (again) and to speed things up a little
 * 0.30.5
