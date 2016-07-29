@@ -66,4 +66,24 @@ $doc = $table.insert;
 ok $doc<ok>, 'Document written';
 say $doc.perl;
 
+
+
+my MongoDB::HL::Collection $same-table = gen-table-class(
+  :db-name<contacts>,
+  :cl-name<address>
+);
+
+$table.reset;
+$table.set(
+  street => 'Nauwe Geldeloze pad',
+  number => 400,
+  country => 'Nederland',
+  city => 'Elburg',
+  country => 'Netherlands'
+);
+
+$doc = $table.insert;
+ok $doc<ok>, 'Document written';
+say $doc.perl;
+
 done-testing;

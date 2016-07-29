@@ -49,7 +49,7 @@ role HL::CollectionRole {
   has MongoDB::Client $!client;
   has MongoDB::Database $!db;
   has MongoDB::Collection $!cl;
-  
+
   has Bool $!append-unknown-fields;
 
   #---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ role HL::CollectionRole {
 }
 
 #-----------------------------------------------------------------------------
-#TODO See if class can be generated in $A below
+#TODO See if class can be generated in $class below
 class HL::Collection does HL::CollectionRole {
 
   #---------------------------------------------------------------------------
@@ -223,19 +223,32 @@ class HL::Collection does HL::CollectionRole {
 }
 
 sub gen-table-class (
-  Str:D :$uri,
+  Str :$uri,
   Str:D :$db-name,
   Str:D :$cl-name,
-  BSON::Document:D :$schema
+  BSON::Document :$schema
 
   --> MongoDB::HL::Collection
 ) is export {
 
+  state Hash $objects = {};
   my $name = "MongoDB::HL::Collection::$cl-name.tc()";
+say "$name, $objects.perl()";
 
-  my $A := Metamodel::ClassHOW.new_type(:$name);
-  $A.^add_parent( MongoDB::HL::Collection, :!hides);
-  $A.^compose;
+  my $object;
+  if $objects{$name}:exists {
+    $object = $objects{$name}.clone;
+    $object.reset;
+  }
 
-  $A.new( :$uri, :$db-name, :$cl-name, :$schema);
+  else {
+    my $class := Metamodel::ClassHOW.new_type(:$name);
+    $class.^add_parent( MongoDB::HL::Collection, :!hides);
+    $class.^compose;
+    $object = $class.new( :$uri, :$db-name, :$cl-name, :$schema);
+    $objects{$name} = $object;
+  }
+
+say $object.defined;
+  $object;
 }
