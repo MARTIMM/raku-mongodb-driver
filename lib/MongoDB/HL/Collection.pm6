@@ -50,15 +50,16 @@ role HL::CollectionRole {
   has MongoDB::Database $!db;
   has MongoDB::Collection $!cl;
 
-  has Bool $!append-unknown-fields;
+  has Bool $.append-unknown-fields is rw = False;
 
   #---------------------------------------------------------------------------
-  method reset( *%fields ) {
+  method reset ( ) {
     $!record .= new;
+    $!append-unknown-fields = False;
   }
 
   #---------------------------------------------------------------------------
-  method set( *%fields ) {
+  method set ( *%fields ) {
 
     # Define the record in the same order as noted in schema
     $!record .= new unless $!record.defined;
