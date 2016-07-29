@@ -42,30 +42,54 @@ role HL::CollectionRole {
   # )
   has BSON::Document $!schema;
 
-  # Record to read in data or write to database
-  has BSON::Document $!record;
+  # Records to read in data or write to database, Initialize to one empty record
+  has Array $!records = [BSON::Document.new];
+
+  # Current record to write(set)
+  has Int $!current-record = 0;
+
+  # Check results
   has Array $!failed-fields;
 
+  # Can add unknown fields when True
+  has Bool $.append-unknown-fields is rw = False;
+
+  # Server data
   has MongoDB::Client $!client;
   has MongoDB::Database $!db;
   has MongoDB::Collection $!cl;
 
-  has Bool $.append-unknown-fields is rw = False;
-
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method reset ( ) {
-    $!record .= new;
+    $!records = [];
     $!append-unknown-fields = False;
+
+    $!current-record = 0;
+    $!records[$!current-record] = BSON::Document.new;
+
+    $!failed-fields = [];
+    self!check-record( $!schema, $!records[$!current-record]);
   }
 
-  #---------------------------------------------------------------------------
-  method set ( *%fields ) {
+  #-----------------------------------------------------------------------------
+  method set-next( *%fields --> Int ) {
+
+    # check done at reset(), set() and BUILD
+    return $!failed-fields.elems if $!failed-fields.elems;
+
+    $!current-record++;
+    $!records[$!current-record] = BSON::Document.new;
+    self.set(|%fields);
+  }
+
+  #-----------------------------------------------------------------------------
+  method set ( *%fields --> Int ) {
 
     # Define the record in the same order as noted in schema
-    $!record .= new unless $!record.defined;
+    my BSON::Document $record := $!records[$!current-record];
     for $!schema.keys -> $field-name {
       if %fields{$field-name}:exists {
-        $!record{$field-name} = %fields{$field-name};
+        $record{$field-name} = %fields{$field-name};
       }
     }
 
@@ -73,29 +97,46 @@ role HL::CollectionRole {
     # depending on option $!append-unknown-fields.
     for %fields.keys -> $field-name {
       if $!schema{$field-name}:!exists {
-        $!record{$field-name} = %fields{$field-name};
+        $record{$field-name} = %fields{$field-name};
       }
     }
+
+    $!failed-fields = [];
+    self!check-record( $!schema, $record);
+    $!failed-fields.elems;
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
+  method record-count ( --> Int ) {
+
+    $!records.elems;
+  }
+
+  #-----------------------------------------------------------------------------
   method read ( --> BSON::Document ) {
 
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method read-next ( --> BSON::Document ) {
 
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method insert ( --> BSON::Document ) {
 
     my BSON::Document $doc;
 
-    $!failed-fields = [];
-    self!check-record( $!schema, $!record);
-    if $!failed-fields.elems {
+    # Check if there are records
+    if $!records.elems == 0 {
+      $doc = BSON::Document.new: (
+        :!ok,
+        :reason{'No records to write'}
+      );
+    }
+
+    # Check if there are leftover errors from previous set() calls
+    elsif $!failed-fields.elems {
       $doc = self!document-failures;
     }
 
@@ -104,26 +145,29 @@ role HL::CollectionRole {
         BSON::Document.new: (
           insert => $!cl.name,
           documents => [
-            $!record
+            @$!records
           ]
         )
       );
     }
 
+    # clear all data and set defaults
+    self.reset;
+
     $doc;
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method update ( --> BSON::Document ) {
 
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method delete ( --> BSON::Document ) {
 
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method !check-record (
     BSON::Document:D $schema,
     BSON::Document:D $record
@@ -167,12 +211,12 @@ role HL::CollectionRole {
     }
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method !check-schema ( BSON::Document:D $schema --> Bool ) {
 
   }
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method !document-failures ( --> BSON::Document ) {
 
     my BSON::Document $error-doc .= new;
@@ -201,11 +245,11 @@ role HL::CollectionRole {
   }
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #TODO See if class can be generated in $class below
 class HL::Collection does HL::CollectionRole {
 
-  #---------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   submethod BUILD (
     Str:D :$uri,
     Str:D :$db-name,
@@ -234,12 +278,10 @@ sub gen-table-class (
 
   state Hash $objects = {};
   my $name = "MongoDB::HL::Collection::$cl-name.tc()";
-say "$name, $objects.perl()";
 
   my $object;
   if $objects{$name}:exists {
     $object = $objects{$name}.clone;
-    $object.reset;
   }
 
   else {
@@ -250,6 +292,6 @@ say "$name, $objects.perl()";
     $objects{$name} = $object;
   }
 
-say $object.defined;
+  $object.reset;
   $object;
 }

@@ -1,9 +1,15 @@
 use v6.c;
 
 use Test;
-use lib 'Tests';
+
+use MongoDB;
 use MongoDB::HL::Collection;
 use BSON::Document;
+
+#-------------------------------------------------------------------------------
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
+info-message("Test $?FILE start");
 
 my MongoDB::HL::Collection $table = gen-table-class(
   :uri<mongodb://:65010>,
@@ -32,14 +38,10 @@ subtest {
   ok $table.^can('read'), 'table can read';
   ok $table.^can('insert'), 'table can insert';
 
-
-
   $table.set(
     street => 'Jan Gestelsteeg',
     country => 'Nederland',
     zip => 2.3.Num,
-
-  #TODO extra field must be trapped
     extra => 'not described field'
   );
 
@@ -47,8 +49,9 @@ subtest {
   say $doc.perl;
   ok !$doc<ok>, 'Document has problems';
   is $doc<fields><number>, 'missing', 'field number is missing';
+  is $doc<fields><city>, 'missing', 'field number is missing';
   is $doc<fields><zip>, 'type failure, is Num but must be Str',
-     $doc<fields><zip>;
+     "field zip $doc<fields><zip>";
   is $doc<fields><extra>, 'not described in schema',
      'extra is not described in schema';
 
@@ -66,12 +69,10 @@ subtest {
     zip => '1043 XY',
     city => 'Lutjebroek',
     state => 'Gelderland',
-    country => 'Netherlands'
   );
 
   my BSON::Document $doc = $table.insert;
   ok $doc<ok>, 'Document written';
-  say $doc.perl;
 
 }, 'Proper fields test';
 
@@ -88,12 +89,10 @@ subtest {
     number => 400,
     country => 'Nederland',
     city => 'Elburg',
-    country => 'Netherlands'
   );
 
   my BSON::Document $doc = $sec-table.insert;
   ok $doc<ok>, 'Document written';
-  say $doc.perl;
 
 }, '2nd Object test';
 
@@ -111,16 +110,71 @@ subtest {
     number => 400,
     country => 'Nederland',
     city => 'Elburg',
-    country => 'Netherlands',
     extra-field => 'etcetera'
   );
 
   my BSON::Document $doc = $sec-table.insert;
-  ok $doc<ok>, 'Document written';
-  say $doc.perl;
+  ok $doc<ok>, 'write ok';
+  is $doc<n>, 1, 'one record written';
 
 }, 'append unknown fields test';
 
-#TODO $!append-unknown-fields
+#-------------------------------------------------------------------------------
+subtest {
 
+  my MongoDB::HL::Collection $sec-table = gen-table-class(
+    :db-name<contacts>,
+    :cl-name<address>
+  );
+
+  # Missing country and wrong number
+  my Int $fe = $sec-table.set(
+    street => 'Nauwe Geldeloze pad',
+    number => 4.5.Num,
+    city => 'Elburg',
+  );
+  is $fe, 2, 'Failures found';
+
+  $fe = $sec-table.set-next(
+    street => 'Mauve plein',
+    number => 2,
+    number-mod => 'a',
+    country => 'Nederland',
+    city => 'Groningen',
+  );
+  is $fe, 2, 'Same number of failures';
+  is $sec-table.record-count, 1, 'Still one record';
+
+  # retry
+  $fe = $sec-table.set(
+    street => 'Nauwe Geldeloze pad',
+    number => 400,
+    country => 'Nederland',
+    city => 'Elburg',
+  );
+  is $fe, 0, 'No failures found';
+
+  $sec-table.set-next(
+    street => 'Mauve plein',
+    number => 2,
+    number-mod => 'a',
+    country => 'Nederland',
+    city => 'Groningen',
+  );
+
+  is $sec-table.record-count, 2, 'Two records';
+
+  my BSON::Document $doc = $sec-table.insert;
+  ok $doc<ok>, 'write ok';
+  is $doc<n>, 2, 'two records written';
+  say $doc.perl;
+
+  is $sec-table.record-count, 1, 'reset to records';
+
+}, 'multiple records test';
+
+#-------------------------------------------------------------------------------
+# Cleanup
+#
+info-message("Test $?FILE end");
 done-testing;
