@@ -190,8 +190,16 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method read ( --> BSON::Document ) {
+  method read (
+    List :$criteria where all(@$criteria) ~~ Pair = (),
+    List :$projection where all(@$projection) ~~ Pair = (),
+    Int :$number-to-skip = 0, Int :$number-to-return = 0,
+    Int :$flags = 0, List :$read-concern, :$server is copy
 
+    --> BSON::Document
+  ) {
+
+    
   }
 
   #-----------------------------------------------------------------------------
