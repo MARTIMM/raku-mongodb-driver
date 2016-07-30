@@ -116,11 +116,11 @@ subtest {
 
 
 
-  $fq = $table.query-set(
-    number => 253,
-  );
+  $fq = $table.query-set( number => 253, );
+  $fq = $table.query-set-next( number => 400 );
+  $fq = $table.query-set-next( number => 2 );
 
-  $doc = $table.delete(:!limit);
+  $doc = $table.delete( :!limit, :!ordered);
   ok $doc<ok>, 'Delete ok';
   ok $doc<n> > 0, "More than 1($doc<n>) doc deleted";
 
