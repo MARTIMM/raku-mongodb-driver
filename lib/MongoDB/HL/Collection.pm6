@@ -12,11 +12,16 @@ unit package MongoDB;
 
 
 # Array index and error codes
-constant C-MANDATORY          = 0;
-constant C-TYPE               = 1;
+constant C-MANDATORY            = 0;
+constant C-TYPE                 = 1;
 
-# error code
-constant C-NOTINSCHEMA        = -1;
+# error code, other than above -> negative
+constant C-NOTINSCHEMA          = -1;
+
+# document failure types
+subset DocFail of Int where 0 <= $_ <= 1;
+constant C-DOCUMENT-RECORDFAIL  = 0;
+constant C-DOCUMENT-QUERYFAIL   = 1;
 
 #-----------------------------------------------------------------------------
 role HL::CollectionRole {
@@ -43,16 +48,20 @@ role HL::CollectionRole {
   has BSON::Document $!schema;
 
   # Records to read in data or write to database, Initialize to one empty record
-  has Array $!records = [BSON::Document.new];
-
-  # Current record to write(set)
   has Int $!current-record = 0;
-
-  # Check results
+  has Array $!records = [BSON::Document.new];
   has Array $!failed-fields;
+
+  # Query holder for other operations
+  has Int $!current-query = 0;
+  has Array $!queries = [BSON::Document.new];
+  has Array $!failed-query-fields;
 
   # Can add unknown fields when True
   has Bool $.append-unknown-fields is rw = False;
+
+  # Do collection check when schema check
+  has Bool $.check-collection is rw = False;
 
   # Server data
   has MongoDB::Client $!client;
@@ -61,14 +70,19 @@ role HL::CollectionRole {
 
   #-----------------------------------------------------------------------------
   method reset ( ) {
-    $!records = [];
-    $!append-unknown-fields = False;
 
     $!current-record = 0;
-    $!records[$!current-record] = BSON::Document.new;
-
+    $!records = [BSON::Document.new];
     $!failed-fields = [];
     self!check-record( $!schema, $!records[$!current-record]);
+
+    $!current-query = 0;
+    $!queries = [BSON::Document.new];
+    $!failed-query-fields = [];
+    self!check-query( $!schema, $!queries[$!current-query]);
+
+    $!append-unknown-fields = False;
+    $!check-collection = False;
   }
 
   #-----------------------------------------------------------------------------
@@ -107,6 +121,41 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
+  method query-set-next( *%fields --> Int ) {
+
+    # check done at reset(), set() and BUILD
+    return $!failed-query-fields.elems if $!failed-query-fields.elems;
+
+    $!current-query++;
+    $!queries[$!current-query] = BSON::Document.new;
+    self.set(|%fields);
+  }
+
+  #-----------------------------------------------------------------------------
+  method query-set ( *%fields --> Int ) {
+
+    # Define the record in the same order as noted in schema
+    my BSON::Document $query := $!queries[$!current-query];
+    for $!schema.keys -> $field-name {
+      if %fields{$field-name}:exists {
+        $query{$field-name} = %fields{$field-name};
+      }
+    }
+
+    # Add the rest of the fields not found in schema. These fail later
+    # depending on option $!append-unknown-fields.
+    for %fields.keys -> $field-name {
+      if $!schema{$field-name}:!exists {
+        $query{$field-name} = %fields{$field-name};
+      }
+    }
+
+    $!failed-query-fields = [];
+    self!check-query( $!schema, $query);
+    $!failed-query-fields.elems;
+  }
+
+  #-----------------------------------------------------------------------------
   method record-count ( --> Int ) {
 
     $!records.elems;
@@ -127,17 +176,9 @@ role HL::CollectionRole {
 
     my BSON::Document $doc;
 
-    # Check if there are records
-    if $!records.elems == 0 {
-      $doc = BSON::Document.new: (
-        :!ok,
-        :reason{'No records to write'}
-      );
-    }
-
     # Check if there are leftover errors from previous set() calls
-    elsif $!failed-fields.elems {
-      $doc = self!document-failures;
+    if $!failed-fields.elems {
+      $doc = self!document-failures(:type(C-DOCUMENT-RECORDFAIL));
     }
 
     else {
@@ -163,8 +204,38 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method delete ( --> BSON::Document ) {
+  method delete ( Bool :$ordered = True, Int :$limit = 1 --> BSON::Document ) {
 
+    my BSON::Document $doc;
+say map {
+  BSON::Document.new((
+    q => $_,
+    limit => 1
+  ))
+}, @$!queries;
+
+    # Check if there are leftover errors from previous set() calls
+    if $!failed-query-fields.elems {
+      $doc = self!document-failures(:type(C-DOCUMENT-QUERYFAIL));
+    }
+
+    else {
+      $doc = $!db.run-command( 
+        BSON::Document.new: (
+          delete => $!cl.name,
+          deletes => [
+            map {
+              BSON::Document.new((
+                q => $_,
+                limit => $limit
+              ))
+            }, @$!queries
+          ],
+          ordered => $ordered,
+#TODO writeconcern
+        )
+      );
+    }
   }
 
   #-----------------------------------------------------------------------------
@@ -181,10 +252,10 @@ role HL::CollectionRole {
 
         elsif $record{$field-name} !~~ $!schema{$field-name}[C-TYPE] {
           $!failed-fields.push: [
-            $field-name,                      # failed fieldname
-            C-TYPE,                           # failed on type
-            $record{$field-name}.WHAT,        # has type
-            $!schema{$field-name}[C-TYPE]     # should be type
+            $field-name,                        # failed fieldname
+            C-TYPE,                             # failed on type
+            $record{$field-name}.WHAT,          # has type
+            $!schema{$field-name}[C-TYPE]       # should be type
           ];
         }
       }
@@ -192,8 +263,8 @@ role HL::CollectionRole {
       else {
         if $!schema{$field-name}[C-MANDATORY] {
           $!failed-fields.push: [
-            $field-name,                      # failed fieldname
-            C-MANDATORY,                      # field is missing
+            $field-name,                        # failed fieldname
+            C-MANDATORY,                        # field is missing
           ];
         }
       }
@@ -203,8 +274,44 @@ role HL::CollectionRole {
       for $record.keys -> $field-name {
         if $schema{$field-name}:!exists {
           $!failed-fields.push: [
-            $field-name,                      # failed fieldname
-            C-NOTINSCHEMA,                    # field not in schema
+            $field-name,                        # failed fieldname
+            C-NOTINSCHEMA,                      # field not in schema
+          ];
+        }
+      }
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  # Almost same as check-record(). No check on missing fields
+  method !check-query (
+    BSON::Document:D $schema,
+    BSON::Document:D $query
+  ) {
+
+    for $!schema.keys -> $field-name {
+      if $query{$field-name}:exists {
+        if $query{$field-name} ~~ BSON::Document {
+          self!check-record( $!schema{$field-name}, $query{$field-name});
+        }
+
+        elsif $query{$field-name} !~~ $!schema{$field-name}[C-TYPE] {
+          $!failed-query-fields.push: [
+            $field-name,                        # failed fieldname
+            C-TYPE,                             # failed on type
+            $query{$field-name}.WHAT,           # has type
+            $!schema{$field-name}[C-TYPE]       # should be type
+          ];
+        }
+      }
+    }
+
+    unless $!append-unknown-fields {
+      for $query.keys -> $field-name {
+        if $schema{$field-name}:!exists {
+          $!failed-query-fields.push: [
+            $field-name,                        # failed fieldname
+            C-NOTINSCHEMA,                      # field not in schema
           ];
         }
       }
@@ -214,17 +321,30 @@ role HL::CollectionRole {
   #-----------------------------------------------------------------------------
   method !check-schema ( BSON::Document:D $schema --> Bool ) {
 
+#check on field usage
+#check if records in database still conform to schema
   }
 
   #-----------------------------------------------------------------------------
-  method !document-failures ( --> BSON::Document ) {
+  method !document-failures ( DocFail :$type --> BSON::Document ) {
 
     my BSON::Document $error-doc .= new;
     $error-doc<ok> = 0;
-    $error-doc<reason> = 'Missing fields or fields having wrong types';
+
+    my @failed-fields;
+    if $type ~~ C-DOCUMENT-RECORDFAIL {
+      @failed-fields := @$!failed-fields;
+      $error-doc<reason> = 'Failing record fields';
+    }
+    
+    elsif $type ~~ C-DOCUMENT-QUERYFAIL {
+      @failed-fields := @$!failed-query-fields;
+      $error-doc<reason> = 'Failing query fields';
+    }
+
     $error-doc<fields> = BSON::Document.new;
 
-    for @$!failed-fields -> $field-spec {
+    for @failed-fields -> $field-spec {
 
       if $field-spec[1] ~~ C-MANDATORY {
         $error-doc<fields>{$field-spec[0]} = 'missing';
