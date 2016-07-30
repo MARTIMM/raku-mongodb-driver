@@ -17,6 +17,8 @@ constant C-TYPE                 = 1;
 
 # error code, other than above -> negative
 constant C-NOTINSCHEMA          = -1;
+constant C-EMPTYRECORD          = -2;
+constant C-EMPTYQUERY           = -3;
 
 # document failure types
 subset DocFail of Int where 0 <= $_ <= 1;
@@ -73,13 +75,11 @@ role HL::CollectionRole {
 
     $!current-record = 0;
     $!records = [BSON::Document.new];
-    $!failed-fields = [];
-    self!check-record( $!schema, $!records[$!current-record]);
+    $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
 
     $!current-query = 0;
     $!queries = [BSON::Document.new];
-    $!failed-query-fields = [];
-    self!check-query( $!schema, $!queries[$!current-query]);
+    $!failed-query-fields[0] = [ '-', C-EMPTYQUERY,];
 
     $!append-unknown-fields = False;
     $!check-collection = False;
@@ -90,6 +90,10 @@ role HL::CollectionRole {
 
     # check done at reset(), set() and BUILD
     return $!failed-fields.elems if $!failed-fields.elems;
+    if $!records[$!current-record].elems == 0 {
+      $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
+      return 1;
+    }
 
     $!current-record++;
     $!records[$!current-record] = BSON::Document.new;
@@ -116,7 +120,14 @@ role HL::CollectionRole {
     }
 
     $!failed-fields = [];
-    self!check-record( $!schema, $record);
+    if $record.elems {
+      self!check-record($!schema, $record, :type(C-DOCUMENT-RECORDFAIL));
+    }
+
+    else {
+      $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
+    }
+
     $!failed-fields.elems;
   }
 
@@ -125,10 +136,14 @@ role HL::CollectionRole {
 
     # check done at reset(), set() and BUILD
     return $!failed-query-fields.elems if $!failed-query-fields.elems;
+    if $!queries[$!current-query].elems == 0 {
+      $!failed-query-fields[0] = [ '-', C-EMPTYQUERY,];
+      return 1;
+    }
 
     $!current-query++;
     $!queries[$!current-query] = BSON::Document.new;
-    self.set(|%fields);
+    self.query-set(|%fields);
   }
 
   #-----------------------------------------------------------------------------
@@ -151,7 +166,14 @@ role HL::CollectionRole {
     }
 
     $!failed-query-fields = [];
-    self!check-query( $!schema, $query);
+    if $query.elems {
+      self!check-record($!schema, $query, :type(C-DOCUMENT-QUERYFAIL));
+    }
+
+    else {
+      $!failed-query-fields[0] = [ '-', C-EMPTYQUERY,];
+    }
+
     $!failed-query-fields.elems;
   }
 
@@ -159,6 +181,12 @@ role HL::CollectionRole {
   method record-count ( --> Int ) {
 
     $!records.elems;
+  }
+
+  #-----------------------------------------------------------------------------
+  method query-count ( --> Int ) {
+
+    $!queries.elems;
   }
 
   #-----------------------------------------------------------------------------
@@ -204,45 +232,59 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method delete ( Bool :$ordered = True, Int :$limit = 1 --> BSON::Document ) {
+  method delete (
+    Bool :$ordered = True,
+    Bool :$limit = True
+    --> BSON::Document
+  ) {
 
     my BSON::Document $doc;
-say map {
-  BSON::Document.new((
-    q => $_,
-    limit => 1
-  ))
-}, @$!queries;
 
-    # Check if there are leftover errors from previous set() calls
+    # Check if there are leftover errors from previous set-query() calls
     if $!failed-query-fields.elems {
       $doc = self!document-failures(:type(C-DOCUMENT-QUERYFAIL));
     }
 
     else {
-      $doc = $!db.run-command( 
-        BSON::Document.new: (
-          delete => $!cl.name,
-          deletes => [
-            map {
-              BSON::Document.new((
-                q => $_,
-                limit => $limit
-              ))
-            }, @$!queries
-          ],
-          ordered => $ordered,
+      my BSON::Document $req .= new: (
+        delete => $!cl.name,
+        deletes => [
+          map {
+            BSON::Document.new((
+              q => $_,
+              limit => $limit ?? 1 !! 0;
+            ))
+          }, @$!queries
+        ],
+        ordered => $ordered,
 #TODO writeconcern
-        )
       );
+
+say "Req: $req.perl()";
+      $doc = $!db.run-command($req);
     }
+
+    # clear all data and set defaults
+    self.reset;
+
+    $doc;
   }
 
   #-----------------------------------------------------------------------------
   method !check-record (
     BSON::Document:D $schema,
-    BSON::Document:D $record
+    BSON::Document:D $record,
+    DocFail :$type = C-DOCUMENT-RECORDFAIL
   ) {
+
+    my @failed-fields;
+    if $type ~~ C-DOCUMENT-RECORDFAIL {
+      @failed-fields := @$!failed-fields;
+    }
+
+    elsif $type ~~ C-DOCUMENT-QUERYFAIL {
+      @failed-fields := @$!failed-query-fields;
+    }
 
     for $!schema.keys -> $field-name {
       if $record{$field-name}:exists {
@@ -251,7 +293,7 @@ say map {
         }
 
         elsif $record{$field-name} !~~ $!schema{$field-name}[C-TYPE] {
-          $!failed-fields.push: [
+          @failed-fields.push: [
             $field-name,                        # failed fieldname
             C-TYPE,                             # failed on type
             $record{$field-name}.WHAT,          # has type
@@ -261,11 +303,14 @@ say map {
       }
 
       else {
-        if $!schema{$field-name}[C-MANDATORY] {
-          $!failed-fields.push: [
-            $field-name,                        # failed fieldname
-            C-MANDATORY,                        # field is missing
-          ];
+        # This check is only needed on record checks, not for queries
+        if $type ~~ C-DOCUMENT-RECORDFAIL {
+          if $!schema{$field-name}[C-MANDATORY] {
+            @failed-fields.push: [
+              $field-name,                      # failed fieldname
+              C-MANDATORY,                      # field is missing
+            ];
+          }
         }
       }
     }
@@ -273,43 +318,7 @@ say map {
     unless $!append-unknown-fields {
       for $record.keys -> $field-name {
         if $schema{$field-name}:!exists {
-          $!failed-fields.push: [
-            $field-name,                        # failed fieldname
-            C-NOTINSCHEMA,                      # field not in schema
-          ];
-        }
-      }
-    }
-  }
-
-  #-----------------------------------------------------------------------------
-  # Almost same as check-record(). No check on missing fields
-  method !check-query (
-    BSON::Document:D $schema,
-    BSON::Document:D $query
-  ) {
-
-    for $!schema.keys -> $field-name {
-      if $query{$field-name}:exists {
-        if $query{$field-name} ~~ BSON::Document {
-          self!check-record( $!schema{$field-name}, $query{$field-name});
-        }
-
-        elsif $query{$field-name} !~~ $!schema{$field-name}[C-TYPE] {
-          $!failed-query-fields.push: [
-            $field-name,                        # failed fieldname
-            C-TYPE,                             # failed on type
-            $query{$field-name}.WHAT,           # has type
-            $!schema{$field-name}[C-TYPE]       # should be type
-          ];
-        }
-      }
-    }
-
-    unless $!append-unknown-fields {
-      for $query.keys -> $field-name {
-        if $schema{$field-name}:!exists {
-          $!failed-query-fields.push: [
+          @failed-fields.push: [
             $field-name,                        # failed fieldname
             C-NOTINSCHEMA,                      # field not in schema
           ];
@@ -336,7 +345,7 @@ say map {
       @failed-fields := @$!failed-fields;
       $error-doc<reason> = 'Failing record fields';
     }
-    
+
     elsif $type ~~ C-DOCUMENT-QUERYFAIL {
       @failed-fields := @$!failed-query-fields;
       $error-doc<reason> = 'Failing query fields';
@@ -358,6 +367,14 @@ say map {
 
       elsif $field-spec[1] ~~ C-NOTINSCHEMA {
         $error-doc<fields>{$field-spec[0]} = 'not described in schema';
+      }
+
+      elsif $field-spec[1] ~~ C-EMPTYRECORD {
+        $error-doc<fields>{$field-spec[0]} = 'current record is empty';
+      }
+
+      elsif $field-spec[1] ~~ C-EMPTYQUERY {
+        $error-doc<fields>{$field-spec[0]} = 'current query is empty';
       }
     }
 

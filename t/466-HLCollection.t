@@ -31,14 +31,26 @@ my MongoDB::HL::Collection $table = gen-table-class(
 #-------------------------------------------------------------------------------
 subtest {
 
+  my Int $fq = $table.query-set-next(
+    number => 253,
+  );
+  is $fq, 1, 'One failure ofter query-set-next';
+  my BSON::Document $doc = $table.delete;
+  is $doc<fields><->, 'current query is empty', $doc<fields><->;
+
+  $fq = $table.query-set;
+  is $fq, 1, 'One failure ofter query-set';
+  $doc = $table.delete;
+  is $doc<fields><->, 'current query is empty', $doc<fields><->;
+
+
   # missing fields not checked
   $table.query-set(
     zip => 2.3.Num,
     extra => 'not described field'
   );
 
-  my BSON::Document $doc = $table.delete;
-  say $doc.perl;
+  $doc = $table.delete;
   ok !$doc<ok>, 'Document has problems';
   is $doc<fields><zip>, 'type failure, is Num but must be Str',
      "field zip $doc<fields><zip>";
@@ -50,17 +62,67 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
+  # Insert enaugh records
   $table.reset;
-  my $fq = $table.query-set(
+  $table.set(
+    street => 'Jan Gestelsteeg',
+    number => 253,
+    number-mod => 'zwart',
+    country => 'Nederland',
+    zip => '1043 XY',
+    city => 'Lutjebroek',
+    state => 'Gelderland',
+  );
+  for ^10 {
+    $table.set-next(
+      street => 'Jan Gestelsteeg',
+      number => 253,
+      number-mod => 'zwart',
+      country => 'Nederland',
+      zip => '1043 XY',
+      city => 'Lutjebroek',
+      state => 'Gelderland',
+    );
+  }
+  my BSON::Document $doc = $table.insert;
+  ok $doc<ok>, 'Write ok';
+  is $doc<n>, 11, '11 docs written';
+
+
+
+  my Int $fq = $table.query-set(
     number => 253,
   );
-  
-  is $fq, 0, 'No field errors';
 
   my BSON::Document $doc = $table.delete;
-  say $doc.perl;
   ok $doc<ok>, 'Delete ok';
   is $doc<n>, 1, 'One doc deleted';
+
+
+
+  $fq = $table.query-set(
+    number => 253,
+  );
+
+  $fq = $table.query-set-next(
+    number => 253,
+  );
+
+  is $fq, 0, 'No field errors';
+  is $table.query-count, 2, '2 queries';
+  $doc = $table.delete;
+  ok $doc<ok>, 'Delete ok';
+  is $doc<n>, 2, 'Two docs deleted';
+
+
+
+  $fq = $table.query-set(
+    number => 253,
+  );
+
+  $doc = $table.delete(:!limit);
+  ok $doc<ok>, 'Delete ok';
+  ok $doc<n> > 0, "More than 1($doc<n>) doc deleted";
 
 }, 'delete test';
 

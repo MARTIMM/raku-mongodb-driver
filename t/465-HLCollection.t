@@ -31,6 +31,28 @@ my MongoDB::HL::Collection $table = gen-table-class(
 #-------------------------------------------------------------------------------
 subtest {
 
+  my MongoDB::HL::Collection $subtable = gen-table-class(
+    :uri<mongodb://:65010>,
+    :db-name<c0>,
+    :cl-name<a0>,
+
+    :schema( BSON::Document.new: (
+        street => [ 0, Str],
+        number => [ 0, Int],
+      )
+    )
+  );
+
+  my $fr = $subtable.set;
+  is $fr, 1, 'One failure';
+  my BSON::Document $doc = $subtable.insert;
+  is $doc<fields><->, 'current record is empty', $doc<fields><->;
+
+}, 'all optional fields test';
+
+#-------------------------------------------------------------------------------
+subtest {
+
   is $table.^name,
      'MongoDB::HL::Collection::Address',
      "class type is $table.^name()";

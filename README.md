@@ -317,6 +317,9 @@ change at any time. The public API should not be considered stable.*
 
 * 0.31.0
   * New module for higher level access of collection MongoDB::HL::Collection
+  * Inserting records
+  * Deleting records
+  * Other mehods to define the records and queries and to handle errors
 * 0.30.7
   * used Semaphore::ReadersWriters and modified use of semaphores in Client.
   * hangups are taken care of by Jonathan Worthington in next release of perl.
