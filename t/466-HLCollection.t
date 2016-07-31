@@ -94,7 +94,7 @@ subtest {
     number => 253,
   );
 
-  my BSON::Document $doc = $table.delete;
+  $doc = $table.delete;
   ok $doc<ok>, 'Delete ok';
   is $doc<n>, 1, 'One doc deleted';
 
