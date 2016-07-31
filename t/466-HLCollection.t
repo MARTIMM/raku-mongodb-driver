@@ -11,7 +11,7 @@ set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::HL::Collection $table = gen-table-class(
+my MongoDB::HL::Collection $table = collection-object(
   :uri<mongodb://:65010>,
   :db-name<contacts>,
   :cl-name<address>,

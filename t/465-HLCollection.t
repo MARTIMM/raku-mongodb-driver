@@ -11,7 +11,7 @@ set-logfile($*OUT);
 set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::HL::Collection $table = gen-table-class(
+my MongoDB::HL::Collection $table = collection-object(
   :uri<mongodb://:65010>,
   :db-name<contacts>,
   :cl-name<address>,
@@ -31,7 +31,7 @@ my MongoDB::HL::Collection $table = gen-table-class(
 #-------------------------------------------------------------------------------
 subtest {
 
-  my MongoDB::HL::Collection $subtable = gen-table-class(
+  my MongoDB::HL::Collection $subtable = collection-object(
     :uri<mongodb://:65010>,
     :db-name<c0>,
     :cl-name<a0>,
@@ -101,7 +101,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my MongoDB::HL::Collection $sec-table = gen-table-class(
+  my MongoDB::HL::Collection $sec-table = collection-object(
     :db-name<contacts>,
     :cl-name<address>
   );
@@ -121,7 +121,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my MongoDB::HL::Collection $sec-table = gen-table-class(
+  my MongoDB::HL::Collection $sec-table = collection-object(
     :db-name<contacts>,
     :cl-name<address>
   );
@@ -144,7 +144,7 @@ subtest {
 #-------------------------------------------------------------------------------
 subtest {
 
-  my MongoDB::HL::Collection $sec-table = gen-table-class(
+  my MongoDB::HL::Collection $sec-table = collection-object(
     :db-name<contacts>,
     :cl-name<address>
   );
