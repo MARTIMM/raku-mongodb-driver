@@ -6,6 +6,7 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
+use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -19,11 +20,14 @@ constant C-TYPE                 = 1;
 constant C-NOTINSCHEMA          = -1;
 constant C-EMPTYRECORD          = -2;
 constant C-EMPTYQUERY           = -3;
+constant C-EMPTYPROJECTION      = -4;
 
 # document failure types
-subset DocFail of Int where 0 <= $_ <= 1;
-constant C-DOCUMENT-RECORDFAIL  = 0;
-constant C-DOCUMENT-QUERYFAIL   = 1;
+subset DocFail of Int where 0 <= $_ <= 3;
+constant C-DOCUMENT-RECORDFAIL          = 0;
+constant C-DOCUMENT-QUERYFAIL           = 1;
+constant C-DOCUMENT-CRITERIAFAIL        = 2;
+constant C-DOCUMENT-PROJECTIONFAIL      = 3;
 
 #-----------------------------------------------------------------------------
 role HL::CollectionRole {
@@ -59,6 +63,10 @@ role HL::CollectionRole {
   has Array $!queries = [BSON::Document.new];
   has Array $!failed-query-fields;
 
+  has Array $!failed-projecton-fields;
+
+  has MongoDB::Cursor $!cursor;
+
   # Can add unknown fields when True
   has Bool $.append-unknown-fields is rw = False;
 
@@ -80,6 +88,8 @@ role HL::CollectionRole {
     $!current-query = 0;
     $!queries = [BSON::Document.new];
     $!failed-query-fields[0] = [ '-', C-EMPTYQUERY,];
+
+    $!failed-projection-fields[0] = [ '-', C-EMPTYPROJECTION,];
 
     $!append-unknown-fields = False;
     $!check-collection = False;
@@ -121,7 +131,7 @@ role HL::CollectionRole {
 
     $!failed-fields = [];
     if $record.elems {
-      self!check-record($!schema, $record, :type(C-DOCUMENT-RECORDFAIL));
+      self!check-record( $!schema, $record, :type(C-DOCUMENT-RECORDFAIL));
     }
 
     else {
@@ -167,7 +177,7 @@ role HL::CollectionRole {
 
     $!failed-query-fields = [];
     if $query.elems {
-      self!check-record($!schema, $query, :type(C-DOCUMENT-QUERYFAIL));
+      self!check-record( $!schema, $query, :type(C-DOCUMENT-QUERYFAIL));
     }
 
     else {
@@ -191,20 +201,45 @@ role HL::CollectionRole {
 
   #-----------------------------------------------------------------------------
   method read (
-    List :$criteria where all(@$criteria) ~~ Pair = (),
-    List :$projection where all(@$projection) ~~ Pair = (),
-    Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    Int :$flags = 0, List :$read-concern, :$server is copy
+    BSON::Document :$criteria = BSON::Document.new,
+    BSON::Document :$projection,
+    Int :$number-to-skip, Int :$number-to-return,
+#TODO    Int :$flags = 0, BSON::Document :$read-concern, :$server is copy
 
     --> BSON::Document
   ) {
 
-    
+    my %args = %();
+
+    $!failed-query-fields = [];
+    if $criteria.elems {
+      self!check-record( $!schema, $criteria, :type(C-DOCUMENT-CRITERIAFAIL));
+      return self!document-failures(:type(C-DOCUMENT-CRITERIAFAIL))
+        if $!failed-query-fields.elems;
+
+      %args<criteria> = $criteria;
+    }
+
+    $!failed-projection-fields = [];
+    if $projection.elems {
+      self!check-record( $!schema, $projection, :type(C-DOCUMENT-PROJECTIONFAIL));
+      return self!document-failures(:type(C-DOCUMENT-PROJECTIONFAIL))
+        if $!failed-projection-fields.elems;
+
+      %args<projection> = $projection;
+    }
+
+    %args<number-to-skip> = $number-to-skip if $number-to-skip;
+    %args<number-to-return> = $number-to-return if $number-to-return;
+
+    $!cursor = $!cl.find(%args);
+    $cursor.fetch;
   }
 
   #-----------------------------------------------------------------------------
   method read-next ( --> BSON::Document ) {
 
+    $cursor.fetch;
   }
 
   #-----------------------------------------------------------------------------
@@ -279,12 +314,21 @@ say "Req: $req.perl()";
   }
 
   #-----------------------------------------------------------------------------
+  # Records for writing must be checked for
+  # - missing mandatory fields
+  # - extra fields
+  # - wrong typed fields
+  # Query checks are the same as record checks except for missing fields
+  # Criteria for reading tests as queries
+  # Projections are checked extra fields only and must be boolean
+  #
   method !check-record (
     BSON::Document:D $schema,
     BSON::Document:D $record,
     DocFail :$type = C-DOCUMENT-RECORDFAIL
   ) {
 
+    # Variable is bound to real location to take care for recursive loops
     my @failed-fields;
     if $type ~~ C-DOCUMENT-RECORDFAIL {
       @failed-fields := @$!failed-fields;
@@ -294,12 +338,38 @@ say "Req: $req.perl()";
       @failed-fields := @$!failed-query-fields;
     }
 
+    elsif $type ~~ C-DOCUMENT-CRITERIAFAIL {
+      @failed-fields := @$!failed-query-fields;
+    }
+
+    elsif $type ~~ C-DOCUMENT-PROJECTIONFAIL {
+      @failed-fields := @$!failed-projection-fields;
+    }
+
+    # Check all names from schema
     for $!schema.keys -> $field-name {
+
+      # Check if used in record
       if $record{$field-name}:exists {
+
+        # Check if nested, if so recursive call
         if $record{$field-name} ~~ BSON::Document {
           self!check-record( $!schema{$field-name}, $record{$field-name});
         }
 
+        # See if this ia projection data. If so the values must be boolean
+        elsif $type ~~ C-DOCUMENT-PROJECTIONFAIL {
+          if $record{$field-name} !~~ Bool {
+            @failed-fields.push: [
+              $field-name,                      # failed fieldname
+              C-TYPE,                           # failed on type
+              $record{$field-name}.WHAT,        # has type
+              Bool                              # should be of type Bool
+            ];
+          }
+        }
+
+        # Check type of field value with type in schema
         elsif $record{$field-name} !~~ $!schema{$field-name}[C-TYPE] {
           @failed-fields.push: [
             $field-name,                        # failed fieldname
@@ -310,8 +380,11 @@ say "Req: $req.perl()";
         }
       }
 
+      # If field not found in record
       else {
-        # This check is only needed on record checks, not for queries
+        # Check if field is mandatory. Only needed on record checks,
+        # not for queries, criteria or projections
+        #
         if $type ~~ C-DOCUMENT-RECORDFAIL {
           if $!schema{$field-name}[C-MANDATORY] {
             @failed-fields.push: [
@@ -323,8 +396,16 @@ say "Req: $req.perl()";
       }
     }
 
+    # Test for extra fields. Check option $!append-unknown-fields which is
+    # False by default.
     unless $!append-unknown-fields {
+
+      # Check for all fields in record
       for $record.keys -> $field-name {
+
+        # Check if field is described in schema, but ignore '_id'. This field is
+        # generated always and can be used in insertions,projections and
+        # criteria.
         if $schema{$field-name}:!exists {
           @failed-fields.push: [
             $field-name,                        # failed fieldname
@@ -359,6 +440,16 @@ say "Req: $req.perl()";
       $error-doc<reason> = 'Failing query fields';
     }
 
+    elsif $type ~~ C-DOCUMENT-CRITERIAFAIL {
+      @failed-fields := @$!failed-query-fields;
+      $error-doc<reason> = 'Failing criteria fields';
+    }
+
+    elsif $type ~~ C-DOCUMENT-PROJECTIONFAIL {
+      @failed-fields := @$!failed-projection-fields;
+      $error-doc<reason> = 'Failing projection fields';
+    }
+
     $error-doc<fields> = BSON::Document.new;
 
     for @failed-fields -> $field-spec {
@@ -382,7 +473,11 @@ say "Req: $req.perl()";
       }
 
       elsif $field-spec[1] ~~ C-EMPTYQUERY {
-        $error-doc<fields>{$field-spec[0]} = 'current query is empty';
+        $error-doc<fields>{$field-spec[0]} = 'current query/criteria is empty';
+      }
+
+      elsif $field-spec[1] ~~ C-EMPTYPROJETION {
+        $error-doc<fields>{$field-spec[0]} = 'current projection is empty';
       }
     }
 
@@ -412,7 +507,7 @@ class HL::Collection does HL::CollectionRole {
   }
 }
 
-sub gen-table-class (
+sub collection-object (
   Str :$uri,
   Str:D :$db-name,
   Str:D :$cl-name,
