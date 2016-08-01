@@ -44,7 +44,7 @@ class Server {
   # must be done in the background so Client starts this process in a thread.
   #
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
-    SocketLimit :$max-sockets = 3, Int :$loop-time = 10
+    SocketLimit :$max-sockets = 5, Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
@@ -235,8 +235,8 @@ class Server {
 # count total opened
 my Int $c = 0;
 for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
-say "$*THREAD.id() total sockets open: $c of @!sockets.elems()";
-#        debug-message(
+trace-message("total sockets open: $c of @!sockets.elems()");
+#        trace-message(
 #          "total sockets open: ",
 #          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
 #        );
@@ -260,12 +260,7 @@ say "$*THREAD.id() total sockets open: $c of @!sockets.elems()";
     if ! $sock.defined {
 
       # Protect against too many open sockets.
-#      my $sock-max = $!rw-sem.reader( 'sock-max', {$!max-sockets;});
-#      if @!sockets.elems >= $sock-max {
-#        fatal-message("Too many sockets opened, max is $sock-max");
-#      }
-
-say "$*THREAD.id() new socket";
+      trace-message("new socket");
 
       $sock .= new(:server(self));
     }
