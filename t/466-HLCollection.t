@@ -36,12 +36,12 @@ subtest {
   );
   is $fq, 1, 'One failure ofter query-set-next';
   my BSON::Document $doc = $table.delete;
-  is $doc<fields><->, 'current query is empty', $doc<fields><->;
+  is $doc<fields><->, 'current query/criteria is empty', $doc<fields><->;
 
   $fq = $table.query-set;
-  is $fq, 1, 'One failure ofter query-set';
+  is $fq, 1, 'One failure after query-set';
   $doc = $table.delete;
-  is $doc<fields><->, 'current query is empty', $doc<fields><->;
+  is $doc<fields><->, 'current query/criteria is empty', $doc<fields><->;
 
 
   # missing fields not checked

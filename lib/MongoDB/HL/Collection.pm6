@@ -63,7 +63,7 @@ role HL::CollectionRole {
   has Array $!queries = [BSON::Document.new];
   has Array $!failed-query-fields;
 
-  has Array $!failed-projecton-fields;
+  has Array $!failed-projection-fields;
 
   has MongoDB::Cursor $!cursor;
 
@@ -211,11 +211,11 @@ role HL::CollectionRole {
 
     my %args = %();
 
-    $!failed-query-fields = [];
+    $!failed-projection-fields = [];
     if $criteria.elems {
-      self!check-record( $!schema, $criteria, :type(C-DOCUMENT-CRITERIAFAIL));
+      self!check-record( $!schema, $criteria, :type(C-DOCUMENT-PROJECTIONFAIL));
       return self!document-failures(:type(C-DOCUMENT-CRITERIAFAIL))
-        if $!failed-query-fields.elems;
+        if $!failed-projection-fields.elems;
 
       %args<criteria> = $criteria;
     }
@@ -233,13 +233,13 @@ role HL::CollectionRole {
     %args<number-to-return> = $number-to-return if $number-to-return;
 
     $!cursor = $!cl.find(%args);
-    $cursor.fetch;
+    $!cursor.fetch;
   }
 
   #-----------------------------------------------------------------------------
   method read-next ( --> BSON::Document ) {
 
-    $cursor.fetch;
+    $!cursor.fetch;
   }
 
   #-----------------------------------------------------------------------------
@@ -352,13 +352,10 @@ say "Req: $req.perl()";
       # Check if used in record
       if $record{$field-name}:exists {
 
-        # Check if nested, if so recursive call
-        if $record{$field-name} ~~ BSON::Document {
-          self!check-record( $!schema{$field-name}, $record{$field-name});
-        }
+        next if $type ~~ C-DOCUMENT-CRITERIAFAIL;
 
         # See if this ia projection data. If so the values must be boolean
-        elsif $type ~~ C-DOCUMENT-PROJECTIONFAIL {
+        if $type ~~ C-DOCUMENT-PROJECTIONFAIL {
           if $record{$field-name} !~~ Bool {
             @failed-fields.push: [
               $field-name,                      # failed fieldname
@@ -377,6 +374,11 @@ say "Req: $req.perl()";
             $record{$field-name}.WHAT,          # has type
             $!schema{$field-name}[C-TYPE]       # should be type
           ];
+        }
+
+        # Check if nested, if so, do recursive call
+        if $record{$field-name} ~~ BSON::Document {
+          self!check-record( $!schema{$field-name}, $record{$field-name});
         }
       }
 
@@ -441,7 +443,7 @@ say "Req: $req.perl()";
     }
 
     elsif $type ~~ C-DOCUMENT-CRITERIAFAIL {
-      @failed-fields := @$!failed-query-fields;
+      @failed-fields := @$!failed-projection-fields;
       $error-doc<reason> = 'Failing criteria fields';
     }
 
@@ -476,7 +478,7 @@ say "Req: $req.perl()";
         $error-doc<fields>{$field-spec[0]} = 'current query/criteria is empty';
       }
 
-      elsif $field-spec[1] ~~ C-EMPTYPROJETION {
+      elsif $field-spec[1] ~~ C-EMPTYPROJECTION {
         $error-doc<fields>{$field-spec[0]} = 'current projection is empty';
       }
     }
