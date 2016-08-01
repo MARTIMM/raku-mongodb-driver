@@ -31,7 +31,42 @@ my MongoDB::HL::Collection $table = collection-object(
 #-------------------------------------------------------------------------------
 subtest {
 
+  my Int $count = 4304;
+  # Insert enaugh records
+  $table.reset;
+  $table.set(
+    street => 'Jan Gestelsteeg',
+    number => $count++,
+    number-mod => 'zwart',
+    country => 'Nederland',
+    zip => '1043 XY',
+    city => 'Lutjebroek',
+    state => 'Gelderland',
+  );
+  for ^10 {
+    $table.set-next(
+      street => 'Jan Gestelsteeg',
+      number => $count++,
+      number-mod => 'zwart',
+      country => 'Nederland',
+      zip => '1043 XY',
+      city => 'Lutjebroek',
+      state => 'Gelderland',
+    );
+  }
+  my BSON::Document $doc = $table.insert;
+  ok $doc<ok>, 'Write ok';
+  is $doc<n>, 11, '11 docs written';
 
+
+  $doc = $table.read( :criteria(%( number => ( '$gt' => 4307))));
+say $doc.perl;
+
+
+
+  $table.query-set( number => ( '$gt' => 4300));
+  $doc = $table.delete( :!limit, :!ordered);
+say $doc.perl;
 }, 'read test';
 
 #-------------------------------------------------------------------------------

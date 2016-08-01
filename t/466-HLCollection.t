@@ -31,37 +31,6 @@ my MongoDB::HL::Collection $table = collection-object(
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Int $fq = $table.query-set-next(
-    number => 253,
-  );
-  is $fq, 1, 'One failure ofter query-set-next';
-  my BSON::Document $doc = $table.delete;
-  is $doc<fields><->, 'current query/criteria is empty', $doc<fields><->;
-
-  $fq = $table.query-set;
-  is $fq, 1, 'One failure after query-set';
-  $doc = $table.delete;
-  is $doc<fields><->, 'current query/criteria is empty', $doc<fields><->;
-
-
-  # missing fields not checked
-  $table.query-set(
-    zip => 2.3.Num,
-    extra => 'not described field'
-  );
-
-  $doc = $table.delete;
-  ok !$doc<ok>, 'Document has problems';
-  is $doc<fields><zip>, 'type failure, is Num but must be Str',
-     "field zip $doc<fields><zip>";
-  is $doc<fields><extra>, 'not described in schema',
-     'extra is not described in schema';
-
-}, 'query field failure test';
-
-#-------------------------------------------------------------------------------
-subtest {
-
   # Insert enaugh records
   $table.reset;
   $table.set(

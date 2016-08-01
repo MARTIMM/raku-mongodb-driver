@@ -74,9 +74,6 @@ subtest {
   is $doc<fields><city>, 'missing', 'field number is missing';
   is $doc<fields><zip>, 'type failure, is Num but must be Str',
      "field zip $doc<fields><zip>";
-  is $doc<fields><extra>, 'not described in schema',
-     'extra is not described in schema';
-
 }, 'field failure test';
 
 #-------------------------------------------------------------------------------
