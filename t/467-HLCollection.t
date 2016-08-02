@@ -17,13 +17,13 @@ my MongoDB::HL::Collection $table = collection-object(
   :cl-name<address>,
 
   :schema( BSON::Document.new: (
-      street => [ 1, Str],
-      number => [ 1, Int],
-      number-mod => [ 0, Str],
-      city => [ 1, Str],
-      zip => [ 0, Str],
-      state => [ 0, Str],
-      country => [ 1, Str],
+      street => [ True, Str],
+      number => [ True, Int],
+      number-mod => [ False, Str],
+      city => [ True, Str],
+      zip => [ False, Str],
+      state => [ False, Str],
+      country => [ True, Str],
     )
   )
 );
@@ -59,14 +59,21 @@ subtest {
   is $doc<n>, 11, '11 docs written';
 
 
+  $doc = $table.count( number => ( '$gt' => 4307));
+  ok $doc<ok>, 'Count ok';
+  is $doc<n>, 7, '7 records counted';
+
+  my $n = 1;
   $doc = $table.read( :criteria(%( number => ( '$gt' => 4307))));
-say $doc.perl;
+  while $table.read-next {
+    $n++;
+  }
+  is $n, 7, '7 records read';
 
 
-
+  # delete data
   $table.query-set( number => ( '$gt' => 4300));
   $doc = $table.delete( :!limit, :!ordered);
-say $doc.perl;
 }, 'read test';
 
 #-------------------------------------------------------------------------------

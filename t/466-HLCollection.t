@@ -17,13 +17,13 @@ my MongoDB::HL::Collection $table = collection-object(
   :cl-name<address>,
 
   :schema( BSON::Document.new: (
-      street => [ 1, Str],
-      number => [ 1, Int],
-      number-mod => [ 0, Str],
-      city => [ 1, Str],
-      zip => [ 0, Str],
-      state => [ 0, Str],
-      country => [ 1, Str],
+      street => [ True, Str],
+      number => [ True, Int],
+      number-mod => [ False, Str],
+      city => [ True, Str],
+      zip => [ False, Str],
+      state => [ False, Str],
+      country => [ True, Str],
     )
   )
 );

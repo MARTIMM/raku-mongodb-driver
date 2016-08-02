@@ -30,14 +30,13 @@ constant C-DOCUMENT-QUERYFAIL           = 1;
 #-----------------------------------------------------------------------------
 role HL::CollectionRole {
 
-  # Schema is a document to describe a table. Its keys are the fields in the table
-  # The value of a field is an Array or BSON::Document. When an Array, it holds
-  # the following info
-  # - Mandatory field if True(Bool)
+  # Schema is a document to describe a table. Its keys are the fields in the
+  # table. The value of a field is an Array or BSON::Document. When an Array,
+  # it holds the following info
+  # - Mandatory field
   # - Type of field,
   # -
-  # When BSON::Document is used, it means the structure is nested and is always
-  # mandatory.
+  # When BSON::Document is used, it means the structure is nested.
   #
   # BSON::Document.new: (
   #   contact => BSON::Document.new((
@@ -170,16 +169,26 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
+  method count ( *%query --> BSON::Document ) {
+
+    my $query = BSON::Document.new;
+    if %query.keys {
+      self!copy-fields( $!schema, %query, $query);
+    }
+
+    my BSON::Document $req .= new: ( :count($!cl.name), :$query);
+    $!db.run-command($req);
+  }
+
+  #-----------------------------------------------------------------------------
   method read (
-#    BSON::Document :$criteria = BSON::Document.new,
-#    BSON::Document :$projection,
     :%criteria, :%projection,
     Int :$number-to-skip, Int :$number-to-return,
 #TODO    Int :$flags = 0, BSON::Document :$read-concern, :$server is copy
 
     --> BSON::Document
   ) {
-say "Crit: ", %criteria.perl;
+
     my %args = %();
 
     if %criteria.keys {
@@ -195,7 +204,6 @@ say "Crit: ", %criteria.perl;
     %args<number-to-skip> = $number-to-skip if $number-to-skip;
     %args<number-to-return> = $number-to-return if $number-to-return;
 
-say "Args: ", %args.perl;
     # clear all data and set defaults
     self.reset;
 
@@ -263,7 +271,6 @@ say "Args: ", %args.perl;
 #TODO writeconcern
     );
 
-say "Req: $req.perl()";
     my BSON::Document $doc = $!db.run-command($req);
 
     # clear all data and set defaults
@@ -271,7 +278,6 @@ say "Req: $req.perl()";
 
     $doc;
   }
-
 
   #-----------------------------------------------------------------------------
   method !copy-fields (
@@ -343,7 +349,6 @@ say "Req: $req.perl()";
       @failed-fields := @$!failed-query-fields;
     }
 
-
     # Check all names from schema
     for $!schema.keys -> $field-name {
 
@@ -389,9 +394,7 @@ say "Req: $req.perl()";
       # Check for all fields in record
       for $record.keys -> $field-name {
 
-        # Check if field is described in schema, but ignore '_id'. This field is
-        # generated always and can be used in insertions,projections and
-        # criteria.
+        # Check if field is described in schema
         if $schema{$field-name}:!exists {
           @failed-fields.push: [
             $field-name,                        # failed fieldname
@@ -403,10 +406,31 @@ say "Req: $req.perl()";
   }
 
   #-----------------------------------------------------------------------------
-  method !check-schema ( BSON::Document:D $schema --> Bool ) {
+  method !check-schema ( BSON::Document:D $schema --> BSON::Document ) {
 
+    my BSON::Document $mod-schema .= new;
+
+    # insert non mandatory _id field of type Any
+    $mod-schema<_id> = [ False, Any];
+
+    # Copy all other fields
+    for $schema.kv -> $k, $v {
+      
+      if $v ~~ Array and $v[0] ~~ Bool {
+        $mod-schema{$k} = $v;
+      }
+      
+      elsif $v ~~ BSON::Document {
+        $mod-schema{$k} = $v;
+      }
+      
+      else {
+        fatal-message("Field $k in schema has problems: " ~ $v.perl);
+      }
+    }
 #check on field usage
 #check if records in database still conform to schema
+    $mod-schema;
   }
 
   #-----------------------------------------------------------------------------
@@ -478,7 +502,7 @@ class HL::Collection does HL::CollectionRole {
     $!db = $!client.database($db-name);
     $!cl = $!db.collection($cl-name);
 
-    $!schema = $schema;
+    $!schema = self!check-schema($schema);
     $!append-unknown-fields = $append-unknown-fields;
   }
 }
