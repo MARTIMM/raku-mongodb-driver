@@ -59,21 +59,25 @@ subtest {
   is $doc<n>, 11, '11 docs written';
 
 
-  $doc = $table.count( number => ( '$gt' => 4307));
+  $doc = $table.count( :criteria(%( number => ( '$gt' => 4307),)));
   ok $doc<ok>, 'Count ok';
   is $doc<n>, 7, '7 records counted';
 
   my $n = 1;
-  $doc = $table.read( :criteria(%( number => ( '$gt' => 4307))));
-  while $table.read-next {
-    $n++;
-  }
+  $doc = $table.read( :criteria(%( number => ( '$gt' => 4307),)));
+  while $table.read-next { $n++; }
   is $n, 7, '7 records read';
 
-
   # delete data
-  $table.query-set( number => ( '$gt' => 4300));
-  $doc = $table.delete( :!limit, :!ordered);
+  $doc = $table.delete(
+    :deletes( [
+        ( :q(number => ('$gt' => 4300)), :!limit),
+      ]
+    ),
+    :!ordered
+  );
+#say $doc.perl;
+
 }, 'read test';
 
 #-------------------------------------------------------------------------------

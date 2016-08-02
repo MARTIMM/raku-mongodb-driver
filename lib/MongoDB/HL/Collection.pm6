@@ -19,13 +19,6 @@ constant C-TYPE                 = 1;
 # error code, other than above -> negative
 constant C-NOTINSCHEMA          = -1;
 constant C-EMPTYRECORD          = -2;
-constant C-EMPTYQUERY           = -3;
-constant C-EMPTYPROJECTION      = -4;
-
-# document failure types
-subset DocFail of Int where 0 <= $_ <= 1;
-constant C-DOCUMENT-RECORDFAIL          = 0;
-constant C-DOCUMENT-QUERYFAIL           = 1;
 
 #-----------------------------------------------------------------------------
 role HL::CollectionRole {
@@ -55,13 +48,6 @@ role HL::CollectionRole {
   has Array $!records = [BSON::Document.new];
   has Array $!failed-fields;
 
-  # Query holder for other operations
-  has Int $!current-query = 0;
-  has Array $!queries = [BSON::Document.new];
-  has Array $!failed-query-fields;
-
-  has Array $!failed-projection-fields;
-
   has MongoDB::Cursor $!cursor;
 
   # Can add unknown fields when True
@@ -82,12 +68,6 @@ role HL::CollectionRole {
     $!records = [BSON::Document.new];
     $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
 
-    $!current-query = 0;
-    $!queries = [BSON::Document.new];
-    $!failed-query-fields[0] = [ '-', C-EMPTYQUERY,];
-
-    $!failed-projection-fields[0] = [ '-', C-EMPTYPROJECTION,];
-
     $!append-unknown-fields = False;
     $!check-collection = False;
   }
@@ -101,7 +81,7 @@ role HL::CollectionRole {
 
     $!failed-fields = [];
     if $record.elems {
-      self!check-record( $!schema, $record, :type(C-DOCUMENT-RECORDFAIL));
+      self!check-record( $!schema, $record);
     }
 
     else {
@@ -127,53 +107,17 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method query-set ( *%fields --> Int ) {
-
-    # Define the record in the same order as noted in schema
-    my BSON::Document $query := $!queries[$!current-query];
-    self!copy-fields( $!schema, %fields, $query);
-
-    $!failed-query-fields = [];
-    if $query.elems == 0 {
-      $!failed-query-fields[0] = [ '-', C-EMPTYQUERY,];
-    }
-
-    $!failed-query-fields.elems;
-  }
-
-  #-----------------------------------------------------------------------------
-  method query-set-next( *%fields --> Int ) {
-
-    # check done at reset(), set() and BUILD
-    return $!failed-query-fields.elems if $!failed-query-fields.elems;
-    if $!queries[$!current-query].elems == 0 {
-      $!failed-query-fields[0] = [ '-', C-EMPTYQUERY,];
-      return 1;
-    }
-
-    $!current-query++;
-    $!queries[$!current-query] = BSON::Document.new;
-    self.query-set(|%fields);
-  }
-
-  #-----------------------------------------------------------------------------
   method record-count ( --> Int ) {
 
     $!records.elems;
   }
 
   #-----------------------------------------------------------------------------
-  method query-count ( --> Int ) {
-
-    $!queries.elems;
-  }
-
-  #-----------------------------------------------------------------------------
-  method count ( *%query --> BSON::Document ) {
+  method count ( Hash :$criteria --> BSON::Document ) {
 
     my $query = BSON::Document.new;
-    if %query.keys {
-      self!copy-fields( $!schema, %query, $query);
+    if $criteria.keys {
+      self!copy-fields( $!schema, $criteria, $query);
     }
 
     my BSON::Document $req .= new: ( :count($!cl.name), :$query);
@@ -182,32 +126,32 @@ role HL::CollectionRole {
 
   #-----------------------------------------------------------------------------
   method read (
-    :%criteria, :%projection,
+    Hash :$criteria, Hash :$projection,
     Int :$number-to-skip, Int :$number-to-return,
 #TODO    Int :$flags = 0, BSON::Document :$read-concern, :$server is copy
 
     --> BSON::Document
   ) {
 
-    my %args = %();
+    my Hash $args = %();
 
-    if %criteria.keys {
-      %args<criteria> = BSON::Document.new;
-      self!copy-fields( $!schema, %criteria, %args<criteria>);
+    if $criteria.keys {
+      $args<criteria> = BSON::Document.new;
+      self!copy-fields( $!schema, $criteria, $args<criteria>);
     }
 
-    if %projection.keys {
-      %args<projection> = BSON::Document.new;
-      self!copy-fields( $!schema, %projection, %args<projection>);
+    if $projection.keys {
+      $args<projection> = BSON::Document.new;
+      self!copy-fields( $!schema, $projection, $args<projection>);
     }
 
-    %args<number-to-skip> = $number-to-skip if $number-to-skip;
-    %args<number-to-return> = $number-to-return if $number-to-return;
+    $args<number-to-skip> = $number-to-skip if $number-to-skip;
+    $args<number-to-return> = $number-to-return if $number-to-return;
 
     # clear all data and set defaults
     self.reset;
 
-    $!cursor = $!cl.find(|%args);
+    $!cursor = $!cl.find(|$args);
 
     $!cursor.fetch;
   }
@@ -225,7 +169,7 @@ role HL::CollectionRole {
 
     # Check if there are leftover errors from previous set() calls
     if $!failed-fields.elems {
-      $doc = self!document-failures(:type(C-DOCUMENT-RECORDFAIL));
+      $doc = self!document-failures;
     }
 
     else {
@@ -251,25 +195,44 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method delete (
-    Bool :$ordered = True,
-    Bool :$limit = True
-    --> BSON::Document
-  ) {
+  # deletes is [ { q : <query>, limit : <integer> }, ...]
+  method delete ( Array:D :$deletes, Bool :$ordered = True, --> BSON::Document ) {
+
+    my Array $mod-deletes = [];
+    for @$deletes {
+      my Hash $ds = %$_;
+#say $ds.perl;
+      my BSON::Document $query-spec .= new;
+      my BSON::Document $query .= new;
+
+      if $ds<q>:exists and $ds<q>.defined {
+        self!copy-fields( $!schema, $ds<q>, $query);
+        $query-spec<q> = $query;
+      }
+      
+      else {
+        fatal-message("No q-field found in delete specification entry");
+      }
+      
+      
+      if $ds<limit>:exists and $ds<limit>.defined {
+        $query-spec<limit> = $ds<limit> ?? 1 !! 0;
+      }
+      
+      else {
+        $query-spec<limit> = 1;
+      }
+
+      $mod-deletes.push: $query-spec;
+    }
 
     my BSON::Document $req .= new: (
       delete => $!cl.name,
-      deletes => [
-        map {
-          BSON::Document.new((
-            q => $_,
-            limit => $limit ?? 1 !! 0
-          ))
-        }, @$!queries
-      ],
+      deletes => $mod-deletes,
       ordered => $ordered,
 #TODO writeconcern
     );
+#say $req.perl;
 
     my BSON::Document $doc = $!db.run-command($req);
 
@@ -282,7 +245,7 @@ role HL::CollectionRole {
   #-----------------------------------------------------------------------------
   method !copy-fields (
     BSON::Document:D $schema,
-    Hash $fields,
+    $fields,
     BSON::Document:D $record,
   ) {
 
@@ -329,25 +292,14 @@ role HL::CollectionRole {
   # - missing mandatory fields
   # - extra fields
   # - wrong typed fields
-  # Query checks are the same as record checks except for missing fields
-  # Criteria for reading tests as queries
-  # Projections are checked extra fields only and must be boolean
   #
   method !check-record (
     BSON::Document:D $schema,
     BSON::Document:D $record,
-    DocFail :$type = C-DOCUMENT-RECORDFAIL
   ) {
 
     # Variable is bound to real location to take care for recursive loops
-    my @failed-fields;
-    if $type ~~ C-DOCUMENT-RECORDFAIL {
-      @failed-fields := @$!failed-fields;
-    }
-
-    elsif $type ~~ C-DOCUMENT-QUERYFAIL {
-      @failed-fields := @$!failed-query-fields;
-    }
+    my @failed-fields := @$!failed-fields;
 
     # Check all names from schema
     for $!schema.keys -> $field-name {
@@ -373,16 +325,13 @@ role HL::CollectionRole {
 
       # If field not found in record
       else {
-        # Check if field is mandatory. Only needed on record checks,
-        # not for queries, criteria or projections
-        #
-        if $type ~~ C-DOCUMENT-RECORDFAIL {
-          if $!schema{$field-name}[C-MANDATORY] {
-            @failed-fields.push: [
-              $field-name,                      # failed fieldname
-              C-MANDATORY,                      # field is missing
-            ];
-          }
+
+        # Check if field is mandatory.
+        if $!schema{$field-name}[C-MANDATORY] {
+          @failed-fields.push: [
+            $field-name,                        # failed fieldname
+            C-MANDATORY,                        # field is missing
+          ];
         }
       }
     }
@@ -434,22 +383,13 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method !document-failures ( DocFail :$type --> BSON::Document ) {
+  method !document-failures ( --> BSON::Document ) {
 
     my BSON::Document $error-doc .= new;
+    my @failed-fields := @$!failed-fields;
+
     $error-doc<ok> = 0;
-
-    my @failed-fields;
-    if $type ~~ C-DOCUMENT-RECORDFAIL {
-      @failed-fields := @$!failed-fields;
-      $error-doc<reason> = 'Failing record fields';
-    }
-
-    elsif $type ~~ C-DOCUMENT-QUERYFAIL {
-      @failed-fields := @$!failed-query-fields;
-      $error-doc<reason> = 'Failing query fields';
-    }
-
+    $error-doc<reason> = 'Failing record fields';
     $error-doc<fields> = BSON::Document.new;
 
     for @failed-fields -> $field-spec {
@@ -470,14 +410,6 @@ role HL::CollectionRole {
 
       elsif $field-spec[1] ~~ C-EMPTYRECORD {
         $error-doc<fields>{$field-spec[0]} = 'current record is empty';
-      }
-
-      elsif $field-spec[1] ~~ C-EMPTYQUERY {
-        $error-doc<fields>{$field-spec[0]} = 'current query/criteria is empty';
-      }
-
-      elsif $field-spec[1] ~~ C-EMPTYPROJECTION {
-        $error-doc<fields>{$field-spec[0]} = 'current projection is empty';
       }
     }
 

@@ -58,38 +58,31 @@ subtest {
   is $doc<n>, 11, '11 docs written';
 
 
-
-  my Int $fq = $table.query-set(
-    number => 253,
-  );
-
-  $doc = $table.delete;
+  $doc = $table.delete(:deletes([(q => (number => 253),),]));
   ok $doc<ok>, 'Delete ok';
   is $doc<n>, 1, 'One doc deleted';
 
-
-
-  $fq = $table.query-set(
-    number => 253,
+  $doc = $table.delete(
+    :deletes( [
+      (q => (number => 253),),
+      (q => (number => 253),)
+    ])
   );
 
-  $fq = $table.query-set-next(
-    number => 253,
-  );
-
-  is $fq, 0, 'No field errors';
-  is $table.query-count, 2, '2 queries';
-  $doc = $table.delete;
   ok $doc<ok>, 'Delete ok';
   is $doc<n>, 2, 'Two docs deleted';
 
 
+  $doc = $table.delete(
+    :deletes( [
+        (:q(number => 253), :!limit),
+        (:q(number => 400), :!limit),
+        (:q(number => 2), :!limit)
+      ]
+    ),
+    :!ordered
+  );
 
-  $fq = $table.query-set( number => 253, );
-  $fq = $table.query-set-next( number => 400 );
-  $fq = $table.query-set-next( number => 2 );
-
-  $doc = $table.delete( :!limit, :!ordered);
   ok $doc<ok>, 'Delete ok';
   ok $doc<n> > 0, "More than 1($doc<n>) doc deleted";
 

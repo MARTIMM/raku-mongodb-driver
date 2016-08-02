@@ -315,6 +315,13 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.32.0
+  * Added count()
+  * Added read() and read-next
+  * remove set-query() and set-query-next()
+  * big cleanup of code
+* 0.31.1
+  * Bugfixes and rewrites of delete
 * 0.31.0
   * New module for higher level access of collection MongoDB::HL::Collection
   * Inserting records
