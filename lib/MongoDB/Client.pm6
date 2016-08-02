@@ -175,16 +175,16 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
 
           # Make the processing of the monitor data atomic
 
-say "$*THREAD.id() get prev server data";
+#say "$*THREAD.id() get prev server data";
           my Hash $prev-server = $!rw-sem.reader(
             'servers', {
-say "$*THREAD.id() Reader code $server-name";
+#say "$*THREAD.id() Reader code $server-name";
             $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
           });
-say "$*THREAD.id() prev server data retrieved";
+#say "$*THREAD.id() prev server data retrieved";
 
           my $msname = $!rw-sem.reader( 'master', {$!master-servername;});
-say "$*THREAD.id() get master {$msname//'-'}";
+#say "$*THREAD.id() get master {$msname//'-'}";
 
 
           # Store partial result as soon as possible
@@ -198,7 +198,7 @@ say "$*THREAD.id() get master {$msname//'-'}";
               server-data => $monitor-data
             };
           });
-say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
+#say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
 
           # Only when data is ok
           if not $monitor-data.defined {
