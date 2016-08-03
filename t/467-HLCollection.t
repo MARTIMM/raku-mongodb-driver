@@ -68,20 +68,72 @@ subtest {
   while $table.read-next { $n++; }
   is $n, 7, '7 records read';
 
-  # delete data
-  $doc = $table.delete(
-    :deletes( [
-        ( :q(number => ('$gt' => 4300)), :!limit),
-      ]
-    ),
-    :!ordered
-  );
-#say $doc.perl;
-
 }, 'read test';
+
+#-------------------------------------------------------------------------------
+subtest {
+
+  my BSON::Document $doc = $table.update(
+    :updates( [ (
+          q => ( number => 4307, ),
+          u => ( '$inc' => ( number => 1, )),
+        ), (
+        
+          q => ( number => 4304, ),
+          u => ( '$inc' => ( number => -1, )),
+        )
+      ]
+    )
+  );
+
+  is $doc<nModified>, 2, '2 records modified';
+say $doc.perl;
+  
+  $doc = $table.count( :criteria(%( number => 4307,)));
+  is $doc<n>, 0, '0 records with original number';
+  $doc = $table.count( :criteria(%( number => 4308,)));
+  is $doc<n>, 2, '2 records with same number';
+
+
+  $doc = $table.replace(
+    :replaces( [ (
+          q => ( number => 4306, ),
+          r => %(
+            street => 'Jan Gestelsteeg',
+            number => 8000,
+            number-mod => 'zwart',
+            country => 'Nederland',
+            zip => '1043 XY',
+            city => 'Lutjebroek',
+            state => 'Gelderland',
+          ),
+        ),
+      ]
+    )
+  );
+
+  is $doc<nModified>, 1, '1 record modified';
+say $doc;
+
+  $doc = $table.count( :criteria(%( number => 8000,)));
+  is $doc<n>, 1, '1 record with new number';
+
+say $doc.perl;
+}, 'update test';
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+
+# delete data
+my BSON::Document $doc = $table.delete(
+  :deletes( [
+      ( :q(number => ('$gt' => 4300)), :!limit),
+    ]
+  ),
+  :!ordered
+);
+#say $doc.perl;
+
 info-message("Test $?FILE end");
 done-testing;

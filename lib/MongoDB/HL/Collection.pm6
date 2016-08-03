@@ -28,9 +28,11 @@ role HL::CollectionRole {
   # it holds the following info
   # - Mandatory field
   # - Type of field,
-  # -
+  #TODO - Default value. Useful when not mandatory.
+  #
   # When BSON::Document is used, it means the structure is nested.
   #
+  # E.g.
   # BSON::Document.new: (
   #   contact => BSON::Document.new((
   #     name => [ True, Str],
@@ -41,6 +43,12 @@ role HL::CollectionRole {
   #     number => [ False, Int],
   #   ))
   # )
+  #
+  #TODO mongo document validation
+  # Version 3.2 of mongo server offers document validation which is quite good
+  # So in 3.2 when a schema is offered it should be translated into a validation
+  # doc and set on the collection.
+  #
   has BSON::Document $!schema;
 
   # Records to read in data or write to database, Initialize to one empty record
@@ -176,9 +184,8 @@ role HL::CollectionRole {
       $doc = $!db.run-command(
         BSON::Document.new: (
           insert => $!cl.name,
-          documents => [
-            @$!records
-          ]
+          documents => $!records,
+#TODO writeconcern
         )
       );
     }
@@ -190,13 +197,148 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method update ( --> BSON::Document ) {
+  # updates is [ {
+  #   q: <query>,
+  #   u: <update>,
+  #   upsert: <boolean>,
+  #   multi: <boolean>
+  # }, ... ]
+  #
+  method update (
+    Array:D :$updates,
+    Bool :$ordered = True,
 
+    --> BSON::Document
+  ) {
+
+    my Array $mod-updates = [];
+    for @$updates {
+      my Hash $us = %$_;
+
+      my BSON::Document $query-spec .= new;
+      my BSON::Document $query .= new;
+
+      if $us<q>:exists and $us<q>.defined {
+        $query-spec<q> = $us<q>;
+      }
+
+      else {
+        fatal-message("No q-field found in update specification entry");
+      }
+
+
+      if $us<u>:exists and $us<u>.defined {
+        $query-spec<u> = $us<u>;
+      }
+      
+      else {
+        fatal-message("No update specification found");
+      }
+
+      if $us<upsert>:exists and $us<upsert>.defined {
+        $query-spec<upsert> = $us<upsert>;
+      }
+
+      if $us<multi>:exists and $us<multi>.defined {
+        $query-spec<multi> = $us<multi>;
+      }
+
+      $mod-updates.push: $query-spec;
+    }
+
+    my $req = BSON::Document.new: (
+      update => $!cl.name,
+      updates => $mod-updates,
+      :$ordered,
+#TODO writeconcern
+#TODO bypass validation
+    );
+
+    my BSON::Document $doc = $!db.run-command($req);
+  }
+
+  #-----------------------------------------------------------------------------
+  # replaces is [ {
+  #   q: <query>,
+  #   r: <fields-values expressions>,
+  #   upsert: <boolean>,
+  #   multi: False
+  # }, ... ]
+  #
+  method replace (
+    Array:D :$replaces,
+    Bool :$ordered = True,
+
+    --> BSON::Document
+  ) {
+
+    my Array $mod-replace = [];
+    for @$replaces {
+      my Hash $rs = %$_;
+
+      my BSON::Document $query-spec .= new;
+      my BSON::Document $query .= new;
+      my BSON::Document $replce .= new;
+
+      if $rs<q>:exists and $rs<q>.defined {
+        $query-spec<q> = $rs<q>;
+      }
+
+      else {
+        fatal-message("No q-field found in update specification entry");
+      }
+
+      if $rs<r>:exists and $rs<r>.defined {
+        self!copy-fields( $!schema, $rs<r>, $replce);
+
+        $!failed-fields = [];
+        if $replce.elems {
+          self!check-record( $!schema, $replce);
+        }
+
+        else {
+          $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
+        }
+
+        if $!failed-fields.elems {
+          my BSON::Document $doc = self!document-failures;
+          self.reset;
+          return $doc;
+        }
+
+        $query-spec<u> = $replce;
+      }
+
+      else {
+        fatal-message("No replace specification found");
+      }
+
+      if $rs<upsert>:exists and $rs<upsert>.defined {
+        $query-spec<upsert> = $rs<upsert>;
+      }
+
+      $mod-replace.push: $query-spec;
+    }
+
+    my BSON::Document $doc = $!db.run-command(
+      BSON::Document.new: (
+        update => $!cl.name,
+        updates => $mod-replace,
+        :$ordered,
+#TODO writeconcern
+#TODO bypass validation
+      )
+    );
+
+    # clear all data and set defaults
+    self.reset;
+    
+    $doc;
   }
 
   #-----------------------------------------------------------------------------
   # deletes is [ { q : <query>, limit : <integer> }, ...]
-  method delete ( Array:D :$deletes, Bool :$ordered = True, --> BSON::Document ) {
+  method delete ( Array:D :$deletes, Bool :$ordered = True --> BSON::Document ) {
 
     my Array $mod-deletes = [];
     for @$deletes {
@@ -209,16 +351,16 @@ role HL::CollectionRole {
         self!copy-fields( $!schema, $ds<q>, $query);
         $query-spec<q> = $query;
       }
-      
+
       else {
         fatal-message("No q-field found in delete specification entry");
       }
-      
-      
+
+
       if $ds<limit>:exists and $ds<limit>.defined {
         $query-spec<limit> = $ds<limit> ?? 1 !! 0;
       }
-      
+
       else {
         $query-spec<limit> = 1;
       }
@@ -245,7 +387,7 @@ role HL::CollectionRole {
   #-----------------------------------------------------------------------------
   method !copy-fields (
     BSON::Document:D $schema,
-    $fields,
+    $fields where $_ ~~ any(Hash|Pair),
     BSON::Document:D $record,
   ) {
 
@@ -364,15 +506,15 @@ role HL::CollectionRole {
 
     # Copy all other fields
     for $schema.kv -> $k, $v {
-      
+
       if $v ~~ Array and $v[0] ~~ Bool {
         $mod-schema{$k} = $v;
       }
-      
+
       elsif $v ~~ BSON::Document {
         $mod-schema{$k} = $v;
       }
-      
+
       else {
         fatal-message("Field $k in schema has problems: " ~ $v.perl);
       }
