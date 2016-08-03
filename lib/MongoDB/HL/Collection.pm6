@@ -52,8 +52,6 @@ role HL::CollectionRole {
   has BSON::Document $!schema;
 
   # Records to read in data or write to database, Initialize to one empty record
-  has Int $!current-record = 0;
-  has Array $!records = [BSON::Document.new];
   has Array $!failed-fields;
 
   has MongoDB::Cursor $!cursor;
@@ -72,52 +70,10 @@ role HL::CollectionRole {
   #-----------------------------------------------------------------------------
   method reset ( ) {
 
-    $!current-record = 0;
-    $!records = [BSON::Document.new];
     $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
 
     $!append-unknown-fields = False;
     $!check-collection = False;
-  }
-
-  #-----------------------------------------------------------------------------
-  method set ( *%fields --> Int ) {
-
-    # Define the record in the same order as noted in schema
-    my BSON::Document $record := $!records[$!current-record];
-    self!copy-fields( $!schema, %fields, $record);
-
-    $!failed-fields = [];
-    if $record.elems {
-      self!check-record( $!schema, $record);
-    }
-
-    else {
-      $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
-    }
-
-    $!failed-fields.elems;
-  }
-
-  #-----------------------------------------------------------------------------
-  method set-next( *%fields --> Int ) {
-
-    # check done at reset(), set() and BUILD
-    return $!failed-fields.elems if $!failed-fields.elems;
-    if $!records[$!current-record].elems == 0 {
-      $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
-      return 1;
-    }
-
-    $!current-record++;
-    $!records[$!current-record] = BSON::Document.new;
-    self.set(|%fields);
-  }
-
-  #-----------------------------------------------------------------------------
-  method record-count ( --> Int ) {
-
-    $!records.elems;
   }
 
   #-----------------------------------------------------------------------------
@@ -171,24 +127,51 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method insert ( --> BSON::Document ) {
+  method insert ( 
+    Array:D :$inserts
 
-    my BSON::Document $doc;
+    --> BSON::Document
+  ) {
 
-    # Check if there are leftover errors from previous set() calls
-    if $!failed-fields.elems {
-      $doc = self!document-failures;
+    my Array $mod-inserts = [];
+    for @$inserts {
+      my Hash $ins = %$_;
+      
+      my BSON::Document $record .= new;
+
+      if $ins.defined {
+        self!copy-fields( $!schema, $ins, $record);
+
+        $!failed-fields = [];
+        if $record.elems {
+          self!check-record( $!schema, $record);
+        }
+
+        else {
+          $!failed-fields[0] = [ '-', C-EMPTYRECORD,];
+        }
+
+        if $!failed-fields.elems {
+          my BSON::Document $doc = self!document-failures;
+          self.reset;
+          return $doc;
+        }
+
+        $mod-inserts.push: $record;
+      }
+
+      else {
+        fatal-message("No insert specification found");
+      }
     }
 
-    else {
-      $doc = $!db.run-command(
-        BSON::Document.new: (
-          insert => $!cl.name,
-          documents => $!records,
+    my BSON::Document $doc = $!db.run-command(
+      BSON::Document.new: (
+        insert => $!cl.name,
+        documents => $mod-inserts,
 #TODO writeconcern
-        )
-      );
-    }
+      )
+    );
 
     # clear all data and set defaults
     self.reset;
@@ -216,7 +199,7 @@ role HL::CollectionRole {
       my Hash $us = %$_;
 
       my BSON::Document $query-spec .= new;
-      my BSON::Document $query .= new;
+#      my BSON::Document $query .= new;
 
       if $us<q>:exists and $us<q>.defined {
         $query-spec<q> = $us<q>;

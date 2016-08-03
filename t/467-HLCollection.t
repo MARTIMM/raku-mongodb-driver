@@ -33,8 +33,8 @@ subtest {
 
   my Int $count = 4304;
   # Insert enaugh records
-  $table.reset;
-  $table.set(
+  my Array $r = [];
+  $r.push: %(
     street => 'Jan Gestelsteeg',
     number => $count++,
     number-mod => 'zwart',
@@ -44,7 +44,7 @@ subtest {
     state => 'Gelderland',
   );
   for ^10 {
-    $table.set-next(
+    $r.push: %(
       street => 'Jan Gestelsteeg',
       number => $count++,
       number-mod => 'zwart',
@@ -54,7 +54,7 @@ subtest {
       state => 'Gelderland',
     );
   }
-  my BSON::Document $doc = $table.insert;
+  my BSON::Document $doc = $table.insert(:inserts($r));
   ok $doc<ok>, 'Write ok';
   is $doc<n>, 11, '11 docs written';
 
