@@ -26,11 +26,7 @@ class Server {
   has Supply $!monitor-supply;
   has Promise $!monitor-promise;
 
-  has MongoDB::SocketLimit $!max-sockets;
   has MongoDB::Server::Socket @!sockets;
-
-#TODO semaphores using $!max-sockets
-  has Semaphore $!max-sockets-semaphore;
 
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
@@ -44,7 +40,8 @@ class Server {
   # must be done in the background so Client starts this process in a thread.
   #
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
-    SocketLimit :$max-sockets = 5, Int :$loop-time = 10
+    Int :$loop-time = 10
+#    SocketLimit :$max-sockets = 5, Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
@@ -54,9 +51,6 @@ class Server {
       :RWPatternType(C-RW-WRITERPRIO)
     );
 
-    # Define number of available sockets and its semaphore
-    $!max-sockets-semaphore .= new($max-sockets);
-    $!max-sockets = $max-sockets;
     @!sockets = ();
 
     # Save name andd port of the server
@@ -226,9 +220,6 @@ class Server {
   #
   method get-socket ( --> MongoDB::Server::Socket ) {
 
-    # Get hold of a socket or otherwise wait
-    $!max-sockets-semaphore.acquire;
-
     # Get a free socket entry
     my MongoDB::Server::Socket $sock = $!rw-sem.reader( 's-select', {
 
@@ -272,49 +263,21 @@ trace-message("total sockets open: $c of @!sockets.elems()");
     #
     $sock.open;
 
-    $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
+#    $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
 
     return $sock;
   }
 
   #-----------------------------------------------------------------------------
-  method release-socket ( ) {
-
-    $!max-sockets-semaphore.release;
-  }
+#  method release-socket ( ) {
+#
+#    $!max-sockets-semaphore.release;
+#  }
 
   #-----------------------------------------------------------------------------
   method name ( --> Str ) {
 
     return [~] $!server-name // '-', ':', $!server-port // '-';
-  }
-
-  #-----------------------------------------------------------------------------
-  # Modify the number of sockets allowed. When decreasing it will never go
-  # lower than the number of already opened sockets if higher than 3.
-  #
-  method set-max-sockets ( SocketLimit $max-sockets ) {
-#    $!max-sockets = $max-sockets;
-    my SocketLimit $prev-max = $!rw-sem.reader( 'sock-max', {$!max-sockets;});
-    my SocketLimit $new-max = $max-sockets;
-
-    my SocketLimit $pmx = $prev-max;
-    if $prev-max > $new-max {
-      for $new-max ..^ $prev-max {
-        last unless $!max-sockets-semaphore.try_acquire;
-        $pmx--;
-      }
-    }
-
-    elsif $prev-max < $new-max {
-      for $prev-max ^.. $new-max {
-        $!max-sockets-semaphore.release;
-      }
-
-      $pmx = $new-max;
-    }
-
-    $!rw-sem.writer( 'sock-max', {$!max-sockets = $pmx;});
   }
 }
 

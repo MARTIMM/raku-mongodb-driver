@@ -63,7 +63,6 @@ class Server::Socket {
 
     trace-message("close socket");
     $!is-open = False;
-    $!server.release-socket;
   }
 }
 

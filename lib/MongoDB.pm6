@@ -94,8 +94,6 @@ package MongoDB {
   # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
   subset PortType of Int where 0 < $_ <= 65535;
 
-  subset SocketLimit of Int is export where $_ >= 5;
-
   # Helper constraints when module cannot be loaded(use)
   subset ClientType where .^name eq 'MongoDB::Client';
   subset DatabaseType where .^name eq 'MongoDB::Database';
