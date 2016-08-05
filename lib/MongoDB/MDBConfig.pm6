@@ -1,7 +1,7 @@
 use v6.c;
+
 use MongoDB;
-use Config::TOML;
-#use Config::DataLang::Refine;
+use Config::DataLang::Refine;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -9,17 +9,24 @@ unit package MongoDB;
 #-------------------------------------------------------------------------------
 # Singleton class used to maintain config for whole of mongodb
 #
-class Config {
+class MDBConfig {
 
-  has Hash $.config;
-#  has Config::DataLang::Refine  $.cfg handles 'config';
-  my MongoDB::Config $instance;
+  my MongoDB::MDBConfig $instance;
+  has Config::DataLang::Refine $.cfg handles 'config';
 
   #-----------------------------------------------------------------------------
-  submethod BUILD ( Str :$file ) {
-
-    $!config = from-toml(:$file);
-#    $!cfg .= new(:config-name($file));
+  submethod BUILD (
+    Str :$config-name,
+    Bool :$merge,
+    Array :$locations,
+    Str :$data-module
+  ) {
+    $!cfg = Config::DataLang::Refine.new(
+      :$config-name,
+      :$merge,
+      :$locations,
+      :$data-module
+    );
   }
 
   #-----------------------------------------------------------------------------
@@ -30,10 +37,22 @@ class Config {
   #-----------------------------------------------------------------------------
   # File can be set once a lifitime of the object
   #
-  method instance ( Str :$file --> MongoDB::Config ) {
+  method instance (
+    Str :$config-name,
+    Bool :$merge,
+    Array :$locations,
+    Str :$data-module = 'Config::TOML'
+
+    --> MongoDB::MDBConfig
+  ) {
 
     if not $instance.defined {
-      $instance = MongoDB::Config.bless(:$file);
+      $instance = MongoDB::MDBConfig.bless(
+        :$config-name,
+        :$merge,
+        :$locations,
+        :$data-module
+      );
     }
 
     $instance;

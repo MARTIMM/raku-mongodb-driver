@@ -105,7 +105,11 @@ class Test-support {
       spurt( $file, $config-text);
     }
 
-    $!server-control .= new(:file<Sandbox/config.toml>);
+#    $!server-control .= new(:file<Sandbox/config.toml>);
+    $!server-control .= new(
+      :locations(['Sandbox',]),
+      :config-name<config.toml>
+    );
 #    say "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
   }
 

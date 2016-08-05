@@ -1,7 +1,7 @@
 use v6.c;
 
 use MongoDB;
-use MongoDB::Config;
+use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -11,9 +11,8 @@ class Server::Control {
 
 #TODO startup/shutdown on windows and appels
   #-----------------------------------------------------------------------------
-  submethod BUILD ( Str :$file ) {
-
-    MongoDB::Config.instance(:$file);
+  submethod BUILD ( Str :$config-name, Array :$locations ) {
+    MongoDB::MDBConfig.instance( :$config-name, :$locations);
   }
 
   #-----------------------------------------------------------------------------
@@ -84,23 +83,14 @@ class Server::Control {
   #
   method get-port-number ( *@server-keys --> Int ) {
 
-    my Hash $config = MongoDB::Config.instance.config;
-    my Int $port-number;
-    my Hash $s = $config<mongod> // {};
-    for @server-keys -> $server-key {
-      $s = $s{$server-key} // {};
-
-      # Overwrite at every other oportunity
-      $port-number = $s<port> if $s<port>:exists;
-    }
-
-    return $port-number;
+    my MongoDB::MDBConfig $mdbcfg .= instance;
+    $mdbcfg.cfg.refine( 'mongod', |@server-keys)<port>;
   }
 
   #-----------------------------------------------------------------------------
   method !get-mongod-options ( @server-keys --> Hash ) {
 
-    my Hash $config = MongoDB::Config.instance.config;
+    my Hash $config = MongoDB::MDBConfig.instance.config;
     my Hash $options = {};
     my Hash $s = $config // {};
 
@@ -150,7 +140,7 @@ class Server::Control {
   #-----------------------------------------------------------------------------
   method !get-binary-path ( Str $binary --> Str ) {
 
-    my Hash $config = MongoDB::Config.instance.config;
+    my Hash $config = MongoDB::MDBConfig.instance.config;
     my Str $mongodb-server-path;
 
     # Can be configured in config file
