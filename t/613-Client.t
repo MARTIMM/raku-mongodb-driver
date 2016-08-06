@@ -7,7 +7,7 @@ use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
-use MongoDB::Config;
+use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
 set-logfile($*OUT);
@@ -19,7 +19,7 @@ my MongoDB::Test-support $ts .= new;
 #-------------------------------------------------------------------------------
 subtest {
 
-  my Hash $config = MongoDB::Config.instance.config;
+  my Hash $config = MongoDB::MDBConfig.instance.config;
 #  my Str $host = 'localhost';
 
   my Int $p1 = $ts.server-control.get-port-number('s1');

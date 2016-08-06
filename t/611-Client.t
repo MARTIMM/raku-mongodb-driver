@@ -6,7 +6,7 @@ use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
-use MongoDB::Config;
+use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
 set-logfile($*OUT);
@@ -22,7 +22,7 @@ my MongoDB::Database $db-admin;
 my BSON::Document $req;
 my BSON::Document $doc;
 
-my Hash $config = MongoDB::Config.instance.config;
+my Hash $config = MongoDB::MDBConfig.instance.config;
 
 my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 my Str $host = 'localhost';

@@ -8,7 +8,7 @@ use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
-use MongoDB::Config;
+use MongoDB::MDBConfig;
 use MongoDB::Cursor;
 use BSON::Document;
 
@@ -19,9 +19,10 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my Hash $config = MongoDB::Config.instance.config;
+my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
+#`{{
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -134,7 +135,7 @@ subtest {
   nok $doc<secondary>, 'And not secondary';
 
 }, "Replica server initialization and modification";
-
+}}
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -143,10 +144,9 @@ subtest {
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
-#  is $client.nbr-servers, 1, 'One server found';
-  is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICASET-PRIMARY,
+  is $client.server-status("localhost:$p2"), MongoDB::C-REPLICASET-PRIMARY,
      "Server is replica server primary";
-
+#`{{
   my MongoDB::Database $database = $client.database('test');
   my MongoDB::Database $db-admin = $client.database('admin');
 
@@ -177,7 +177,7 @@ subtest {
   is $doc<setVersion>, 2, 'Repl set version 2';
   is-deeply $doc<hosts>, ["localhost:$p2",],
             "servers in replica: {$doc<hosts>}";
-
+}}
 }, "Replica servers update replica data";
 
 #-------------------------------------------------------------------------------
