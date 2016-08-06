@@ -18,12 +18,15 @@ class Server::Control {
   #-----------------------------------------------------------------------------
   method start-mongod ( *@server-keys --> Bool ) {
 
-    my Hash $options = self!get-mongod-options(@server-keys);
+    my MongoDB::MDBConfig $mdbcfg .= instance;
+    my Array $options = $mdbcfg.cfg.refine-str(
+      'mongod',
+      |@server-keys,
+      :filter,
+      :str-mode(Config::DataLang::Refine::C-UNIX-OPTS-T1)
+    );
 
-    my Str $cmdstr = self!get-binary-path('mongod');
-    for $options.keys -> $k {
-      $cmdstr ~= " --$k {?$options{$k} ?? $options{$k} !! ''}";
-    }
+    my Str $cmdstr = (self!get-binary-path('mongod'), @$options).join(' ');
 
     my Bool $started = False;
     info-message($cmdstr);
@@ -45,9 +48,11 @@ class Server::Control {
   #-----------------------------------------------------------------------------
   method stop-mongod ( *@server-keys --> Bool ) {
 
-    my Hash $options = self!get-mongod-options(@server-keys);
+    my MongoDB::MDBConfig $mdbcfg .= instance;
+    my Hash $options = $mdbcfg.cfg.refine( 'mongod', |@server-keys);
+
     my Str $cmdstr = self!get-binary-path('mongod');
-    $cmdstr ~= " --shutdown";
+    $cmdstr ~= ' --shutdown';
     $cmdstr ~= ' --dbpath ' ~ "'$options<dbpath>'" // '/data/db';
     $cmdstr ~= ' --quiet' if $options<quiet>;
 
@@ -80,61 +85,10 @@ class Server::Control {
 
   #-----------------------------------------------------------------------------
   # Get selected port number from the config
-  #
   method get-port-number ( *@server-keys --> Int ) {
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
     $mdbcfg.cfg.refine( 'mongod', |@server-keys)<port>;
-  }
-
-  #-----------------------------------------------------------------------------
-  method !get-mongod-options ( @server-keys --> Hash ) {
-
-    my Hash $config = MongoDB::MDBConfig.instance.config;
-    my Hash $options = {};
-    my Hash $s = $config // {};
-
-    for 'mongod', |@server-keys -> $server-key {
-
-      $s = $s{$server-key} // {};
-
-      for $s.keys -> $k {
-        next if $s{$k} ~~ Hash;
-
-        my Bool $bo = self!bool-option($s{$k});
-
-        # Not a boolean option
-        if not $bo.defined {
-          $options{$k} = $s{$k};
-        }
-
-        # Boolean option and true. False booleans are ignored
-        elsif $bo {
-          $options{$k} = '';
-        }
-      }
-    }
-
-    $options;
-  }
-
-  #-----------------------------------------------------------------------------
-  # Return values
-  # Any) Not boolean/undefined, True) Boolean False, False) Boolean True
-  #
-  method !bool-option ( $v --> Bool ) {
-
-    if $v ~~ Bool and $v {
-      True;
-    }
-
-    elsif $v ~~ Bool and not $v {
-      False;
-    }
-
-    else {
-      Bool;
-    }
   }
 
   #-----------------------------------------------------------------------------
@@ -144,8 +98,7 @@ class Server::Control {
     my Str $mongodb-server-path;
 
     # Can be configured in config file
-    #
-    if not $mongodb-server-path.defined and $config<Binaries>:exists
+    if $config<Binaries>:exists
        and $config<Binaries>{$binary}:exists 
        and $config<Binaries>{$binary}.IO ~~ :x {
 
@@ -153,7 +106,6 @@ class Server::Control {
     }
 
     # On linuxes it should be in /usr/bin
-    #
     if not $mongodb-server-path.defined and $*KERNEL.name eq 'linux' {
       if "/usr/bin/$binary".IO ~~ :x {
         $mongodb-server-path = "/usr/bin/$binary";
@@ -175,7 +127,6 @@ class Server::Control {
     }
 
     # Hopefully it can be found in any other path
-    #
     if not $mongodb-server-path.defined and %*ENV<PATH> {
 
       for %*ENV<PATH>.split(':') -> $path {
