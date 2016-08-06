@@ -375,7 +375,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
     my Hash $h = $!rw-sem.reader(
       'servers', {
       my $x = $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
-#say "$*THREAD.id() Reader server status: $x";
+say "$*THREAD.id() Reader server status: $x";
       $x;
     });
 #say "$*THREAD.id() server-status: $server-name, ", $h.perl;

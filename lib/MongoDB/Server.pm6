@@ -76,13 +76,14 @@ class Server {
     self.tap-monitor( -> Hash $monitor-data {
         try {
 
-#say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
 
+say "Opts: $!uri-data<options>.perl()";
             # Does the caller want to have a replicaset
             if $!uri-data<options><replicaSet> {
 
