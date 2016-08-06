@@ -1,9 +1,15 @@
 use v6.c;
+use lib 't';
+
 use Test;
 
 use MongoDB;
 use MongoDB::MDBConfig;
 use MongoDB::Server::Control;
+
+# Must call new to create the sandbox
+use Test-support;
+my MongoDB::Test-support $ts .= new;
 
 #-------------------------------------------------------------------------------
 subtest {
