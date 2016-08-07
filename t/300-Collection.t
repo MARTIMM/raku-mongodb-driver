@@ -43,30 +43,20 @@ subtest {
   );
 
   $doc = $database.run-command($req);
-say $doc.perl;
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 4, "Inserted 4 documents";
 
-#  $cursor = $collection.find: :criteria(name => 'Me T',);
-#  is $cursor.count, 1, '1 record of "Me T"';
   $req .= new: ( count => $collection.name, query => (name => 'Me T',));
   $doc = $database.run-command($req);
-say $doc.perl;
   is $doc<ok>, 1, "count request ok";
   is $doc<n>, 1, 'count 1 record of "Me T"';
 
-#  $cursor = $collection.find: :criteria(name => 'Di D',);
-#  is $cursor.count, 1, '1 record of "Di D"';
   $req<query> = (name => 'Di D',);
   $doc = $database.run-command($req);
-say $doc.perl;
   is $doc<n>, 1, 'count 1 record of "Di D"';
 
-#  $cursor = $collection.find: :criteria(name => 'Jan Klaassen',);
-#  is $cursor.count, 1, '1 record of "Jan Klaassen"';
   $req<query> = (name => 'Di D',);
   $doc = $database.run-command($req);
-say $doc.perl;
   is $doc<n>, 1, '1 record of "Jan Klaassen"';
 
   # Add next few records
@@ -81,18 +71,13 @@ say $doc.perl;
   );
 
   $doc = $database.run-command($req);
-say $doc.perl;
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 6, "Inserted 6 documents";
 
   $cursor = $collection.find: :criteria(:test(0),);
-#  is $cursor.count, 6, '6 records of Test(0)';
   $req<query> = (name => 'Di D',);
   $doc = $database.run-command($req);
-say $doc.perl;
   is $doc<n>, 6, '6 records of Test(0)';
-
-#show-documents( $collection, {:test(0)}, {:_id(0)});
 
 }, "Several inserts";
 
@@ -120,6 +105,11 @@ try {
 
 done-testing();
 exit(0);
+
+
+
+
+
 =finish
 
 #-------------------------------------------------------------------------------
