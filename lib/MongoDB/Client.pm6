@@ -191,6 +191,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
           my $server-status = $server.get-status;
           $!rw-sem.writer(
             'servers', {
+            debug-message("saved status of $server-name is $server-status");
             $!servers{$server-name} = {
               server => $server,
               status => $server-status,
@@ -250,7 +251,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
 
               $!rw-sem.writer(
                 'servers', {
-#say "$*THREAD.id() PMD: set server $server-name status to reject";
+                debug-message("set server $server-name status to " ~ MongoDB::C-REJECTED-SERVER);
                 $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
               });
             }
@@ -266,29 +267,22 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
                 if $msname ne $server-name {
                   $!rw-sem.writer(
                     'servers', {
-#say "$*THREAD.id() PMD: set server $server-name status to reject";
                     $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
                   });
                   error-message("Server $server-name rejected, second master");
                 }
               }
 
-              # Not defined, be the first master server
+              # Not defined, be the first master server. No need to save status
+              # because its done already
               else {
 
                 $msname = $!rw-sem.writer(
                   'master', {
-#say "$*THREAD.id() set master to $server-name";
+                    debug-message("save master servername $server-name");
                     $!master-servername = $server-name;
                   }
                 );
-
-                $!rw-sem.writer(
-                  'servers', {
-                    $!servers{$server-name}<status> = MongoDB::C-MASTER-SERVER;
-                  }
-                );
-#say "$*THREAD.id() msname=$msname";
               }
             }
 
@@ -308,7 +302,9 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
 
               for @$hosts -> $hostspec {
                 # If not push onto todo list
-                trace-message("Push $hostspec from primary list on todo list");
+                next unless $hostspec ne $server-name;
+
+                debug-message("Push $hostspec from primary list on todo list");
                 $!rw-sem.writer( 'todo', {$!todo-servers.push($hostspec);});
 #say "$*THREAD.id() Add $hostspec, $!todo-servers.elems()";
               }
@@ -375,10 +371,9 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
     my Hash $h = $!rw-sem.reader(
       'servers', {
       my $x = $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
-say "$*THREAD.id() Reader server status: $x";
       $x;
     });
-#say "$*THREAD.id() server-status: $server-name, ", $h.perl;
+    debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
     my MongoDB::ServerStatus $sts = $h<status> // MongoDB::C-UNKNOWN-SERVER;
   }
