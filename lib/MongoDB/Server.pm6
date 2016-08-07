@@ -1,10 +1,10 @@
-
 use v6.c;
 
 use MongoDB;
 use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 use BSON::Document;
+use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -26,24 +26,32 @@ class Server {
   has Supply $!monitor-supply;
   has Promise $!monitor-promise;
 
-  has MongoDB::SocketLimit $!max-sockets;
   has MongoDB::Server::Socket @!sockets;
-  has Semaphore $!server-socket-selection;
-#TODO semaphores using $!max-sockets
 
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
   # Set status to its default starting status
   has MongoDB::ServerStatus $!server-status;
-  has Semaphore $!status-semaphore;
+
+  has Semaphore::ReadersWriters $!rw-sem;
 
   #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
   # must be done in the background so Client starts this process in a thread.
   #
   submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
-    MongoDB::SocketLimit :$max-sockets = 3, Int :$loop-time
+    Int :$loop-time = 10
+#    SocketLimit :$max-sockets = 5, Int :$loop-time = 10
   ) {
+
+    $!rw-sem .= new;
+#    $!rw-sem.debug = True;
+    $!rw-sem.add-mutex-names(
+      <s-select s-status sock-max>,
+      :RWPatternType(C-RW-WRITERPRIO)
+    );
+
+    @!sockets = ();
 
     # Save name andd port of the server
     ( my $host, my $port) = split( ':', $server-name);
@@ -53,40 +61,33 @@ class Server {
     $!uri-data = $uri-data;
 
     $!server-monitor .= new( :server(self), :$loop-time);
-
-    # Define number of available sockets and its semaphore
-    $!max-sockets = $max-sockets;
-
-    @!sockets = ();
-    $!server-socket-selection .= new(1);
-
     $!server-status = MongoDB::C-UNKNOWN-SERVER;
-    $!status-semaphore .= new(1);
   }
 
   #-----------------------------------------------------------------------------
   # Server initialization 
   method server-init ( ) {
 
-    # Don't start monitoring if dns failed to return an ip address
-#    if $!server-status != MongoDB::C-NON-EXISTENT-SERVER {
+    # Start monitoring
+    $!monitor-promise = $!server-monitor.start-monitor;
+    return unless $!monitor-promise.defined;
 
-      # Start monitoring
-      $!monitor-promise = $!server-monitor.start-monitor;
-      return unless $!monitor-promise.defined;
+    # Tap into monitor data
+    self.tap-monitor( -> Hash $monitor-data {
+        try {
 
-      # Tap into monitor data
-      self.tap-monitor( -> Hash $monitor-data {
+say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
           my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
 
+say "Opts: $!uri-data<options>.perl()";
             # Does the caller want to have a replicaset
             if $!uri-data<options><replicaSet> {
 
-              # Is the server in a replicaset
+              # Server is in a replicaset and initialized
               if $mdata<isreplicaset>:!exists and $mdata<setName> {
 
                 # Is the server in the replicaset matching the callers request
@@ -109,10 +110,7 @@ class Server {
                 }
               }
 
-              # Replicaset must be initialized. When an other name for
-              # replicaset is used the next state should be C-REJECTED-SERVER.
-              # Otherwise it becomes any of MongoDB::C-REPLICASET-*
-              #
+              # Server is in a replicaset but not initialized.
               elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
                 $server-status = MongoDB::C-REPLICA-PRE-INIT
               }
@@ -161,20 +159,37 @@ class Server {
           }
 
           # Set the status with the new value
-          $!status-semaphore.acquire;
-          $!server-status = $server-status;
-          $!status-semaphore.release;
+          $!rw-sem.writer( 's-status', {
+              debug-message("set status of self.name() $server-status");
+              $!server-status = $server-status;
+            }
+          );
+
+          CATCH {
+            default {
+              .say;
+              .rethrow;
+            }
+          }
         }
-      );
-#    }
+      }
+    );
   }
 
   #-----------------------------------------------------------------------------
   method get-status ( --> MongoDB::ServerStatus ) {
 
-    $!status-semaphore.acquire;
-    my MongoDB::ServerStatus $server-status = $!server-status;
-    $!status-semaphore.release;
+    my int $count = 0;
+    my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
+
+    # Wait until changed, After 4 sec it must be known or stays unknown forever
+    while $count < 4 and $server-status ~~ MongoDB::C-UNKNOWN-SERVER {
+      $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
+
+      sleep 1;
+      $count++;
+    }
+
     $server-status;
   }
 
@@ -206,76 +221,71 @@ class Server {
   #
   method get-socket ( --> MongoDB::Server::Socket ) {
 
-    my MongoDB::Server::Socket $sock;
-
     # Get a free socket entry
-    $!server-socket-selection.acquire;
-    for ^(@!sockets.elems) -> $si {
+    my MongoDB::Server::Socket $sock = $!rw-sem.reader( 's-select', {
 
-      # Skip all active sockets
-      #
-      next if @!sockets[$si].is-open;
+# count total opened
+my Int $c = 0;
+for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
+trace-message("total sockets open: $c of @!sockets.elems()");
+#        trace-message(
+#          "total sockets open: ",
+#          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
+#        );
 
-      $sock = @!sockets[$si];
-      last;
-    }
-    $!server-socket-selection.release;
+        my MongoDB::Server::Socket $s;
+        for ^(@!sockets.elems) -> $si {
 
-    # Setup a try block to catch socket new() exceptions
-    #
-#    try {
+          # Skip all active sockets
+          #
+          next if @!sockets[$si].is-open;
 
-      # If none is found insert a new Socket in the array
-      #
-      if ! $sock.defined {
-
-        # Protect against too many open sockets.
-        #
-        if @!sockets.elems >= $!max-sockets {
-          fatal-message("Too many sockets opened, max is $!max-sockets");
+          $s = @!sockets[$si];
+          last;
         }
-
-        $sock .= new(:server(self));
+        
+        $s;
       }
+    );
 
-      # Return a usable socket which is opened. The user has the responsibility
-      # to close the socket. Otherwise there will be new sockets created every
-      # time get-socket() is called. When limit is reached, an exception
-      # is thrown.
-      #
-      $sock.open();
+    # If none is found insert a new Socket in the array
+    if ! $sock.defined {
 
-#      CATCH {
-#say "Error server: ", $_;
-#        default {
-#          die .message;
-#        }
-#      }
+      # Protect against too many open sockets.
+      trace-message("new socket");
 
-      $!server-socket-selection.acquire;
-      @!sockets.push($sock);
-      $!server-socket-selection.release;
-#    }
+      $sock .= new(:server(self));
+    }
 
-    $!server-socket-selection.release;
+    # Return a usable socket which is opened. The user has the responsibility
+    # to close the socket. Otherwise there will be new sockets created every
+    # time get-socket() is called. When limit is reached, an exception
+    # is thrown.
+    #
+    $sock.open;
+
+#    $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
+
     return $sock;
   }
 
   #-----------------------------------------------------------------------------
-  #
+#  method release-socket ( ) {
+#
+#    $!max-sockets-semaphore.release;
+#  }
+
+  #-----------------------------------------------------------------------------
   method name ( --> Str ) {
 
     return [~] $!server-name // '-', ':', $!server-port // '-';
   }
-
-  #-----------------------------------------------------------------------------
-  #
-  method set-max-sockets ( Int $max-sockets where $_ >= 3 ) {
-    $!max-sockets = $max-sockets;
-  }
 }
 
 
+
+
+=finish
 #-------------------------------------------------------------------------------
 sub dump-callframe ( $fn-max = 10 --> Str ) {
 

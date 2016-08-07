@@ -17,11 +17,11 @@ activate mongod
 app -> Client: new(uri)
 activate Client
 
-Client -> Clt0: Promise.start()
-activate Clt0
-
 'Todo list is a structure guarded by semaphores
 Client -> Client: store server\nport in todo list
+
+Client -> Clt0: Promise.start()
+activate Clt0
 
 Clt0 -> Clt0: load server:port\nfrom todo list
 
@@ -54,12 +54,17 @@ activate Srvt0
 deactivate Server
 
 Mnt0 o-[#a000bf]->o Srvt0: monitor data
+'activate Srvt0
+Srvt0 -> Srvt0: Set status
+'deactivate Srvt0
+
 
 Clt0 -> Clt1: tap from monitor
 activate Clt1
 Mnt0 o-[#a000bf]->o Clt1: monitor data
+deactivate Clt0
 
-Clt1 -> Clt1: store new server\nport in todo list
+Clt1 -> Clt1: store new server\ndata in todo list
 
 Clt1 -> Clt1: Store in\nserver list
 

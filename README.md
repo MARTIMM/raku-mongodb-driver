@@ -315,6 +315,33 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.33.2
+  * rename Config to MDBConfig due to perl6 bug
+  * use Config::DataLang::Refine
+  * modify methods to reflect use of Refine module and thereby simplifying the Control module
+* 0.33.1
+  * rewrite of insert() in MongoDB::HL::Collection
+  * removal of set(), set-next(), record-count()
+* 0.33.0
+  * Added update() and replace() to MongoDB::HL::Collection
+  * Socket control with some maximum and use of semaphores abandoned
+* 0.32.0
+  * Added count() to MongoDB::HL::Collection
+  * Added read() and read-next() to MongoDB::HL::Collection
+  * remove set-query() and set-query-next() from MongoDB::HL::Collection
+  * big cleanup of code
+* 0.31.1
+  * Bugfixes and rewrites of delete
+* 0.31.0
+  * New module for higher level access of collection MongoDB::HL::Collection
+  * Inserting records
+  * Deleting records
+  * Other mehods to define the records and queries and to handle errors
+* 0.30.7
+  * used Semaphore::ReadersWriters and modified use of semaphores in Client.
+  * hangups are taken care of by Jonathan Worthington in next release of perl.
+* 0.30.6
+  * reordering statements to tackle race conditions (again) and to speed things up a little
 * 0.30.5
   * Change boolean checking on todo list
 * 0.30.4

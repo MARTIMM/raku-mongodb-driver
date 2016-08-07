@@ -9,8 +9,8 @@ use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -23,14 +23,18 @@ subtest {
 
   my MongoDB::Server::Monitor $monitor .= new(:$server);
   $monitor.start-monitor;
+  sleep 1.5;
 
   my Supply $s = $monitor.get-supply;
-  $s.act( -> Hash $mdata {
-      ok $mdata<ok>, 'Monitoring is ok';
-      ok $mdata<weighted-mean-rtt> > 0.0,
-         "Weighted mean is $mdata<weighted-mean-rtt>";
-      ok $mdata<monitor><ok>, 'Ok response from server';
-      ok $mdata<monitor><ismaster>, 'Is master';
+  $s.tap( -> Hash $mdata {
+      # Possible to get empty data
+      if $mdata.defined and $mdata<ok>:exists {
+        ok $mdata<ok>, 'Monitoring is ok';
+        ok $mdata<weighted-mean-rtt> > 0.0,
+           "Weighted mean is $mdata<weighted-mean-rtt>";
+        ok $mdata<monitor><ok>, 'Ok response from server';
+        ok $mdata<monitor><ismaster>, 'Is master';
+      }
     }
   );
 
@@ -66,7 +70,6 @@ subtest {
 subtest {
 
   my MongoDB::Server $server .= new(:server-name("localhost:65535"));
-  sleep 1;
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is unknown";
 
   $server.server-init;
@@ -89,7 +92,6 @@ subtest {
 
   my $p3 = $ts.server-control.get-port-number('s3');
   my MongoDB::Server $server .= new(:server-name("localhost:$p3"));
-  sleep 1;
   is $server.get-status, MongoDB::C-UNKNOWN-SERVER, "Status is Unknown";
 
   $server.server-init;
@@ -114,5 +116,5 @@ subtest {
 # Cleanup
 #
 info-message("Test $?FILE end");
-done-testing();
+done-testing;
 exit(0);

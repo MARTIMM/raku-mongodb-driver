@@ -9,13 +9,13 @@ use MongoDB::Client;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection();
+my MongoDB::Client $client = $ts.get-connection;
 my MongoDB::Database $database = $client.database('test');
 
 # Create collection and insert data in it!

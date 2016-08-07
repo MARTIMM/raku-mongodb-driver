@@ -32,19 +32,25 @@ class Server::Socket {
       :port($!server.server-port)
     ) unless $!sock.defined;
 
+    trace-message("open socket");
     $!is-open = True;
   }
 
   #-----------------------------------------------------------------------------
   method send ( Buf:D $b --> Nil ) {
+
 #TODO Check if sock is usable
+    debug-message("socket send, size: $b.elems()");
     $!sock.write($b);
   }
 
   #-----------------------------------------------------------------------------
   method receive ( int $nbr-bytes --> Buf ) {
+
 #TODO Check if sock is usable
-    return $!sock.read($nbr-bytes);
+    my Buf $b = $!sock.read($nbr-bytes);
+    debug-message("socket receive, request size $nbr-bytes, received size $b.elems()");
+    $b;
   }
 
   #-----------------------------------------------------------------------------
@@ -54,6 +60,7 @@ class Server::Socket {
       $!sock = Nil;
     }
 
+    trace-message("close socket");
     $!is-open = False;
   }
 }

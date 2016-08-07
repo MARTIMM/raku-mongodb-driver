@@ -136,16 +136,9 @@ Read concern will overwrite the default concern.
 
   method nbr-servers ( --> Int )
 
-Return number of servers found processing the uri in new(). See also next method.
-
-
-=head2 nbr-left-actions
-
-  method nbr-left-actions ( --> Int )
-
-Return number of still to be processed items from the uri. When this is 0 all
-processing is done and nbr-servers() can be used to get the total of servers
-found.
+Return number of servers found processing the uri in new(). When called directly
+after new() it may not have the proper count yet caused by delays in processing
+especially when processing replicasets.
 
 
 =head2 database

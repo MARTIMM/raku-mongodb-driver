@@ -1,4 +1,3 @@
-
 use v6.c;
 use MongoDB::Log :ALL;
 
@@ -23,7 +22,7 @@ package MongoDB {
   #-----------------------------------------------------------------------------
   # Client object topology types
   #
-  subset TopologyType of Int where 40 <= $_ <= 43;
+  subset TopologyType of Int is export where 40 <= $_ <= 43;
 
   constant C-UNKNOWN-TPLGY                 = 40;   # Start value
   constant C-STANDALONE-TPLGY              = 41;   # Standalone, one server
@@ -94,8 +93,6 @@ package MongoDB {
 
   # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
   subset PortType of Int where 0 < $_ <= 65535;
-  
-  subset SocketLimit of Int where $_ >= 3;
 
   # Helper constraints when module cannot be loaded(use)
   subset ClientType where .^name eq 'MongoDB::Client';

@@ -8,18 +8,18 @@ use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
-use MongoDB::Config;
+use MongoDB::MDBConfig;
 use MongoDB::Cursor;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my Hash $config = MongoDB::Config.instance.config;
+my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
 #-------------------------------------------------------------------------------
@@ -32,12 +32,13 @@ subtest {
   ok $ts.server-control.start-mongod( 's2', 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
-  # Cannot find server now, need replicaSet option
+  # Should not find a server, need replicaSet option
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2"));
-  my MongoDB::Server $server = $client.select-server;
-  nok $server.defined, 'No master server found';
-  is $client.server-status('localhost:' ~ $p2), MongoDB::C-REJECTED-SERVER,
-     "Server 2 is rejected";
+  my MongoDB::Server $server = $client.select-server(
+    :needed-state(MongoDB::C-REJECTED-SERVER)
+  );
+#  nok $server.defined, 'No master server found';
+  is $server.get-status, MongoDB::C-REJECTED-SERVER, "Server 2 is rejected";
 
 }, "Replica server pre-init rejected";
 
@@ -51,7 +52,7 @@ subtest {
   my MongoDB::Database $database = $client.database('test');
   my MongoDB::Collection $collection = $database.collection('mycll');
 
-  my MongoDB::Server $server = $client.select-server;
+  my MongoDB::Server $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No master server found';
   is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICA-PRE-INIT,
      "Server is in replica initialization state";
@@ -142,8 +143,7 @@ subtest {
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
-  is $client.nbr-servers, 1, 'One server found';
-  is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICASET-PRIMARY,
+  is $client.server-status("localhost:$p2"), MongoDB::C-REPLICASET-PRIMARY,
      "Server is replica server primary";
 
   my MongoDB::Database $database = $client.database('test');

@@ -7,11 +7,11 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Database;
-use MongoDB::Config;
+use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -20,7 +20,7 @@ my MongoDB::Test-support $ts .= new;
 subtest {
 
   my Str $host = 'localhost';
-  my Hash $config = MongoDB::Config.instance.config;
+  my Hash $config = MongoDB::MDBConfig.instance.config;
 
   my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
   diag "Start server 1 pre-init in replicaset $rs1-s1";

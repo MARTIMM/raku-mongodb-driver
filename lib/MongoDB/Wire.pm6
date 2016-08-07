@@ -1,4 +1,3 @@
-
 use v6.c;
 
 use BSON::Document;
@@ -31,9 +30,6 @@ class Wire {
     $d does MongoDB::Header;
     my BSON::Document $result;
 
-#    my Bool $write-operation = False;
-#    my $client;
-
     try {
 #      $client = $collection.database.client;
 
@@ -42,8 +38,6 @@ class Wire {
       #
       fatal-message("No server available") unless $!server.defined;
 
-#      $write-operation = ($d.find-key(0) ~~ any(<insert update delete>));
-#say "Need master for {$d.find-key(0)} $write-operation";
       my $full-collection-name = $collection.full-collection-name;
 
       ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
@@ -53,12 +47,17 @@ class Wire {
 
       $!socket = $server.get-socket;
       $!socket.send($encoded-query);
+#say "$*THREAD.id() sock $!socket";
 
       # Read 4 bytes for int32 response size
-      #
       my Buf $size-bytes = self!get-bytes(4);
 
+      # Convert Buf to Int and substract 4 to get remaining size of data
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+
+      # Assert that number of bytes is still positive
+      fatal-message("Wrong number of bytes to read from socket: $response-size")
+        unless $response-size > 0;
 
       # Receive remaining response bytes from socket. Prefix it with the
       # already read bytes and decode. Return the resulting document.
@@ -68,7 +67,6 @@ class Wire {
       $result = $d.decode-reply($server-reply);
 
       # Assert that the request-id and response-to are the same
-      #
       fatal-message("Id in request is not the same as in the response")
         unless $request-id == $result<message-header><response-to>;
 
@@ -76,7 +74,8 @@ class Wire {
       #
       CATCH {
 #say .WHAT;
-#say "Error wire query: ", $_;
+#say "$*THREAD.id() Error wire query: ", $_;
+        $!socket.close if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -97,6 +96,7 @@ class Wire {
 
         # If not one of the above errors, rethrow the error
         default {
+          .say;
           .rethrow;
         }
       }
@@ -155,8 +155,9 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-say .WHAT;
-say "Error wire get-more: ", .message;
+#say .WHAT;
+#say "Error wire get-more: ", .message;
+        $!socket.close if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -177,6 +178,7 @@ say "Error wire get-more: ", .message;
 
         # If not one of the above errors, rethrow the error
         default {
+          .say;
           .rethrow;
         }
       }
@@ -226,8 +228,9 @@ say "Error wire get-more: ", .message;
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-say .WHAT;
-say "Error wire kill-cursors: ", .message;
+#say .WHAT;
+#say "Error wire kill-cursors: ", .message;
+        $!socket.close if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -248,6 +251,7 @@ say "Error wire kill-cursors: ", .message;
 
         # If not one of the above errors, rethrow the error
         default {
+          .say;
           .rethrow;
         }
       }
@@ -262,6 +266,7 @@ say "Error wire kill-cursors: ", .message;
   #
   method !get-bytes ( int $n --> Buf ) {
 
+#say "$*THREAD.id() get-bytes $!socket";
     my Buf $bytes = $!socket.receive($n);
     if $bytes.elems == 0 {
 

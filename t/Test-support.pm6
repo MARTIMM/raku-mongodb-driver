@@ -18,7 +18,7 @@ class Test-support {
   has MongoDB::Server::Control $.server-control;
 
   submethod BUILD ( ) {
-  
+
     # Init here because of need in BUILD later
     $!nbr-of-servers = 3;
     $!server-range = (^$!nbr-of-servers + 1);
@@ -54,9 +54,13 @@ class Test-support {
         [mongod]
           nojournal = true
           fork = true
-          quiet = true
           smallfiles = true
           oplogSize = 128
+          #ipv6 = true
+          #quiet = true
+          #verbose = '=command=v =nework=v'
+          verbose = 'vv'
+          logappend = true
 
         EOCONFIG
 
@@ -101,7 +105,11 @@ class Test-support {
       spurt( $file, $config-text);
     }
 
-    $!server-control .= new(:file<Sandbox/config.toml>);
+#    $!server-control .= new(:file<Sandbox/config.toml>);
+    $!server-control .= new(
+      :locations(['Sandbox',]),
+      :config-name<config.toml>
+    );
 #    say "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
   }
 
@@ -113,9 +121,7 @@ class Test-support {
     $server = 1 unless $server ~~ any $!server-range;
 
     my Int $port-number = $!server-control.get-port-number("s$server");
-    my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
-
-    return $client;
+    MongoDB::Client.new(:uri("mongodb://localhost:$port-number"));
   }
 
   #-----------------------------------------------------------------------------
