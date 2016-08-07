@@ -158,12 +158,12 @@ say "Opts: $!uri-data<options>.perl()";
             }
           }
 
-#say "$*THREAD.id() status $server-status";
-
           # Set the status with the new value
           $!rw-sem.writer( 's-status', {
-            say "$*THREAD.id() set status $server-status";
-            $!server-status = $server-status;});
+              debug-message("set status of self.name() $server-status");
+              $!server-status = $server-status;
+            }
+          );
 
           CATCH {
             default {

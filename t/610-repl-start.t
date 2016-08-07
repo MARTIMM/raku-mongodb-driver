@@ -13,8 +13,8 @@ use MongoDB::Cursor;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -22,7 +22,6 @@ my MongoDB::Test-support $ts .= new;
 my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
-#`{{
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -135,7 +134,7 @@ subtest {
   nok $doc<secondary>, 'And not secondary';
 
 }, "Replica server initialization and modification";
-}}
+
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -146,7 +145,7 @@ subtest {
   my MongoDB::Server $server = $client.select-server;
   is $client.server-status("localhost:$p2"), MongoDB::C-REPLICASET-PRIMARY,
      "Server is replica server primary";
-#`{{
+
   my MongoDB::Database $database = $client.database('test');
   my MongoDB::Database $db-admin = $client.database('admin');
 
@@ -177,7 +176,7 @@ subtest {
   is $doc<setVersion>, 2, 'Repl set version 2';
   is-deeply $doc<hosts>, ["localhost:$p2",],
             "servers in replica: {$doc<hosts>}";
-}}
+
 }, "Replica servers update replica data";
 
 #-------------------------------------------------------------------------------
