@@ -6,8 +6,6 @@
   ],
   "depends": [
     "BSON",
-    "Digest::MD5",
-    "Config::TOML",
     "Semaphore::ReadersWriters",
     "Config::DataLang::Refine"
   ],
