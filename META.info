@@ -8,7 +8,8 @@
     "BSON",
     "Digest::MD5",
     "Config::TOML",
-    "Semaphore::ReadersWriters"
+    "Semaphore::ReadersWriters",
+    "Config::DataLang::Refine"
   ],
   "description": "MongoDB driver",
   "license": "The Artistic License 2.0",
@@ -18,7 +19,7 @@
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
     "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
-    "MongoDB::Config":                  "lib/MongoDB/Config.pm6",
+    "MongoDB::MDBConfig":                  "lib/MongoDB/MDBConfig.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
