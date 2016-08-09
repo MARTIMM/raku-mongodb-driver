@@ -9,16 +9,25 @@ use MongoDB::Users;
 use MongoDB::Authenticate;
 use BSON::Document;
 
-plan 1;
-skip-rest "Some modules needed for authentication are not yet supported in perl 6";
-exit(0);
+#plan 1;
+#skip-rest "Some modules needed for authentication are not yet supported in perl 6";
+#exit(0);
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
+
+#---------------------------------------------------------------------------------
+subtest {
+
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $ts.server-control.start-mongod( 's1', 'authenticate'),
+     "Server 1 in auth mode";
+
+}, "Server changed to authentication mode";
 
 #-------------------------------------------------------------------------------
 my Int $exit_code;
@@ -33,52 +42,6 @@ my BSON::Document $doc;
 my MongoDB::Cursor $cursor;
 my MongoDB::Users $users .= new(:$database);
 my MongoDB::Authenticate $auth;
-
-$database.run-command: (dropDatabase => 1,);
-$database.run-command: (dropAllUsersFromDatabase => 1,);
-
-#-------------------------------------------------------------------------------
-subtest {
-  $users.set-pw-security(
-    :min-un-length(10), 
-    :min-pw-length(8),
-    :pw_attribs(MongoDB::C-PW-OTHER-CHARS)
-  );
-
-  $doc = $users.create-user(
-    'site-admin', 'B3n@Hurry',
-    :custom-data((user-type => 'site-admin'),),
-    :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
-  );
-
-  ok $doc<ok>, 'User site-admin created';
-
-  $doc = $users.create-user(
-    'Dondersteen', 'w@tD8jeDan',
-    :custom-data(
-        license => 'to_kill',
-        user-type => 'database-test-admin'
-    ),
-    :roles([(role => 'readWrite', db => 'test'),])
-  );
-
-  ok $doc<ok>, 'User Dondersteen created';
-
-#say "Users: ", $doc.perl;
-  $doc = $database.run-command: (usersInfo => 1,);
-  is $doc<users>.elems, 2, '2 users defined';
-  is $doc<users>[0]<user>, 'site-admin', 'User site-admin';
-  is $doc<users>[1]<user>, 'Dondersteen', 'User Dondersteen';
-}, "User account preparation";
-
-#---------------------------------------------------------------------------------
-subtest {
-
-  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 stopped";
-  ok $Test-support::server-control.start-mongod( 's1', 'authenticate'),
-     "Server 1 in auth mode";
-
-}, "Server changed to authentication mode";
 
 #---------------------------------------------------------------------------------
 subtest {
@@ -122,9 +85,8 @@ subtest {
 #---------------------------------------------------------------------------------
 subtest {
 
-  ok $Test-support::server-control.stop-mongod('s1'), "Server 1 stopped";
-  ok $Test-support::server-control.start-mongod('s1'),
-     "Server 1 in normal mode";
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
 
 }, "Server changed to normal mode";
 

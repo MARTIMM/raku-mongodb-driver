@@ -110,9 +110,7 @@ subtest {
     :roles(['readWrite'])
   );
 
-say $doc.perl;
   ok $doc<ok>, 'User mt-and-another-few-chars created';
-
 
   $doc = $database.run-command: (dropUser => 'mt-and-another-few-chars',);
   ok $doc<ok>, 'User mt-and-another-few-chars deleted';
