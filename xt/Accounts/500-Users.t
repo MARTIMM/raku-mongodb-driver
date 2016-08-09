@@ -56,7 +56,7 @@ subtest {
   $users.set-pw-security(
     :min-un-length(5),
     :min-pw-length(6),
-    :pw_attribs(MongoDB::C-PW-OTHER-CHARS)
+    :pw_attribs(C-PW-OTHER-CHARS)
   );
 
   try {

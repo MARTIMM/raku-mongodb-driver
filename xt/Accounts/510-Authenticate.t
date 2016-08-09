@@ -45,27 +45,19 @@ my MongoDB::Authenticate $auth;
 
 #---------------------------------------------------------------------------------
 subtest {
-  # Must get a new database, users and authentication objects because server
-  # is restarted.
-  #
-  $client = $ts.get-connection(:server($server-number));
-  $database = $client.database('test');
+
+#$doc = $db-admin.run-command: BSON::Document.new: (serverStatus => 1);
+#say $doc.perl;
+
   $users .= new(:$database);
   $auth .= new(:$database);
 
-  try {
-    $database.run-command: (dropAllUsersFromDatabase => 1,);
-    ok $doc<ok>, 'All users dropped';
-
-    CATCH {
-      when MongoDB::Message {
-        ok .message ~~ m:s/not authorized on test to execute/, .error-text;
-      }
-    }
-  }
+  $doc = $database.run-command: (dropAllUsersFromDatabase => 1,);
+  ok $doc<errmsg> ~~ m:s/not authorized on test to execute/, $doc<errmsg>;
 
   try {
     $doc = $auth.authenticate( :user('mt'), :password('mt++'));
+say $doc.perl;
 
     CATCH {
       when MongoDB::Message {

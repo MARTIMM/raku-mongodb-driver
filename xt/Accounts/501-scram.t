@@ -1,15 +1,17 @@
 #!/usr/bin/env perl6
 
-# RDC           https://tools.ietf.org/html/rfc5802
+# RFC           https://tools.ietf.org/html/rfc5802
 # MongoDB       https://www.mongodb.com/blog/post/improved-password-based-authentication-mongodb-30-scram-explained-part-1?jmp=docs&_ga=1.111833220.1411139568.1420476116
+#               https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst
 # Wiki          https://en.wikipedia.org/wiki/Salted_Challenge_Response_Authentication_Mechanism
 #               https://en.wikipedia.org/wiki/PBKDF2
-
+#
 use v6.c;
 use Test;
 
 use Digest::HMAC;
 use OpenSSL::Digest;
+use Base64;
 
 #-------------------------------------------------------------------------------
 # PBKDF2 See rfc5802. Where
@@ -38,9 +40,11 @@ sub Hi ( Str $s-str, Str $s-salt, Int $i, Callable $H --> Str ) is export {
 }
 
 #-------------------------------------------------------------------------------
-# PBKDF2 (Password Based Key Derivation Function). See rfc 5802, 2898. Where
+# Function Hi() or PBKDF2 (Password Based Key Derivation Function) because of
+# the use of HMAC. See rfc 5802, 2898.
+#
 # PRF is HMAC (Pseudo random function)
-# dklen == output length of hmac == output length of H()
+# dklen == output length of hmac == output length of H() which is sha1
 #
 sub pbkdf2 ( Str $s-str, Str $s-salt, Int $i, Callable $H --> Buf ) is export {
 
@@ -80,8 +84,8 @@ say $s1.chars, ', ', $s2.chars;
 
 #-------------------------------------------------------------------------------
 # Create account, cannot hav ',' or '=' in string
-my Str $username = "user\x0154";
-my Str $password = "pencil\x0152";
+my Str $username = "user";
+my Str $password = "pencil";
 #my Str $client-key-s = 'client key';
 my Str $client-key-s = $username;
 
@@ -94,10 +98,10 @@ my Int $iteration-count = 4;
 my Str $server-key-s = 'server key';
 say "Server key string: ", $server-key-s;
 
-my Str $salt = (rand * 1e80).base(36);
+my Str $salt = encode-base64((rand * 1e80).base(36), :str);
 
 my Buf $salted-password = pbkdf2( $password, $salt, $iteration-count, &sha1);
-my Buf $client-key = hmac( $salted-password, $client-key-s, &sha1);
+my Buf $client-key = hmac( $salted-password, 'Client Key', &sha1);
 my Buf $stored-key = sha1($client-key);
 
 my Str $server-key = hmac-hex( $salted-password, $server-key-s, &sha1);

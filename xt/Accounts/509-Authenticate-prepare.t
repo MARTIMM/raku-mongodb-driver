@@ -39,7 +39,7 @@ subtest {
   $users.set-pw-security(
     :min-un-length(10), 
     :min-pw-length(8),
-    :pw_attribs(MongoDB::C-PW-OTHER-CHARS)
+    :pw_attribs(C-PW-OTHER-CHARS)
   );
 
   $doc = $users.create-user(
@@ -47,7 +47,6 @@ subtest {
     :custom-data((user-type => 'site-admin'),),
     :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
   );
-say $doc.perl;
   ok $doc<ok>, 'User site-admin created';
 
   $doc = $users.create-user(

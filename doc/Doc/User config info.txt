@@ -1,0 +1,41 @@
+--------------------------------------------------------------------------------
+'site-admin', 'B3n@Hurry', role => 'userAdminAnyDatabase', db => 'admin'
+'Dondersteen', 'w@tD8jeDan', role => 'readWrite', db => 'test'
+
+
+$doc = $users.create-user(
+  'site-admin', 'B3n@Hurry',
+  :custom-data((user-type => 'site-admin'),),
+  :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
+);
+
+
+--------------------------------------------------------------------------------
+my MongoDB::Collection $u = $db-admin.collection('system.users');
+my MongoDB::Cursor $uc = $u.find( :criteria( user => 'site-admin',));
+$doc = $uc.fetch;
+
+
+BSON::Document.new((
+  _id => "test.site-admin",
+  user => "site-admin",
+  db => "test",
+  credentials => BSON::Document.new((
+    SCRAM-SHA-1 => BSON::Document.new((
+      iterationCount => 10000,
+      salt => "Mpisumty8wQK7oi9KtDfeA==",
+      storedKey => "bG4ozEGjYMXqcF/NfHGEbdPoRZc=",
+      serverKey => "hyrU91E3C+ufBlogxNYn37MpDJY=",
+    )),
+  )),
+  customData => BSON::Document.new((
+    user-type => "site-admin",
+  )),
+  roles => [
+        BSON::Document.new((
+      role => "userAdminAnyDatabase",
+      db => "admin",
+    )),
+  ],
+))
+
