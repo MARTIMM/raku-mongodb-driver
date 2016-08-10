@@ -6,6 +6,11 @@ use MongoDB;
 unit package MongoDB;
 
 #-------------------------------------------------------------------------------
+#TODO Sockets must initiate a handshake procedure when socket is opened. Perhaps
+#  not needed because the monitor is keeping touch and known the type of the
+#  server which is communicated to the Server and Client object
+#TODO When authentication is needed it must be done on every opened socket
+
 class Server::Socket {
 
   has IO::Socket::INET $!sock;

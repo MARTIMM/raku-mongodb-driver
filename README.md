@@ -307,7 +307,7 @@ At this moment rakudobrew has too many differences with the perl6 directly from 
   * journal - corresponds to journal in the class definition.
   * wtimeoutMS - corresponds to wtimeoutMS in the class definition.
 * Take tests from 610 into Control.pm6 for replicaset initialization.
-
+* For authentication I need to make other classes first like Unicode::Stringprep::* and Authen::* from perl 5 libs.
 
 ## CHANGELOG
 

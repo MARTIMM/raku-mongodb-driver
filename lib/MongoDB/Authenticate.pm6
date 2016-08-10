@@ -33,9 +33,6 @@ class MongoDB::Authenticate {
 
 #TODO get version to see if MONGODB-CR or SCRAM-SHA1 is needed
 
-    my MongoDB::Collection $u = $!db-admin.collection('system.users');
-    my MongoDB::Cursor $uc = $u.find( :criteria( user => $username,));
-    my BSON::Document $doc = $uc.fetch;
 #`{{
     #Sample return exampleBSON::Document.new((
       _id => "test.site-admin",
@@ -60,6 +57,11 @@ class MongoDB::Authenticate {
       ],
     ))
 }}
+#`{{
+    my MongoDB::Collection $u = $!db-admin.collection('system.users');
+    my MongoDB::Cursor $uc = $u.find( :criteria( user => $username,));
+    $doc = $uc.fetch;
+say $doc.perl;
     if $doc<credentials><SCRAM-SHA-1>:exists {
       my BSON::Document $creds = $doc<credentials><SCRAM-SHA-1>;
       my Int $i = $creds<iterationCount>;
@@ -74,7 +76,9 @@ say "Auth 0: $i, $salt, ", $client-key;
     else {
       fatal-message('Method to login not yet implemented');
     }
+}}
 
+    my BSON::Document $doc;
 
     $doc = $!db-admin.run-command(BSON::Document.new: (getnonce => 1));
 say "N0: ", $doc.perl;
@@ -85,6 +89,14 @@ say "N0: ", $doc.perl;
         collection-ns => $!database.name
       );
     }
+
+
+    $doc = $!db-admin.run-command(
+      BSON::Document.new: (
+        
+      )
+    );
+say $doc.perl;
 
     my $part1a = ([~] $username, ':mongo:', $password).encode;
     my Buf $b = Digest::MD5::md5($part1a);

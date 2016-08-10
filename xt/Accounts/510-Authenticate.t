@@ -56,7 +56,7 @@ subtest {
   ok $doc<errmsg> ~~ m:s/not authorized on test to execute/, $doc<errmsg>;
 
   try {
-    $doc = $auth.authenticate( :user('mt'), :password('mt++'));
+    $doc = $auth.authenticate( :username('mt'), :password('mt++'));
 say $doc.perl;
 
     CATCH {
@@ -66,7 +66,7 @@ say $doc.perl;
     }
   }
 
-  $doc = $auth.authenticate( :user('Dondersteen'), :password('w@tD8jeDan'));
+  $doc = $auth.authenticate( :username('Dondersteen'), :password('w@tD8jeDan'));
   ok $doc<ok>, 'User Dondersteen logged in';
 
   $doc = $database.run-command: (logout => 1,);
