@@ -24,31 +24,6 @@ use MongoDB::Collection;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-# Unicode classes
-#
-use lib '/home/marcel/Languages/Perl6/Projects/unicode-stringprep/lib';
-use Unicode::Stringprep::Common;
-
-our $B1 = _mk_map(Q:to/ENDTABLE/);
-   00AD; ; Map to nothing
-   034F; ; Map to nothing
-   ENDTABLE
-
-say $B1.perl;
-
-#-------------------------------------------------------------------------------
-# RFC 3454 stringprep
-#
-sub SASLprep ( Str $str --> Str ) {
-  
-  # Map
-  
-  # Normalize
-
-  
-}
-
-#-------------------------------------------------------------------------------
 set-logfile($*OUT);
 info-message("Test $?FILE start");
 #---------------------------------------------------------------------------------
@@ -80,11 +55,19 @@ my BSON::Document $doc;
 my MongoDB::Cursor $cursor;
 
 my Str $username = 'Dondersteen';
-my Str $password = 'w@tD8jeDan';
+my Str $password = 'watd0ej3daN';
 
 $doc = $db-admin.run-command(BSON::Document.new: (getnonce => 1));
-say "N0: ", $doc.perl;
+my Str $nonce = $doc<nonce>;
+say "N0: ", " -->> $nonce";
 
+$doc = $db-admin.run-command(BSON::Document.new: (
+    saslStart => 1,
+    mechanism => 'SCRAM-SHA-1',
+    payload => encode-base64( "n,,n=$username,r=$nonce", :str)
+  )
+);
+say "N1: ", $doc.perl;
 
 
 #-------------------------------------------------------------------------------
