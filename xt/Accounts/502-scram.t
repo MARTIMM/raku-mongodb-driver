@@ -11,6 +11,7 @@ use v6.c;
 use lib 't';
 use Test;
 
+use Digest::MD5;
 use Digest::HMAC;
 use OpenSSL::Digest;
 use Base64;
@@ -22,6 +23,67 @@ use MongoDB::Users;
 use MongoDB::Database;
 use MongoDB::Collection;
 use BSON::Document;
+
+#-------------------------------------------------------------------------------
+# Client key computation
+sub compute-client-key (
+  Str:D $username,
+  Str:D $password,
+  Str:D $salt,
+  Int:D $iteration-count
+
+  --> Buf
+) {
+
+  my $mongo-hashed-password = Digest::MD5.new.md5_hex(([~] $username, ':mongo:', $password).encode('utf8'));
+  my Buf $salted-password = Hi(
+    $mongo-hashed-password, $salt, $iteration-count, &sha1
+  );
+
+  hmac( $salted-password, 'Client Key', &sha1);
+}
+
+#-------------------------------------------------------------------------------
+# Function Hi() or PBKDF2 (Password Based Key Derivation Function) because of
+# the use of HMAC. See rfc 5802, 2898.
+#
+# PRF is HMAC (Pseudo random function)
+# dklen == output length of hmac == output length of H() which is sha1
+#
+sub Hi ( Str $s-str, Str $s-salt, Int $i, Callable $H --> Buf ) is export {
+
+  my Buf $str = Buf.new($s-str.encode);
+  my Buf $salt = Buf.new($s-salt.encode);
+
+  my Buf $Hi = hmac( $str, $salt ~ Buf.new(1), &$H);
+
+  my Buf $Ui = $Hi;
+  for 2 ..^ $i -> $c {
+    $Ui = hmac( $str, $Ui, &$H);
+    for ^($Hi.elems) -> $Hi-i {
+      $Hi[$Hi-i] = $Hi[$Hi-i] +^ $Ui[$Hi-i];
+    }
+  }
+
+say "Hi: ", $Hi.elems, ', ', $Hi;
+  $Hi;
+}
+
+#-------------------------------------------------------------------------------
+sub XOR ( Str $s1, Str $s2 --> Str ) is export {
+
+say $s1, ', ', $s2;
+say $s1.chars, ', ', $s2.chars;
+  my utf8 $s1-b = $s1.encode;
+  my utf8 $s2-b = $s2.encode;
+  my Buf $xor-b = Buf.new;
+  for ^($s1-b.elems) -> $csi {
+#say $csi;
+    $xor-b ~= Buf.new($s1-b[$csi] +^ $s2-b[$csi]);
+  }
+
+  $xor-b.decode;
+}
 
 #-------------------------------------------------------------------------------
 set-logfile($*OUT);
@@ -55,20 +117,118 @@ my BSON::Document $doc;
 my MongoDB::Cursor $cursor;
 
 my Str $username = 'Dondersteen';
-my Str $password = 'watd0ej3daN';
+#my Str $password = 'w@tD8jeDan';
+my Str $password = 'watDo3jeDan';
 
-$doc = $db-admin.run-command(BSON::Document.new: (getnonce => 1));
-my Str $nonce = $doc<nonce>;
-say "N0: ", " -->> $nonce";
+#$doc = $db-admin.run-command(BSON::Document.new: (getnonce => 1));
+#my Str $nonce = $doc<nonce>;
 
-$doc = $db-admin.run-command(BSON::Document.new: (
+my Str $c-nonce = encode-base64( Buf.new: (for ^24 { (rand * 256).Int })).join;
+my Str $client-first-bare = "n=$username,r=$c-nonce";
+
+# gs2-header = gs2-cbind-flag "," [ authzid ] ","
+# gs2-cbind-flag = 'n'
+# authzid = ''
+# ==>> header = 'n,'
+my Str $gs2-header = 'n,';
+my Str $client-first-message = "$gs2-header,$client-first-bare";
+
+#$doc = $db-admin.run-command(BSON::Document.new: (
+$doc = $database.run-command( BSON::Document.new: (
     saslStart => 1,
     mechanism => 'SCRAM-SHA-1',
-    payload => encode-base64( "n,,n=$username,r=$nonce", :str)
+    payload => encode-base64( $client-first-message, :str)
   )
 );
 say "N1: ", $doc.perl;
+# Ok keys:
+#  conversationId => 1,
+#  done => Bool::False,
+#  payload => "cj1FamQzSHdob2I0VndyRTZtUFc3Wnd0Vyt0dERISk9nOVpSM3dZejd6RURxR3Z5QlNxSU9nTGp4c2dvb1hOUlVPLHM9cTlIQXZHU3plVUFVR0hBb0d0ZEZNZz09LGk9MTAwMDA=",
+#  ok => 1e0,
 
+# Error doc keys: 
+#  ok => 0e0,
+#  code => 18,
+#  errmsg => "Authentication failed.",
+
+my Int $conversation-id = $doc<conversationId>;
+my Str $server-first-message = Buf.new(decode-base64($doc<payload>)).decode;
+say "Payload: $server-first-message";
+#`{{
+my Hash $pl-items;
+for $server-first-message.split(',') {
+  if $^pli ~~ m/^ 'r=' / {
+    $pl-items<nonce> = $^pli;
+    $pl-items<nonce> ~~ s/^ 'r=' //;
+  }
+
+  elsif $^pli ~~ m/^ 's=' / {
+    $pl-items<salt> = $^pli;
+    $pl-items<salt> ~~ s/^ 's=' //;
+  }
+
+  elsif $^pli ~~ m/^ 'i=' / {
+    $pl-items<iter> = $^pli;
+    $pl-items<iter> ~~ s/^ 'i=' //;
+  }
+}
+}}
+
+( my $pl-nonce, my $pl-salt, my $pl-iter) = $server-first-message.split(',');
+#$pl-nonce ~~ s/^ 'r=' //;
+$pl-salt ~~ s/^ 's=' //;
+$pl-iter ~~ s/^ 'i=' //;
+
+my Buf $client-key-b = compute-client-key(
+  $username, $password, $pl-salt, $pl-iter.Int
+);
+
+my Str $client-key = encode-base64( $client-key-b, :str);
+my Str $stored-key = encode-base64( sha1($client-key-b), :str);
+
+say "CK: $client-key";
+say "SK: $stored-key";
+
+
+
+my Str $channel-binding = "c=biws";
+my Str $client-final-without-proof = ($channel-binding, $pl-nonce).join(',');
+say "CFWP: $client-final-without-proof";
+
+my $auth-message = (
+  $client-first-message, $server-first-message, $client-final-without-proof
+).join(',');
+say "AM: $auth-message";
+my Str $client-signature = hmac-hex( $stored-key, $auth-message, &sha1);
+my Str $client-proof = "p=" ~ XOR( $client-key, $client-signature);
+
+my Str $client-final = ( $client-final-without-proof, $client-proof).join(',');
+say "CF: $client-final";
+
+
+$doc = $database.run-command( BSON::Document.new: (
+    saslContinue => 1,
+    conversationId => $conversation-id,
+    payload => encode-base64( $client-final, :str)
+  )
+);
+
+say $doc.perl;
+# Sample error
+#  ok => 0e0,
+#  code => 17,
+#  errmsg => "No SASL session state found",
+
+
+#---------------------------------------------------------------------------------
+set-exception-process-level(MongoDB::Severity::Warn);
+subtest {
+
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
+
+}, "Server changed to normal mode";
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
@@ -84,17 +244,17 @@ exit(0);
 # PRF is HMAC (Pseudo random function)
 # dklen == output length of hmac == output length of H()
 #
-sub Hi ( Str $s-str, Str $s-salt, Int $i, Callable $H --> Str ) is export {
+sub Hi ( Str $str, Str $salt, Int $i, Callable $H --> Str ) is export {
 
-  my Buf $str = Buf.new($s-str.encode);
-  my Buf $salt = Buf.new($s-salt.encode);
+  my Buf $str-b = Buf.new($str.encode);
+  my Buf $salt-b = Buf.new($salt.encode);
 
-  my Buf $Hi = hmac( $str, $salt ~ Buf.new(1), &$H);
+  my Buf $Hi = hmac( $str-b, $salt-b ~ Buf.new(1), &$H);
 #say "H\[1]: ", $Hi;
   my Buf $Ui = $Hi;
 #say "U\[1]: ", $Ui;
   for 2 ..^ $i -> $c {
-    $Ui = hmac( $str, $Ui, &$H);
+    $Ui = hmac( $str-b, $Ui, &$H);
 #say "U\[$c]: ", $Ui;
     for ^($Hi.elems) -> $Hi-i {
       $Hi[$Hi-i] = $Hi[$Hi-i] +^ $Ui[$Hi-i];

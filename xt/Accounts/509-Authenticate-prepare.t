@@ -40,10 +40,12 @@ subtest {
     :min-un-length(10), 
     :min-pw-length(8),
     :pw_attribs(C-PW-OTHER-CHARS)
+#    :pw_attribs(C-PW-LOWERCASE)
   );
 
   $doc = $users.create-user(
     'site-admin', 'B3n@Hurry',
+#    'site-admin', 'B3nHurry',
     :custom-data((user-type => 'site-admin'),),
     :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
   );
@@ -51,6 +53,7 @@ subtest {
 
   $doc = $users.create-user(
     'Dondersteen', 'w@tD8jeDan',
+#    'Dondersteen', 'watDo3jeDan',
     :custom-data(
         license => 'to_kill',
         user-type => 'database-test-admin'
