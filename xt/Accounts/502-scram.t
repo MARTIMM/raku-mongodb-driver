@@ -185,7 +185,8 @@ my Buf $client-key-b = compute-client-key(
 );
 
 my Str $client-key = encode-base64( $client-key-b, :str);
-my Str $stored-key = encode-base64( sha1($client-key-b), :str);
+my Buf $stored-key-b = sha1($client-key-b);
+my Str $stored-key = encode-base64( $stored-key-b, :str);
 
 say "CK: $client-key";
 say "SK: $stored-key";
@@ -200,10 +201,17 @@ my $auth-message = (
   $client-first-message, $server-first-message, $client-final-without-proof
 ).join(',');
 say "AM: $auth-message";
-my Str $client-signature = hmac-hex( $stored-key, $auth-message, &sha1);
-my Str $client-proof = "p=" ~ XOR( $client-key, $client-signature);
+my Buf $client-signature = hmac( $stored-key-b, $auth-message.encode, &sha1);
+#my Str $client-proof = "p=" ~ XOR( $client-key, $client-signature);
+my Buf $client-proof .= new;
+for ^($client-key-b.elems) -> $Hi-i {
+  $client-proof[$Hi-i] = $client-key-b[$Hi-i] +^ $client-signature[$Hi-i];
+}
 
-my Str $client-final = ( $client-final-without-proof, $client-proof).join(',');
+my Str $client-final = (
+  $client-final-without-proof,
+  'p=' ~ encode-base64( $client-proof, :str)
+).join(',');
 say "CF: $client-final";
 
 
