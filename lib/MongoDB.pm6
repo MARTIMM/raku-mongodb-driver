@@ -51,6 +51,32 @@ package MongoDB {
   constant C-MASTER-SERVER           = 21;   # Standalone master
   constant C-SLAVE-SERVER            = 22;   # -
 
+#`{{
+  # Experiment to have the names saved with the code but is so much heavier
+  subset mdb-const-result where $_ ~~ any(Int|Str);
+  constant ABC = class {
+    method FALLBACK ( $name, *@posits, *%nattrs --> mdb-const-result ) {
+      if $name eq 'n' {
+        'ABC';
+      }
+
+      elsif $name eq 'c' {
+        10;
+      }
+      
+      else {
+        die '...';
+      }
+    }
+  }
+
+  # Experiment to have the names saved with the cod, lighter
+  constant ABC = class {
+    method n ( --> Str ) {'ABC'}
+    method c ( --> Int ) { 10;}
+  }  
+}}
+
   #-----------------------------------------------------------------------------
   # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
   #
