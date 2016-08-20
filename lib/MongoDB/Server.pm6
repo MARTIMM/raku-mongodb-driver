@@ -159,7 +159,7 @@ class Server {
 
           # Set the status with the new value
           $!rw-sem.writer( 's-status', {
-              debug-message("set status of self.name() $server-status");
+              debug-message("set status of {self.name()} $server-status");
               $!server-status = $server-status;
             }
           );
