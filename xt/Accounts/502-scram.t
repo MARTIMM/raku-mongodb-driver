@@ -1,6 +1,8 @@
 #!/usr/bin/env perl6
 
-# RFC           https://tools.ietf.org/html/rfc5802
+# RFC
+#                   https://tools.ietf.org/html/rfc5802
+#   PKCS #5         https://tools.ietf.org/html/rfc2898
 # MongoDB       https://www.mongodb.com/blog/post/improved-password-based-authentication-mongodb-30-scram-explained-part-1?jmp=docs&_ga=1.111833220.1411139568.1420476116
 #               https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst
 # Wiki          https://en.wikipedia.org/wiki/Salted_Challenge_Response_Authentication_Mechanism
@@ -24,210 +26,422 @@ use MongoDB::Database;
 use MongoDB::Collection;
 use BSON::Document;
 
+#---------------------------------------------------------------------------------
+my MongoDB::Test-support $ts .= new;
+my BSON::Document $user-credentials;
+
+sub restart-to-authenticate( ) {
+
+  set-exception-process-level(MongoDB::Severity::Debug);
+
+  my MongoDB::Client $client = $ts.get-connection(:server(1));
+  my MongoDB::Database $db-admin = $client.database('admin');
+  my MongoDB::Collection $u = $db-admin.collection('system.users');
+  my MongoDB::Cursor $uc = $u.find( :criteria( user => 'Dondersteen',));
+  $user-credentials = $uc.fetch;
+say $user-credentials.perl;
+
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $ts.server-control.start-mongod( 's1', 'authenticate'),
+     "Server 1 in auth mode";
+};
+
+#---------------------------------------------------------------------------------
+sub restart-to-normal( ) {
+
+  set-exception-process-level(MongoDB::Severity::Warn);
+
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
+}
+
 #-------------------------------------------------------------------------------
-# Client key computation
-sub compute-client-key (
-  Str:D $username,
-  Str:D $password,
-  Str:D $salt,
-  Int:D $iteration-count
+sub PBKDF2 (
+  Buf $pw, Buf $salt, Int $i,
+  Int :$l = 1, Callable :$H = &sha1
 
   --> Buf
 ) {
 
-  my $mongo-hashed-password = Digest::MD5.new.md5_hex(([~] $username, ':mongo:', $password).encode('utf8'));
-  my Buf $salted-password = Hi(
-    $mongo-hashed-password, $salt, $iteration-count, &sha1
-  );
+  my Buf $T .= new;
+  for 1 .. $l -> $lc {
+    my Buf $Ti = F( $pw, $salt, $i, $lc, $H);
+    $T ~= $Ti;
+  }
 
-  hmac( $salted-password, 'Client Key', &sha1);
+  $T;
 }
 
-#-------------------------------------------------------------------------------
-# Function Hi() or PBKDF2 (Password Based Key Derivation Function) because of
-# the use of HMAC. See rfc 5802, 2898.
-#
-# PRF is HMAC (Pseudo random function)
-# dklen == output length of hmac == output length of H() which is sha1
-#
-sub Hi ( Str $s-str, Str $s-salt, Int $i, Callable $H --> Buf ) is export {
+sub F ( Buf $pw, Buf $salt, Int $i, Int $lc, Callable $H = &sha1 --> Buf ) {
 
-  my Buf $str = Buf.new($s-str.encode);
-  my Buf $salt = Buf.new($s-salt.encode);
+  my Buf @U = [];
 
-  my Buf $Hi = hmac( $str, $salt ~ Buf.new(1), &$H);
-
-  my Buf $Ui = $Hi;
-  for 2 ..^ $i -> $c {
-    $Ui = hmac( $str, $Ui, &$H);
-    for ^($Hi.elems) -> $Hi-i {
-      $Hi[$Hi-i] = $Hi[$Hi-i] +^ $Ui[$Hi-i];
+  @U[0] = hmac( $pw, $salt ~ encode-int32-BE($lc), &$H);
+  my $F = @U[0];
+  for 1 ..^ $i -> $ci {
+    @U[$ci] = hmac( $pw, @U[$ci - 1], &$H);
+    for ^($F.elems) -> $ei {
+      $F[$ei] = $F[$ei] +^ @U[$ci][$ei];
     }
   }
 
-say "Hi: ", $Hi.elems, ', ', $Hi;
-  $Hi;
+  Buf.new($F);
+}
+
+sub encode-int32-BE ( Int:D $i --> Buf ) {
+  my int $ni = $i;
+  Buf.new((
+    $ni +& 0xFF, ($ni +> 0x08) +& 0xFF,
+    ($ni +> 0x10) +& 0xFF, ($ni +> 0x18) +& 0xFF
+  ).reverse);
 }
 
 #-------------------------------------------------------------------------------
-sub XOR ( Str $s1, Str $s2 --> Str ) is export {
+sub get-server-data ( Str:D $server-first-message --> List ) {
 
-say $s1, ', ', $s2;
-say $s1.chars, ', ', $s2.chars;
-  my utf8 $s1-b = $s1.encode;
-  my utf8 $s2-b = $s2.encode;
-  my Buf $xor-b = Buf.new;
-  for ^($s1-b.elems) -> $csi {
-#say $csi;
-    $xor-b ~= Buf.new($s1-b[$csi] +^ $s2-b[$csi]);
-  }
+  ( my $pl-nonce, my $pl-salt, my $pl-iter) = $server-first-message.split(',');
+  $pl-nonce ~~ s/^ 'r=' //;
+  $pl-salt ~~ s/^ 's=' //;
+  $pl-iter ~~ s/^ 'i=' //;
 
-  $xor-b.decode;
+  return ( $pl-nonce, $pl-salt, $pl-iter.Int);
 }
 
 #-------------------------------------------------------------------------------
 set-logfile($*OUT);
 info-message("Test $?FILE start");
 #---------------------------------------------------------------------------------
-my MongoDB::Test-support $ts .= new;
+#`{{
+subtest {
+
+  diag 'Tests to trust base64, md5 etc, checked against values from other tools';
+
+  diag 'Check md5';
+  my Digest::MD5 $md5 .= new;
+  is $md5.md5_hex("Hello World"),
+     'b10a8db164e0754105b7a99be72e3fe5',
+     'Hello World';
+  is $md5.md5_hex("Hello World\n"),
+     'e59ff97941044f85df5297e1c302d260',
+     'Hello World\n';
+
+  diag 'Check sha1';
+  is sha1("Hello World".encode).>>.fmt('%02x').join,
+     '0a4d55a8d778e5022fab701977c5d840bbc486d0',
+     'Hello World';
+  is sha1("Hello World\n".encode).>>.fmt('%02x').join,
+     '648a6a6ffffdaa0badb23b8baf90b6168dd16b3a',
+     'Hello World\n';
+
+  diag 'Check base64';
+  my Str $salt = decode-base64( 'rQ9ZY3MntBeuP3E1TDVC4w==', :bin).>>.fmt('%02x').join;
+  is $salt, 'ad0f59637327b417ae3f71354c3542e3', 'Decoded base64 salt';
+
+  diag 'Check Hi (pbkdf2)';
+  my Buf $spw = PBKDF2(
+    Buf.new('pencil'.encode),
+    decode-base64( 'QSXCR+Q6sek8bf92', :bin),
+    1,
+  );
+  is $spw.>>.fmt('%02x').join, 'f305212412b600a373561fc27b941c350ba9d399', '1 iteration';
+
+  $spw = PBKDF2(
+    Buf.new('pencil'.encode),
+    decode-base64( 'QSXCR+Q6sek8bf92', :bin),
+    4096,
+  );
+  is $spw.>>.fmt('%02x').join, '1d96ee3a529b5a5f9e47c01f229a2cb8a6e15f7d', '4096 iterations';
+
+  # Example from rfc
+  # C: n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL
+  # S: r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,s=QSXCR+Q6sek8bf92,i=4096
+  # C: c=biws,r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,
+  #    p=v0X8v3Bz2T0CJGbJQyF0X+HI4Ts=
+  # S: v=rmF9pqV8S7suAoZWja4dJRkFsKQ=
+  #
+  my Str $username = 'user';
+  my Str $password = 'pencil';
+  diag "Run with $username and $password";
+  my Str $gs2-header = 'n,';
+  my Str $client-nonce = 'r=fyko+d2lbbFgONRv9qkxdawL';
+  my Str $client-first-message-bare = "n=$username,$client-nonce";
+  my Str $client-first-message = "$gs2-header,$client-first-message-bare";
+
+  my Str $server-first-message = 'r=fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j,s=QSXCR+Q6sek8bf92,i=4096';
+  ( my Str $pl-nonce, my Str $pl-salt, my Int $pl-iter) =
+    get-server-data($server-first-message);
+  is $pl-iter, 4096, 'Number of iterations';
+  is $pl-nonce, 'fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j', 'server nonce';
+  is $pl-salt, 'QSXCR+Q6sek8bf92', 'server salt';
+
+  my Buf $salted-password = PBKDF2(
+    Buf.new($password.encode),
+    decode-base64( $pl-salt, :bin),
+    $pl-iter,
+  );
+
+  is $salted-password.>>.fmt('%02x').join,
+#     '427989587db259e12c21dd042f16542049a38cfb',
+     '1d96ee3a529b5a5f9e47c01f229a2cb8a6e15f7d',
+     "Salted $password with $pl-salt and $pl-iter iterations";
+
+#say "Salted password: ", $salted-password.>>.fmt('%02x');
+
+  my Buf $client-key = hmac( $salted-password, 'Client Key', &sha1);
+  my Buf $stored-key = sha1($client-key);
+
+  my Str $channel-binding = "c=biws";
+  my Str $client-final-without-proof = "$channel-binding,r=$pl-nonce";
+
+  my $auth-message = 
+    "$client-first-message-bare,$server-first-message,$client-final-without-proof";
+
+  my Buf $client-signature = hmac( $stored-key, $auth-message, &sha1);
+  is $client-signature.elems, $client-key.elems, 'signature and client-key have same length';
+
+  my Buf $client-proof .= new;
+  for ^($client-key.elems) -> $i {
+    $client-proof[$i] = $client-key[$i] +^ $client-signature[$i];
+  }
+
+#  say "Client proof: ", $client-proof.>>.fmt('%02x').join;
+#  say "Client proof b64: ", encode-base64( $client-proof, :str);
+  is encode-base64( $client-proof, :str),
+    'v0X8v3Bz2T0CJGbJQyF0X+HI4Ts=',
+    'Checking client proof';
+
+#  say "Salted password: ", $salted-password>>.fmt('%0x').join;
+
+  my $server-key = hmac( $salted-password, 'Server Key', &sha1);
+  my $server-signature = hmac( $server-key, $auth-message, &sha1);
+  is encode-base64( $server-signature, :str),
+     'rmF9pqV8S7suAoZWja4dJRkFsKQ=',
+     'Check server signature';
+
+}, "low level tests from rfc";
+}}
+#---------------------------------------------------------------------------------
+#`{{
+subtest {
+
+  # Example from mongo
+  # C: n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL
+  # S: r=fyko+d2lbbFgONRv9qkxdawLHo+Vgk7qvUOKUwuWLIWg4l/9SraGMHEE,s=rQ9ZY3MntBeuP3E1TDVC4w==,i=10000
+  # C: c=biws,r=fyko+d2lbbFgONRv9qkxdawLHo+Vgk7qvUOKUwuWLIWg4l/9SraGMHEE,p=MC2T8BvbmWRckDw8oWl5IVghwCY=
+  # S: v=UMWeI25JD1yNYZRMpZ4VHvhZ9e0=
+  #
+  my Str $username = 'user';
+  my Str $password = 'pencil';
+
+  my Str $gs2-header = 'n,';
+  my Str $client-nonce = 'r=fyko+d2lbbFgONRv9qkxdawL';
+  my Str $client-first-message-bare = "n=$username,$client-nonce";
+  my Str $client-first-message = "$gs2-header,$client-first-message-bare";
+
+
+  my Str $server-first-message = 'r=fyko+d2lbbFgONRv9qkxdawLHo+Vgk7qvUOKUwuWLIWg4l/9SraGMHEE,s=rQ9ZY3MntBeuP3E1TDVC4w==,i=10000';
+  ( my $pl-nonce, my $pl-salt, my $pl-iter) =
+    get-server-data($server-first-message);
+
+  is $pl-salt, 'rQ9ZY3MntBeuP3E1TDVC4w==', 'Check salt';
+  is $pl-iter, 10000, '10000 iterations';
+
+  my Buf $salted-password = PBKDF2(
+    Digest::MD5.new.md5_buf($username ~ ':mongo:' ~ $password),
+    decode-base64( $pl-salt, :bin),
+#    Buf.new($pl-salt.encode),
+    $pl-iter
+  );
+
+  is $salted-password.>>.fmt('%02x').join,
+     '4b5a9e5e957fbdbe2e447cf0ecc75dde06f755c7',
+     "Check salted password with $pl-salt and $pl-iter iterations";
+
+  my Buf $client-key = hmac( $salted-password, 'Client Key', &sha1);
+  my Buf $stored-key = sha1($client-key);
+
+  my Str $channel-binding = "c=biws";
+  my Str $client-final-without-proof = "$channel-binding,r=$pl-nonce";
+
+  my $auth-message = 
+    "$client-first-message-bare,$server-first-message,$client-final-without-proof";
+  my Buf $client-signature = hmac( $stored-key, $auth-message, &sha1);
+
+  my Buf $client-proof .= new;
+  for ^($client-key.elems) -> $i {
+    $client-proof[$i] = $client-key[$i] +^ $client-signature[$i];
+  }
+
+say "Client proof: ", $client-proof.>>.fmt('%02x').join;
+say "Decoded b64 proof: ", decode-base64( 'MC2T8BvbmWRckDw8oWl5IVghwCY=', :bin).>>.fmt('%02x').join;
+
+  is encode-base64( $client-proof, :str),
+     'MC2T8BvbmWRckDw8oWl5IVghwCY=',
+     'Check client proof';
+
+  my $server-key = hmac( $salted-password, 'Server Key', &sha1);
+  my $server-signature = hmac( $server-key, $auth-message, &sha1);
+
+  is encode-base64( $server-signature, :str),
+     'UMWeI25JD1yNYZRMpZ4VHvhZ9e0=',
+     'Server signature check';
+
+say "Skey: ", encode-base64( $server-key, :str);
+say "Ssig: ", encode-base64( $server-signature, :str);
+
+}, "low level tests from mongodb";
+}}
+
+#-------------------------------------------------------------------------------
+#`{{}}
+restart-to-normal;
+restart-to-authenticate;
 
 subtest {
 
-  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
-  ok $ts.server-control.start-mongod( 's1', 'authenticate'),
-     "Server 1 in auth mode";
+  my MongoDB::Client $client = $ts.get-connection(:server(1));
 
-}, "Server changed to authentication mode";
+  # Setup in 509...t
+  # 'site-admin', 'B3n@Hurry', role => 'userAdminAnyDatabase', db => 'admin'
+  # 'Dondersteen', 'w@tD8jeDan', role => 'readWrite', db => 'test'
 
-#-------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Debug);
+  my MongoDB::Database $database = $client.database('test');
+  my BSON::Document $doc;
 
-my MongoDB::Client $client = $ts.get-connection(:server(1));
+  my Str $username = 'Dondersteen';
+  my Str $password = 'w@tD8jeDan';
 
-# Setup in 509...t
-# 'site-admin', 'B3n@Hurry', role => 'userAdminAnyDatabase', db => 'admin'
-# 'Dondersteen', 'w@tD8jeDan', role => 'readWrite', db => 'test'
+  # gs2-header = gs2-cbind-flag "," [ authzid ] ","
+  # gs2-cbind-flag = 'n'
+  # authzid = ''
+  # ==>> header = 'n,'
+  my Str $gs2-header = 'n,';
 
-my MongoDB::Database $database = $client.database('test');
-my MongoDB::Database $db-admin = $client.database('admin');
+#  $doc = $db-admin.run-command(BSON::Document.new: (getnonce => 1));
+#  my Str $c-nonce = $doc<nonce>;
+  my Str $c-nonce = encode-base64( Buf.new( (for ^24 { (rand * 256).Int })), :str);
+  my Str $client-first-message-bare = "n=$username,r=$c-nonce";
+  my Str $client-first-message = "$gs2-header,$client-first-message-bare";
+#say "CFM: $client-first-message";
 
-my MongoDB::Collection $collection = $database.collection('testf');
-my BSON::Document $req;
-my BSON::Document $doc;
-my MongoDB::Cursor $cursor;
+  $doc = $database.run-command( BSON::Document.new: (
+      saslStart => 1,
+      mechanism => 'SCRAM-SHA-1',
+      payload => encode-base64( $client-first-message, :str)
+    )
+  );
+#say "N1: ", $doc.perl;
 
-my Str $username = 'Dondersteen';
-#my Str $password = 'w@tD8jeDan';
-my Str $password = 'watDo3jeDan';
+  # Error doc keys: 
+  #  ok => 0e0,
+  #  code => 18,
+  #  errmsg => "Authentication failed.",
+  if !$doc<ok> {
+    skip 1;
+    flunk "$doc<code>, $doc<errmsg>";
+    done-testing;
 
-#$doc = $db-admin.run-command(BSON::Document.new: (getnonce => 1));
-#my Str $nonce = $doc<nonce>;
-
-my Str $c-nonce = encode-base64( Buf.new: (for ^24 { (rand * 256).Int })).join;
-my Str $client-first-bare = "n=$username,r=$c-nonce";
-
-# gs2-header = gs2-cbind-flag "," [ authzid ] ","
-# gs2-cbind-flag = 'n'
-# authzid = ''
-# ==>> header = 'n,'
-my Str $gs2-header = 'n,';
-my Str $client-first-message = "$gs2-header,$client-first-bare";
-
-#$doc = $db-admin.run-command(BSON::Document.new: (
-$doc = $database.run-command( BSON::Document.new: (
-    saslStart => 1,
-    mechanism => 'SCRAM-SHA-1',
-    payload => encode-base64( $client-first-message, :str)
-  )
-);
-say "N1: ", $doc.perl;
-# Ok keys:
-#  conversationId => 1,
-#  done => Bool::False,
-#  payload => "cj1FamQzSHdob2I0VndyRTZtUFc3Wnd0Vyt0dERISk9nOVpSM3dZejd6RURxR3Z5QlNxSU9nTGp4c2dvb1hOUlVPLHM9cTlIQXZHU3plVUFVR0hBb0d0ZEZNZz09LGk9MTAwMDA=",
-#  ok => 1e0,
-
-# Error doc keys: 
-#  ok => 0e0,
-#  code => 18,
-#  errmsg => "Authentication failed.",
-
-my Int $conversation-id = $doc<conversationId>;
-my Str $server-first-message = Buf.new(decode-base64($doc<payload>)).decode;
-say "Payload: $server-first-message";
-#`{{
-my Hash $pl-items;
-for $server-first-message.split(',') {
-  if $^pli ~~ m/^ 'r=' / {
-    $pl-items<nonce> = $^pli;
-    $pl-items<nonce> ~~ s/^ 'r=' //;
+    restart-to-normal;
+    exit(1);
   }
 
-  elsif $^pli ~~ m/^ 's=' / {
-    $pl-items<salt> = $^pli;
-    $pl-items<salt> ~~ s/^ 's=' //;
-  }
+  # Ok keys:
+  #  conversationId => 1,
+  #  done => Bool::False,
+  #  payload => "...",
+  #  ok => 1e0,
+  my Int $conversation-id = $doc<conversationId>;
+  my Str $server-first-message = Buf.new(decode-base64($doc<payload>)).decode;
+#say "Payload: $server-first-message";
 
-  elsif $^pli ~~ m/^ 'i=' / {
-    $pl-items<iter> = $^pli;
-    $pl-items<iter> ~~ s/^ 'i=' //;
-  }
-}
-}}
+  ( my Str $pl-nonce, my Str $pl-salt, my Int $pl-iter) =
+    get-server-data($server-first-message);
+say "Creds: ", $user-credentials<credentials><SCRAM-SHA-1>;
+  is $pl-salt,
+     $user-credentials<credentials><SCRAM-SHA-1><salt>,
+     'Check salt from credentials';
+  is $pl-iter,
+     $user-credentials<credentials><SCRAM-SHA-1><iterationCount>,
+     'Check iterations from credentials';
 
-( my $pl-nonce, my $pl-salt, my $pl-iter) = $server-first-message.split(',');
-#$pl-nonce ~~ s/^ 'r=' //;
-$pl-salt ~~ s/^ 's=' //;
-$pl-iter ~~ s/^ 'i=' //;
+  my Buf $salted-password = PBKDF2(
+#    Buf.new(Digest::MD5.new.md5_hex($password.encode).encode),
+#    Buf.new(Digest::MD5.new.md5_hex(($username ~ ':mongo:' ~ $password).encode).encode),
+#    Buf.new(Digest::MD5.new.md5_buf(($username ~ ':mongo:' ~ $password).NFC)),
+#    Buf.new("$username\:mongo\:$password".encode),
+#    Digest::MD5.new.md5_buf($username ~ ':mongo:' ~ $password),
+    Digest::MD5.new.md5_buf(Buf.new(($username ~ ':mongo:' ~ $password).encode)),
+#    Digest::MD5.new.md5_buf($password),
+    decode-base64( $pl-salt, :bin),
+    $pl-iter
+  );
 
-my Buf $client-key-b = compute-client-key(
-  $username, $password, $pl-salt, $pl-iter.Int
-);
+#  is $salted-password.>>.fmt('%02x').join,
+#     'f2d5ddb1dfcdec02fd5e2cba731a926eabde5083',
+#     "Salted password of $username\:mongo\:$password";
 
-my Str $client-key = encode-base64( $client-key-b, :str);
-my Buf $stored-key-b = sha1($client-key-b);
-my Str $stored-key = encode-base64( $stored-key-b, :str);
+  my Buf $client-key = hmac( $salted-password, 'Client Key', &sha1);
+  say 'Ck0: ', $client-key;
+#  $client-key = hmac( $salted-password, 'ClientKey', &sha1);
+#  say 'Ck1: ', $client-key;
 
-say "CK: $client-key";
-say "SK: $stored-key";
+#  is encode-base64( $client-key, :str),
+#     '1sj/A5t1fFnxW+EfLP5SwF2IymA=',
+#     'Client key b64';
 
+  my Buf $stored-key = sha1($client-key);
+  is encode-base64( $stored-key, :str),
+     $user-credentials<credentials><SCRAM-SHA-1><storedKey>,
+     'Check stored key from credentials';
 
+say "CK: ", $client-key;
+say "SK: ", $stored-key;
 
-my Str $channel-binding = "c=biws";
-my Str $client-final-without-proof = ($channel-binding, $pl-nonce).join(',');
-say "CFWP: $client-final-without-proof";
+  my Str $channel-binding = "c=biws";
+  my Str $client-final-without-proof = "$channel-binding,r=$pl-nonce";
 
-my $auth-message = (
-  $client-first-message, $server-first-message, $client-final-without-proof
-).join(',');
+  my $auth-message = 
+    "$client-first-message-bare,$server-first-message,$client-final-without-proof";
 say "AM: $auth-message";
-my Buf $client-signature = hmac( $stored-key-b, $auth-message.encode, &sha1);
-#my Str $client-proof = "p=" ~ XOR( $client-key, $client-signature);
-my Buf $client-proof .= new;
-for ^($client-key-b.elems) -> $Hi-i {
-  $client-proof[$Hi-i] = $client-key-b[$Hi-i] +^ $client-signature[$Hi-i];
-}
 
-my Str $client-final = (
-  $client-final-without-proof,
-  'p=' ~ encode-base64( $client-proof, :str)
-).join(',');
+  my Buf $client-signature = hmac( $stored-key, $auth-message, &sha1);
+  #my Str $client-proof = "p=" ~ XOR( $client-key, $client-signature);
+  my Buf $client-proof .= new;
+  for ^($client-key.elems) -> $Hi-i {
+    $client-proof[$Hi-i] = $client-key[$Hi-i] +^ $client-signature[$Hi-i];
+  }
+
+  my Str $client-proof-b64 = encode-base64( $client-proof, :str);
+  my Str $client-final = "$client-final-without-proof,p=$client-proof-b64";
 say "CF: $client-final";
 
+  my $server-key = hmac( $salted-password, 'Server Key', &sha1);
+  my $server-signature = hmac( $server-key, $auth-message, &sha1);
+  is encode-base64( $server-key, :str),
+     $user-credentials<credentials><SCRAM-SHA-1><serverKey>,
+     'Check server key from credentials';
 
-$doc = $database.run-command( BSON::Document.new: (
-    saslContinue => 1,
-    conversationId => $conversation-id,
-    payload => encode-base64( $client-final, :str)
-  )
-);
+  $doc = $database.run-command( BSON::Document.new: (
+      saslContinue => 1,
+      conversationId => $conversation-id,
+      payload => encode-base64($client-final, :str)
+    )
+  );
 
-say $doc.perl;
-# Sample error
-#  ok => 0e0,
-#  code => 17,
-#  errmsg => "No SASL session state found",
+  # Sample error
+  #  ok => 0e0,
+  #  code => 17,
+  #  errmsg => "No SASL session state found",
+  if !$doc<ok> {
+    skip 1;
+    flunk "$doc<code>, $doc<errmsg>";
+    done-testing;
 
+    restart-to-normal;
+    exit(1);
+  }
+
+}, "Server authentication";
 
 #---------------------------------------------------------------------------------
 set-exception-process-level(MongoDB::Severity::Warn);
@@ -246,75 +460,6 @@ done-testing();
 exit(0);
 
 =finish
-
-#-------------------------------------------------------------------------------
-# PBKDF2 See rfc5802. Where
-# PRF is HMAC (Pseudo random function)
-# dklen == output length of hmac == output length of H()
-#
-sub Hi ( Str $str, Str $salt, Int $i, Callable $H --> Str ) is export {
-
-  my Buf $str-b = Buf.new($str.encode);
-  my Buf $salt-b = Buf.new($salt.encode);
-
-  my Buf $Hi = hmac( $str-b, $salt-b ~ Buf.new(1), &$H);
-#say "H\[1]: ", $Hi;
-  my Buf $Ui = $Hi;
-#say "U\[1]: ", $Ui;
-  for 2 ..^ $i -> $c {
-    $Ui = hmac( $str-b, $Ui, &$H);
-#say "U\[$c]: ", $Ui;
-    for ^($Hi.elems) -> $Hi-i {
-      $Hi[$Hi-i] = $Hi[$Hi-i] +^ $Ui[$Hi-i];
-    }
-#say "H\[$c]: ", $Hi;
-  }
-
-  $Hi.join;
-}
-
-#-------------------------------------------------------------------------------
-# Function Hi() or PBKDF2 (Password Based Key Derivation Function) because of
-# the use of HMAC. See rfc 5802, 2898.
-#
-# PRF is HMAC (Pseudo random function)
-# dklen == output length of hmac == output length of H() which is sha1
-#
-sub pbkdf2 ( Str $s-str, Str $s-salt, Int $i, Callable $H --> Buf ) is export {
-
-  my Buf $str = Buf.new($s-str.encode);
-  my Buf $salt = Buf.new($s-salt.encode);
-
-  my Buf $Hi = hmac( $str, $salt ~ Buf.new(1), &$H);
-say $Hi.elems;
-
-  my Buf $Ui = $Hi;
-  for 2 ..^ $i -> $c {
-    $Ui = hmac( $str, $Ui, &$H);
-    for ^($Hi.elems) -> $Hi-i {
-      $Hi[$Hi-i] = $Hi[$Hi-i] +^ $Ui[$Hi-i];
-    }
-  }
-
-say $Hi.elems, ', ', $Hi;
-  $Hi;
-}
-
-#-------------------------------------------------------------------------------
-sub XOR ( Str $s1, Str $s2 --> Str ) is export {
-
-say $s1, ', ', $s2;
-say $s1.chars, ', ', $s2.chars;
-  my utf8 $s1-b = $s1.encode;
-  my utf8 $s2-b = $s2.encode;
-  my Buf $xor-b = Buf.new;
-  for ^($s1-b.elems) -> $csi {
-#say $csi;
-    $xor-b ~= Buf.new($s1-b[$csi] +^ $s2-b[$csi]);
-  }
-
-  $xor-b.decode;
-}
 
 #-------------------------------------------------------------------------------
 # Create account, cannot hav ',' or '=' in string
@@ -394,13 +539,24 @@ is sha1($s-client-key.encode).join, $stored-key, 'client key ok';
 my Str $server-signature = hmac-hex( $server-key, $s-auth-message, &sha1);
 say "<<== $server-signature";
 
+#---------------------------------------------------------------------------------
+my MongoDB::Test-support $ts .= new;
+
+subtest {
+
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
+  ok $ts.server-control.start-mongod('s1'),
+     "Server 1 in auth mode";
+
+}, "Server changed to authentication mode";
+
 
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
 #
 info-message("Test $?FILE stop");
-done-testing();
+done-testing;
 exit(0);
 
 

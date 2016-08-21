@@ -35,6 +35,32 @@ $database.run-command: (dropDatabase => 1,);
 $database.run-command: (dropAllUsersFromDatabase => 1,);
 
 #-------------------------------------------------------------------------------
+# Mongodb user information of user Dondersteen
+#
+# BSON::Document.new((
+#   _id => "test.Dondersteen",
+#   user => "Dondersteen",
+#   db => "test",
+#   credentials => BSON::Document.new((
+#     SCRAM-SHA-1 => BSON::Document.new((
+#       iterationCount => 10000,
+#       salt => "zJTEg2LGEif+tRUQf6zEXg==",
+#       storedKey => "0uply8Ame1rdBv9/tPKBCXq7Qyg=",
+#       serverKey => "prSURpQTk+RikdcuKLlX9D3mPXo=",
+#     )),
+#   )),
+#   customData => BSON::Document.new((
+#     license => "to_kill",
+#     user-type => "database-test-admin",
+#   )),
+#   roles => [
+#         BSON::Document.new((
+#       role => "readWrite",
+#       db => "test",
+#     )),
+#   ],
+# ))
+#
 subtest {
   $users.set-pw-security(
     :min-un-length(10), 
@@ -70,7 +96,8 @@ subtest {
   is $doc<users>[1]<user>, 'Dondersteen', 'User Dondersteen';
 
   my MongoDB::Collection $u = $db-admin.collection('system.users');
-  my MongoDB::Cursor $uc = $u.find( :criteria( user => 'site-admin',));
+#  my MongoDB::Cursor $uc = $u.find( :criteria( user => 'site-admin',));
+  my MongoDB::Cursor $uc = $u.find( :criteria( user => 'Dondersteen',));
   $doc = $uc.fetch;
 say $doc.perl;
 
