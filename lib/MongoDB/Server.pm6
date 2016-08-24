@@ -18,7 +18,6 @@ class Server {
 
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
-  #
   has Hash $!uri-data;
 
   # Variables to control infinite server monitoring actions
@@ -217,7 +216,6 @@ class Server {
 
   #-----------------------------------------------------------------------------
   # Search in the array for a closed Socket.
-  #
   method get-socket ( --> MongoDB::Server::Socket ) {
 
     # Get a free socket entry
@@ -235,14 +233,16 @@ trace-message("total sockets open: $c of @!sockets.elems()");
         my MongoDB::Server::Socket $s;
         for ^(@!sockets.elems) -> $si {
 
-          # Skip all active sockets
-          #
-          next if @!sockets[$si].is-open;
+          if @!sockets[$si].thread-id == $*THREAD.id() {
+            $s = @!sockets[$si];
+            last;
+          }
 
-          $s = @!sockets[$si];
-          last;
+          else {
+            @!sockets[$si].check;
+          }
         }
-        
+
         $s;
       }
     );
@@ -250,20 +250,12 @@ trace-message("total sockets open: $c of @!sockets.elems()");
     # If none is found insert a new Socket in the array
     if ! $sock.defined {
 
-      # Protect against too many open sockets.
-      trace-message("new socket");
-
       $sock .= new(:server(self));
+      $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
     }
 
-    # Return a usable socket which is opened. The user has the responsibility
-    # to close the socket. Otherwise there will be new sockets created every
-    # time get-socket() is called. When limit is reached, an exception
-    # is thrown.
-    #
+    # Return a usable socket which is opened.
     $sock.open;
-
-#    $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
 
     return $sock;
   }

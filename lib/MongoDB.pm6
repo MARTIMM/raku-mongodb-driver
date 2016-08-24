@@ -115,6 +115,10 @@ package MongoDB {
   constant C-RF-AwaitCapable    = 0x08; # corresponds to AwaitCapable. Is set when the server supports the AwaitData Query option. If it doesn\u2019t, a client should sleep a little between getMore\u2019s of a Tailable cursor. Mongod version 1.6 supports AwaitData and thus always sets AwaitCapable.
 
   #-----------------------------------------------------------------------------
+  # Socket values
+  constant C-MAX-SOCKET-UNUSED-OPEN is export   = 1800; # Half an hour unused
+
+  #-----------------------------------------------------------------------------
   # Other types
 
   # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers

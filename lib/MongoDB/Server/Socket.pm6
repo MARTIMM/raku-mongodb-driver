@@ -14,6 +14,9 @@ unit package MongoDB;
 class Server::Socket {
 
   has IO::Socket::INET $!sock;
+  has Int $.thread-id;
+  has Int $.time-last-used;
+#  has Bool $!must-authenticate;
 
   has Bool $.is-open;
   has MongoDB::ServerType $!server;
@@ -23,10 +26,32 @@ class Server::Socket {
 
     $!server = $server;
     $!is-open = False;
+    $!thread-id = $*THREAD.id;
+    $!time-last-used = time;
+
+    info-message("New socket for $!thread-id at time $!time-last-used");
   };
 
   #-----------------------------------------------------------------------------
+  method check ( --> Nil ) {
+
+    if $!is-open and (time - $!time-last-used) > C-MAX-SOCKET-UNUSED-OPEN {
+
+      debug-message("close socket, timeout after {time - $!time-last-used} sec");
+      $!sock.close;
+      $!sock = Nil;
+
+      $!is-open = False;
+      $!time-last-used = time;
+    }
+  }
+
+  #-----------------------------------------------------------------------------
   method open ( --> Nil ) {
+
+    die "Thread $*THREAD.id() is not owner of this socket"
+      unless $.thread-id == $*THREAD.id();
+    return if $!is-open;
 
     # We cannot test server status when there is some communication going on
     # using the same port. So only when the port must be opened, we know that
@@ -37,36 +62,52 @@ class Server::Socket {
       :port($!server.server-port)
     ) unless $!sock.defined;
 
-    trace-message("open socket");
+    $!thread-id = $*THREAD.id;
+
+    trace-message("Open socket");
     $!is-open = True;
+    $!time-last-used = time;
   }
 
   #-----------------------------------------------------------------------------
   method send ( Buf:D $b --> Nil ) {
 
+    die "Thread $*THREAD.id() is not owner of this socket"
+      unless $.thread-id == $*THREAD.id();
+
 #TODO Check if sock is usable
-    debug-message("socket send, size: $b.elems()");
+    debug-message("Socket send, size: $b.elems()");
     $!sock.write($b);
+    $!time-last-used = time;
   }
 
   #-----------------------------------------------------------------------------
   method receive ( int $nbr-bytes --> Buf ) {
 
+    die "Thread $*THREAD.id() is not owner of this socket"
+      unless $.thread-id == $*THREAD.id();
+
 #TODO Check if sock is usable
     my Buf $b = $!sock.read($nbr-bytes);
-    debug-message("socket receive, request size $nbr-bytes, received size $b.elems()");
+    $!time-last-used = time;
+    debug-message("Socket receive, request size $nbr-bytes, received size $b.elems()");
     $b;
   }
 
   #-----------------------------------------------------------------------------
   method close ( ) {
+
+    die "Thread $*THREAD.id() is not owner of this socket"
+      unless $.thread-id == $*THREAD.id();
+
     if $!sock.defined {
       $!sock.close;
       $!sock = Nil;
     }
 
-    trace-message("close socket");
+    trace-message("Close socket");
     $!is-open = False;
+    $!time-last-used = time;
   }
 }
 

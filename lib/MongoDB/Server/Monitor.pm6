@@ -254,7 +254,7 @@ class Server::Monitor {
       fatal-message("Id in request is not the same as in the response")
         unless $request-id == $!monitor-result<message-header><response-to>;
 
-      $!socket.close;
+#      $!socket.close;
     }
 
     else {
