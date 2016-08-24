@@ -7,7 +7,11 @@
   "depends": [
     "BSON",
     "Semaphore::ReadersWriters",
-    "Config::DataLang::Refine"
+    "Config::DataLang::Refine",
+    "Auth::Scram",
+    "Base64",
+    "OpenSSL::Digest"
+
   ],
   "description": "MongoDB driver",
   "license": "The Artistic License 2.0",
@@ -17,7 +21,7 @@
     "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
     "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
-    "MongoDB::MDBConfig":                  "lib/MongoDB/MDBConfig.pm6",
+    "MongoDB::MDBConfig":               "lib/MongoDB/MDBConfig.pm6",
     "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
     "MongoDB::Database":                "lib/MongoDB/Database.pm6",
     "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
@@ -33,5 +37,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "v0.33.2"
+  "version": "v0.34.0"
 }
