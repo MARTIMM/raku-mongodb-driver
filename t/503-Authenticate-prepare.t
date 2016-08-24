@@ -10,8 +10,8 @@ use MongoDB::Authenticate;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
+#set-logfile($*OUT);
+#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -95,11 +95,13 @@ subtest {
   is $doc<users>[0]<user>, 'site-admin', 'User site-admin';
   is $doc<users>[1]<user>, 'Dondersteen', 'User Dondersteen';
 
-  my MongoDB::Collection $u = $db-admin.collection('system.users');
-#  my MongoDB::Cursor $uc = $u.find( :criteria( user => 'site-admin',));
-  my MongoDB::Cursor $uc = $u.find( :criteria( user => 'Dondersteen',));
-  $doc = $uc.fetch;
-say $doc.perl;
+
+
+
+#  my MongoDB::Collection $u = $db-admin.collection('system.users');
+#  my MongoDB::Cursor $uc = $u.find( :criteria( user => 'Dondersteen',));
+#  $doc = $uc.fetch;
+#say $doc.perl;
 
 }, "User account preparation";
 

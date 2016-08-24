@@ -18,6 +18,8 @@ use Digest::HMAC;
 use OpenSSL::Digest;
 use Base64;
 
+use PKCS5::PBKDF2;
+
 use Test-support;
 use MongoDB;
 use MongoDB::Client;
@@ -29,6 +31,9 @@ use BSON::Document;
 #---------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
 my BSON::Document $user-credentials;
+
+# Default CGH is sha1
+my PKCS5::PBKDF2 $p .= new;
 
 sub restart-to-authenticate( ) {
 
@@ -56,6 +61,7 @@ sub restart-to-normal( ) {
 }
 
 #-------------------------------------------------------------------------------
+#`{{
 sub PBKDF2 (
   Buf $pw, Buf $salt, Int $i,
   Int :$l = 1, Callable :$H = &sha1
@@ -95,6 +101,7 @@ sub encode-int32-BE ( Int:D $i --> Buf ) {
     ($ni +> 0x10) +& 0xFF, ($ni +> 0x18) +& 0xFF
   ).reverse);
 }
+}}
 
 #-------------------------------------------------------------------------------
 sub get-server-data ( Str:D $server-first-message --> List ) {
@@ -110,7 +117,7 @@ sub get-server-data ( Str:D $server-first-message --> List ) {
 #-------------------------------------------------------------------------------
 set-logfile($*OUT);
 info-message("Test $?FILE start");
-#---------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #`{{
 subtest {
 
@@ -138,14 +145,14 @@ subtest {
   is $salt, 'ad0f59637327b417ae3f71354c3542e3', 'Decoded base64 salt';
 
   diag 'Check Hi (pbkdf2)';
-  my Buf $spw = PBKDF2(
+  my Buf $spw = $p.derive(
     Buf.new('pencil'.encode),
     decode-base64( 'QSXCR+Q6sek8bf92', :bin),
     1,
   );
   is $spw.>>.fmt('%02x').join, 'f305212412b600a373561fc27b941c350ba9d399', '1 iteration';
 
-  $spw = PBKDF2(
+  $spw = $p.derive(
     Buf.new('pencil'.encode),
     decode-base64( 'QSXCR+Q6sek8bf92', :bin),
     4096,
@@ -174,7 +181,7 @@ subtest {
   is $pl-nonce, 'fyko+d2lbbFgONRv9qkxdawL3rfcNHYJY1ZVvWVs7j', 'server nonce';
   is $pl-salt, 'QSXCR+Q6sek8bf92', 'server salt';
 
-  my Buf $salted-password = PBKDF2(
+  my Buf $salted-password = $p.derive(
     Buf.new($password.encode),
     decode-base64( $pl-salt, :bin),
     $pl-iter,
@@ -219,9 +226,8 @@ subtest {
      'Check server signature';
 
 }, "low level tests from rfc";
-}}
-#---------------------------------------------------------------------------------
-#`{{
+
+#-------------------------------------------------------------------------------
 subtest {
 
   # Example from mongo
@@ -246,7 +252,7 @@ subtest {
   is $pl-salt, 'rQ9ZY3MntBeuP3E1TDVC4w==', 'Check salt';
   is $pl-iter, 10000, '10000 iterations';
 
-  my Buf $salted-password = PBKDF2(
+  my Buf $salted-password = $p.derive(
     Digest::MD5.new.md5_buf($username ~ ':mongo:' ~ $password),
     decode-base64( $pl-salt, :bin),
 #    Buf.new($pl-salt.encode),
@@ -292,8 +298,7 @@ say "Ssig: ", encode-base64( $server-signature, :str);
 }, "low level tests from mongodb";
 }}
 
-#-------------------------------------------------------------------------------
-#`{{}}
+#------------------------------------------------------------------------------
 restart-to-normal;
 restart-to-authenticate;
 
@@ -364,7 +369,7 @@ say "Creds: ", $user-credentials<credentials><SCRAM-SHA-1>;
      $user-credentials<credentials><SCRAM-SHA-1><iterationCount>,
      'Check iterations from credentials';
 
-  my Buf $salted-password = PBKDF2(
+  my Buf $salted-password = $p.derive(
 #    Buf.new(Digest::MD5.new.md5_hex($password.encode).encode),
 #    Buf.new(Digest::MD5.new.md5_hex(($username ~ ':mongo:' ~ $password).encode).encode),
 #    Buf.new(Digest::MD5.new.md5_buf(($username ~ ':mongo:' ~ $password).NFC)),
@@ -424,7 +429,7 @@ say "CF: $client-final";
   $doc = $database.run-command( BSON::Document.new: (
       saslContinue => 1,
       conversationId => $conversation-id,
-      payload => encode-base64($client-final, :str)
+      payload => encode-base64( $client-final, :str)
     )
   );
 
@@ -441,16 +446,8 @@ say "CF: $client-final";
     exit(1);
   }
 
+  restart-to-normal;
 }, "Server authentication";
-
-#---------------------------------------------------------------------------------
-set-exception-process-level(MongoDB::Severity::Warn);
-subtest {
-
-  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
-  ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
-
-}, "Server changed to normal mode";
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
@@ -479,7 +476,7 @@ say "Server key string: ", $server-key-s;
 
 my Str $salt = encode-base64((rand * 1e80).base(36), :str);
 
-my Buf $salted-password = pbkdf2( $password, $salt, $iteration-count, &sha1);
+my Buf $salted-password = $p.derive( $password, $salt, $iteration-count, &sha1);
 my Buf $client-key = hmac( $salted-password, 'Client Key', &sha1);
 my Buf $stored-key = sha1($client-key);
 
@@ -511,7 +508,7 @@ say "<== $initial-server-message";
 # ==> client proof, combined nonce
 (my $c-salt, my $c-iteration-count, my $c-combined-nonce)
     = $initial-server-message.split(',');
-my Buf $c-salted-password = pbkdf2( $password, $c-salt, $c-iteration-count.Int, &sha1);
+my Buf $c-salted-password = $p.derive( $password, $c-salt, $c-iteration-count.Int, &sha1);
 my Buf $c-client-key = hmac( $c-salted-password, $client-key-s, &sha1);
 my Buf $c-stored-key = sha1($c-client-key);
 is $c-salted-password, $salted-password, 'client: salted passwd ok';
