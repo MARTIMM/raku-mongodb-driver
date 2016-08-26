@@ -26,13 +26,15 @@ subtest {
   $client .= new(:uri("mongodb://$server-name"));
   isa-ok $client, MongoDB::Client;
 
-  $server = $client.select-server(:2check-cycles);
+  $server = $client.select-server(:3check-cycles);
   nok $server.defined, 'No servers selected';
 #  is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status($server-name ), MongoDB::C-NON-EXISTENT-SERVER,
      "Status of server is non existent";
 
 }, 'Non existent server';
+done-testing();
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {

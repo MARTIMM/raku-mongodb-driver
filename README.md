@@ -310,7 +310,6 @@ At this moment rakudobrew has too many differences with the perl6 directly from 
 * For authentication I need to make other classes first like Unicode::Stringprep::* and Authen::* from perl 5 libs.
 * See note at 0.34.0.
 * Authentication per socket by handling the url given to Client. When user and password are given the authentication should take place.
-* Cleanup of timed out data in Socket array in Server.
 * Find a way to close sockets when threads meet their end of life.
 
 ## CHANGELOG
@@ -319,6 +318,9 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.34.1
+  * Bugfixes introduced by my latest ideas about handling sockets.
+  * Cleanup of sockets are now done when looking for a socket in Server.
 * 0.34.0
   * Took a long time to implement authentication and had to write a pbkdf2 and scram sha1 implementations first. Then find out what exactly mongodb needed as a hashed password. So the idea works now. However there is a problem. The socket is changed all the time that the authentication takes place. This is because the run-command inderectly requests for a new socket and closes it when done.
   The socket must be kept open otherwise the server won't see the session going on. I've got the following idea; bind the thread number to an opened socket. This way there will not be too many sockets opened and the process gets its previously used socket back.

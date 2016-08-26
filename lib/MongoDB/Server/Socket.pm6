@@ -25,6 +25,7 @@ class Server::Socket {
   submethod BUILD ( MongoDB::ServerType:D :$server ) {
 
     $!server = $server;
+
     $!is-open = False;
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
@@ -33,17 +34,18 @@ class Server::Socket {
   };
 
   #-----------------------------------------------------------------------------
-  method check ( --> Nil ) {
+  method check ( --> Bool ) {
 
-    if $!is-open and (time - $!time-last-used) > C-MAX-SOCKET-UNUSED-OPEN {
+    my Bool $is-closed = False;
+    if (time - $!time-last-used) > C-MAX-SOCKET-UNUSED-OPEN {
 
       debug-message("close socket, timeout after {time - $!time-last-used} sec");
-      $!sock.close;
-      $!sock = Nil;
-
+      $!sock.close if $!sock.defined;
       $!is-open = False;
-      $!time-last-used = time;
+      $is-closed = True;
     }
+
+    $is-closed;
   }
 
   #-----------------------------------------------------------------------------
@@ -53,14 +55,8 @@ class Server::Socket {
       unless $.thread-id == $*THREAD.id();
     return if $!is-open;
 
-    # We cannot test server status when there is some communication going on
-    # using the same port. So only when the port must be opened, we know that
-    # we can start something of our own before returning the connection.
-    #
-    $!sock .= new(
-      :host($!server.server-name),
-      :port($!server.server-port)
-    ) unless $!sock.defined;
+    $!sock .= new( :host($!server.server-name), :port($!server.server-port))
+      unless $!sock.defined;
 
     $!thread-id = $*THREAD.id;
 
@@ -75,6 +71,8 @@ class Server::Socket {
     die "Thread $*THREAD.id() is not owner of this socket"
       unless $.thread-id == $*THREAD.id();
 
+    die "Socket not opened" unless $!sock.defined;
+
 #TODO Check if sock is usable
     debug-message("Socket send, size: $b.elems()");
     $!sock.write($b);
@@ -86,6 +84,8 @@ class Server::Socket {
 
     die "Thread $*THREAD.id() is not owner of this socket"
       unless $.thread-id == $*THREAD.id();
+
+    die "Socket not opened" unless $!sock.defined;
 
 #TODO Check if sock is usable
     my Buf $b = $!sock.read($nbr-bytes);
@@ -100,12 +100,22 @@ class Server::Socket {
     die "Thread $*THREAD.id() is not owner of this socket"
       unless $.thread-id == $*THREAD.id();
 
-    if $!sock.defined {
-      $!sock.close;
-      $!sock = Nil;
-    }
+    $!sock.close if $!sock.defined;
+    $!sock = Nil;
 
     trace-message("Close socket");
+    $!is-open = False;
+    $!time-last-used = time;
+  }
+
+  #-----------------------------------------------------------------------------
+  method close-on-fail ( ) {
+
+    die "Thread $*THREAD.id() is not owner of this socket"
+      unless $.thread-id == $*THREAD.id();
+
+    trace-message("'Close' socket on failure");
+    $!sock = Nil;
     $!is-open = False;
     $!time-last-used = time;
   }

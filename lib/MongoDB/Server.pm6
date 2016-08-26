@@ -152,6 +152,7 @@ class Server {
             }
 
             else {
+#say "$*THREAD.id(), Server down...";
               $server-status = MongoDB::C-DOWN-SERVER;
             }
           }
@@ -218,28 +219,63 @@ class Server {
   # Search in the array for a closed Socket.
   method get-socket ( --> MongoDB::Server::Socket ) {
 
+#say "$*THREAD.id() Get sock";
     # Get a free socket entry
-    my MongoDB::Server::Socket $sock = $!rw-sem.reader( 's-select', {
+    my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
 
+#say "in s-select ...";
 # count total opened
-my Int $c = 0;
-for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
-trace-message("total sockets open: $c of @!sockets.elems()");
+#my Int $c = 0;
+#for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
+#trace-message("total sockets open: $c of @!sockets.elems()");
 #        trace-message(
 #          "total sockets open: ",
 #          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
 #        );
 
         my MongoDB::Server::Socket $s;
+
+        # Check all sockets first
         for ^(@!sockets.elems) -> $si {
+#say "Check $si: @!sockets[$si].perl()";
+          next unless @!sockets[$si].defined;
+
+          if @!sockets[$si].check {
+            @!sockets[$si] = Nil;
+#say "Socket cleared";
+            trace-message("socket cleared");
+          }
+        }
+
+        # Search for socket
+        for ^(@!sockets.elems) -> $si {
+#say "search for socket $si: @!sockets[$si].perl()";
+          next unless @!sockets[$si].defined;
+
 
           if @!sockets[$si].thread-id == $*THREAD.id() {
             $s = @!sockets[$si];
+            trace-message("socket found");
             last;
           }
+        }
+#say "Socket 1: ", $s // '-';
 
-          else {
-            @!sockets[$si].check;
+        # If none is found insert a new Socket in the array
+        if not $s.defined {
+          # search for an empty slot
+          my Bool $slot-found = False;
+          for ^(@!sockets.elems) -> $si {
+            if not @!sockets[$si].defined {
+              $s .= new(:server(self));
+              @!sockets[$si] = $s;
+              $slot-found = True;
+            }
+          }
+
+          if not $slot-found {
+            $s .= new(:server(self));
+            @!sockets.push($s);
           }
         }
 
@@ -247,16 +283,11 @@ trace-message("total sockets open: $c of @!sockets.elems()");
       }
     );
 
-    # If none is found insert a new Socket in the array
-    if ! $sock.defined {
-
-      $sock .= new(:server(self));
-      $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
-    }
 
     # Return a usable socket which is opened.
+#say "Socket 2: ", $sock // '-';
     $sock.open;
-
+#say "Socket 3: ", $sock // '-';
     return $sock;
   }
 

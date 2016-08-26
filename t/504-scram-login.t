@@ -19,7 +19,7 @@ use Base64;
 #my MongoDB::Test-support $ts .= new;
 #my BSON::Document $user-credentials;
 
-set-logfile($*OUT);
+#set-logfile($*OUT);
 #set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
@@ -96,14 +96,14 @@ sub restart-to-authenticate( ) {
 #---------------------------------------------------------------------------------
 sub restart-to-normal( ) {
 
-  set-exception-process-level(MongoDB::Severity::Warn);
+#  set-exception-process-level(MongoDB::Severity::Warn);
 
   ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
   ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
 }
 
 #-------------------------------------------------------------------------------
-set-logfile($*OUT);
+#set-logfile($*OUT);
 #set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 

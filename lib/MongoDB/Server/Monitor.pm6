@@ -119,7 +119,8 @@ class Server::Monitor {
         my Bool $mloop = $!rw-sem.writer( 'm-loop', {$!monitor-loop = True;});
 
         while $mloop {
-#          try {
+
+          try {
 
             # Save time stamp for RTT measurement
             $t0 = now;
@@ -172,6 +173,7 @@ class Server::Monitor {
             # Send ok False to mention the fact that the server is down.
             #
             CATCH {
+#.say;
               when .message ~~ m:s/Failed to resolve host name/ ||
                    .message ~~ m:s/Failed to connect\: connection refused/ {
 
@@ -193,7 +195,39 @@ class Server::Monitor {
                   )
                 );
 
-                # Rest for a while$looptime
+                # Rest for a while
+                my Int $sleeptime = $!rw-sem.reader(
+                  'm-looptime', {
+                    $!monitor-looptime;
+                  }
+                );
+
+                $sleeptime = $looptime-trottle++
+                  if $looptime-trottle < $sleeptime;
+
+                sleep($sleeptime);
+              }
+
+              when .message ~~ m:s/No response from server/ ||
+                   .message ~~ m:s/Failed to connect\: connection refused/ ||
+                   .message ~~ m:s/Socket not available/ {
+
+                # Failure messages;
+                #   No response from server - This can happen when there is some
+                #   communication going on but the server has problems/down.
+                my Str $s = .message();
+                error-message("Server $!server.name() error $s");
+
+                $!socket.close-on-fail if $!socket.defined;
+                $!socket = Nil;
+                $!monitor-data-supplier.emit(
+                  hash (
+                    ok => False,
+                    reason => $s
+                  )
+                );
+
+                # Rest for a while
                 my Int $sleeptime = $!rw-sem.reader(
                   'm-looptime', {
                     $!monitor-looptime;
@@ -212,7 +246,7 @@ class Server::Monitor {
                 .rethrow;
               }
             }
-#          }
+          }
 
           $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
         }
@@ -253,8 +287,6 @@ class Server::Monitor {
       # Assert that the request-id and response-to are the same
       fatal-message("Id in request is not the same as in the response")
         unless $request-id == $!monitor-result<message-header><response-to>;
-
-#      $!socket.close;
     }
 
     else {
