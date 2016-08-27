@@ -318,6 +318,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.34.3
+  * Dropped Authenticate module.
 * 0.34.2
   * URI handling of username/password. Used uri-unescape() from URI::Escape module on usernames and passwords. Not sure if needed on fqdn.
 * 0.34.1

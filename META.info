@@ -18,7 +18,6 @@
   "name": "MongoDB",
   "perl": "6.c",
   "provides": {
-    "MongoDB::Authenticate":            "lib/MongoDB/Authenticate.pm6",
     "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
     "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
     "MongoDB::MDBConfig":               "lib/MongoDB/MDBConfig.pm6",
@@ -37,5 +36,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "v0.34.2"
+  "version": "v0.34.3"
 }

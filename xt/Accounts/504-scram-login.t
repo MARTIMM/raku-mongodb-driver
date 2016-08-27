@@ -41,7 +41,7 @@ class MyClientDryRun {
   }
 
   method message2 ( Str:D $string --> Str ) {
-  
+
     is $string, 'c=biws,r=fyko+d2lbbFgONRv9qkxdawLHo+Vgk7qvUOKUwuWLIWg4l/9SraGMHEE,p=MC2T8BvbmWRckDw8oWl5IVghwCY=', 'Final client message';
 
     'v=UMWeI25JD1yNYZRMpZ4VHvhZ9e0=';
