@@ -217,7 +217,10 @@ class Server {
 
   #-----------------------------------------------------------------------------
   # Search in the array for a closed Socket.
-  method get-socket ( --> MongoDB::Server::Socket ) {
+  # By default authentiction is needed when user/password info is found in the
+  # uri data. Monitor, however does not need this so therefore it is made
+  # optional.
+  method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
 #say "$*THREAD.id() Get sock";
     # Get a free socket entry
@@ -285,9 +288,15 @@ class Server {
 
 
     # Return a usable socket which is opened.
-#say "Socket 2: ", $sock // '-';
     $sock.open;
-#say "Socket 3: ", $sock // '-';
+
+    # We can only authenticate when all 3 data are True
+    if $authenticate
+       and $!uri-data<username>.defined
+       and $!uri-data<password>.defined {
+
+      say $!uri-data.perl;
+    }
     return $sock;
   }
 

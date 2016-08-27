@@ -267,7 +267,7 @@ class Server::Monitor {
     ( my Buf $encoded-query, my Int $request-id) =
        $!monitor-command.encode-query( 'admin.$cmd', :number-to-return(1));
 
-    $!socket = $!server.get-socket;
+    $!socket = $!server.get-socket(:!authenticate);
     if $!socket.defined {
 
       $!socket.send($encoded-query);
