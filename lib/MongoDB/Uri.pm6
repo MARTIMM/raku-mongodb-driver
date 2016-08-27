@@ -1,5 +1,6 @@
 use v6.c;
 use MongoDB;
+use URI::Escape;
 
 package MongoDB {
   #-----------------------------------------------------------------------------
@@ -18,7 +19,7 @@ package MongoDB {
       token server-section { <username-password>? <server-list>? }
 
       token username-password {
-        $<username>=<[\w\d-]>+ ':' $<password>=<[\w\d-]>+ '@'
+        $<username>=<[\w\d%-]>+ ':' $<password>=<[\w\d%-]>+ '@'
       }
 
       token server-list { <host-port> [ ',' <host-port> ]* }
@@ -56,8 +57,8 @@ package MongoDB {
       }
 
       method username-password (Match $m) {
-        $!uname = ~$m<username>;
-        $!pword = ~$m<password>;
+        $!uname = uri-unescape(~$m<username>);
+        $!pword = uri-unescape(~$m<password>);
       }
 
       method host-port (Match $m) {
