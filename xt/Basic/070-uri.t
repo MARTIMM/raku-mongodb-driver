@@ -94,7 +94,7 @@ subtest {
   is $uri.server-data<password>, 'pw', 'mongodb://mt:pw@h2:9876/users --> password = pw';
 
   $uri .= new(:uri<mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users>);
-  is $uri.server-data<database>, 'users', 'mongodb://mt:pw@h2:9876/users --> auth database = users';
+  is $uri.server-data<database>, 'users', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> auth database = users';
   is $uri.server-data<username>, 'Dondersteen', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> username = Dondersteen';
   is $uri.server-data<password>, 'w@tD8jeDan', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> password = w@tD8jeDan';
 
