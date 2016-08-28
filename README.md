@@ -291,7 +291,6 @@ At this moment rakudobrew has too many differences with the perl6 directly from 
   * The perl6 behaviour is also changed. One thing is that it generates parsed code in directory .precomp. The first time after a change in code it takes more time at the parse stage. After the first run the parsing time is shorter.
 
 * Testing $mod in queries seems to have problems in version 3.0.5
-* While we can add users to the database we cannot authenticate due to the lack of supported modules in perl 6. E.g. I'd like to have SCRAM-SHA1 to authenticate with.
 * Other items to [check](https://docs.mongodb.org/manual/reference/limits/)
 * Table to map mongo status codes to severity level. This will modify the default severity when an error code from the server is received. Look [here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
 * I am not satisfied with logging. A few changes might be;
@@ -306,8 +305,10 @@ At this moment rakudobrew has too many differences with the perl6 directly from 
   * w - corresponds to w in the class definition.
   * journal - corresponds to journal in the class definition.
   * wtimeoutMS - corresponds to wtimeoutMS in the class definition.
-* Take tests from 610 into Control.pm6 for replicaset initialization.
-
+* For authentication username and pssword strings must be prepped. see Unicode::Stringprep::* and Authen::* from perl 5 libs.
+* Authentication per socket only when server is in authentication mode.
+* Find a way to close sockets when threads meet their end of life. At the moment there is a time limit of a quarter of an hour that the socket can be left open without doing I/O on it.
+* There is an occasional 'double free' bug in perl6 which torpedes tests now and then.
 
 ## CHANGELOG
 
@@ -315,6 +316,22 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.34.5
+  * Refactored MongoDB::Users to MongoDB::HL::Users because it can all be done using the lower level run-command(). This adds some control and tests on password length and use of characters. Therefore this makes it a higher level implementation.
+* 0.34.4
+  * Authentication using SCRAM-SHA-1 implemented.
+* 0.34.3
+  * Dropped Authenticate module.
+* 0.34.2
+  * URI handling of username/password. Used uri-unescape() from URI::Escape module on usernames and passwords. Not sure if needed on fqdn.
+* 0.34.1
+  * Bugfixes introduced by my latest ideas about handling sockets.
+  * Cleanup of sockets are now done when looking for a socket in Server.
+* 0.34.0
+  * Took a long time to implement authentication and had to write a pbkdf2 and scram sha1 implementations first. Then find out what exactly mongodb needed as a hashed password. So the idea works now. However there is a problem. The socket is changed all the time when the authentication takes place. This is because the run-command inderectly requests for a new socket and closes it when done.
+  The socket must be kept open otherwise the server won't see the session going on. I've got the following idea; bind the thread number to an opened socket. This way there will not be too many sockets opened and the process gets its previously used socket back.
+  * in Wire and Monitor, sockets are not closed anymore.
+  * socket selection in Server is changed now as well as Socket class to hold the thread id.
 * 0.33.2
   * rename Config to MDBConfig due to perl6 bug
   * use Config::DataLang::Refine

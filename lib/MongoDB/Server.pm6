@@ -5,6 +5,9 @@ use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 use BSON::Document;
 use Semaphore::ReadersWriters;
+use Auth::SCRAM;
+use Base64;
+use OpenSSL::Digest;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -16,9 +19,10 @@ class Server {
   has Str $.server-name;
   has MongoDB::PortType $.server-port;
 
+  has $!client;
+
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
-  #
   has Hash $!uri-data;
 
   # Variables to control infinite server monitoring actions
@@ -36,12 +40,102 @@ class Server {
   has Semaphore::ReadersWriters $!rw-sem;
 
   #-----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
+  # Class definition to do authentication with
+  my class AuthenticateMDB {
+
+    has ClientType $!client;
+    has DatabaseType $!database;
+    has Int $!conversation-id;
+
+    #-----------------------------------------------------------------------------
+    submethod BUILD ( ClientType:D :$client, Str :$db-name ) {
+      $!client = $client;
+      $!database = $!client.database(?$db-name ?? $db-name !! 'admin' );
+    }
+
+    #-----------------------------------------------------------------------------
+    # send client first message to server and return server response
+    method message1 ( Str:D $client-first-message --> Str ) {
+
+      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
+          saslStart => 1,
+          mechanism => 'SCRAM-SHA-1',
+          payload => encode-base64( $client-first-message, :str)
+        )
+      );
+
+      if !$doc<ok> {
+        error-message("$doc<code>, $doc<errmsg>");
+        return '';
+      }
+
+      $!conversation-id = $doc<conversationId>;
+      Buf.new(decode-base64($doc<payload>)).decode;
+    }
+
+    #-----------------------------------------------------------------------------
+    method message2 ( Str:D $client-final-message --> Str ) {
+
+     my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
+          saslContinue => 1,
+          conversationId => $!conversation-id,
+          payload => encode-base64( $client-final-message, :str)
+        )
+      );
+
+      if !$doc<ok> {
+        error-message("$doc<code>, $doc<errmsg>");
+        return '';
+      }
+
+      Buf.new(decode-base64($doc<payload>)).decode;
+    }
+
+    #-----------------------------------------------------------------------------
+    method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
+
+      my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
+      my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
+      Buf.new($md5-mdb-hashed-pw.encode);
+    }
+
+    #-----------------------------------------------------------------------------
+    method clean-up ( ) {
+
+      # Some extra chit-chat
+      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
+          saslContinue => 1,
+          conversationId => $!conversation-id,
+          payload => encode-base64( '', :str)
+        )
+      );
+
+      if !$doc<ok> {
+        error-message("$doc<code>, $doc<errmsg>");
+        return '';
+      }
+
+      Buf.new(decode-base64($doc<payload>)).decode;
+    }
+
+    #-----------------------------------------------------------------------------
+    method error ( Str:D $message --> Str ) {
+
+      error-message($message);
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
   # must be done in the background so Client starts this process in a thread.
   #
-  submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
+  submethod BUILD (
+    ClientType:D :$client,
+    Str:D :$server-name,
+    Hash :$uri-data = %(),
     Int :$loop-time = 10
-#    SocketLimit :$max-sockets = 5, Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
@@ -51,6 +145,7 @@ class Server {
       :RWPatternType(C-RW-WRITERPRIO)
     );
 
+    $!client = $client;
     @!sockets = ();
 
     # Save name andd port of the server
@@ -159,7 +254,7 @@ class Server {
 
           # Set the status with the new value
           $!rw-sem.writer( 's-status', {
-              debug-message("set status of self.name() $server-status");
+              debug-message("set status of {self.name()} $server-status");
               $!server-status = $server-status;
             }
           );
@@ -208,71 +303,102 @@ class Server {
   method stop-monitor ( ) {
 
     $!server-monitor.done;
-# Doesn't seem to work
-#    if $!monitor-promise.defined {
-#      $!monitor-promise.result;
-#      info-message("Monitor code result: $!monitor-promise.status()"); 
-#    }
   }
 
   #-----------------------------------------------------------------------------
   # Search in the array for a closed Socket.
-  #
-  method get-socket ( --> MongoDB::Server::Socket ) {
+  # By default authentiction is needed when user/password info is found in the
+  # uri data. Monitor, however does not need this so therefore it is made
+  # optional.
+  method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
+
+#say "$*THREAD.id() Get sock, authenticate = $authenticate";
 
     # Get a free socket entry
-    my MongoDB::Server::Socket $sock = $!rw-sem.reader( 's-select', {
+    my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
 
+#say "in s-select ...";
 # count total opened
-my Int $c = 0;
-for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
-trace-message("total sockets open: $c of @!sockets.elems()");
+#my Int $c = 0;
+#for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
+#trace-message("total sockets open: $c of @!sockets.elems()");
 #        trace-message(
 #          "total sockets open: ",
 #          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
 #        );
 
         my MongoDB::Server::Socket $s;
+
+        # Check all sockets first
         for ^(@!sockets.elems) -> $si {
 
-          # Skip all active sockets
-          #
-          next if @!sockets[$si].is-open;
+          next unless @!sockets[$si].defined;
 
-          $s = @!sockets[$si];
-          last;
+          if @!sockets[$si].check {
+            @!sockets[$si] = Nil;
+            trace-message("socket cleared");
+          }
         }
-        
+
+        # Search for socket
+        for ^(@!sockets.elems) -> $si {
+
+          next unless @!sockets[$si].defined;
+
+          if @!sockets[$si].thread-id == $*THREAD.id() {
+            $s = @!sockets[$si];
+            trace-message("socket found");
+            last;
+          }
+        }
+
+        # If none is found insert a new Socket in the array
+        if not $s.defined {
+          # search for an empty slot
+          my Bool $slot-found = False;
+          for ^(@!sockets.elems) -> $si {
+            if not @!sockets[$si].defined {
+              $s .= new(:server(self));
+              @!sockets[$si] = $s;
+              $slot-found = True;
+            }
+          }
+
+          if not $slot-found {
+            $s .= new(:server(self));
+            @!sockets.push($s);
+          }
+        }
+
         $s;
       }
     );
 
-    # If none is found insert a new Socket in the array
-    if ! $sock.defined {
 
-      # Protect against too many open sockets.
-      trace-message("new socket");
+    # Use return value to see if authentication is needed.
+    my Bool $opened-before = $sock.open;
 
-      $sock .= new(:server(self));
+    # We can only authenticate when all 3 data are True and when the socket is
+    # opened anew.
+    if !$opened-before
+       and $authenticate
+       and ? $!uri-data<username>
+       and ? $!uri-data<password> {
+
+      my Auth::SCRAM $sc .= new(
+        :username($!uri-data<username>),
+        :password($!uri-data<password>),
+        :client-side(
+          AuthenticateMDB.new( :$!client, :db-name($!uri-data<database>))
+        ),
+      );
+
+      $sc.start-scram;
     }
 
-    # Return a usable socket which is opened. The user has the responsibility
-    # to close the socket. Otherwise there will be new sockets created every
-    # time get-socket() is called. When limit is reached, an exception
-    # is thrown.
-    #
-    $sock.open;
-
-#    $!rw-sem.writer( 's-select', {@!sockets.push($sock);});
-
-    return $sock;
+    # Return a usable socket which is opened and authenticated upon if needed.
+    $sock;
   }
-
-  #-----------------------------------------------------------------------------
-#  method release-socket ( ) {
-#
-#    $!max-sockets-semaphore.release;
-#  }
 
   #-----------------------------------------------------------------------------
   method name ( --> Str ) {

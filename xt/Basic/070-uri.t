@@ -93,20 +93,12 @@ subtest {
   is $uri.server-data<username>, 'mt', 'mongodb://mt:pw@h2:9876/users --> username = mt';
   is $uri.server-data<password>, 'pw', 'mongodb://mt:pw@h2:9876/users --> password = pw';
 
+  $uri .= new(:uri<mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users>);
+  is $uri.server-data<database>, 'users', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> auth database = users';
+  is $uri.server-data<username>, 'Dondersteen', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> username = Dondersteen';
+  is $uri.server-data<password>, 'w@tD8jeDan', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> password = w@tD8jeDan';
+
 }, "Uri parsing";
-
-#-------------------------------------------------------------------------------
-subtest {
-
-  my MongoDB::Uri $uri;
-
-  $uri .= new(:uri<mongodb://løcalhüst:9012>);
-  is $uri.server-data<servers>[0]<host>, 'løcalhüst', 'mongodb://løcalhüst --> server = løcalhüst';
-
-#  $uri .= new(:uri<mongodb://løcalhüst:\u0648\u0627\u062d\u062f\u0627\u062b\u0646\u0627\u0646>);
-#  is $uri.server-data<servers>[0]<port>, '12', 'mongodb://løcalhüst:\u0648\u0627\u062d\u062f\u0627\u062b\u0646\u0627\u0646 --> port = 12';
-
-}, "Uri parsing utf-8";
 
 #-------------------------------------------------------------------------------
 subtest {

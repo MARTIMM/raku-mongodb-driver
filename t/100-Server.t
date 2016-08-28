@@ -14,8 +14,8 @@ use MongoDB::Server::Socket;
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
-
 #-------------------------------------------------------------------------------
+#`{{
 subtest {
 
   my $p3 = $ts.server-control.get-port-number('s3');
@@ -65,6 +65,7 @@ subtest {
 
   $server.stop-monitor;
 }, 'Non existent server test';
+}}
 
 #-------------------------------------------------------------------------------
 subtest {

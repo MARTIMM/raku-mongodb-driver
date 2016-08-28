@@ -51,6 +51,32 @@ package MongoDB {
   constant C-MASTER-SERVER           = 21;   # Standalone master
   constant C-SLAVE-SERVER            = 22;   # -
 
+#`{{
+  # Experiment to have the names saved with the code but is so much heavier
+  subset mdb-const-result where $_ ~~ any(Int|Str);
+  constant ABC = class {
+    method FALLBACK ( $name, *@posits, *%nattrs --> mdb-const-result ) {
+      if $name eq 'n' {
+        'ABC';
+      }
+
+      elsif $name eq 'c' {
+        10;
+      }
+      
+      else {
+        die '...';
+      }
+    }
+  }
+
+  # Experiment to have the names saved with the cod, lighter
+  constant ABC = class {
+    method n ( --> Str ) {'ABC'}
+    method c ( --> Int ) { 10;}
+  }  
+}}
+
   #-----------------------------------------------------------------------------
   # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
   #
@@ -89,17 +115,21 @@ package MongoDB {
   constant C-RF-AwaitCapable    = 0x08; # corresponds to AwaitCapable. Is set when the server supports the AwaitData Query option. If it doesn\u2019t, a client should sleep a little between getMore\u2019s of a Tailable cursor. Mongod version 1.6 supports AwaitData and thus always sets AwaitCapable.
 
   #-----------------------------------------------------------------------------
+  # Socket values
+  constant C-MAX-SOCKET-UNUSED-OPEN is export   = 900; # Quarter of an hour unused
+
+  #-----------------------------------------------------------------------------
   # Other types
 
   # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
-  subset PortType of Int where 0 < $_ <= 65535;
+  subset PortType of Int is export where 0 < $_ <= 65535;
 
   # Helper constraints when module cannot be loaded(use)
-  subset ClientType where .^name eq 'MongoDB::Client';
-  subset DatabaseType where .^name eq 'MongoDB::Database';
-  subset CollectionType where .^name eq 'MongoDB::Collection';
-  subset ServerType where .^name eq 'MongoDB::Server';
-  subset SocketType where .^name eq 'MongoDB::Socket';
+  subset ClientType is export where .^name eq 'MongoDB::Client';
+  subset DatabaseType is export where .^name eq 'MongoDB::Database';
+  subset CollectionType is export where .^name eq 'MongoDB::Collection';
+  subset ServerType is export where .^name eq 'MongoDB::Server';
+  subset SocketType is export where .^name eq 'MongoDB::Socket';
 
   #-----------------------------------------------------------------------------
   #
