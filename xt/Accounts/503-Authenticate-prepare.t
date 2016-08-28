@@ -5,7 +5,7 @@ use Test;
 use Test-support;
 use MongoDB;
 use MongoDB::Database;
-use MongoDB::Users;
+use MongoDB::HL::Users;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
@@ -19,7 +19,7 @@ my MongoDB::Client $client = $ts.get-connection(:server(1));
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $doc;
-my MongoDB::Users $users .= new(:$database);
+my MongoDB::HL::Users $users .= new(:$database);
 
 # Cleanup all before tests
 $database.run-command: (dropDatabase => 1,);

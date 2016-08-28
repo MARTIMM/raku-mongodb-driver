@@ -8,7 +8,7 @@ use MongoDB::Client;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
-use MongoDB::Users;
+use MongoDB::HL::Users;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ sub restart-to-normal( ) {
 subtest {
   my MongoDB::Client $client .= new(:uri("mongodb://localhost:$p1"));
   my MongoDB::Database $database = $client.database('test');
-  my MongoDB::Users $users .= new(:$database);
+  my MongoDB::HL::Users $users .= new(:$database);
 
   $users.set-pw-security(
     :min-un-length(10), 

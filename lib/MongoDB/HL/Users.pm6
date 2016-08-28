@@ -15,7 +15,7 @@ constant C-PW-OTHER-CHARS is export = 3;
 
 #-----------------------------------------------------------------------------
 #
-class MongoDB::Users {
+class MongoDB::HL::Users {
 
   has MongoDB::Database $.database;
   has Int $.min-un-length = 2;

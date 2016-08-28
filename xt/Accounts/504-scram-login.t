@@ -6,7 +6,7 @@ use Test-support;
 
 use MongoDB;
 use MongoDB::Client;
-use MongoDB::Users;
+use MongoDB::HL::Users;
 use MongoDB::Database;
 use MongoDB::Collection;
 
