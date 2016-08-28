@@ -86,8 +86,7 @@ subtest {
 
       CATCH {
         default {
-          .note.WHAT;
-          .note;
+          .say;
         }
       }
 

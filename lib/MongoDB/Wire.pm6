@@ -75,7 +75,7 @@ class Wire {
       CATCH {
 #say .WHAT;
 #say "$*THREAD.id() Error wire query: ", $_;
-        $!socket.close if $!socket.defined;
+        $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -102,7 +102,6 @@ class Wire {
       }
     }
 
-    $!socket.close if $!socket.defined;
     return $result;
   }
 
@@ -155,9 +154,8 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-#say .WHAT;
-#say "Error wire get-more: ", .message;
-        $!socket.close if $!socket.defined;
+#.say;
+        $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -184,7 +182,6 @@ class Wire {
       }
     }
 
-    $!socket.close if $!socket.defined;
     return $result;
   }
 
@@ -228,9 +225,8 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-#say .WHAT;
-#say "Error wire kill-cursors: ", .message;
-        $!socket.close if $!socket.defined;
+#.say;
+        $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
         when MongoDB::Message {
@@ -256,8 +252,6 @@ class Wire {
         }
       }
     }
-
-    $!socket.close if $!socket.defined;
   }
 
   #-----------------------------------------------------------------------------

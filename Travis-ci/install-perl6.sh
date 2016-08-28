@@ -55,8 +55,9 @@ fi
 cd ..
 
 panda --notests install BSON
-panda --notests install Config::TOML
+panda --notests install Config::DataLang::Refine
+panda --notests install Semaphore::ReadersWriters
 
-#panda --notests install MongoDB
+#panda --notests install
 #panda --notests install
 #panda --notests install
