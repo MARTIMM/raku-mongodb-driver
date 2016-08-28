@@ -116,20 +116,20 @@ package MongoDB {
 
   #-----------------------------------------------------------------------------
   # Socket values
-  constant C-MAX-SOCKET-UNUSED-OPEN is export   = 1800; # Half an hour unused
+  constant C-MAX-SOCKET-UNUSED-OPEN is export   = 900; # Quarter of an hour unused
 
   #-----------------------------------------------------------------------------
   # Other types
 
   # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
-  subset PortType of Int where 0 < $_ <= 65535;
+  subset PortType of Int is export where 0 < $_ <= 65535;
 
   # Helper constraints when module cannot be loaded(use)
-  subset ClientType where .^name eq 'MongoDB::Client';
-  subset DatabaseType where .^name eq 'MongoDB::Database';
-  subset CollectionType where .^name eq 'MongoDB::Collection';
-  subset ServerType where .^name eq 'MongoDB::Server';
-  subset SocketType where .^name eq 'MongoDB::Socket';
+  subset ClientType is export where .^name eq 'MongoDB::Client';
+  subset DatabaseType is export where .^name eq 'MongoDB::Database';
+  subset CollectionType is export where .^name eq 'MongoDB::Collection';
+  subset ServerType is export where .^name eq 'MongoDB::Server';
+  subset SocketType is export where .^name eq 'MongoDB::Socket';
 
   #-----------------------------------------------------------------------------
   #

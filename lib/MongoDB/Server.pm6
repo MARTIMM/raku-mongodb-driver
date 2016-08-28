@@ -5,6 +5,9 @@ use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 use BSON::Document;
 use Semaphore::ReadersWriters;
+use Auth::SCRAM;
+use Base64;
+use OpenSSL::Digest;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -15,6 +18,8 @@ class Server {
   # Used by Socket
   has Str $.server-name;
   has MongoDB::PortType $.server-port;
+
+  has $!client;
 
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
@@ -35,12 +40,102 @@ class Server {
   has Semaphore::ReadersWriters $!rw-sem;
 
   #-----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
+  # Class definition to do authentication with
+  my class AuthenticateMDB {
+
+    has ClientType $!client;
+    has DatabaseType $!database;
+    has Int $!conversation-id;
+
+    #-----------------------------------------------------------------------------
+    submethod BUILD ( ClientType:D :$client, Str :$db-name ) {
+      $!client = $client;
+      $!database = $!client.database(?$db-name ?? $db-name !! 'admin' );
+    }
+
+    #-----------------------------------------------------------------------------
+    # send client first message to server and return server response
+    method message1 ( Str:D $client-first-message --> Str ) {
+
+      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
+          saslStart => 1,
+          mechanism => 'SCRAM-SHA-1',
+          payload => encode-base64( $client-first-message, :str)
+        )
+      );
+
+      if !$doc<ok> {
+        error-message("$doc<code>, $doc<errmsg>");
+        return '';
+      }
+
+      $!conversation-id = $doc<conversationId>;
+      Buf.new(decode-base64($doc<payload>)).decode;
+    }
+
+    #-----------------------------------------------------------------------------
+    method message2 ( Str:D $client-final-message --> Str ) {
+
+     my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
+          saslContinue => 1,
+          conversationId => $!conversation-id,
+          payload => encode-base64( $client-final-message, :str)
+        )
+      );
+
+      if !$doc<ok> {
+        error-message("$doc<code>, $doc<errmsg>");
+        return '';
+      }
+
+      Buf.new(decode-base64($doc<payload>)).decode;
+    }
+
+    #-----------------------------------------------------------------------------
+    method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
+
+      my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
+      my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
+      Buf.new($md5-mdb-hashed-pw.encode);
+    }
+
+    #-----------------------------------------------------------------------------
+    method clean-up ( ) {
+
+      # Some extra chit-chat
+      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
+          saslContinue => 1,
+          conversationId => $!conversation-id,
+          payload => encode-base64( '', :str)
+        )
+      );
+
+      if !$doc<ok> {
+        error-message("$doc<code>, $doc<errmsg>");
+        return '';
+      }
+
+      Buf.new(decode-base64($doc<payload>)).decode;
+    }
+
+    #-----------------------------------------------------------------------------
+    method error ( Str:D $message --> Str ) {
+
+      error-message($message);
+    }
+  }
+
+  #-----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
   # must be done in the background so Client starts this process in a thread.
   #
-  submethod BUILD ( Str:D :$server-name, Hash :$uri-data = %(),
+  submethod BUILD (
+    ClientType:D :$client,
+    Str:D :$server-name,
+    Hash :$uri-data = %(),
     Int :$loop-time = 10
-#    SocketLimit :$max-sockets = 5, Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
@@ -50,6 +145,7 @@ class Server {
       :RWPatternType(C-RW-WRITERPRIO)
     );
 
+    $!client = $client;
     @!sockets = ();
 
     # Save name andd port of the server
@@ -152,7 +248,6 @@ class Server {
             }
 
             else {
-#say "$*THREAD.id(), Server down...";
               $server-status = MongoDB::C-DOWN-SERVER;
             }
           }
@@ -208,11 +303,6 @@ class Server {
   method stop-monitor ( ) {
 
     $!server-monitor.done;
-# Doesn't seem to work
-#    if $!monitor-promise.defined {
-#      $!monitor-promise.result;
-#      info-message("Monitor code result: $!monitor-promise.status()"); 
-#    }
   }
 
   #-----------------------------------------------------------------------------
@@ -222,7 +312,8 @@ class Server {
   # optional.
   method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
-#say "$*THREAD.id() Get sock";
+#say "$*THREAD.id() Get sock, authenticate = $authenticate";
+
     # Get a free socket entry
     my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
 
@@ -240,21 +331,19 @@ class Server {
 
         # Check all sockets first
         for ^(@!sockets.elems) -> $si {
-#say "Check $si: @!sockets[$si].perl()";
+
           next unless @!sockets[$si].defined;
 
           if @!sockets[$si].check {
             @!sockets[$si] = Nil;
-#say "Socket cleared";
             trace-message("socket cleared");
           }
         }
 
         # Search for socket
         for ^(@!sockets.elems) -> $si {
-#say "search for socket $si: @!sockets[$si].perl()";
-          next unless @!sockets[$si].defined;
 
+          next unless @!sockets[$si].defined;
 
           if @!sockets[$si].thread-id == $*THREAD.id() {
             $s = @!sockets[$si];
@@ -262,7 +351,6 @@ class Server {
             last;
           }
         }
-#say "Socket 1: ", $s // '-';
 
         # If none is found insert a new Socket in the array
         if not $s.defined {
@@ -287,24 +375,30 @@ class Server {
     );
 
 
-    # Return a usable socket which is opened.
-    $sock.open;
+    # Use return value to see if authentication is needed.
+    my Bool $opened-before = $sock.open;
 
-    # We can only authenticate when all 3 data are True
-    if $authenticate
-       and $!uri-data<username>.defined
-       and $!uri-data<password>.defined {
+    # We can only authenticate when all 3 data are True and when the socket is
+    # opened anew.
+    if !$opened-before
+       and $authenticate
+       and ? $!uri-data<username>
+       and ? $!uri-data<password> {
 
-      say $!uri-data.perl;
+      my Auth::SCRAM $sc .= new(
+        :username($!uri-data<username>),
+        :password($!uri-data<password>),
+        :client-side(
+          AuthenticateMDB.new( :$!client, :db-name($!uri-data<database>))
+        ),
+      );
+
+      $sc.start-scram;
     }
-    return $sock;
-  }
 
-  #-----------------------------------------------------------------------------
-#  method release-socket ( ) {
-#
-#    $!max-sockets-semaphore.release;
-#  }
+    # Return a usable socket which is opened and authenticated upon if needed.
+    $sock;
+  }
 
   #-----------------------------------------------------------------------------
   method name ( --> Str ) {

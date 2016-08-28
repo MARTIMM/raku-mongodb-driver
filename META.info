@@ -36,5 +36,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "v0.34.3"
+  "version": "v0.34.4"
 }

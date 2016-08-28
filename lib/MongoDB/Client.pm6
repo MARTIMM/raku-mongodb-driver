@@ -130,7 +130,7 @@ say 'new client 1';
 
 #say "$*THREAD.id() New server object: $server-name";
             my MongoDB::Server $server .= new(
-              :$server-name, :$!uri-data, :$loop-time
+              :client(self), :$server-name, :$!uri-data, :$loop-time
             );
 
             # Start server monitoring process its data

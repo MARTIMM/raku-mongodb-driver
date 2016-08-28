@@ -49,11 +49,12 @@ class Server::Socket {
   }
 
   #-----------------------------------------------------------------------------
-  method open ( --> Nil ) {
+  # Open socket, returns True when already opened before otherwise it is opened
+  method open ( --> Bool ) {
 
     die "Thread $*THREAD.id() is not owner of this socket"
       unless $.thread-id == $*THREAD.id();
-    return if $!is-open;
+    return True if $!is-open;
 
     $!sock .= new( :host($!server.server-name), :port($!server.server-port))
       unless $!sock.defined;
@@ -63,6 +64,8 @@ class Server::Socket {
     trace-message("Open socket");
     $!is-open = True;
     $!time-last-used = time;
+    
+    False;
   }
 
   #-----------------------------------------------------------------------------
