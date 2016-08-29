@@ -40,8 +40,8 @@ install:
 #services:
 #  - mongodb
 
-script:
-  - $TRAVIS_BUILD_DIR/Travis-ci/test-script.sh
+#script:
+#  - $TRAVIS_BUILD_DIR/Travis-ci/test-script.sh
 
 cache:
 #  timeout: 1200
