@@ -10,7 +10,8 @@
     "Config::DataLang::Refine",
     "Auth::Scram",
     "Base64",
-    "OpenSSL::Digest"
+    "OpenSSL::Digest",
+    "URI::Escape"
 
   ],
   "description": "MongoDB driver",
