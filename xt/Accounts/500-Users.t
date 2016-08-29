@@ -51,7 +51,6 @@ subtest {
 }, "Test user management";
 
 #-------------------------------------------------------------------------------
-#
 subtest {
   $users.set-pw-security(
     :min-un-length(5),
