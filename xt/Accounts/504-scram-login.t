@@ -91,6 +91,16 @@ sub restart-to-authenticate( ) {
   ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
   ok $ts.server-control.start-mongod( 's1', 'authenticate'),
      "Server 1 in auth mode";
+
+  # Try it again and see that we have no rights
+  $client = $ts.get-connection(:server(1));
+  $db-admin = $client.database('admin');
+  $u = $db-admin.collection('system.users');
+  $uc = $u.find( :criteria( user => 'Dondersteen',));
+
+  my BSON::Document $doc = $uc.fetch;
+  is $doc<code>, 13, 'error code 13';
+  is $doc<$err>, "not authorized for query on admin.system.users", $doc<$err>;
 };
 
 #---------------------------------------------------------------------------------
