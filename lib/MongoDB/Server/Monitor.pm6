@@ -210,7 +210,8 @@ class Server::Monitor {
 
               when .message ~~ m:s/No response from server/ ||
                    .message ~~ m:s/Failed to connect\: connection refused/ ||
-                   .message ~~ m:s/Socket not available/ {
+                   .message ~~ m:s/Socket not available/ ||
+                   .message ~~ m:s/Not enaugh characters left/ {
 
                 # Failure messages;
                 #   No response from server - This can happen when there is some

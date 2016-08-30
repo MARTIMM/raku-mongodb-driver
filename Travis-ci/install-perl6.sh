@@ -57,7 +57,9 @@ cd ..
 panda --notests install BSON
 panda --notests install Config::DataLang::Refine
 panda --notests install Semaphore::ReadersWriters
-
-#panda --notests install
+panda --notests install Auth::SCRAM
+panda --notests install Base64
+panda --notests install OpenSSL::Digest
+panda --notests install URI::Escape
 #panda --notests install
 #panda --notests install

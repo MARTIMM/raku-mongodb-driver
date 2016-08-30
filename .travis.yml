@@ -4,10 +4,8 @@ branches:
 
 language: perl6
 
-# Torpede the install with a wrong git version
 perl6:
   - latest
-#  - 2016.04-000-aaaaaaa
 
 # Install mongodb server at ./Travis-ci/MongoDB
 #
