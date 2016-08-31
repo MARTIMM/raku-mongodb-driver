@@ -32,9 +32,10 @@ subtest {
   is $client.server-status($server-name ), MongoDB::C-NON-EXISTENT-SERVER,
      "Status of server is non existent";
 
+  $client.cleanup;
 }, 'Non existent server';
-done-testing();
-exit(0);
+#done-testing();
+#exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -46,6 +47,7 @@ subtest {
   is $client.server-status('localhost:65535'), MongoDB::C-DOWN-SERVER,
      "Status of server is down";
 
+  $client.cleanup;
 }, 'Down server';
 
 #-------------------------------------------------------------------------------
@@ -59,6 +61,7 @@ subtest {
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master";
 
+  $client.cleanup;
 }, "Standalone server";
 
 #-------------------------------------------------------------------------------
@@ -76,6 +79,7 @@ subtest {
 
 #  is $client.nbr-servers, 2, 'Two servers found';
 
+  $client.cleanup;
 }, "Two equal standalone servers";
 
 #-------------------------------------------------------------------------------

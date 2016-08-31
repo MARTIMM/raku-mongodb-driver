@@ -35,6 +35,9 @@ class Client {
   has Str $!Replicaset;
 
   has Promise $!Background-discovery;
+  has Bool $!repeat-discovery-loop;
+  
+  has Tap $!client-tap;
 
 #`{{
   #-----------------------------------------------------------------------------
@@ -65,6 +68,7 @@ say 'new client 1';
 
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
+#TODO check before create
     $!rw-sem.add-mutex-names(
       <servers todo master>,
       :RWPatternType(C-RW-WRITERPRIO)
@@ -97,6 +101,7 @@ say 'new client 1';
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
 
+        $!repeat-discovery-loop = True;
         loop {
 
 #          sleep 1;
@@ -152,10 +157,14 @@ say 'new client 1';
                # Keep this .say in. It helps debugging when an error takes place
                # The error will not be seen before the result of Promise is read
                .say;
-              .rethrow;
+               .rethrow;
             }
           }
+
+          last unless $!repeat-discovery-loop;
         }
+
+        debug-message("Stop discovery loop");
       }
     );
   }
@@ -166,7 +175,7 @@ say 'new client 1';
     my Str $server-name = $server.name;
 
     # Tap into the stream of monitor data
-    my Tap $t = $server.tap-monitor( -> Hash $monitor-data {
+    $!client-tap = $server.tap-monitor( -> Hash $monitor-data {
 #say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
 
 #        if $monitor-data.defined and $monitor-data<ok>:exists {
@@ -216,7 +225,8 @@ say 'new client 1';
             # Not found by DNS so big chance that it doesn't exist
             if $status ~~ MongoDB::C-NON-EXISTENT-SERVER {
 
-              $server.stop-monitor;
+#              $!client-tap.done;
+              $!servers{$server-name}<server>.cleanup;
               error-message("Stopping monitor: $monitor-data<reason>");
             }
 
@@ -544,26 +554,32 @@ say 'new client 1';
   }
 
   #-----------------------------------------------------------------------------
-  #
-  submethod DESTROY ( ) {
+  # Forced cleanup
+  method cleanup ( ) {
+
+    # stop loop and wait for exit
+    $!repeat-discovery-loop = False;
+    $!Background-discovery.result;
 
     # Remove all servers concurrently. Shouldn't be many per client.
     $!rw-sem.writer(
       'servers', {
+
         for $!servers.values -> Hash $srv-struct {
-
           if $srv-struct<server>.defined {
-
             # Stop monitoring on server
-            #
-            $srv-struct<server>.stop-monitor;
-            debug-message("Undefine server $srv-struct<server>.name()");
+            debug-message("cleanup server $srv-struct<server>.name()");
+            $srv-struct<server>.cleanup;
             $srv-struct<server> = Nil;
           }
         }
       }
     );
 
+    $!servers = Nil;
+    $!todo-servers = Nil;
+    $!client-tap = Nil;
+    
     debug-message("Client destroyed");
   }
 }

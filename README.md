@@ -305,7 +305,7 @@ At this moment rakudobrew has too many differences with the perl6 directly from 
   * w - corresponds to w in the class definition.
   * journal - corresponds to journal in the class definition.
   * wtimeoutMS - corresponds to wtimeoutMS in the class definition.
-* For authentication username and pssword strings must be prepped. see Unicode::Stringprep::* and Authen::* from perl 5 libs.
+* For authentication username and password strings must be prepped. see Unicode::Stringprep::* and Authen::* from perl 5 libs.
 * Authentication per socket only when server is in authentication mode.
 * Find a way to close sockets when threads meet their end of life. At the moment there is a time limit of a quarter of an hour that the socket can be left open without doing I/O on it.
 * There is an occasional 'double free' bug in perl6 which torpedes tests now and then.
@@ -316,6 +316,10 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.34.7
+  * Look for authenticaion mechanism in the options of the URI. If not there look into the version of the server. 2.* uses MONGODB-CR and 3.* uses SCRAM-SHA-1 by default.
+* 0.34.6
+  * Renamed DESTROY in Client into cleanup(). A client object never gets destroyed because there are several cross links from Server and Monitor objects. Secondly there are threads setup to monitor the server state and to process new server data. These are not going away by themselves. Server as well as Socket has also their cleanup methods called by Client to stop the concurrent processes.
 * 0.34.5
   * Refactored MongoDB::Users to MongoDB::HL::Users because it can all be done using the lower level run-command(). This adds some control and tests on password length and use of characters. Therefore this makes it a higher level implementation.
 * 0.34.4

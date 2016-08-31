@@ -19,7 +19,7 @@ class Server {
   has Str $.server-name;
   has MongoDB::PortType $.server-port;
 
-  has $!client;
+  has ClientType $!client;
 
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
@@ -27,7 +27,6 @@ class Server {
 
   # Variables to control infinite server monitoring actions
   has MongoDB::Server::Monitor $!server-monitor;
-  has Supply $!monitor-supply;
   has Promise $!monitor-promise;
 
   has MongoDB::Server::Socket @!sockets;
@@ -38,6 +37,8 @@ class Server {
   has MongoDB::ServerStatus $!server-status;
 
   has Semaphore::ReadersWriters $!rw-sem;
+
+  has Tap $!server-tap;
 
   #-----------------------------------------------------------------------------
   #-----------------------------------------------------------------------------
@@ -140,6 +141,7 @@ class Server {
 
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
+#TODO check before create
     $!rw-sem.add-mutex-names(
       <s-select s-status sock-max>,
       :RWPatternType(C-RW-WRITERPRIO)
@@ -168,7 +170,7 @@ class Server {
     return unless $!monitor-promise.defined;
 
     # Tap into monitor data
-    self.tap-monitor( -> Hash $monitor-data {
+    $!server-tap = self.tap-monitor( -> Hash $monitor-data {
         try {
 
 #say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
@@ -293,16 +295,9 @@ class Server {
   #
   method tap-monitor ( |c --> Tap ) {
 
-    $!monitor-supply = $!server-monitor.get-supply
-       unless $!monitor-supply.defined;
-#    $!monitor-supply.act(|c);
-    $!monitor-supply.tap(|c);
-  }
-
-  #-----------------------------------------------------------------------------
-  method stop-monitor ( ) {
-
-    $!server-monitor.done;
+    my Supply $supply = $!server-monitor.get-supply;
+#    $supply.act(|c);
+    $supply.tap(|c);
   }
 
   #-----------------------------------------------------------------------------
@@ -404,6 +399,33 @@ class Server {
   method name ( --> Str ) {
 
     return [~] $!server-name // '-', ':', $!server-port // '-';
+  }
+
+  #-----------------------------------------------------------------------------
+  # Forced cleanup
+  method cleanup ( ) {
+
+    # Its possible that server moditor is not defined when a server is
+    # non existent or some other reason.
+    $!server-monitor.stop-monitor if $!server-monitor.defined;
+
+    # Clear all sockets
+
+    $!rw-sem.writer( 's-select', {
+        for ^(@!sockets.elems) -> $si {
+          next unless @!sockets[$si].defined;
+          @!sockets[$si].cleanup;
+          @!sockets[$si] = Nil;
+          trace-message("socket cleared");
+        }
+      }
+    );
+
+    $!server-monitor = Nil;
+    $!client = Nil;
+    $!uri-data = Nil;
+    @!sockets = Nil;
+    $!server-tap = Nil;
   }
 }
 
