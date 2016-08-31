@@ -115,7 +115,7 @@ subtest {
 #-------------------------------------------------------------------------------
 # Cleanup
 #
-$client.cleanup;
+$client1.cleanup;
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
