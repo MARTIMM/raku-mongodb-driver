@@ -69,10 +69,11 @@ say 'new client 1';
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
 #TODO check before create
+    # Insert only when server is not defined yet. W've been here before.
     $!rw-sem.add-mutex-names(
       <servers todo master>,
       :RWPatternType(C-RW-WRITERPRIO)
-    );
+    ) unless $!rw-sem.check-mutex-names(<servers todo master>);
 
     # Store read concern
     $!read-concern =

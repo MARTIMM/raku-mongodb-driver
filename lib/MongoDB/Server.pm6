@@ -145,7 +145,7 @@ class Server {
     $!rw-sem.add-mutex-names(
       <s-select s-status sock-max>,
       :RWPatternType(C-RW-WRITERPRIO)
-    );
+    ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max>);
 
     $!client = $client;
     @!sockets = ();

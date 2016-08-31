@@ -57,7 +57,7 @@ class Server::Monitor {
     $!rw-sem.add-mutex-names(
       <m-loop m-looptime>,
       :RWPatternType(C-RW-WRITERPRIO)
-    );
+    ) unless $!rw-sem.check-mutex-names(<m-loop m-looptime>);
 
     $!server = $server;
 
