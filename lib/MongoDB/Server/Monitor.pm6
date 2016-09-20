@@ -130,7 +130,7 @@ class Server::Monitor {
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
 
-say "\n$*THREAD.id() monitor info $!server.name(): ", $doc.perl;
+#say "\n$*THREAD.id() monitor info $!server.name(): ", $doc.perl;
 
               debug-message(
                 "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"

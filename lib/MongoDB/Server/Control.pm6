@@ -29,6 +29,7 @@ class Server::Control {
     my Str $cmdstr = (self!get-binary-path('mongod'), @$options).join(' ');
 
     my Bool $started = False;
+
     info-message($cmdstr);
     my Proc $proc = shell($cmdstr);
     if $proc.exitcode != 0 {

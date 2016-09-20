@@ -40,6 +40,9 @@ class Server {
 
   has Tap $!server-tap;
 
+  has Int $!max-wire-version;
+  has Int $!min-wire-version;
+
   #-----------------------------------------------------------------------------
   #-----------------------------------------------------------------------------
   # Class definition to do authentication with
@@ -141,11 +144,10 @@ class Server {
 
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
-#TODO check before create
     $!rw-sem.add-mutex-names(
-      <s-select s-status sock-max>,
+      <s-select s-status sock-max wire-version>,
       :RWPatternType(C-RW-WRITERPRIO)
-    ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max>);
+    ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max wire-version>);
 
     $!client = $client;
     @!sockets = ();
@@ -179,6 +181,12 @@ class Server {
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
+            $!rw-sem.writer(
+              'wire-version', {
+                $!max-wire-version = $mdata<maxWireVersion>.Int;
+                $!min-wire-version = $mdata<minWireVersion>.Int;
+              }
+            );
 
             # Does the caller want to have a replicaset
             if $!uri-data<options><replicaSet> {
@@ -197,7 +205,7 @@ class Server {
                     $server-status = MongoDB::C-REPLICASET-SECONDARY;
                   }
 
-                  # ... Arbiter etc
+#TODO ... Arbiter etc
                 }
 
                 # Replicaset name does not match
@@ -380,15 +388,58 @@ class Server {
        and ? $!uri-data<username>
        and ? $!uri-data<password> {
 
-      my Auth::SCRAM $sc .= new(
-        :username($!uri-data<username>),
-        :password($!uri-data<password>),
-        :client-side(
-          AuthenticateMDB.new( :$!client, :db-name($!uri-data<database>))
-        ),
-      );
+      my Str $auth-mechanism;
+      if $!uri-data<options><authMechanism>:exists {
+        $auth-mechanism = $!uri-data<options><authMechanism>;
+        debug-message("Use mechanism '$auth-mechanism' from uri option");
+      }
 
-      $sc.start-scram;
+      else {
+        my Int $max-version = $!rw-sem.reader(
+          'wire-version', {
+            $!max-wire-version
+          }
+        );
+        $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
+        debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
+      }
+
+      given $auth-mechanism {
+
+        # Default in version 3.*
+        when 'SCRAM-SHA-1' {
+
+          my Auth::SCRAM $sc .= new(
+            :username($!uri-data<username>),
+            :password($!uri-data<password>),
+            :client-side(
+              AuthenticateMDB.new( :$!client, :db-name($!uri-data<database>))
+            ),
+          );
+
+          my $error = $sc.start-scram;
+          error-message("Authentication fail: $error") if ? $error;
+        }
+
+        # Default in version 2.*
+        when 'MONGODB-CR' {
+
+        }
+
+        when 'MONGODB-X509' {
+
+        }
+
+        # Kerberos
+        when 'GSSAPI' {
+
+        }
+
+        # LDAP SASL
+        when 'PLAIN' {
+
+        }
+      }
     }
 
     # Return a usable socket which is opened and authenticated upon if needed.
