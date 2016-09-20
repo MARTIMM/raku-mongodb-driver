@@ -315,6 +315,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.35.0
+  Auth::SCRAM implemented. No username/password normalization yet.
 * 0.34.7
   * Look for authentication mechanism in the options of the URI. If not there look into the version of the server. 2.* uses MONGODB-CR and 3.* uses SCRAM-SHA-1 by default.
 * 0.34.6
