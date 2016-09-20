@@ -103,6 +103,9 @@ try {
   }
 }
 
+
+
+$client.cleanup;
 done-testing();
 exit(0);
 

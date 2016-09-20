@@ -12,8 +12,8 @@ use MongoDB::HL::Users;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+set-logfile($*OUT);
+set-exception-process-level(MongoDB::Severity::Debug);
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -62,6 +62,7 @@ subtest {
   );
 
   ok $doc<ok>, 'User Dondersteen created';
+  $client.cleanup;
 
 }, "User account preparation";
 
@@ -106,6 +107,7 @@ subtest {
   ok $doc<errmsg> ~~ m:s/not authorized on otherdb to execute command/,
      $doc<errmsg>;
 
+  $client.cleanup;
 
 }, "mongodb url with username and password SCRAM-SHA-1";
 

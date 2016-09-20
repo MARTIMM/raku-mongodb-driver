@@ -122,5 +122,27 @@ class Server::Socket {
     $!is-open = False;
     $!time-last-used = time;
   }
+
+  #-----------------------------------------------------------------------------
+  method cleanup ( ) {
+
+    # Close can have exceptions
+    try {
+      if $!sock.defined {
+        $!sock.close;
+      }
+      
+      else {
+        $!sock = Nil;
+      }
+      
+      $!is-open = False;
+
+      CATCH {
+        $!sock = Nil;
+        $!is-open = False;
+      }
+    }
+  }
 }
 

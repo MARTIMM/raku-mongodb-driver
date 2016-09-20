@@ -52,10 +52,12 @@ class Server::Monitor {
   submethod BUILD ( MongoDB::ServerType:D :$server, Int :$loop-time = 10 ) {
 
     $!rw-sem .= new;
+#    $!rw-sem.debug = True;
+#TODO check before create
     $!rw-sem.add-mutex-names(
       <m-loop m-looptime>,
       :RWPatternType(C-RW-WRITERPRIO)
-    );
+    ) unless $!rw-sem.check-mutex-names(<m-loop m-looptime>);
 
     $!server = $server;
 
@@ -70,19 +72,12 @@ class Server::Monitor {
     $!monitor-command does MongoDB::Header;
   }
 
-  #-----------------------------------------------------------------------------
-  method done ( ) {
-
-    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
-    $!monitor-data-supplier.done;
-  }
-
-  #-----------------------------------------------------------------------------
-  method quit ( ) {
-
-    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
-    $!monitor-data-supplier.quit('Monitor forced to quit');
-  }
+#  #-----------------------------------------------------------------------------
+#  method quit ( ) {
+#
+#    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
+#    $!monitor-data-supplier.quit('Monitor forced to quit');
+#  }
 
   #-----------------------------------------------------------------------------
   method monitor-looptime ( Int $mlt ) {
@@ -253,11 +248,21 @@ class Server::Monitor {
         }
 
         $!server-monitor-control.release;
+        $!socket.close;
+        $!socket = Nil;
         info-message("Server monitoring stopped for $!server.name()");
+        $!monitor-data-supplier.done;
       }
     );
 
     $!promise-monitor;
+  }
+
+  #-----------------------------------------------------------------------------
+  method stop-monitor ( ) {
+
+    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
+#    $!monitor-data-supplier.done;
   }
 
   #-----------------------------------------------------------------------------
