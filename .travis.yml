@@ -9,8 +9,8 @@ perl6:
   - latest
 
 # Install mongodb server at ./Travis-ci/MongoDB
-before_install:
-  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
+#before_install:
+#  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 #before_install:
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
@@ -28,6 +28,8 @@ before_install:
 install:
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
+
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 
   - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
   - rakudobrew build-panda
