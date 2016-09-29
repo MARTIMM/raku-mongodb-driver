@@ -54,3 +54,4 @@ cache:
   directories:
 #    - $HOME/Travis-ci/P6Software
     - $HOME/Travis-ci/MongoDB
+    - $HOME/.rakudobrew
