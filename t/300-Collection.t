@@ -88,7 +88,7 @@ $req .= new: (drop => $collection.name);
 $doc = $database.run-command($req);
 
 ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
-say $doc.perl;
+#say $doc.perl;
 is $doc<ns>, 'test.cl1', 'Dropped collection';
 is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 
