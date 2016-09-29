@@ -8,12 +8,11 @@ perl6:
   - latest
 
 # Install mongodb server at ./Travis-ci/MongoDB
-#
-#before_install:
-#  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
 before_install:
-  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
-  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
+#before_install:
+#  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
+#  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
 
 #env:
 #  - PATH=.:$TRAVIS_BUILD_DIR/Travis-ci/MongoDB:$PATH
@@ -24,25 +23,25 @@ before_install:
 #  - PERL6LIB=lib
 #env: CACHE_NAME=JOB1
 
-#install:
+#install: true
+install:
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
 
-#  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
-#  - rakudobrew build-panda
-#  - panda installdeps .
-#  - panda update
+  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
+  - rakudobrew build-panda
+  - panda installdeps .
+  - panda update
 #  - panda install BSON Digest::MD5
 
-install: true
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #
 #services:
 #  - mongodb
 
-script:
-  - $TRAVIS_BUILD_DIR/Travis-ci/test-script.sh
+#script:
+#  - $TRAVIS_BUILD_DIR/Travis-ci/test-script.sh
 
 git:
   depth: 5
@@ -51,5 +50,5 @@ git:
 cache:
   timeout: 1200
   directories:
-    - $HOME/Travis-ci/P6Software
+#    - $HOME/Travis-ci/P6Software
     - $HOME/Travis-ci/MongoDB
