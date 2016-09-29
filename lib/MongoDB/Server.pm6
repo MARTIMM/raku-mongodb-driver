@@ -64,7 +64,7 @@ class Server {
 
     #-----------------------------------------------------------------------------
     # send client first message to server and return server response
-    method message1 ( Str:D $client-first-message --> Str ) {
+    method client-first ( Str:D $client-first-message --> Str ) {
 
       my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
           saslStart => 1,
@@ -73,7 +73,11 @@ class Server {
         )
       );
 
-      if !$doc<ok> {
+      if $doc<ok> {
+        debug-message("SCRAM-SHA1 client first message");
+      }
+
+      else {
         error-message("$doc<code>, $doc<errmsg>");
         return '';
       }
@@ -83,7 +87,7 @@ class Server {
     }
 
     #-----------------------------------------------------------------------------
-    method message2 ( Str:D $client-final-message --> Str ) {
+    method client-final ( Str:D $client-final-message --> Str ) {
 
      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
           saslContinue => 1,
@@ -92,7 +96,11 @@ class Server {
         )
       );
 
-      if !$doc<ok> {
+      if $doc<ok> {
+        debug-message("SCRAM-SHA1 client final message");
+      }
+
+      else {
         error-message("$doc<code>, $doc<errmsg>");
         return '';
       }
@@ -119,7 +127,7 @@ class Server {
     }
 
     #-----------------------------------------------------------------------------
-    method clean-up ( ) {
+    method cleanup ( ) {
 
       # Some extra chit-chat
       my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
@@ -135,7 +143,6 @@ class Server {
 
       else {
         error-message("$doc<code>, $doc<errmsg>");
-        return '';
       }
 
 #      Buf.new(decode-base64($doc<payload>)).decode;
@@ -401,7 +408,7 @@ class Server {
 
     # We can only authenticate when all 3 data are True and when the socket is
     # opened anew.
-    if !$opened-before
+    if not $opened-before
        and $authenticate
        and ? $!uri-data<username>
        and ? $!uri-data<password> {
@@ -427,16 +434,20 @@ class Server {
         # Default in version 3.*
         when 'SCRAM-SHA-1' {
 
+          my AuthenticateMDB $client-side .= new(
+            :$!client,
+            :db-name($!uri-data<database>)
+          );
+
           my Auth::SCRAM $sc .= new(
             :username($!uri-data<username>),
             :password($!uri-data<password>),
-            :client-side(
-              AuthenticateMDB.new( :$!client, :db-name($!uri-data<database>))
-            ),
+            :$client-side,
           );
 
           my $error = $sc.start-scram;
-          error-message("Authentication fail: $error") if ? $error;
+          fatal-message("Authentication fail: $error") if ? $error;
+note "Authenticating ok";
         }
 
         # Default in version 2.*
