@@ -447,7 +447,6 @@ class Server {
 
           my $error = $sc.start-scram;
           fatal-message("Authentication fail: $error") if ? $error;
-note "Authenticating ok";
         }
 
         # Default in version 2.*
