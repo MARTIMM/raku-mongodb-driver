@@ -48,9 +48,6 @@ install:
 git:
   depth: 5
 
-deploy:
-  skip_cleanup: true
-
 cache:
   timeout: 1200
   directories:
