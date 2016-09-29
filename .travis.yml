@@ -1,6 +1,7 @@
 branches:
   only:
     - master
+    - travis
 
 language: perl6
 
@@ -36,7 +37,6 @@ install:
 
 
 # Cannot use the mongod service because the version is too low (2.4.12)
-#
 #services:
 #  - mongodb
 
@@ -46,6 +46,8 @@ install:
 git:
   depth: 5
 
+#deploy:
+#  skip_cleanup: true
 
 cache:
   timeout: 1200
