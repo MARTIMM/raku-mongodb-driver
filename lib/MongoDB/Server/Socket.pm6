@@ -77,7 +77,7 @@ class Server::Socket {
     die "Socket not opened" unless $!sock.defined;
 
 #TODO Check if sock is usable
-    debug-message("Socket send, size: $b.elems()");
+    trace-message("Socket send, size: $b.elems()");
     $!sock.write($b);
     $!time-last-used = time;
   }
@@ -93,7 +93,7 @@ class Server::Socket {
 #TODO Check if sock is usable
     my Buf $b = $!sock.read($nbr-bytes);
     $!time-last-used = time;
-    debug-message("Socket receive, request size $nbr-bytes, received size $b.elems()");
+    trace-message("Socket receive, request size $nbr-bytes, received size $b.elems()");
     $b;
   }
 
