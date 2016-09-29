@@ -315,6 +315,10 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.35.3
+  * Bugfixes in tests
+* 0.35.2
+  * Bugfix in authentication method names. Changes in Auth::SCRAM
 * 0.35.1
   * Added normalization for username and passwords. At the moment the UsernameCasePreserved profile is used until there is some consensus about it.
 * 0.35.0

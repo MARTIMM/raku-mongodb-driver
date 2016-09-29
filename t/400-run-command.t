@@ -173,7 +173,8 @@ subtest {
 
   $doc = $database.run-command: (unknownDbCommand => 'unknownCollection',);
   is $doc<ok>, 0, 'unknown request';
-  is $doc<errmsg>, 'no such command: unknownDbCommand', 'Err: no such command';
+  ok $doc<errmsg> ~~ m:s/no such command\: unknownDbCommand/,
+     'Err: no such command';
   is $doc<code>, 59, 'Code 59';
 #say "\nDoc: ", $doc.perl, "\n";
 }, "Error tests";
