@@ -40,7 +40,7 @@ subtest {
   is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
      "Status of server is master again";
 
-  $client = Nil;
+  $client.cleanup;
 }, "Shutdown and start server";
 
 #-------------------------------------------------------------------------------
@@ -111,6 +111,7 @@ subtest {
   # Wait for inserts to finish
   $p.result;
 
+  $client.cleanup;
 }, "Shutdown/restart server 3 while inserting records";
 
 #-------------------------------------------------------------------------------

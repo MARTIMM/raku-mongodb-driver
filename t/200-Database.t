@@ -43,7 +43,7 @@ subtest {
   is $doc<ok>, 0, 'Second collection cl1 not created';
   is $doc<errmsg>, 'collection already exists', $doc<errmsg>;
 #  is $doc<code>, 48, 'mongo error code 48';
-say $doc.perl;
+#say $doc.perl;
 
 }, "Database, create collection, drop";
 
@@ -98,6 +98,7 @@ subtest {
 
 #-------------------------------------------------------------------------------
 subtest {
+try {
   $doc = $database1.run-command: (dropDatabase => 1,);
   is $doc<ok>, 1, 'Drop command went well';
 
@@ -110,11 +111,20 @@ subtest {
   }
 
   nok %db-names<test>:exists, 'test not found';
+
+  CATCH {
+    default {
+      .say;
+    }
+  }
+}
+
 }, 'Drop a database';
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+$client1.cleanup;
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);

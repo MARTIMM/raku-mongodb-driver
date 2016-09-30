@@ -173,14 +173,17 @@ subtest {
 
   $doc = $database.run-command: (unknownDbCommand => 'unknownCollection',);
   is $doc<ok>, 0, 'unknown request';
-  is $doc<errmsg>, 'no such command: unknownDbCommand', 'Err: no such command';
+# Messages are different from version to version
+#  ok $doc<errmsg> ~~ m:s/no such command\: unknownDbCommand/,
+#     'Err: no such command';
   is $doc<code>, 59, 'Code 59';
-#say "\nDoc: ", $doc.perl, "\n";
+say "\nDoc: ", $doc.perl, "\n";
 }, "Error tests";
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
+$client.cleanup;
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);

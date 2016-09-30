@@ -8,6 +8,10 @@ use Semaphore::ReadersWriters;
 use Auth::SCRAM;
 use Base64;
 use OpenSSL::Digest;
+use Unicode::PRECIS;
+use Unicode::PRECIS::Identifier::UsernameCasePreserved;
+use Unicode::PRECIS::FreeForm::OpaqueString;
+
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
@@ -19,7 +23,7 @@ class Server {
   has Str $.server-name;
   has MongoDB::PortType $.server-port;
 
-  has $!client;
+  has ClientType $!client;
 
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
@@ -27,7 +31,6 @@ class Server {
 
   # Variables to control infinite server monitoring actions
   has MongoDB::Server::Monitor $!server-monitor;
-  has Supply $!monitor-supply;
   has Promise $!monitor-promise;
 
   has MongoDB::Server::Socket @!sockets;
@@ -38,6 +41,11 @@ class Server {
   has MongoDB::ServerStatus $!server-status;
 
   has Semaphore::ReadersWriters $!rw-sem;
+
+  has Tap $!server-tap;
+
+  has Int $!max-wire-version;
+  has Int $!min-wire-version;
 
   #-----------------------------------------------------------------------------
   #-----------------------------------------------------------------------------
@@ -56,7 +64,7 @@ class Server {
 
     #-----------------------------------------------------------------------------
     # send client first message to server and return server response
-    method message1 ( Str:D $client-first-message --> Str ) {
+    method client-first ( Str:D $client-first-message --> Str ) {
 
       my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
           saslStart => 1,
@@ -65,7 +73,11 @@ class Server {
         )
       );
 
-      if !$doc<ok> {
+      if $doc<ok> {
+        debug-message("SCRAM-SHA1 client first message");
+      }
+
+      else {
         error-message("$doc<code>, $doc<errmsg>");
         return '';
       }
@@ -75,7 +87,7 @@ class Server {
     }
 
     #-----------------------------------------------------------------------------
-    method message2 ( Str:D $client-final-message --> Str ) {
+    method client-final ( Str:D $client-final-message --> Str ) {
 
      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
           saslContinue => 1,
@@ -84,7 +96,11 @@ class Server {
         )
       );
 
-      if !$doc<ok> {
+      if $doc<ok> {
+        debug-message("SCRAM-SHA1 client final message");
+      }
+
+      else {
         error-message("$doc<code>, $doc<errmsg>");
         return '';
       }
@@ -95,13 +111,23 @@ class Server {
     #-----------------------------------------------------------------------------
     method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
 
-      my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
+      my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
+      my TestValue $tv-un = $upi-ucp.enforce($username);
+      fatal-message("Username $username not accepted") if $tv-un ~~ Bool;
+      info-message("Username '$username' accepted as '$tv-un'");
+
+      my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
+      my TestValue $tv-pw = $upf-os.enforce($password);
+      fatal-message("Password not accepted") if $tv-un ~~ Bool;
+      info-message("Password accepted");
+
+      my utf8 $mdb-hashed-pw = ($tv-un ~ ':mongo:' ~ $tv-pw).encode;
       my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
       Buf.new($md5-mdb-hashed-pw.encode);
     }
 
     #-----------------------------------------------------------------------------
-    method clean-up ( ) {
+    method cleanup ( ) {
 
       # Some extra chit-chat
       my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
@@ -111,12 +137,15 @@ class Server {
         )
       );
 
-      if !$doc<ok> {
-        error-message("$doc<code>, $doc<errmsg>");
-        return '';
+      if $doc<ok> {
+        info-message("SCRAM-SHA1 autentication successfull");
       }
 
-      Buf.new(decode-base64($doc<payload>)).decode;
+      else {
+        error-message("$doc<code>, $doc<errmsg>");
+      }
+
+#      Buf.new(decode-base64($doc<payload>)).decode;
     }
 
     #-----------------------------------------------------------------------------
@@ -141,9 +170,9 @@ class Server {
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
-      <s-select s-status sock-max>,
+      <s-select s-status sock-max wire-version>,
       :RWPatternType(C-RW-WRITERPRIO)
-    );
+    ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max wire-version>);
 
     $!client = $client;
     @!sockets = ();
@@ -168,7 +197,7 @@ class Server {
     return unless $!monitor-promise.defined;
 
     # Tap into monitor data
-    self.tap-monitor( -> Hash $monitor-data {
+    $!server-tap = self.tap-monitor( -> Hash $monitor-data {
         try {
 
 #say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
@@ -177,6 +206,12 @@ class Server {
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
+            $!rw-sem.writer(
+              'wire-version', {
+                $!max-wire-version = $mdata<maxWireVersion>.Int;
+                $!min-wire-version = $mdata<minWireVersion>.Int;
+              }
+            );
 
             # Does the caller want to have a replicaset
             if $!uri-data<options><replicaSet> {
@@ -195,7 +230,7 @@ class Server {
                     $server-status = MongoDB::C-REPLICASET-SECONDARY;
                   }
 
-                  # ... Arbiter etc
+#TODO ... Arbiter etc
                 }
 
                 # Replicaset name does not match
@@ -293,16 +328,9 @@ class Server {
   #
   method tap-monitor ( |c --> Tap ) {
 
-    $!monitor-supply = $!server-monitor.get-supply
-       unless $!monitor-supply.defined;
-#    $!monitor-supply.act(|c);
-    $!monitor-supply.tap(|c);
-  }
-
-  #-----------------------------------------------------------------------------
-  method stop-monitor ( ) {
-
-    $!server-monitor.done;
+    my Supply $supply = $!server-monitor.get-supply;
+#    $supply.act(|c);
+    $supply.tap(|c);
   }
 
   #-----------------------------------------------------------------------------
@@ -380,20 +408,66 @@ class Server {
 
     # We can only authenticate when all 3 data are True and when the socket is
     # opened anew.
-    if !$opened-before
+    if not $opened-before
        and $authenticate
        and ? $!uri-data<username>
        and ? $!uri-data<password> {
 
-      my Auth::SCRAM $sc .= new(
-        :username($!uri-data<username>),
-        :password($!uri-data<password>),
-        :client-side(
-          AuthenticateMDB.new( :$!client, :db-name($!uri-data<database>))
-        ),
-      );
+      my Str $auth-mechanism;
+      if $!uri-data<options><authMechanism>:exists {
+        $auth-mechanism = $!uri-data<options><authMechanism>;
+        debug-message("Use mechanism '$auth-mechanism' from uri option");
+      }
 
-      $sc.start-scram;
+      else {
+        my Int $max-version = $!rw-sem.reader(
+          'wire-version', {
+            $!max-wire-version
+          }
+        );
+        $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
+        debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
+      }
+
+      given $auth-mechanism {
+
+        # Default in version 3.*
+        when 'SCRAM-SHA-1' {
+
+          my AuthenticateMDB $client-side .= new(
+            :$!client,
+            :db-name($!uri-data<database>)
+          );
+
+          my Auth::SCRAM $sc .= new(
+            :username($!uri-data<username>),
+            :password($!uri-data<password>),
+            :$client-side,
+          );
+
+          my $error = $sc.start-scram;
+          fatal-message("Authentication fail: $error") if ? $error;
+        }
+
+        # Default in version 2.*
+        when 'MONGODB-CR' {
+
+        }
+
+        when 'MONGODB-X509' {
+
+        }
+
+        # Kerberos
+        when 'GSSAPI' {
+
+        }
+
+        # LDAP SASL
+        when 'PLAIN' {
+
+        }
+      }
     }
 
     # Return a usable socket which is opened and authenticated upon if needed.
@@ -404,6 +478,33 @@ class Server {
   method name ( --> Str ) {
 
     return [~] $!server-name // '-', ':', $!server-port // '-';
+  }
+
+  #-----------------------------------------------------------------------------
+  # Forced cleanup
+  method cleanup ( ) {
+
+    # Its possible that server moditor is not defined when a server is
+    # non existent or some other reason.
+    $!server-monitor.stop-monitor if $!server-monitor.defined;
+
+    # Clear all sockets
+
+    $!rw-sem.writer( 's-select', {
+        for ^(@!sockets.elems) -> $si {
+          next unless @!sockets[$si].defined;
+          @!sockets[$si].cleanup;
+          @!sockets[$si] = Nil;
+          trace-message("socket cleared");
+        }
+      }
+    );
+
+    $!server-monitor = Nil;
+    $!client = Nil;
+    $!uri-data = Nil;
+    @!sockets = Nil;
+    $!server-tap = Nil;
   }
 }
 
