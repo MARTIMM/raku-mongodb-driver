@@ -3,9 +3,9 @@ use Digest::MD5;
 use MongoDB;
 use MongoDB::Database;
 use BSON::Document;
-use Unicode::PRECIS;
-use Unicode::PRECIS::Identifier::UsernameCasePreserved;
-use Unicode::PRECIS::FreeForm::OpaqueString;
+#use Unicode::PRECIS;
+#use Unicode::PRECIS::Identifier::UsernameCasePreserved;
+#use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
 #
@@ -137,14 +137,16 @@ class MongoDB::HL::Users {
       ) unless $pw-ok;
     }
 
+#TODO normalization done here or on server? assume on server.
+#`{{
     # Normalize username and password
     my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
-    my TestValue $tv-un = $upi-ucp.enforce($user);
+    my TestValue $tv-un = $upi-ucp.prepare($user);
     fatal-message("Username $user not accepted") if $tv-un ~~ Bool;
     info-message("Username '$user' accepted as '$tv-un'");
 
     my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
-    my TestValue $tv-pw = $upf-os.enforce($password);
+    my TestValue $tv-pw = $upf-os.prepare($password);
     fatal-message("Password not accepted") if $tv-un ~~ Bool;
     info-message("Password accepted");
 
@@ -152,6 +154,14 @@ class MongoDB::HL::Users {
     my BSON::Document $req .= new: (
       createUser => $user,
       pwd => (Digest::MD5.md5_hex( [~] $tv-un, ':mongo:', $tv-pw)),
+      digestPassword => False
+    );
+}}
+
+    # Create user where digestPassword is set false
+    my BSON::Document $req .= new: (
+      createUser => $user,
+      pwd => (Digest::MD5.md5_hex( [~] $user, ':mongo:', $password)),
       digestPassword => False
     );
 
@@ -217,18 +227,22 @@ class MongoDB::HL::Users {
 
       if $pw-ok {
 
+#TODO normalization done here or on server? assume on server.
+#`{{
         # Normalize username and password
         my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
-        my TestValue $tv-un = $upi-ucp.enforce($user);
+        my TestValue $tv-un = $upi-ucp.prepare($user);
         fatal-message("Username $user not accepted") if $tv-un ~~ Bool;
         info-message("Username '$user' accepted as '$tv-un'");
 
         my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
-        my TestValue $tv-pw = $upf-os.enforce($password);
+        my TestValue $tv-pw = $upf-os.prepare($password);
         fatal-message("Password not accepted") if $tv-un ~~ Bool;
         info-message("Password accepted");
 
         $req<pwd> = (Digest::MD5.md5_hex([~] $tv-un, ':mongo:', $tv-pw));
+}}
+        $req<pwd> = (Digest::MD5.md5_hex([~] $user, ':mongo:', $password));
       }
 
       else {
