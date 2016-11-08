@@ -3,6 +3,7 @@ use v6.c;
 use MongoDB;
 use MongoDB::Server::Socket;
 use MongoDB::Header;
+use BSON;
 use BSON::Document;
 use Semaphore::ReadersWriters;
 

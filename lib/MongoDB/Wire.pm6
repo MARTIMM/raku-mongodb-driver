@@ -1,5 +1,6 @@
 use v6.c;
 
+use BSON;
 use BSON::Document;
 use MongoDB;
 use MongoDB::Header;
@@ -90,7 +91,7 @@ class Wire {
         }
 
         # From BSON::Document
-        when X::Parse-document {
+        when X::BSON::Parse-document {
           error-message(.message);
         }
 
@@ -170,7 +171,7 @@ class Wire {
         }
 
         # From BSON::Document
-        when X::Parse-document {
+        when X::BSON::Parse-document {
           error-message(.message);
         }
 
@@ -241,7 +242,7 @@ class Wire {
         }
 
         # From BSON::Document
-        when X::Parse-document {
+        when X::BSON::Parse-document {
           error-message(.message);
         }
 

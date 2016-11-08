@@ -1,6 +1,7 @@
 # MongoDB Driver
 
 ![Leaf](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/logotype/logo_32x32.png) [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver)
+[![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
 ## Synopsis
 
@@ -315,6 +316,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on
 that page: *Major version zero (0.y.z) is for initial development. Anything may
 change at any time. The public API should not be considered stable.*
 
+* 0.35.4
+  * Changes caused by changes in BSON module.
 * 0.35.3
   * Bugfixes in tests
 * 0.35.2
@@ -668,16 +671,9 @@ change at any time. The public API should not be considered stable.*
 * 0.2 adapted to Rakudo NOM 2011.09+.
 * 0.1 basic Proof-of-concept working on Rakudo 2011.07.
 
-## LICENSE
-
-Released under [Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0).
-
 ## AUTHORS
 
 ```
 Original creator of the modules is Paweł Pabian (2011-2015, v0.6.0)(bbkr on github)
 Current maintainer Marcel Timmerman (2015-present) (MARTIMM on github)
 ```
-## CONTACT
-
-MARTIMM on github: MARTIMM/mongo-perl6-driver
