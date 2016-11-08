@@ -153,11 +153,47 @@ defines a role and an Exception class. See for more below.
 
 
 
-=head1 class MongoDB
+=comment =======================================================================
+=head1 MongoDB
 
   package MongoDB { ... }
 
-Base module to hold basic information.
+Base module to hold constants, enums and subs
+
+
+=head2 Enumerations
+
+=head3 TopologyType
+
+  enum TopologyType is export <
+    C-UNKNOWN-TPLGY C-STANDALONE-TPLGY C-REPLSET-WITH-PRIMARY-TPLGY
+    C-REPLSET-NO-PRIMARY-TPLGY
+  >;
+
+Used to describe the state of the Client object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -366,9 +402,7 @@ is shown when exception is thrown and not caught.
 
 =head1 class MongoDB::Message
 
-Defined as
-
-  package MongoDB { class Message is Exception does MongoDB::Logging { ... } }
+  package MongoDB { class MongoDB { ... } }
 
 
 =head2 Readonly attributes
