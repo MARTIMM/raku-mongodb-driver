@@ -50,6 +50,7 @@ package MongoDB {
   #-----------------------------------------------------------------------------
   # Query flags
   #
+#`{{
   subset QueryFindFlags of Int where $_ ~~ any(0x02,0x04...0x80);
 
   constant C-QF-RESERVED        = 0x01;
@@ -60,6 +61,8 @@ package MongoDB {
   constant C-QF-AWAITDATA       = 0x20; # corresponds to AwaitData. Use with TailableCursor. If we are at the end of the data, block for a while rather than returning no data. After a timeout period, we do return as normal.
   constant C-QF-EXHAUST         = 0x40; # corresponds to Exhaust. Stream the data down full blast in multiple \u201cmore\u201d packages, on the assumption that the client will fully read all data queried. Faster when you are pulling a lot of data and know you want to pull it all down. Note: the client is not allowed to not read all the data unless it closes the connection.
   constant C-QF-PORTAIL         = 0x80; # corresponds to Partial. Get partial results from a mongos if some shards are down (instead of throwing an error)
+}}
+
 
   #-----------------------------------------------------------------------------
   # Response flags
