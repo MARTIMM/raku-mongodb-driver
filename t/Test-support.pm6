@@ -1,9 +1,9 @@
 use v6.c;
 
-use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Server::Control;
+use MongoDB::Client;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
