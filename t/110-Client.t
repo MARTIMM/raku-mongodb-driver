@@ -29,8 +29,8 @@ subtest {
   $server = $client.select-server(:3check-cycles);
   nok $server.defined, 'No servers selected';
 #  is $client.nbr-servers, 1, 'One server object set';
-  is $client.server-status($server-name ), MongoDB::C-NON-EXISTENT-SERVER,
-     "Status of server is non existent";
+  is $client.server-status($server-name), C-NON-EXISTENT-SERVER,
+     "Status of server is $client.server-status($server-name)";
 
   $client.cleanup;
 }, 'Non existent server';
@@ -44,8 +44,8 @@ subtest {
   $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
 #  is $client.nbr-servers, 1, 'One server object set';
-  is $client.server-status('localhost:65535'), MongoDB::C-DOWN-SERVER,
-     "Status of server is down";
+  is $client.server-status('localhost:65535'), C-DOWN-SERVER,
+     "Status of server is $client.server-status('localhost:65535')";
 
   $client.cleanup;
 }, 'Down server';
@@ -58,8 +58,8 @@ subtest {
 
 #  todo 'Seems to finish processing too soon', 2;
 #  is $client.nbr-servers, 1, 'One server found';
-  is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
-     "Status of server is master";
+  is $client.server-status("localhost:$p1"), C-MASTER-SERVER,
+     "Status of server is $client.server-status("localhost:$p1")";
 
   $client.cleanup;
 }, "Standalone server";
@@ -69,13 +69,13 @@ subtest {
 
   $client .= new(:uri("mongodb://:$p1,:$p2"));
   $server = $client.select-server;
-  is $server.get-status, MongoDB::C-MASTER-SERVER,
-     "Server $server.name() is master";
+  is $server.get-status, C-MASTER-SERVER,
+     "Server $server.name() is $server.get-status()";
 
   # If server has port from $p1 than the other must have status rejected
-  my $other-server = $client.select-server(:needed-state(MongoDB::C-REJECTED-SERVER));
-  is $client.server-status( $other-server.name), MongoDB::C-REJECTED-SERVER,
-     "Server $other-server.name() is rejected";
+  my $other-server = $client.select-server(:needed-state(C-REJECTED-SERVER));
+  is $client.server-status( $other-server.name), C-REJECTED-SERVER,
+     "Server $other-server.name() is $client.server-status($other-server.name)";
 
 #  is $client.nbr-servers, 2, 'Two servers found';
 

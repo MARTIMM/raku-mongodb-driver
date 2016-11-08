@@ -25,4 +25,4 @@
   * wtimeoutMS - corresponds to wtimeoutMS in the class definition.
 * For authentication username and password strings must be prepped. see Unicode::Stringprep::* and Authen::* from perl 5 libs.
 * Authentication per socket only when server is in authentication mode.
-* There is an occasional 'double free' bug in perl6 which torpedes tests now and then.
+* There is an occasional 'double free' bug in perl6 which torpedes tests now and then. This is a perl6 problem.

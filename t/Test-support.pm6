@@ -1,6 +1,5 @@
 use v6.c;
 
-use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Server::Control;
 use MongoDB::Client;

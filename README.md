@@ -1,6 +1,6 @@
 # MongoDB Driver
 
-![Leaf](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/logotype/logo_32x32.png) [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver)
+![Leaf](logotype/logo_32x32.png) [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver)
 [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
 ## Synopsis
@@ -190,6 +190,7 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
 
   ### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
 
+
 |Tested|Test Filename|Test Purpose|
 |-|-|-|
 |x|110-Client|Unknown server, fails DNS lookup|
@@ -247,7 +248,7 @@ There has been a lot of changes in the API.
 
 ## INSTALLING THE MODULES
 
-Use panda or zef to install the package. BSON will be installed as a dependency.
+Use panda or zef to install the package.
 
 ## Versions of PERL, MOARVM and MongoDB
 

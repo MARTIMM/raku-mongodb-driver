@@ -4,6 +4,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
 * 0.35.4
   * Changes caused by changes in BSON module.
+  * Changed constants defined in MongoDB.pm6 into enums. This gives a better use of the constant when it must be used in log messages, it shows up as text instead of a number. When used as a number, e.g. in Header use the .value method and define the code values in the enum.
 * 0.35.3
   * Bugfixes in tests
 * 0.35.2
