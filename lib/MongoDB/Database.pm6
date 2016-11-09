@@ -49,9 +49,7 @@ class Database {
       $read-concern.defined ?? $read-concern !! $!read-concern;
 
     return MongoDB::Collection.new(
-      :database(self),
-      :name($name),
-      :$read-concern
+      :database(self), :name($name), :$read-concern
     );
   }
 
@@ -75,10 +73,8 @@ class Database {
 
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
-      :criteria($command),
-      :number-to-return(1),
-      :read-concern($rc),
-      :$server
+      :criteria($command), :number-to-return(1),
+      :read-concern($rc), :$server
     );
 
     # Return undefined on server problems
@@ -112,10 +108,8 @@ class Database {
 
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
-      :criteria($command),
-      :number-to-return(1)
-      :read-concern($rc)
-      :$server
+      :criteria($command), :number-to-return(1),
+      :read-concern($rc), :$server
     );
 
     # Return undefined on server problems
