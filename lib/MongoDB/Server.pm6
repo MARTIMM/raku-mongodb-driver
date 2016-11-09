@@ -21,7 +21,7 @@ class Server {
 
   # Used by Socket
   has Str $.server-name;
-  has MongoDB::PortType $.server-port;
+  has PortType $.server-port;
 
   has ClientType $!client;
 
@@ -38,7 +38,7 @@ class Server {
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
   # Set status to its default starting status
-  has MongoDB::ServerStatus $!server-status;
+  has ServerStatus $!server-status;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
@@ -110,7 +110,7 @@ class Server {
 
     #-----------------------------------------------------------------------------
     method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
-
+#`{{
       my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
       my TestValue $tv-un = $upi-ucp.enforce($username);
       fatal-message("Username $username not accepted") if $tv-un ~~ Bool;
@@ -122,6 +122,10 @@ class Server {
       info-message("Password accepted");
 
       my utf8 $mdb-hashed-pw = ($tv-un ~ ':mongo:' ~ $tv-pw).encode;
+      my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
+      Buf.new($md5-mdb-hashed-pw.encode);
+}}
+      my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
       my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
       Buf.new($md5-mdb-hashed-pw.encode);
     }
@@ -185,7 +189,7 @@ class Server {
     $!uri-data = $uri-data;
 
     $!server-monitor .= new( :server(self), :$loop-time);
-    $!server-status = MongoDB::C-UNKNOWN-SERVER;
+    $!server-status = C-UNKNOWN-SERVER;
   }
 
   #-----------------------------------------------------------------------------
@@ -202,7 +206,7 @@ class Server {
 
 #say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
-          my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
+          my ServerStatus $server-status = C-UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
@@ -223,11 +227,11 @@ class Server {
                 if $mdata<setName> eq $!uri-data<options><replicaSet> {
 
                   if $mdata<ismaster> {
-                    $server-status = MongoDB::C-REPLICASET-PRIMARY;
+                    $server-status = C-REPLICASET-PRIMARY;
                   }
 
                   elsif $mdata<secondary> {
-                    $server-status = MongoDB::C-REPLICASET-SECONDARY;
+                    $server-status = C-REPLICASET-SECONDARY;
                   }
 
 #TODO ... Arbiter etc
@@ -235,18 +239,18 @@ class Server {
 
                 # Replicaset name does not match
                 else {
-                  $server-status = MongoDB::C-REJECTED-SERVER;
+                  $server-status = C-REJECTED-SERVER;
                 }
               }
 
               # Server is in a replicaset but not initialized.
               elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
-                $server-status = MongoDB::C-REPLICA-PRE-INIT
+                $server-status = C-REPLICA-PRE-INIT
               }
 
               # Shouldn't happen
               else {
-                $server-status = MongoDB::C-REJECTED-SERVER;
+                $server-status = C-REJECTED-SERVER;
               }
             }
 
@@ -257,18 +261,18 @@ class Server {
               if $mdata<isreplicaset>:exists
                  or $mdata<setName>:exists
                  or $mdata<primary>:exists {
-                $server-status = MongoDB::C-REJECTED-SERVER;
+                $server-status = C-REJECTED-SERVER;
               }
 
               else {
                 # Must be master
                 if $mdata<ismaster> {
-                  $server-status = MongoDB::C-MASTER-SERVER;
+                  $server-status = C-MASTER-SERVER;
                 }
 
                 # Shouldn't happen
                 else {
-                  $server-status = MongoDB::C-REJECTED-SERVER;
+                  $server-status = C-REJECTED-SERVER;
                 }
               }
             }
@@ -279,11 +283,11 @@ class Server {
 
             if $monitor-data<reason>:exists
                and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
-              $server-status = MongoDB::C-NON-EXISTENT-SERVER;
+              $server-status = C-NON-EXISTENT-SERVER;
             }
 
             else {
-              $server-status = MongoDB::C-DOWN-SERVER;
+              $server-status = C-DOWN-SERVER;
             }
           }
 
@@ -306,13 +310,13 @@ class Server {
   }
 
   #-----------------------------------------------------------------------------
-  method get-status ( --> MongoDB::ServerStatus ) {
+  method get-status ( --> ServerStatus ) {
 
     my int $count = 0;
-    my MongoDB::ServerStatus $server-status = MongoDB::C-UNKNOWN-SERVER;
+    my ServerStatus $server-status = C-UNKNOWN-SERVER;
 
     # Wait until changed, After 4 sec it must be known or stays unknown forever
-    while $count < 4 and $server-status ~~ MongoDB::C-UNKNOWN-SERVER {
+    while $count < 4 and $server-status ~~ C-UNKNOWN-SERVER {
       $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
 
       sleep 1;
@@ -434,7 +438,7 @@ class Server {
         # Default in version 3.*
         when 'SCRAM-SHA-1' {
 
-          my AuthenticateMDB $client-side .= new(
+          my AuthenticateMDB $client-object .= new(
             :$!client,
             :db-name($!uri-data<database>)
           );
@@ -442,7 +446,7 @@ class Server {
           my Auth::SCRAM $sc .= new(
             :username($!uri-data<username>),
             :password($!uri-data<password>),
-            :$client-side,
+            :$client-object,
           );
 
           my $error = $sc.start-scram;

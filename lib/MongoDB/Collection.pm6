@@ -40,7 +40,8 @@ class Collection {
     List :$criteria where all(@$criteria) ~~ Pair = (),
     List :$projection where all(@$projection) ~~ Pair = (),
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    Int :$flags = 0, List :$read-concern, :$server is copy
+    QueryFindFlags :@flags = Array[QueryFindFlags].new,
+    List :$read-concern, :$server is copy
     --> MongoDB::Cursor
   ) {
 
@@ -63,7 +64,7 @@ class Collection {
     my BSON::Document $cr .= new: $criteria;
     my BSON::Document $pr .= new: $projection;
     my BSON::Document $server-reply = $wire.query(
-      self, $cr, $pr, :$flags, :$number-to-skip,
+      self, $cr, $pr, :@flags, :$number-to-skip,
       :$number-to-return, :$server
     );
 
@@ -83,11 +84,11 @@ class Collection {
   # Find record in a collection using a BSON::Document
   #
   multi method find (
-
     BSON::Document :$criteria = BSON::Document.new,
     BSON::Document :$projection?,
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    Int :$flags = 0, BSON::Document :$read-concern, :$server is copy
+    QueryFindFlags :@flags = Array[QueryFindFlags].new,
+    BSON::Document :$read-concern, :$server is copy
     --> MongoDB::Cursor
   ) {
 
@@ -108,7 +109,7 @@ class Collection {
     }
 
     my BSON::Document $server-reply = $wire.query(
-      self, $criteria, $projection, :$flags, :$number-to-skip,
+      self, $criteria, $projection, :@flags, :$number-to-skip,
       :$number-to-return, :$server
     );
 

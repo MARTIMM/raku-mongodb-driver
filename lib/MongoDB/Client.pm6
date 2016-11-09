@@ -15,7 +15,7 @@ unit package MongoDB;
 #-------------------------------------------------------------------------------
 class Client {
 
-  has MongoDB::TopologyType $!topology-type;
+  has TopologyType $!topology-type;
 
   # Store all found servers here. key is the name of the server which is
   # the server address/ip and its port number. This should be unique.
@@ -36,7 +36,7 @@ class Client {
 
   has Promise $!Background-discovery;
   has Bool $!repeat-discovery-loop;
-  
+
   has Tap $!client-tap;
 
 #`{{
@@ -57,7 +57,7 @@ say 'new client 1';
     Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10
   ) {
 
-    $!topology-type = MongoDB::C-UNKNOWN-TPLGY;
+    $!topology-type = C-UNKNOWN-TPLGY;
 
     $!servers = {};
 
@@ -220,11 +220,11 @@ say 'new client 1';
           # There are errors while monitoring
           elsif not $monitor-data<ok> {
 
-            my MongoDB::ServerStatus $status =
+            my ServerStatus $status =
                $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>});
 
             # Not found by DNS so big chance that it doesn't exist
-            if $status ~~ MongoDB::C-NON-EXISTENT-SERVER {
+            if $status ~~ C-NON-EXISTENT-SERVER {
 
 #              $!client-tap.done;
               $!servers{$server-name}<server>.cleanup;
@@ -232,7 +232,7 @@ say 'new client 1';
             }
 
             # Connection failure
-            elsif $status ~~ MongoDB::C-DOWN-SERVER {
+            elsif $status ~~ C-DOWN-SERVER {
 
               # Check if the master server went down
               if $msname.defined and ($msname eq $server-name) {
@@ -258,27 +258,27 @@ say 'new client 1';
 #say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
             # Don't ever modify a rejected server
             if $prev-server<status>:exists
-               and $prev-server<status> ~~ MongoDB::C-REJECTED-SERVER {
+               and $prev-server<status> ~~ C-REJECTED-SERVER {
 
               $!rw-sem.writer(
                 'servers', {
-                debug-message("set server $server-name status to " ~ MongoDB::C-REJECTED-SERVER);
-                $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
+                debug-message("set server $server-name status to " ~ C-REJECTED-SERVER);
+                $!servers{$server-name}<status> = C-REJECTED-SERVER;
               });
             }
 
             # Check for double master servers
             elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
               ~~ any(
-              MongoDB::C-MASTER-SERVER |
-              MongoDB::C-REPLICASET-PRIMARY
+              C-MASTER-SERVER |
+              C-REPLICASET-PRIMARY
             ) {
               # Is defined, be the second and rejected master server
               if $msname.defined {
                 if $msname ne $server-name {
                   $!rw-sem.writer(
                     'servers', {
-                    $!servers{$server-name}<status> = MongoDB::C-REJECTED-SERVER;
+                    $!servers{$server-name}<status> = C-REJECTED-SERVER;
                   });
                   error-message("Server $server-name rejected, second master");
                 }
@@ -304,7 +304,7 @@ say 'new client 1';
 
             # When primary, find all servers and add to todo list
             if $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-               ~~ MongoDB::C-REPLICASET-PRIMARY {
+               ~~ C-REPLICASET-PRIMARY {
 
               my Array $hosts = $!rw-sem.reader(
                 'servers', {
@@ -323,7 +323,7 @@ say 'new client 1';
 
             # When secondary get its primary and add to todo list
             elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-                  ~~ MongoDB::C-REPLICASET-SECONDARY {
+                  ~~ C-REPLICASET-SECONDARY {
 
               # Error when current master is not same as primary
               my $primary = $!rw-sem.reader(
@@ -372,7 +372,7 @@ say 'new client 1';
 
   #-----------------------------------------------------------------------------
   # Called from thread above where Server object is created.
-  method server-status ( Str:D $server-name --> MongoDB::ServerStatus ) {
+  method server-status ( Str:D $server-name --> ServerStatus ) {
 
 #say "$*THREAD.id() before check";
     self!check-discovery-process;
@@ -386,7 +386,13 @@ say 'new client 1';
     });
     debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
-    my MongoDB::ServerStatus $sts = $h<status> // MongoDB::C-UNKNOWN-SERVER;
+    my ServerStatus $sts = $h<status> // C-UNKNOWN-SERVER;
+  }
+
+  #-----------------------------------------------------------------------------
+  method client-topology ( --> TopologyType ) {
+
+    $!topology-type;
   }
 
   #-----------------------------------------------------------------------------
@@ -412,7 +418,7 @@ say 'new client 1';
   #-----------------------------------------------------------------------------
   # State of server selection
   multi method select-server (
-    MongoDB::ServerStatus:D :$needed-state!,
+    ServerStatus:D :$needed-state!,
     Int :$check-cycles is copy = -1
     --> MongoDB::Server
   ) {
@@ -521,8 +527,7 @@ say 'new client 1';
 
   #-----------------------------------------------------------------------------
   method database (
-    Str:D $name,
-    BSON::Document :$read-concern
+    Str:D $name, BSON::Document :$read-concern
     --> MongoDB::Database
   ) {
 
@@ -534,8 +539,7 @@ say 'new client 1';
 
   #-----------------------------------------------------------------------------
   method collection (
-    Str:D $full-collection-name,
-    BSON::Document :$read-concern
+    Str:D $full-collection-name, BSON::Document :$read-concern
     --> MongoDB::Collection
   ) {
 #TODO check for dot in the name
@@ -580,7 +584,7 @@ say 'new client 1';
     $!servers = Nil;
     $!todo-servers = Nil;
     $!client-tap = Nil;
-    
+
     debug-message("Client destroyed");
   }
 }

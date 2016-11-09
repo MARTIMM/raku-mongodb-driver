@@ -49,9 +49,7 @@ class Database {
       $read-concern.defined ?? $read-concern !! $!read-concern;
 
     return MongoDB::Collection.new(
-      :database(self),
-      :name($name),
-      :$read-concern
+      :database(self), :name($name), :$read-concern
     );
   }
 
@@ -61,7 +59,6 @@ class Database {
   # it a special one.
   #
   # Run command using the BSON::Document.
-  #
   multi method run-command (
     BSON::Document:D $command,
     BSON::Document :$read-concern,
@@ -72,15 +69,12 @@ class Database {
 
     debug-message("run command {$command.find-key(0)}");
 
-    my BSON::Document $rc =
-      $read-concern.defined ?? $read-concern !! $!read-concern;
+    my BSON::Document $rc = $read-concern // $!read-concern;
 
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
-      :criteria($command),
-      :number-to-return(1),
-      :read-concern($rc),
-      :$server
+      :criteria($command), :number-to-return(1),
+      :read-concern($rc), :$server
     );
 
     # Return undefined on server problems
@@ -95,7 +89,6 @@ class Database {
 
   #-----------------------------------------------------------------------------
   # Run command using List of Pair.
-#    multi method run-command ( |c --> BSON::Document ) {
   multi method run-command (
     List $pairs,
     BSON::Document :$read-concern,
@@ -111,16 +104,12 @@ class Database {
     my BSON::Document $command .= new: $pairs;
     debug-message("run command {$command.find-key(0)}");
 
-    my BSON::Document $rc = 
-      $read-concern.defined ?? (BSON::Document.new($read-concern))
-                            !! $!read-concern;
+    my BSON::Document $rc = $read-concern // $!read-concern;
 
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
-      :criteria($command),
-      :number-to-return(1)
-      :read-concern($rc)
-      :$server
+      :criteria($command), :number-to-return(1),
+      :read-concern($rc), :$server
     );
 
     # Return undefined on server problems

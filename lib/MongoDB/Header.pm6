@@ -1,10 +1,11 @@
 use v6.c;
 
-use MongoDB;
+use BSON;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB;
+use MongoDB;
 
 #-------------------------------------------------------------------------------
 role Header {
@@ -27,8 +28,7 @@ role Header {
   }
 
   #-----------------------------------------------------------------------------
-  #
-  method encode-message-header ( Int $buffer-size, Int $op-code --> List ) {
+  method encode-message-header ( Int $buffer-size, WireOpcode $op-code --> List ) {
 
     my Int $used-request-id = $request-id++;
 
@@ -56,13 +56,12 @@ role Header {
       # int32 opCode
       # request type, code from caller is a choice from constants
       #
-      encode-int32($op-code);
+      encode-int32($op-code.value);
 
     return ( $msg-header, $used-request-id);
   }
 
   #-----------------------------------------------------------------------------
-  #
   method decode-message-header ( Buf $b, $index is rw --> BSON::Document ) {
 
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-StandardMessageHeader
@@ -103,7 +102,6 @@ role Header {
   }
 
   #-----------------------------------------------------------------------------
-  #
   method encode-query (
     Str:D $full-collection-name, BSON::Document $projection?,
     Int :$flags = 0, Int :$number-to-skip = 0, Int :$number-to-return = 0
@@ -152,16 +150,12 @@ role Header {
     # standard message header
     #
     ( my Buf $encoded-query, my Int $u-request-id) = 
-      self.encode-message-header(
-        $query-buffer.elems,
-        MongoDB::C-OP-QUERY
-      );
+      self.encode-message-header( $query-buffer.elems, C-OP-QUERY);
 
     return ( $encoded-query ~ $query-buffer, $u-request-id);
   }
 
   #-----------------------------------------------------------------------------
-  #
   method encode-get-more (
     Str:D $full-collection-name,
     Buf:D $cursor-id,
@@ -202,16 +196,12 @@ role Header {
     # (watch out for inconsistent OP_code and messsage name)
     #
     ( my Buf $encoded-get-more, my Int $u-request-id) = 
-      self.encode-message-header(
-        $get-more-buffer.elems,
-        MongoDB::C-OP-GET-MORE
-      );
+      self.encode-message-header( $get-more-buffer.elems, C-OP-GET-MORE);
 
     return ( $encoded-get-more ~ $get-more-buffer, $u-request-id);
   }
 
   #-----------------------------------------------------------------------------
-  #
   method encode-kill-cursors ( Buf:D @cursor-ids --> List ) {
 
     my Buf $kill-cursors-buffer = [~]
@@ -238,23 +228,18 @@ role Header {
     # standard message header
     #
     ( my Buf $encoded-kill-cursors, my Int $u-request-id) = 
-      self.encode-message-header(
-        $kill-cursors-buffer.elems,
-        MongoDB::C-OP-KILL-CURSORS
-      );
+      self.encode-message-header( $kill-cursors-buffer.elems, C-OP-KILL-CURSORS);
 
     return ( $encoded-kill-cursors ~ $kill-cursors-buffer, $u-request-id);
   }
 
   #-----------------------------------------------------------------------------
-  #
   method encode-cursor-id ( Int $cursor-id --> Buf ) {
 
     return encode-int64($cursor-id);
   }
 
   #-----------------------------------------------------------------------------
-  #
   method decode-reply ( Buf $b --> BSON::Document ) {
 
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
@@ -317,7 +302,6 @@ role Header {
 #say "Subbuf at $index";
 
     # Extract documents from message.
-    #
     for ^$reply-document<number-returned> {
       my $doc-size = decode-int32( $b, $index);
 #say "I: $index, $doc-size";
