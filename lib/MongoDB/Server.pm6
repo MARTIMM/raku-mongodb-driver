@@ -438,7 +438,7 @@ class Server {
         # Default in version 3.*
         when 'SCRAM-SHA-1' {
 
-          my AuthenticateMDB $client-side .= new(
+          my AuthenticateMDB $client-object .= new(
             :$!client,
             :db-name($!uri-data<database>)
           );
@@ -446,7 +446,7 @@ class Server {
           my Auth::SCRAM $sc .= new(
             :username($!uri-data<username>),
             :password($!uri-data<password>),
-            :$client-side,
+            :$client-object,
           );
 
           my $error = $sc.start-scram;
