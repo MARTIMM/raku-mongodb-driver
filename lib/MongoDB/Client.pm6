@@ -390,7 +390,7 @@ say 'new client 1';
   }
 
   #-----------------------------------------------------------------------------
-  method client-topology (  --> TopologyType ) {
+  method client-topology ( --> TopologyType ) {
 
     $!topology-type;
   }
@@ -527,8 +527,7 @@ say 'new client 1';
 
   #-----------------------------------------------------------------------------
   method database (
-    Str:D $name,
-    BSON::Document :$read-concern
+    Str:D $name, BSON::Document :$read-concern
     --> MongoDB::Database
   ) {
 
@@ -540,8 +539,7 @@ say 'new client 1';
 
   #-----------------------------------------------------------------------------
   method collection (
-    Str:D $full-collection-name,
-    BSON::Document :$read-concern
+    Str:D $full-collection-name, BSON::Document :$read-concern
     --> MongoDB::Collection
   ) {
 #TODO check for dot in the name
