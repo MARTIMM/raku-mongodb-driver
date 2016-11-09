@@ -223,12 +223,13 @@ There has been a lot of changes in the API.
 
 #### Modules
 
-* doc/Pod/Collection.pod
-* doc/Pod/Cursor.pod
-* doc/Pod/Database.pod
-* doc/Pod/MongoDB.pod
-* doc/Pod/Server.pod
-* doc/Pod/Users.pod
+* [MongoDB](https://github.com/MARTIMM/mongo-perl6-driver/blob/develop/MongoDB.pdf)
+* doc/Collection.pdf
+* doc/Cursor.pdf
+* doc/Database.pdf
+* doc/MongoDB.pdf
+* doc/Server.pdf
+* doc/Users.pdf
 
 #### Notes
 
