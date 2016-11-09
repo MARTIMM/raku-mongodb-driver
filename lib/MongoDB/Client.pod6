@@ -1,38 +1,10 @@
-#!/usr/bin/env perl6
-#
 use v6.c;
-
-# Running the pod file will create a pdf using wkhtmltopdf
-#
-my Str $pod = "$*PROGRAM";
-my Str $pdf = $pod;
-$pdf ~~ s/\. <-[.]>+ $/.pdf/;
-shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
-
-#-------------------------------------------------------------------------------
 
 =begin pod
 
-=begin Xhtml
-<style>
-  pre {
-    border-width:       2px;
-    border-style:       solid;
-    border-color:       #060;
-    padding:            10px 0 3px 10px;
-    color:              #060;
-    background-color:   #eaefea;
-    font-family:        FreeMono;
-  }
-  td {
-    vertical-align:     top;
-  }
-</style>
-=end Xhtml
-
 =TITLE class MongoDB::Client
 
-=SUBTITLE Starting point to define connections to servers
+=SUBTITLE Class to define connections to servers
 
   package MongoDB { class Client { ... } }
 
@@ -45,7 +17,11 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
     my MongoDB::Collection $c2 = $client.collection('my_db2.my_cll2');
   }
 
-Class to help accessing servers.
+=head1 Description
+
+This class is your most often used class. It maintains the connection to the
+servers specified in the given uri. In the background it herds a set of
+C<MongoDB::Server> objects.
 
 
 =head1 Readonly attributes
@@ -71,7 +47,13 @@ server is detected.
 
 =head2 new
 
-  submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern )
+  submethod BUILD (
+    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10
+  )
+
+=head3 read-concern
+
+Read concern will overwrite the default concern.
 
 =head3 uri
 
@@ -98,9 +80,9 @@ options and definition.
 =end table
 
 Note that the servers named in the uri must have something in common such as a
-replica set. Servers can be refused when there is some problem between them.
-In such situations another Client should be created for the other server. See
-table below.
+replica set. Servers are refused when there is some problem between them e.g.
+both are master servers. In such situations another Client should be created for
+the other server. See table below.
 
 Next a table where some processing results are shown for uri. In the table there
 are short names use like n#(=digit): for normal server, r#: a replica server,
@@ -127,9 +109,77 @@ R1 are used, the table shows 'r1R1, r2R1, R1' and the uri could be something lik
 =end table
 
 
-=head3 read-concern
+The options which can be used in the uri are in the following tables. See also
+L<this information|https://docs.mongodb.com/manual/reference/connection-string/#connection-string-options>
+for more details.
 
-Read concern will overwrite the default concern.
+
+=begin table
+
+  Replica set options | Impl | Use
+  =|=|=
+  replicaSet | x | Specifies the name of the replica set, if the mongod is a member of a replica set.
+
+=end table
+
+=begin table
+
+  Connection options | Impl | Use
+  =|=|=
+  ssl |  | 0 or 1. 1 Initiate the connection with TLS/SSL. The default value is false.
+  connectTimeoutMS |  |	The time in milliseconds to attempt a connection before timing out. 
+  socketTimeoutMS |  | The time in milliseconds to attempt a send or receive on a socket before the attempt times out.
+
+=end table
+
+=begin table
+
+  Connect pool options | Impl | Use
+  =|=|=
+  maxPoolSize |  | The maximum number of connections in the connection pool. The default value is 100.
+  minPoolSize |  | The minimum number of connections in the connection pool. The default value is 0.
+  maxIdleTimeMS |  | The maximum number of milliseconds that a connection can remain idle in the pool before being removed and closed.
+  waitQueueMultiple |  | A number that the driver multiples the maxPoolSize value to, to provide the maximum number of threads allowed to wait for a connection to become available from the pool.
+  waitQueueTimeoutMS |  | The maximum time in milliseconds that a thread can wait for a connection to become available. For default values, see the MongoDB Drivers and Client Libraries documentation.
+
+=end table
+
+=begin table
+
+  Write concern options | Impl | Use
+  =|=|=
+  w |  | Corresponds to the write concern w Option. The w option requests acknowledgement that the write operation has propagated to a specified number of mongod instances or to mongod instances with specified tags. You can specify a number, the string majority, or a tag set.
+  wtimeoutMS |  | Corresponds to the write concern wtimeout. wtimeoutMS specifies a time limit, in milliseconds, for the write concern. When wtimeoutMS is 0, write operations will never time out. 
+  journal |  | Corresponds to the write concern j Option option. The journal option requests acknowledgement from MongoDB that the write operation has been written to the journal
+
+=end table
+
+=begin table
+
+  Read concern options | Impl | Use
+  =|=|=
+  readConcernLevel |  | The level of isolation. Accepts either "local" or "majority".
+
+=end table
+
+=begin table
+
+  Read preference options | Impl | Use
+  =|=|=
+  readPreference |  | Specifies the replica set read preference for this connection. The read preference values are the following: primary, primaryPreferred, secondary, secondaryPreferred, nearest
+  readPreferenceTags |  | Specifies a tag set as a comma-separated list of colon-separated key-value pairs
+
+=end table
+
+=begin table
+
+  Authentication options | Impl | Use
+  =|=|=
+  authSource |  | Specify the database name associated with the user credentials, if the users collection do not exist in the database where the client is connecting. authSource defaults to the database specified in the connection string.
+  authMechanism | part | Specify the authentication mechanism that MongoDB will use to authenticate the connection. Possible values include: SCRAM-SHA-1, MONGODB-CR, MONGODB-X509, GSSAPI (Kerberos), PLAIN (LDAP SASL)
+  gssapiServiceName |  | Set the Kerberos service name when connecting to Kerberized MongoDB instances. This value must match the service name set on MongoDB instances.
+
+=end table
 
 
 =head2 nbr-servers
@@ -141,19 +191,54 @@ after new() it may not have the proper count yet caused by delays in processing
 especially when processing replicasets.
 
 
+=head2 server-status
+
+  method server-status ( Str:D $server-name --> ServerStatus )
+
+Return the status of some server. See MongoDB for the defined values.
+
+=comment #TODO remove 'For the moment ...' when implemented
+=head2 client-topology
+
+  method client-topology ( --> TopologyType ) {
+
+Return the topology of the set of servers represents. See MongoDB for the defined values.
+For the moment it must be implemented yet.
+
+=head2 select-server
+
+  multi method select-server (
+    BSON::Document:D :$read-concern!
+    --> MongoDB::Server
+  )
+
+  multi method select-server (
+    ServerStatus:D :$needed-state!,
+    Int :$check-cycles is copy = -1
+    --> MongoDB::Server
+  )
+
+  multi method select-server (
+    Int :$check-cycles is copy = -1
+    --> MongoDB::Server
+  )
+
+Select a server for operations. It returns a Server object. In single server
+setups it is always the server you want to have. When however selecting a server
+from a replicaset the server is selected according to several rules such as
+read-concern, operation type (read or write) and round trip time to the server.
+When read-concern is not defined, the data is taken from this Clients
+read-concern. This method is used internally and of no concern of the user.
+
+
 =head2 database
 
   method database (
-    Str:D $name,
-    BSON::Document :$read-concern
+    Str:D $name, BSON::Document :$read-concern
     --> MongoDB::Database
   )
 
-Example
-
-  my MongoDB::Database $db = $client.database('mydb');
-
-Create a Database object. in mongodb a database and its collectionsare only
+Create a Database object. In mongodb a database and its collections are only
 created when data is written in a collection.
 
 The read-concern when defined will overide the one of the Client. If not
@@ -163,8 +248,7 @@ defined, the structure of the client is taken.
 =head2 collection
 
   method collection (
-    Str:D $full-collection-name,
-    BSON::Document :$read-concern
+    Str:D $full-collection-name, BSON::Document :$read-concern
     --> MongoDB::Collection
   )
 
@@ -174,30 +258,5 @@ string of two names separated by a dot '.'.
 
 When the read-concern is defined it overides the one from Client. If not
 defined, the structure of the client is taken.
-
-
-=head2 select-server
-
-  method select-server ( BSON::Document :$read-concern --> MongoDB::Server )
-
-Select a server for operations. It returns a Server object. In single server
-setups it is always the server you want to have. When however selecting a server
-from a replicaset the server is selected according to several rules such as
-read-concern, operation type (read or write) and round trip time to the server.
-When read-concern is not defined, the data is taken from this Clients
-read-concern.
-
-
-=head2 shutdown-server
-
-   method shutdown ( Bool :$force = False,  MongoDB::Server :$server )
-
-Shutdown a mongod server. Before using this read the text from select-server()
-above because you might end up shutting down the wrong server. It is much better
-to use the commandline to shutdown a server when in a replicaset or sharded
-configuration.
-
-  > mongod --shutdown --dbpath <path to database>
-
 
 =end pod

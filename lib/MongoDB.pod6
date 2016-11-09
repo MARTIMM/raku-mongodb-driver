@@ -24,7 +24,7 @@ my BSON::Document $req .= new: (
   documents => [
     BSON::Document.new((
       name => 'Larry',
-      surname => 'Walll',
+      surname => 'Wall',
     )),
   ]
 );
