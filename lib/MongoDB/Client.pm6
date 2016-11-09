@@ -390,6 +390,12 @@ say 'new client 1';
   }
 
   #-----------------------------------------------------------------------------
+  method client-topology (  --> TopologyType ) {
+
+    $!topology-type;
+  }
+
+  #-----------------------------------------------------------------------------
   # Selecting servers based on;
   # - read/write concern, depends on server version
   # - state of a server, e.g. to initialize a replica server or to get a slave

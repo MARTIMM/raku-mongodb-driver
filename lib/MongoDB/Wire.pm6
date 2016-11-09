@@ -17,12 +17,16 @@ class Wire {
   #-----------------------------------------------------------------------------
   method query (
     MongoDB::CollectionType:D $collection,
-    BSON::Document:D $qdoc, $projection?, :$flags, Int :$number-to-skip,
+    BSON::Document:D $qdoc, BSON::Document $projection?,
+    QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
     Int :$number-to-return, :$server where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
 
     $!server = $server;
+
+    # OR all flag values to get the integer flag, be sure it is at least 0x00.
+    my Int $flags = [+|] @flags>>.value;
 
     # Must clone the document otherwise the MongoDB::Header will be added
     # to the $qdoc even when the copy trait is used.

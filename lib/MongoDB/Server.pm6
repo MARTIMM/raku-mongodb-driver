@@ -21,7 +21,7 @@ class Server {
 
   # Used by Socket
   has Str $.server-name;
-  has MongoDB::PortType $.server-port;
+  has PortType $.server-port;
 
   has ClientType $!client;
 
