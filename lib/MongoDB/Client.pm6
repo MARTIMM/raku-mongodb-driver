@@ -36,7 +36,7 @@ class Client {
 
   has Promise $!Background-discovery;
   has Bool $!repeat-discovery-loop;
-  
+
   has Tap $!client-tap;
 
 #`{{
@@ -586,7 +586,7 @@ say 'new client 1';
     $!servers = Nil;
     $!todo-servers = Nil;
     $!client-tap = Nil;
-    
+
     debug-message("Client destroyed");
   }
 }
