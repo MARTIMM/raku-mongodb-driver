@@ -5,20 +5,20 @@ use MongoDB::Collection;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Database {
 
   has Str $.name;
-  has MongoDB::ClientType $.client;
+  has ClientType $.client;
   has BSON::Document $.read-concern;
   has MongoDB::Collection $!cmd-collection;
 
   #-----------------------------------------------------------------------------
   #
   submethod BUILD (
-    MongoDB::ClientType:D :$client,
+    ClientType:D :$client,
     Str:D :$name,
     BSON::Document :$read-concern
   ) {
@@ -62,7 +62,7 @@ class Database {
   multi method run-command (
     BSON::Document:D $command,
     BSON::Document :$read-concern,
-    :$server
+#    :$server
     --> BSON::Document
   ) {
 #TODO :$server still needed ?
@@ -74,7 +74,8 @@ class Database {
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
       :criteria($command), :number-to-return(1),
-      :read-concern($rc), :$server
+      :read-concern($rc)
+#      , :$server
     );
 
     # Return undefined on server problems
@@ -92,7 +93,7 @@ class Database {
   multi method run-command (
     List $pairs,
     BSON::Document :$read-concern,
-    :$server
+#    :$server
     --> BSON::Document
   ) {
 #TODO :$server still needed ?
@@ -109,7 +110,8 @@ class Database {
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
       :criteria($command), :number-to-return(1),
-      :read-concern($rc), :$server
+      :read-concern($rc)
+#      , :$server
     );
 
     # Return undefined on server problems

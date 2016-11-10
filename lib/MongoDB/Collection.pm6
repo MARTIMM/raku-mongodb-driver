@@ -5,19 +5,19 @@ use MongoDB::Wire;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Collection {
 
-  has MongoDB::DatabaseType $.database;
+  has DatabaseType $.database;
   has Str $.name;
   has Str $.full-collection-name;
   has BSON::Document $.read-concern;
 
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    MongoDB::DatabaseType:D :$database,
+    DatabaseType:D :$database,
     Str:D :$name,
     BSON::Document :$read-concern
   ) {
@@ -41,7 +41,8 @@ class Collection {
     List :$projection where all(@$projection) ~~ Pair = (),
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
     QueryFindFlags :@flags = Array[QueryFindFlags].new,
-    List :$read-concern, :$server is copy
+    List :$read-concern
+#,     :$server is copy
     --> MongoDB::Cursor
   ) {
 
@@ -53,8 +54,8 @@ class Collection {
        $read-concern.defined ?? BSON::Document.new: $read-concern
                              !! $!read-concern;
 
-    $server = $!database.client.select-server(:read-concern($rc))
-      unless $server.defined;
+    my ServerType $server = $!database.client.select-server(:read-concern($rc));
+#      unless $server.defined;
 
     if not $server.defined {
       error-message("No server object for query");
@@ -88,7 +89,8 @@ class Collection {
     BSON::Document :$projection?,
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
     QueryFindFlags :@flags = Array[QueryFindFlags].new,
-    BSON::Document :$read-concern, :$server is copy
+    BSON::Document :$read-concern
+#    , :$server is copy
     --> MongoDB::Cursor
   ) {
 
@@ -100,8 +102,8 @@ class Collection {
     my BSON::Document $rc =
       $read-concern.defined ?? $read-concern !! $!read-concern;
 
-    $server = $!database.client.select-server(:read-concern($rc))
-      unless $server.defined;
+    my ServerType $server = $!database.client.select-server(:read-concern($rc));
+#      unless $server.defined;
 
     if not $server.defined {
       error-message("No server object for query");
