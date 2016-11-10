@@ -223,12 +223,12 @@ There has been a lot of changes in the API.
 
 #### Modules
 
-* [MongoDB](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/MongoDB.pdf)
-* [MongoDB::Client](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/Client.pdf)
+* [MongoDB](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/MongoDB.pdf)
+* [MongoDB::Client](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Client.pdf)
 
-* doc/Collection.pdf
-* doc/Cursor.pdf
 * doc/Database.pdf
+* [MongoDB::Collection](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Collection.pdf)
+* doc/Cursor.pdf
 * doc/Server.pdf
 * doc/Users.pdf
 
