@@ -1,6 +1,6 @@
 use v6.c;
 
-package MongoDB {
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #TODO Make a singleton exception processor
 
@@ -364,4 +364,4 @@ package MongoDB {
 #
 #
 #  }
-}
+

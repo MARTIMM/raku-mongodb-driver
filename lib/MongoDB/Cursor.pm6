@@ -4,7 +4,7 @@ use MongoDB;
 use MongoDB::Wire;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 #

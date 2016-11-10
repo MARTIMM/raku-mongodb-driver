@@ -8,7 +8,7 @@ use BSON::Document;
 use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 # Complete standalone and thereby thread save, to monitor a mongo server. To
@@ -267,7 +267,9 @@ class Server::Monitor {
   }
 
   #-----------------------------------------------------------------------------
-  #
+  # Methods query and get-bytes are copied from Wire to localize it here. Now
+  # run-command is not needed anymore.
+  #-----------------------------------------------------------------------------
   method !query ( --> BSON::Document ) {
 
     # Full collection name is fixed to 'admin.$cmd'.
