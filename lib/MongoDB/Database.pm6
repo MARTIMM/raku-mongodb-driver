@@ -16,15 +16,11 @@ class Database {
   has MongoDB::Collection $!cmd-collection;
 
   #-----------------------------------------------------------------------------
-  #
   submethod BUILD (
-    ClientType:D :$client,
-    Str:D :$name,
-    BSON::Document :$read-concern
+    ClientType:D :$client, Str:D :$name, BSON::Document :$read-concern
   ) {
 
-    $!read-concern =
-      $read-concern.defined ?? $read-concern !! $client.read-concern;
+    $!read-concern = $read-concern // $client.read-concern;
 
     self!set-name($name);
     $!client = $client;
@@ -32,7 +28,6 @@ class Database {
     trace-message("create database $name");
 
     # Create a collection $cmd to be used with run-command()
-    #
     $!cmd-collection = self.collection( '$cmd', :$read-concern);
   }
 
@@ -60,12 +55,9 @@ class Database {
   #
   # Run command using the BSON::Document.
   multi method run-command (
-    BSON::Document:D $command,
-    BSON::Document :$read-concern,
-#    :$server
+    BSON::Document:D $command, BSON::Document :$read-concern
     --> BSON::Document
   ) {
-#TODO :$server still needed ?
 
     debug-message("run command {$command.find-key(0)}");
 
@@ -73,9 +65,7 @@ class Database {
 
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
-      :criteria($command), :number-to-return(1),
-      :read-concern($rc)
-#      , :$server
+      :criteria($command), :number-to-return(1), :read-concern($rc)
     );
 
     # Return undefined on server problems
@@ -91,16 +81,9 @@ class Database {
   #-----------------------------------------------------------------------------
   # Run command using List of Pair.
   multi method run-command (
-    List $pairs,
-    BSON::Document :$read-concern,
-#    :$server
+    List $pairs, BSON::Document :$read-concern
     --> BSON::Document
   ) {
-#TODO :$server still needed ?
-#TODO check on arguments
-#say "\nrun-command c: ", c.perl;
-
-#      fatal-message("Not enough arguments",) unless ? c.elems;
 
     my BSON::Document $command .= new: $pairs;
     debug-message("run command {$command.find-key(0)}");
@@ -109,9 +92,7 @@ class Database {
 
     # And use it to do a find on it, get the doc and return it.
     my MongoDB::Cursor $cursor = $!cmd-collection.find(
-      :criteria($command), :number-to-return(1),
-      :read-concern($rc)
-#      , :$server
+      :criteria($command), :number-to-return(1), :read-concern($rc)
     );
 
     # Return undefined on server problems
@@ -128,8 +109,6 @@ class Database {
   method !set-name ( Str $name = '' ) {
 
     # Check special database first. Should be empty and is set later
-    #
-#say 'S: ', self.^name;
     if !?$name and self.^name ne 'MongoDB::AdminDB' {
       return error-message("Illegal database name: '$name'");
     }

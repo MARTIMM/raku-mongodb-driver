@@ -22,8 +22,7 @@ class Collection {
     BSON::Document :$read-concern
   ) {
 
-    $!read-concern =
-      $read-concern.defined ?? $read-concern !! $database.read-concern;
+    $!read-concern = $read-concern // $database.read-concern;
 
     $!database = $database;
     self!set-name($name) if ?$name;
@@ -42,11 +41,8 @@ class Collection {
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
     QueryFindFlags :@flags = Array[QueryFindFlags].new,
     List :$read-concern
-#,     :$server is copy
     --> MongoDB::Cursor
   ) {
-
-#TODO Check provided structure for the fields.
 
     my MongoDB::Wire $wire .= new;
 
@@ -55,7 +51,6 @@ class Collection {
                              !! $!read-concern;
 
     my ServerType $server = $!database.client.select-server(:read-concern($rc));
-#      unless $server.defined;
 
     if not $server.defined {
       error-message("No server object for query");
@@ -75,10 +70,8 @@ class Collection {
     }
 
     return MongoDB::Cursor.new(
-      :collection(self),
-      :$server-reply,
-      :$server,
-      :$number-to-return
+      :collection(self), :$server-reply,
+      :$server, :$number-to-return
     );
   }
 
@@ -90,12 +83,8 @@ class Collection {
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
     QueryFindFlags :@flags = Array[QueryFindFlags].new,
     BSON::Document :$read-concern
-#    , :$server is copy
     --> MongoDB::Cursor
   ) {
-
-#TODO Check provided structure for the fields.
-#TODO :$server still needed ?
 
     my MongoDB::Wire $wire .= new;
 
@@ -103,7 +92,6 @@ class Collection {
       $read-concern.defined ?? $read-concern !! $!read-concern;
 
     my ServerType $server = $!database.client.select-server(:read-concern($rc));
-#      unless $server.defined;
 
     if not $server.defined {
       error-message("No server object for query");
@@ -121,10 +109,8 @@ class Collection {
     }
 
     return MongoDB::Cursor.new(
-      :collection(self),
-      :$server-reply,
-      :$server,
-      :$number-to-return
+      :collection(self), :$server-reply,
+      :$server, :$number-to-return
     );
   }
 
