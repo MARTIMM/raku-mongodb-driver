@@ -1,7 +1,10 @@
 use v6.c;
 use Test;
 use MongoDB;
-#use MongoDB::Log;
+
+use Lumberjack;
+
+#Lumberjack.dispatchers.append: Lumberjack::Dispatcher::Console.new(:colours);
 
 
 set-logfile($*OUT);
@@ -18,8 +21,22 @@ class A is MongoDB::Message {
   }
 }
 
+class B does Lumberjack::Logger {
+
+  method tm ($tm) {
+    self.log-debug($tm);
+    self.log-error($tm);
+  }
+}
+
+
+
 
 my A $a .= new;
 $a.tm('trace message 2');
+
+my B $b .= new;
+$b.log-level = Lumberjack::Debug;
+$b.tm('trace message 2');
 
 done-testing;
