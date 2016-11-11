@@ -68,9 +68,9 @@ role Logging {
   #
   method mlog ( ) {
 
-say "P: ", $?PACKAGE;
-say "R: ", $?ROLE;
-say "C: ", $?CLASS;
+#say "P: ", $?PACKAGE;
+#say "R: ", $?ROLE;
+#say "C: ", $?CLASS;
 
 #note "Mlog: {self.severity} >= $severity-process-level: ",
 #    self.severity >= $severity-process-level;
@@ -194,7 +194,7 @@ class Message is Exception does MongoDB::Logging {
   #-----------------------------------------------------------------------------
   #
   method !search-callframe ( $type --> CallFrame ) {
-
+#`{{
     my CallFrame $cf;
     for 1..Inf -> $level {
 
@@ -217,8 +217,8 @@ say "CD: ", (.code.^can('name') ?? .code.name !! '-'), ', ', .code.WHAT,
     }
 
     $cf;
-
-#`{{
+}}
+#`{{}}
     # Skip callframes for
     # 0  search-callframe(method)
     # 1  log(method)
@@ -256,7 +256,6 @@ say "CD: ", (.code.^can('name') ?? .code.name !! '-'), ', ', .code.WHAT,
     }
 
     return $cf;
-}}
   }
 
   #-----------------------------------------------------------------------------
