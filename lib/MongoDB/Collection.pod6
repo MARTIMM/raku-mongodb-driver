@@ -87,7 +87,7 @@ the database or client object as shown here;
 
 or
 
-  my MongoDB:Collection $collection = $client.collection('contacts.perl_users');
+  my MongoDB::Collection $collection = $client.collection('contacts.perl_users');
 
 
 =head2 find
