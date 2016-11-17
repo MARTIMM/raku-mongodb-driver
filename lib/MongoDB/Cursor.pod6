@@ -1,43 +1,15 @@
-#!/usr/bin/env perl6
-#
 use v6.c;
 
-# Running the pod file will create a pdf using wkhtmltopdf
-#
-my Str $pod = "$*PROGRAM";
-my Str $pdf = $pod;
-$pdf ~~ s/\. <-[.]>+ $/.pdf/;
-shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
-
-#-------------------------------------------------------------------------------
-
 =begin pod
-
-=begin Xhtml
-<style>
-  pre {
-    border-width:       2px;
-    border-style:       solid;
-    border-color:       #060;
-    padding:            10px 0 3px 10px;
-    color:              #060;
-    background-color:   #eaefea;
-    font-family:        FreeMono;
-  }
-  td {
-    vertical-align:     top;
-  }
-</style>
-=end Xhtml
 
 =TITLE class MongoDB::Cursor
 
 =SUBTITLE Cursor to iterate a set of documents
 
-  package MongoDB { class Cursor does Iterable {...} }
+  unit package MongoDB;
+  class Cursor does Iterable {...}
 
 =head1 Synopsis
-
 
 First example using find().
 
@@ -45,33 +17,13 @@ First example using find().
   my MongoDB::Database $database = $client.database('contacts');
   my MongoDB::Collection $collection = $database.collection('perl_users');
 
-  # Prepare array of documents with nonsensical data
-  #
-  my Array $docs = [];
-  for ^10 -> $i {
-    $docs.push: (
-      code => 'd1' ~ $i.Str,
-      name => 'name and lastname',
-      address => 'address',
-      city => 'new york',
-    );
-  }
-
-  # Insert documents in cllection 'perl_users'
-  #
-  my BSON::Document $d = $database.run-command(
-    insert => $collection.name,
-    documents => $docs,
-  );
-  is $d<ok>, 1, 'insert request ok';
-
   $d = $database.run-command: (count => $collection.name,);
-  is $d<n>, 10, '10 documents found';
+  if $d<n> { say 'some docs available'; }
 
-  # Find everything
-  #
+  # Get the documents
   my MongoDB::Cursor $cursor = $collection.find;
   while $cursor.fetch -> BSON::Document $document { $document.perl.say; }
+
 
 Second example using run-command to get information about collections
 
@@ -148,12 +100,12 @@ same as used for the run-command returning the cursor information.
 
   method iterator ( )
 
-Method needed for the Iterable role placed on this Cursor class. I<not to be
-used directly>. Instead the following is possible;
+Method needed for the Iterable role placed on this Cursor class. B<I<Not to be
+used directly!>> Instead the following is possible;
 
   for $collection.find -> BSON::Document $d { ... }
 
-The method fetch() is used to get the next document.
+The method fetch() is indirectly used to get the next document.
 
 
 =head2 fetch
@@ -172,7 +124,7 @@ same document again.
 
 Delete the cursor when it is no longer needed. By default the server will delete
 the cursor after a non-usage period of 10 minutes. See also find() flags
-described in Collection. The flag MongoDB::C-QF-NOCURSORTIMOUT for example will
+described in Collection. The flag C-QF-NOCURSORTIMOUT for example will
 prevent the deletion of the cursor.
 
 =end pod

@@ -6,7 +6,8 @@ use v6.c;
 
 =SUBTITLE Operations on a MongoDB database
 
-  package MongoDB { class Database { ... } }
+  unit package MongoDB;
+  class Database { ... }
 
 =head1 Synopsis
 
