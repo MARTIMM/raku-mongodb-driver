@@ -4,7 +4,7 @@ use MongoDB;
 use Config::DataLang::Refine;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 # Singleton class used to maintain config for whole of mongodb

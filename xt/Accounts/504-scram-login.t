@@ -33,14 +33,14 @@ info-message("Test $?FILE start");
 class MyClientDryRun {
 
   # send client first message to server and return server response
-  method message1 ( Str:D $string --> Str ) {
+  method client-first ( Str:D $string --> Str ) {
 
     is $string, 'n,,n=user,r=fyko+d2lbbFgONRv9qkxdawL', 'First client message';
 
     'r=fyko+d2lbbFgONRv9qkxdawLHo+Vgk7qvUOKUwuWLIWg4l/9SraGMHEE,s=rQ9ZY3MntBeuP3E1TDVC4w==,i=10000';
   }
 
-  method message2 ( Str:D $string --> Str ) {
+  method client-final ( Str:D $string --> Str ) {
 
     is $string, 'c=biws,r=fyko+d2lbbFgONRv9qkxdawLHo+Vgk7qvUOKUwuWLIWg4l/9SraGMHEE,p=MC2T8BvbmWRckDw8oWl5IVghwCY=', 'Final client message';
 
@@ -65,7 +65,7 @@ subtest {
   my Auth::SCRAM $sc .= new(
     :username<user>,
     :password<pencil>,
-    :client-side(MyClientDryRun.new),
+    :client-object(MyClientDryRun.new),
   );
 
   $sc.c-nonce-size = 24;
@@ -141,7 +141,7 @@ class MyClientMDB {
 
   #-----------------------------------------------------------------------------
   # send client first message to server and return server response
-  method message1 ( Str:D $client-first-message --> Str ) {
+  method client-first ( Str:D $client-first-message --> Str ) {
 
     my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
         saslStart => 1,
@@ -170,7 +170,7 @@ class MyClientMDB {
   }
 
   #-----------------------------------------------------------------------------
-  method message2 ( Str:D $client-final --> Str ) {
+  method client-final ( Str:D $client-final --> Str ) {
 
    my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
         saslContinue => 1,
@@ -242,7 +242,7 @@ subtest {
   my Auth::SCRAM $sc .= new(
     :username<Dondersteen>,
     :password<w@tD8jeDan>,
-    :client-side(MyClientMDB.new),
+    :client-object(MyClientMDB.new),
   );
 
   $sc.start-scram;

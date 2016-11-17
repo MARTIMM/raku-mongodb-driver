@@ -9,7 +9,7 @@ use MongoDB::Collection;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 
 # Array index and error codes

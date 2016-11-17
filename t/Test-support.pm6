@@ -5,7 +5,7 @@ use MongoDB::Server::Control;
 use MongoDB::Client;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Test-support {

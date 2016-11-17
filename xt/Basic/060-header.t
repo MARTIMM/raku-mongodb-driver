@@ -2,6 +2,7 @@ use v6.c;
 use Test;
 
 use BSON::Document;
+use MongoDB;
 use MongoDB::Header;
 
 #-------------------------------------------------------------------------------
@@ -15,7 +16,7 @@ subtest {
 
   ( my Buf $h,
     my Int $req-id
-  ) = $d.encode-message-header( $b.elems, MongoDB::C-OP-QUERY);
+  ) = $d.encode-message-header( $b.elems, C-OP-QUERY);
   is $h.elems, 4*4, 'Size of header is 16';
   is $req-id, 0, 'First request encoding';
 
@@ -24,13 +25,10 @@ subtest {
 
   is $b.elems + 4*4, $dh<message-length>, 'Message length received 16';
   is $dh<request-id>, 0, "First request is $dh<request-id>";
-  is $dh<op-code>, MongoDB::C-OP-QUERY, "Operation code is $dh<op-code>";
+  is $dh<op-code>, C-OP-QUERY.value, "Operation code is $dh<op-code>";
 
-  ( my Buf $q-encode,
-    $req-id
-  ) = $d.encode-query(
-    'users.files',
-    :flags(MongoDB::C-QF-SLAVEOK +| MongoDB::C-QF-NOCURSORTIMOUT)
+  ( my Buf $q-encode, $req-id) = $d.encode-query(
+    'users.files', :flags(C-QF-SLAVEOK.value +| C-QF-NOCURSORTIMOUT.value)
   );
   is $q-encode.elems,
      ([+] 4, 12, 4, 4, $b.elems, 4 * 4),

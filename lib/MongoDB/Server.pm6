@@ -14,7 +14,7 @@ use Unicode::PRECIS::FreeForm::OpaqueString;
 
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Server {

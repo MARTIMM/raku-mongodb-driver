@@ -2,10 +2,10 @@ use v6.c;
 
 use BSON;
 use BSON::Document;
+use MongoDB;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
-use MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 role Header {

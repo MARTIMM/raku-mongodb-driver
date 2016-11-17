@@ -1,51 +1,21 @@
-#!/usr/bin/env perl6
-#
 use v6.c;
 
-# Running the pod file will create a pdf using wkhtmltopdf
-#
-my Str $pod = "$*PROGRAM";
-my Str $pdf = $pod;
-$pdf ~~ s/\. <-[.]>+ $/.pdf/;
-shell("perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
-
-#-------------------------------------------------------------------------------
-
 =begin pod
-
-=begin Xhtml
-<style>
-  pre {
-/**/
-    border-width:       2px;
-    border-style:       solid;
-    border-color:       #060;
-    padding:            10px 0 3px 10px;
-    color:              #060;
-    background-color:   #eaefea;
-    font-family:        FreeMono;
-  }
-  td {
-    vertical-align:     top;
-  }
-</style>
-=end Xhtml
 
 =TITLE class MongoDB::Database
 
 =SUBTITLE Operations on a MongoDB database
 
-  package MongoDB { class Database { ... } }
+  unit package MongoDB;
+  class Database { ... }
 
 =head1 Synopsis
 
   # Initialize
-  #
   my MongoDB::Client $client .= new(:uri<mongodb://>);
   my MongoDB::Database $database = $client.database('mydatabase');
 
   # Drop database
-  #
   $database.run-command: dropDatabase => 1;
 
 
@@ -76,12 +46,10 @@ The structure will be explained elsewhere.
 
 =head1 Methods
 
-=head1 new
+=head2 new
 
   submethod BUILD (
-    MongoDB::Client:D :$client,
-    Str:D :$name,
-    BSON::Document :$read-concern
+    ClientType:D :$client, Str:D :$name, BSON::Document :$read-concern
   )
 
 Create a database object. Can be called directly although not done often, e.g.
@@ -94,8 +62,7 @@ When read-concern is absent it is taken from $client.
 =head2 collection
 
   method collection (
-    Str $name,
-    BSON::Document :$read-concern
+    Str $name, BSON::Document :$read-concern
     --> MongoDB::Collection
   )
 
@@ -116,7 +83,8 @@ When read-concern is absent it is taken from its $database.
   multi method run-command ( |command-capture --> BSON::Document )
 
 Run a command against the database. For proper handling of this command it is
-nesseary to study the MongoDB site. A good starting point is L<at this page|https://docs.mongodb.org/manual/reference/command/>.
+nesseary to study the documentation on the MongoDB site. A good starting point
+is L<at this page|https://docs.mongodb.org/manual/reference/command/>.
 
 The command argument is a C<BSON::Document> or List of Pair of which the latter
 might be more convenient. Mind the comma's when describing list of one Pair!
@@ -131,7 +99,7 @@ This is very important see e.g. the following perl6 REPL interaction;
 
   > (a => 1).WHAT.say
   (Pair)
-  > (a => 1,).WHAT.say  # same thing
+  > (a => 1,).WHAT.say  # Again, with comma it becomes a list
   (List)
 
 See also L<Perl6 docs here|http://doc.perl6.org/routine/%2C> and
@@ -144,8 +112,9 @@ See also L<information here|https://docs.mongodb.org/manual/reference/command/in
 =begin code
 
 # Method 1. With info from http://perldoc.perl.org/perlhist.html
-# There are tests from the Test package
+# There are tests using the Test package
 #
+# Insert a document into collection 'famous_peaople'
 BSON::Document $req .= new: (
   insert => 'famous_people',
   documents => [
@@ -167,7 +136,6 @@ BSON::Document $req .= new: (
 );
 
 # Run the command with the insert request
-#
 BSON::Document $doc = $database.run-command($req);
 is $doc<ok>, 1, "Result is ok";
 is $doc<n>, 1, "Inserted 1 document";
@@ -195,6 +163,7 @@ repair Larry's surname which should be Wall instead of Walll.
 # Method 2 using List of Pair. We need to repair our spelling mistake of
 # mr Walls name
 #
+# Directly use run-command instead of making a request BSON::Document
 my BSON::Document $doc = $database.run-command: (
   findAndModify => 'famous_people',
   query => (surname => 'Walll'),

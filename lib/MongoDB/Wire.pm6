@@ -6,7 +6,7 @@ use MongoDB;
 use MongoDB::Header;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Wire {

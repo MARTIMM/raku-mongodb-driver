@@ -5,25 +5,24 @@ use MongoDB::Wire;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Collection {
 
-  has MongoDB::DatabaseType $.database;
+  has DatabaseType $.database;
   has Str $.name;
   has Str $.full-collection-name;
   has BSON::Document $.read-concern;
 
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    MongoDB::DatabaseType:D :$database,
+    DatabaseType:D :$database,
     Str:D :$name,
     BSON::Document :$read-concern
   ) {
 
-    $!read-concern =
-      $read-concern.defined ?? $read-concern !! $database.read-concern;
+    $!read-concern = $read-concern // $database.read-concern;
 
     $!database = $database;
     self!set-name($name) if ?$name;
@@ -41,11 +40,9 @@ class Collection {
     List :$projection where all(@$projection) ~~ Pair = (),
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
     QueryFindFlags :@flags = Array[QueryFindFlags].new,
-    List :$read-concern, :$server is copy
+    List :$read-concern
     --> MongoDB::Cursor
   ) {
-
-#TODO Check provided structure for the fields.
 
     my MongoDB::Wire $wire .= new;
 
@@ -53,8 +50,7 @@ class Collection {
        $read-concern.defined ?? BSON::Document.new: $read-concern
                              !! $!read-concern;
 
-    $server = $!database.client.select-server(:read-concern($rc))
-      unless $server.defined;
+    my ServerType $server = $!database.client.select-server(:read-concern($rc));
 
     if not $server.defined {
       error-message("No server object for query");
@@ -74,10 +70,8 @@ class Collection {
     }
 
     return MongoDB::Cursor.new(
-      :collection(self),
-      :$server-reply,
-      :$server,
-      :$number-to-return
+      :collection(self), :$server-reply,
+      :$server, :$number-to-return
     );
   }
 
@@ -88,20 +82,16 @@ class Collection {
     BSON::Document :$projection?,
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
     QueryFindFlags :@flags = Array[QueryFindFlags].new,
-    BSON::Document :$read-concern, :$server is copy
+    BSON::Document :$read-concern
     --> MongoDB::Cursor
   ) {
-
-#TODO Check provided structure for the fields.
-#TODO :$server still needed ?
 
     my MongoDB::Wire $wire .= new;
 
     my BSON::Document $rc =
       $read-concern.defined ?? $read-concern !! $!read-concern;
 
-    $server = $!database.client.select-server(:read-concern($rc))
-      unless $server.defined;
+    my ServerType $server = $!database.client.select-server(:read-concern($rc));
 
     if not $server.defined {
       error-message("No server object for query");
@@ -119,10 +109,8 @@ class Collection {
     }
 
     return MongoDB::Cursor.new(
-      :collection(self),
-      :$server-reply,
-      :$server,
-      :$number-to-return
+      :collection(self), :$server-reply,
+      :$server, :$number-to-return
     );
   }
 

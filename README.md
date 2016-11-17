@@ -213,8 +213,7 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
 
 There has been a lot of changes in the API.
 * All methods which had underscores ('\_') are converted to dashed ones ('-').
-* Many helper functions are removed. In the documentation must come some help to create a database/collection helper module as well as examples in the xt or doc directory.
-* The way to get a database is changed. One doesn't use a connection for that anymore.
+* Many helper functions are removed. In the documentation must come some help to create a database/collection helper module as well as examples in the xt or doc directory. In HL (higher level) there will come some modules which can be used.
 * Connection module is gone. The Client module has come in its place.
 
 ## Documentation
@@ -223,12 +222,11 @@ There has been a lot of changes in the API.
 
 #### Modules
 
-* [MongoDB](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/MongoDB.pdf)
-* [MongoDB::Client](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/Client.pdf)
-
-* doc/Collection.pdf
-* doc/Cursor.pdf
-* doc/Database.pdf
+* [MongoDB](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/MongoDB.pdf)
+* [MongoDB::Client](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Client.pdf)
+* [MongoDB::Database](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Database.pdf)
+* [MongoDB::Collection](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Collection.pdf)
+* [MongoDB::Cursor](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Cursor.pdf)
 * doc/Server.pdf
 * doc/Users.pdf
 

@@ -9,7 +9,7 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 #
-unit package MongoDB;
+unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 constant C-PW-LOWERCASE is export = 0;
 constant C-PW-UPPERCASE is export = 1;
