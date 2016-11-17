@@ -7,7 +7,6 @@ use MongoDB::Wire;
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
-#
 class Cursor does Iterable {
 
   has $.client;
@@ -19,8 +18,7 @@ class Cursor does Iterable {
   has Buf $.id;
 
   # Batch of documents in last response
-  #
-  has @.documents;
+  has @!documents;
 
   has $!server;
 
@@ -28,7 +26,6 @@ class Cursor does Iterable {
 
   #-----------------------------------------------------------------------------
   # Support for the newer BSON::Document
-  #
   multi submethod BUILD (
     MongoDB::CollectionType:D :$collection!,
     BSON::Document:D :$server-reply!,
@@ -54,12 +51,10 @@ class Cursor does Iterable {
 
     # Get documents from the reply.
     @!documents = $server-reply<documents>.list;
-
     $!number-to-return = $number-to-return;
   }
 
   # This can be set with data received from a command e.g. listDatabases
-  #
   multi submethod BUILD (
     MongoDB::ClientType:D :$client!,
     BSON::Document:D :$cursor-doc!,
@@ -68,11 +63,9 @@ class Cursor does Iterable {
   ) {
 
     $!client = $client;
-
     $!full-collection-name = $cursor-doc<ns>;
 
-    my BSON::Document $rc =
-       $read-concern.defined ?? $read-concern !! $client.read-concern;
+    my BSON::Document $rc = $read-concern // $client.read-concern;
 
     # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
     # batches left on the server to retrieve. Documents may be present in
@@ -91,24 +84,18 @@ class Cursor does Iterable {
     }
 
     # Get documents from the reply.
-    #
     @!documents = @($cursor-doc<firstBatch>);
-
-#      $!read-concern = $read-concern;
-
     $!number-to-return = $number-to-return;
   }
 
   #-----------------------------------------------------------------------------
   # Iterator to be used in for {} statements
-  #
   method iterator ( ) {
+
     # Save object to be used in Iterator object
-    #
     my $cursor-object = self;
 
     # Create anonymous class which does the Iterator role
-    #
     class :: does Iterator {
       method pull-one ( --> Mu ) {
         my BSON::Document $doc = $cursor-object.fetch;
@@ -130,7 +117,6 @@ class Cursor does Iterable {
     if not @!documents and ([+] $!id.list) {
 
       # Request next batch of documents
-      #
       my BSON::Document $server-reply =
         MongoDB::Wire.new.get-more( self, :$!server, :$!number-to-return);
 
@@ -145,7 +131,6 @@ class Cursor does Iterable {
         }
 
         # Get documents
-        #
         @!documents = $server-reply<documents>.list;
       }
 
@@ -155,7 +140,6 @@ class Cursor does Iterable {
     }
 
     # Return a document when there is one. If none left, return Nil
-    #
     return +@!documents ?? @!documents.shift !! BSON::Document;
   }
 
@@ -163,7 +147,6 @@ class Cursor does Iterable {
   method kill ( --> Nil ) {
 
     # Invalidate cursor on database only if id is valid
-    #
     if [+] @$.id {
       MongoDB::Wire.new.kill-cursors( (self,), :$!server, :$!number-to-return);
 
