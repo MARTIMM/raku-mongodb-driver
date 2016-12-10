@@ -166,8 +166,9 @@ Base module to hold constants, enums and subs
 =head3 TopologyType
 
   enum TopologyType is export <
-    C-UNKNOWN-TPLGY C-STANDALONE-TPLGY C-REPLSET-WITH-PRIMARY-TPLGY
-    C-REPLSET-NO-PRIMARY-TPLGY
+    SINGLE-TPLGY
+    REPLSET-WITH-PRIMARY-TPLGY REPLSET-NO-PRIMARY-TPLGY
+    SHARDED-TPLGY UNKNOWN-TPLGY
   >;
 
 Used to describe the state of the Client object. See also C<MongoDB::Client>.

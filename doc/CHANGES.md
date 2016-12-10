@@ -2,9 +2,11 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.36.0
+  * Added exported subs mongodb-driver-version() and mongodb-driver-author() to MongoDB.pm6
 * 0.35.5
   * Remove named attribute :$server from run-command() and find().
-  * Pod docs MongoDB, MongoDB::Client and MongoDB::Collection reviewed and rendered.
+  * Pod docs MongoDB, MongoDB::Client and MongoDB::Collection reviewed and rendered.mongodb-driver-version
 * 0.35.4
   * Changes caused by changes in BSON module.
   * Changed constants defined in MongoDB.pm6 into enums. This gives a better use of the constant when it must be used in log messages, it shows up as text instead of a number. When used as a number, e.g. in Header use the .value method and define the code values in the enum.

@@ -17,13 +17,14 @@ sub EXPORT { {
 };
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:ver<0.35.5.2>:auth<https://github.com/MARTIMM>;
 
 #-----------------------------------------------------------------------------
 # Client object topology types
 enum TopologyType is export <
-  C-UNKNOWN-TPLGY C-STANDALONE-TPLGY C-REPLSET-WITH-PRIMARY-TPLGY
-  C-REPLSET-NO-PRIMARY-TPLGY
+  SINGLE-TPLGY
+  REPLSET-WITH-PRIMARY-TPLGY REPLSET-NO-PRIMARY-TPLGY
+  SHARDED-TPLGY UNKNOWN-TPLGY
 >;
 
 #-----------------------------------------------------------------------------
@@ -84,3 +85,12 @@ subset SocketType is export where .^name eq 'MongoDB::Socket';
 #
 signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
+#-----------------------------------------------------------------------------
+sub mongodb-driver-version ( --> Version ) is export {
+  MongoDB.^ver;
+}
+
+#-----------------------------------------------------------------------------
+sub mongodb-driver-author ( --> Str ) is export {
+  MongoDB.^auth;
+}
