@@ -37,7 +37,6 @@ $!report.run
 
 
   $|h2 [ MongoClient Configuration ]
-
   $|p [
     Selecting a server requires the following client-level configuration
     options:
