@@ -3,6 +3,8 @@ use v6.c;
 use MongoDB;
 use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
+use MongoDB::MongoCredential;
+
 use BSON::Document;
 use Semaphore::ReadersWriters;
 use Auth::SCRAM;
@@ -28,6 +30,7 @@ class Server {
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
   has Hash $!uri-data;
+  has MongoDB::MongoCredential $!credential;
 
   # Variables to control infinite server monitoring actions
   has MongoDB::Server::Monitor $!server-monitor;
@@ -179,6 +182,9 @@ class Server {
     ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max wire-version>);
 
     $!client = $client;
+    $!uri-data = $client.uri-data;
+    $!credential = $client.credential;
+
     @!sockets = ();
 
     # Save name andd port of the server
@@ -186,7 +192,6 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
-    $!uri-data = $uri-data;
 
     $!server-monitor .= new( :server(self), :$loop-time);
     $!server-status = C-UNKNOWN-SERVER;
@@ -417,20 +422,25 @@ class Server {
        and ? $!uri-data<username>
        and ? $!uri-data<password> {
 
-      my Str $auth-mechanism;
-      if $!uri-data<options><authMechanism>:exists {
-        $auth-mechanism = $!uri-data<options><authMechanism>;
-        debug-message("Use mechanism '$auth-mechanism' from uri option");
-      }
+      # get authentication mechanism
+      my Str $auth-mechanism = $!credential.auth-mechanism;
+      if not $auth-mechanism {
+        if $!uri-data<options><authMechanism>:exists {
+          $auth-mechanism = $!uri-data<options><authMechanism>;
+          debug-message("Use mechanism '$auth-mechanism' from uri option");
+        }
 
-      else {
-        my Int $max-version = $!rw-sem.reader(
-          'wire-version', {
-            $!max-wire-version
-          }
-        );
-        $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
-        debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
+        else {
+          my Int $max-version = $!rw-sem.reader(
+            'wire-version', {
+              $!max-wire-version
+            }
+          );
+          $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
+          debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
+        }
+
+        $!credential.auth-mechanism(:$auth-mechanism);
       }
 
       given $auth-mechanism {

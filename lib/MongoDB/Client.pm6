@@ -6,6 +6,8 @@ use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Wire;
+use MongoDB::MongoCredential;
+
 use BSON::Document;
 use Semaphore::ReadersWriters;
 
@@ -29,7 +31,7 @@ class Client {
   has Semaphore::ReadersWriters $!rw-sem;
 
   has Str $!uri;
-  has Hash $!uri-data;
+  has Hash $.uri-data;
 
   has BSON::Document $.read-concern;
   has Str $!Replicaset;
@@ -38,6 +40,10 @@ class Client {
   has Bool $!repeat-discovery-loop;
 
   has Tap $!client-tap;
+
+  # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
+  has MongoDB::MongoCredential $.credential;
+
 
 #`{{
   #-----------------------------------------------------------------------------
@@ -54,10 +60,11 @@ say 'new client 1';
 }}
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10
+    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
+    TopologyType :$topology-type = UNKNOWN-TPLGY
   ) {
 
-    $!topology-type = C-UNKNOWN-TPLGY;
+    $!topology-type = $topology-type;
 
     $!servers = {};
 
@@ -90,6 +97,11 @@ say 'new client 1';
     my @item-list = <username password database options>;
     my MongoDB::Uri $uri-obj .= new(:$!uri);
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+
+    $!credential .= new(
+      :username($!uri-obj.server-data<username>),
+      :password($!uri-obj.server-data<password>),
+    );
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 
@@ -136,7 +148,7 @@ say 'new client 1';
 
 #say "$*THREAD.id() New server object: $server-name";
             my MongoDB::Server $server .= new(
-              :client(self), :$server-name, :$!uri-data, :$loop-time
+              :client(self), :$server-name, :$loop-time
             );
 
             # Start server monitoring process its data
@@ -177,7 +189,7 @@ say 'new client 1';
 
     # Tap into the stream of monitor data
     $!client-tap = $server.tap-monitor( -> Hash $monitor-data {
-#say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
+say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
 
 #        if $monitor-data.defined and $monitor-data<ok>:exists {
 #          my Bool $found-new-servers = False;
