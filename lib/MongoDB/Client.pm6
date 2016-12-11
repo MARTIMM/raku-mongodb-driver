@@ -99,8 +99,8 @@ say 'new client 1';
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
     $!credential .= new(
-      :username($!uri-obj.server-data<username>),
-      :password($!uri-obj.server-data<password>),
+      :username($uri-obj.server-data<username>),
+      :password($uri-obj.server-data<password>),
     );
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
