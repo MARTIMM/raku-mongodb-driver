@@ -3,15 +3,12 @@ use v6.c;
 use MongoDB;
 use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
+use MongoDB::Authenticate::Credential;
+use MongoDB::Authenticate::Scram;
+
 use BSON::Document;
 use Semaphore::ReadersWriters;
 use Auth::SCRAM;
-use Base64;
-use OpenSSL::Digest;
-use Unicode::PRECIS;
-use Unicode::PRECIS::Identifier::UsernameCasePreserved;
-use Unicode::PRECIS::FreeForm::OpaqueString;
-
 
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<https://github.com/MARTIMM>;
@@ -28,6 +25,7 @@ class Server {
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
   has Hash $!uri-data;
+  has MongoDB::Authenticate::Credential $!credential;
 
   # Variables to control infinite server monitoring actions
   has MongoDB::Server::Monitor $!server-monitor;
@@ -44,122 +42,10 @@ class Server {
 
   has Tap $!server-tap;
 
-  has Int $!max-wire-version;
-  has Int $!min-wire-version;
+  # May be read from Client
+  has Int $.max-wire-version;
+  has Int $.min-wire-version;
 
-  #-----------------------------------------------------------------------------
-  #-----------------------------------------------------------------------------
-  # Class definition to do authentication with
-  my class AuthenticateMDB {
-
-    has ClientType $!client;
-    has DatabaseType $!database;
-    has Int $!conversation-id;
-
-    #-----------------------------------------------------------------------------
-    submethod BUILD ( ClientType:D :$client, Str :$db-name ) {
-      $!client = $client;
-      $!database = $!client.database(?$db-name ?? $db-name !! 'admin' );
-    }
-
-    #-----------------------------------------------------------------------------
-    # send client first message to server and return server response
-    method client-first ( Str:D $client-first-message --> Str ) {
-
-      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
-          saslStart => 1,
-          mechanism => 'SCRAM-SHA-1',
-          payload => encode-base64( $client-first-message, :str)
-        )
-      );
-
-      if $doc<ok> {
-        debug-message("SCRAM-SHA1 client first message");
-      }
-
-      else {
-        error-message("$doc<code>, $doc<errmsg>");
-        return '';
-      }
-
-      $!conversation-id = $doc<conversationId>;
-      Buf.new(decode-base64($doc<payload>)).decode;
-    }
-
-    #-----------------------------------------------------------------------------
-    method client-final ( Str:D $client-final-message --> Str ) {
-
-     my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
-          saslContinue => 1,
-          conversationId => $!conversation-id,
-          payload => encode-base64( $client-final-message, :str)
-        )
-      );
-
-      if $doc<ok> {
-        debug-message("SCRAM-SHA1 client final message");
-      }
-
-      else {
-        error-message("$doc<code>, $doc<errmsg>");
-        return '';
-      }
-
-      Buf.new(decode-base64($doc<payload>)).decode;
-    }
-
-    #-----------------------------------------------------------------------------
-    method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
-#`{{
-      my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
-      my TestValue $tv-un = $upi-ucp.enforce($username);
-      fatal-message("Username $username not accepted") if $tv-un ~~ Bool;
-      info-message("Username '$username' accepted as '$tv-un'");
-
-      my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
-      my TestValue $tv-pw = $upf-os.enforce($password);
-      fatal-message("Password not accepted") if $tv-un ~~ Bool;
-      info-message("Password accepted");
-
-      my utf8 $mdb-hashed-pw = ($tv-un ~ ':mongo:' ~ $tv-pw).encode;
-      my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-      Buf.new($md5-mdb-hashed-pw.encode);
-}}
-      my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
-      my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-      Buf.new($md5-mdb-hashed-pw.encode);
-    }
-
-    #-----------------------------------------------------------------------------
-    method cleanup ( ) {
-
-      # Some extra chit-chat
-      my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
-          saslContinue => 1,
-          conversationId => $!conversation-id,
-          payload => encode-base64( '', :str)
-        )
-      );
-
-      if $doc<ok> {
-        info-message("SCRAM-SHA1 autentication successfull");
-      }
-
-      else {
-        error-message("$doc<code>, $doc<errmsg>");
-      }
-
-#      Buf.new(decode-base64($doc<payload>)).decode;
-    }
-
-    #-----------------------------------------------------------------------------
-    method error ( Str:D $message --> Str ) {
-
-      error-message($message);
-    }
-  }
-
-  #-----------------------------------------------------------------------------
   #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
   # must be done in the background so Client starts this process in a thread.
@@ -179,6 +65,9 @@ class Server {
     ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max wire-version>);
 
     $!client = $client;
+    $!uri-data = $client.uri-data;
+    $!credential = $client.credential;
+
     @!sockets = ();
 
     # Save name andd port of the server
@@ -186,10 +75,9 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
-    $!uri-data = $uri-data;
 
     $!server-monitor .= new( :server(self), :$loop-time);
-    $!server-status = C-UNKNOWN-SERVER;
+    $!server-status = UNKNOWN-SERVER;
   }
 
   #-----------------------------------------------------------------------------
@@ -206,7 +94,7 @@ class Server {
 
 #say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
-          my ServerStatus $server-status = C-UNKNOWN-SERVER;
+          my ServerStatus $server-status = UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
@@ -227,11 +115,11 @@ class Server {
                 if $mdata<setName> eq $!uri-data<options><replicaSet> {
 
                   if $mdata<ismaster> {
-                    $server-status = C-REPLICASET-PRIMARY;
+                    $server-status = REPLICASET-PRIMARY;
                   }
 
                   elsif $mdata<secondary> {
-                    $server-status = C-REPLICASET-SECONDARY;
+                    $server-status = REPLICASET-SECONDARY;
                   }
 
 #TODO ... Arbiter etc
@@ -239,18 +127,18 @@ class Server {
 
                 # Replicaset name does not match
                 else {
-                  $server-status = C-REJECTED-SERVER;
+                  $server-status = REJECTED-SERVER;
                 }
               }
 
               # Server is in a replicaset but not initialized.
               elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
-                $server-status = C-REPLICA-PRE-INIT
+                $server-status = REPLICA-PRE-INIT
               }
 
               # Shouldn't happen
               else {
-                $server-status = C-REJECTED-SERVER;
+                $server-status = REJECTED-SERVER;
               }
             }
 
@@ -261,18 +149,18 @@ class Server {
               if $mdata<isreplicaset>:exists
                  or $mdata<setName>:exists
                  or $mdata<primary>:exists {
-                $server-status = C-REJECTED-SERVER;
+                $server-status = REJECTED-SERVER;
               }
 
               else {
                 # Must be master
                 if $mdata<ismaster> {
-                  $server-status = C-MASTER-SERVER;
+                  $server-status = MASTER-SERVER;
                 }
 
                 # Shouldn't happen
                 else {
-                  $server-status = C-REJECTED-SERVER;
+                  $server-status = REJECTED-SERVER;
                 }
               }
             }
@@ -283,11 +171,11 @@ class Server {
 
             if $monitor-data<reason>:exists
                and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
-              $server-status = C-NON-EXISTENT-SERVER;
+              $server-status = NON-EXISTENT-SERVER;
             }
 
             else {
-              $server-status = C-DOWN-SERVER;
+              $server-status = DOWN-SERVER;
             }
           }
 
@@ -313,10 +201,10 @@ class Server {
   method get-status ( --> ServerStatus ) {
 
     my int $count = 0;
-    my ServerStatus $server-status = C-UNKNOWN-SERVER;
+    my ServerStatus $server-status = UNKNOWN-SERVER;
 
     # Wait until changed, After 4 sec it must be known or stays unknown forever
-    while $count < 4 and $server-status ~~ C-UNKNOWN-SERVER {
+    while $count < 4 and $server-status ~~ UNKNOWN-SERVER {
       $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
 
       sleep 1;
@@ -417,13 +305,9 @@ class Server {
        and ? $!uri-data<username>
        and ? $!uri-data<password> {
 
-      my Str $auth-mechanism;
-      if $!uri-data<options><authMechanism>:exists {
-        $auth-mechanism = $!uri-data<options><authMechanism>;
-        debug-message("Use mechanism '$auth-mechanism' from uri option");
-      }
-
-      else {
+      # get authentication mechanism
+      my Str $auth-mechanism = $!credential.auth-mechanism;
+      if not $auth-mechanism {
         my Int $max-version = $!rw-sem.reader(
           'wire-version', {
             $!max-wire-version
@@ -433,14 +317,16 @@ class Server {
         debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
       }
 
+      $!credential.auth-mechanism(:$auth-mechanism);
+
+
       given $auth-mechanism {
 
         # Default in version 3.*
         when 'SCRAM-SHA-1' {
 
-          my AuthenticateMDB $client-object .= new(
-            :$!client,
-            :db-name($!uri-data<database>)
+          my MongoDB::Authenticate::Scram $client-object .= new(
+            :$!client, :db-name($!uri-data<database>)
           );
 
           my Auth::SCRAM $sc .= new(

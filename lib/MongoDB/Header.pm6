@@ -91,11 +91,11 @@ role Header {
       op-code         => decode-int32( $b, $index + 3 * BSON::C-INT32-SIZE)
     );
 
-    # the only allowed message returned from database is C-OP-REPLY
+    # the only allowed message returned from database is OP-REPLY
     #
-# I trust the server to send a C-OP-REPLY so no check done
+# I trust the server to send a OP-REPLY so no check done
 #      die [~] 'Unexpected OP_code (', $msg-header<op_code>, ')'
-#         unless $msg-header<op_code> == C-OP-REPLY;
+#         unless $msg-header<op_code> == OP-REPLY;
 
     $index += 4 * BSON::C-INT32-SIZE;
     return $msg-header;
@@ -128,7 +128,7 @@ role Header {
 
       # int32 numberToReturn
       # number of documents to return
-      # in the first C-OP-REPLY batch
+      # in the first OP-REPLY batch
       #
       encode-int32($number-to-return),
 
@@ -150,7 +150,7 @@ role Header {
     # standard message header
     #
     ( my Buf $encoded-query, my Int $u-request-id) = 
-      self.encode-message-header( $query-buffer.elems, C-OP-QUERY);
+      self.encode-message-header( $query-buffer.elems, OP-QUERY);
 
     return ( $encoded-query ~ $query-buffer, $u-request-id);
   }
@@ -186,7 +186,7 @@ role Header {
       encode-int32($number-to-return),
 
       # int64 cursorID
-      # cursorID from the C-OP-REPLY
+      # cursorID from the OP-REPLY
       #
       $cursor-id
     ;
@@ -196,7 +196,7 @@ role Header {
     # (watch out for inconsistent OP_code and messsage name)
     #
     ( my Buf $encoded-get-more, my Int $u-request-id) = 
-      self.encode-message-header( $get-more-buffer.elems, C-OP-GET-MORE);
+      self.encode-message-header( $get-more-buffer.elems, OP-GET-MORE);
 
     return ( $encoded-get-more ~ $get-more-buffer, $u-request-id);
   }
@@ -228,7 +228,7 @@ role Header {
     # standard message header
     #
     ( my Buf $encoded-kill-cursors, my Int $u-request-id) = 
-      self.encode-message-header( $kill-cursors-buffer.elems, C-OP-KILL-CURSORS);
+      self.encode-message-header( $kill-cursors-buffer.elems, OP-KILL-CURSORS);
 
     return ( $encoded-kill-cursors ~ $kill-cursors-buffer, $u-request-id);
   }

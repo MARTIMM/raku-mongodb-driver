@@ -30,11 +30,11 @@ subtest {
 #  is $c-s1.nbr-servers, 3, '3 servers in replica';
 
   ok $s-s1.defined, 'Server defined';
-  is $s-s1.get-status, MongoDB::C-REPLICASET-PRIMARY,
+  is $s-s1.get-status, REPLICASET-PRIMARY,
      'Selected server is primary';
-  $s-s1 = $c-s1.select-server(:needed-state(MongoDB::C-REPLICASET-SECONDARY));
+  $s-s1 = $c-s1.select-server(:needed-state(REPLICASET-SECONDARY));
   ok $s-s1.defined, 'Secondary server found';
-  is $s-s1.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 1 is secondary';
+  is $s-s1.get-status, REPLICASET-SECONDARY, 'Server 1 is secondary';
 
 
   my Int $p2 = $ts.server-control.get-port-number('s2');
@@ -44,7 +44,7 @@ subtest {
   my MongoDB::Server $s-s2 = $c-s2.select-server;
 #  is $c-s2.nbr-servers, 3, '3 servers in replica';
   ok $s-s2.defined, 'Server selected';
-  is $s-s2.get-status, MongoDB::C-REPLICASET-PRIMARY, 'Server 2 is primary';
+  is $s-s2.get-status, REPLICASET-PRIMARY, 'Server 2 is primary';
 
 
   my Int $p3 = $ts.server-control.get-port-number('s3');
@@ -54,9 +54,9 @@ subtest {
 #  is $c-s2.nbr-servers, 3, '3 servers in replica';
   my MongoDB::Server $s-s3 = $c-s3.select-server;
   ok $s-s3.defined, 'Server defined';
-  $s-s3 = $c-s3.select-server(:needed-state(MongoDB::C-REPLICASET-SECONDARY));
+  $s-s3 = $c-s3.select-server(:needed-state(REPLICASET-SECONDARY));
   ok $s-s3.defined, 'Secondary server found';
-  is $s-s3.get-status, MongoDB::C-REPLICASET-SECONDARY, 'Server 3 is secondary';
+  is $s-s3.get-status, REPLICASET-SECONDARY, 'Server 3 is secondary';
 
 }, "Client behaviour";
 

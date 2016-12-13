@@ -16,7 +16,7 @@ subtest {
 
   ( my Buf $h,
     my Int $req-id
-  ) = $d.encode-message-header( $b.elems, C-OP-QUERY);
+  ) = $d.encode-message-header( $b.elems, OP-QUERY);
   is $h.elems, 4*4, 'Size of header is 16';
   is $req-id, 0, 'First request encoding';
 
@@ -25,7 +25,7 @@ subtest {
 
   is $b.elems + 4*4, $dh<message-length>, 'Message length received 16';
   is $dh<request-id>, 0, "First request is $dh<request-id>";
-  is $dh<op-code>, C-OP-QUERY.value, "Operation code is $dh<op-code>";
+  is $dh<op-code>, OP-QUERY.value, "Operation code is $dh<op-code>";
 
   ( my Buf $q-encode, $req-id) = $d.encode-query(
     'users.files', :flags(C-QF-SLAVEOK.value +| C-QF-NOCURSORTIMOUT.value)
@@ -47,7 +47,7 @@ subtest {
     0x29, 0x00, 0x00, 0x00,             # size 41 bytes
     0x01, 0x00, 0x00, 0x00,             # Req id = 1 (1st request in this test)
     0x0A, 0x00, 0x00, 0x00,             # resp to 10
-    0x01, 0x00, 0x00, 0x00,             # C-OP-REPLY
+    0x01, 0x00, 0x00, 0x00,             # OP-REPLY
 
     0x00, 0x00, 0x00, 0x00,             # no flags
     0x00, 0x00, 0x00, 0x00,
@@ -82,7 +82,7 @@ subtest {
     0x30, 0x00, 0x00, 0x00,             # size 48 bytes
     0x02, 0x00, 0x00, 0x00,             # Req id = 2 (2nd request in this test)
     0x00, 0x00, 0x00, 0x00,             # resp to 0
-    0xd5, 0x07, 0x00, 0x00,             # C-OP-GET-MORE
+    0xd5, 0x07, 0x00, 0x00,             # OP-GET-MORE
 
     0x00, 0x00, 0x00, 0x00,             # 0, reserved
     0x74, 0x65, 0x73, 0x74, 0x64, 0x62, # 'testdb.testcoll'

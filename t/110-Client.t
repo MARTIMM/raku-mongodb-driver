@@ -29,7 +29,7 @@ subtest {
   $server = $client.select-server(:3check-cycles);
   nok $server.defined, 'No servers selected';
 #  is $client.nbr-servers, 1, 'One server object set';
-  is $client.server-status($server-name), C-NON-EXISTENT-SERVER,
+  is $client.server-status($server-name), NON-EXISTENT-SERVER,
      "Status of server is $client.server-status($server-name)";
 
   $client.cleanup;
@@ -44,7 +44,7 @@ subtest {
   $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
 #  is $client.nbr-servers, 1, 'One server object set';
-  is $client.server-status('localhost:65535'), C-DOWN-SERVER,
+  is $client.server-status('localhost:65535'), DOWN-SERVER,
      "Status of server is $client.server-status('localhost:65535')";
 
   $client.cleanup;
@@ -58,7 +58,7 @@ subtest {
 
 #  todo 'Seems to finish processing too soon', 2;
 #  is $client.nbr-servers, 1, 'One server found';
-  is $client.server-status("localhost:$p1"), C-MASTER-SERVER,
+  is $client.server-status("localhost:$p1"), MASTER-SERVER,
      "Status of server is $client.server-status("localhost:$p1")";
 
   $client.cleanup;
@@ -69,12 +69,12 @@ subtest {
 
   $client .= new(:uri("mongodb://:$p1,:$p2"));
   $server = $client.select-server;
-  is $server.get-status, C-MASTER-SERVER,
+  is $server.get-status, MASTER-SERVER,
      "Server $server.name() is $server.get-status()";
 
   # If server has port from $p1 than the other must have status rejected
-  my $other-server = $client.select-server(:needed-state(C-REJECTED-SERVER));
-  is $client.server-status( $other-server.name), C-REJECTED-SERVER,
+  my $other-server = $client.select-server(:needed-state(REJECTED-SERVER));
+  is $client.server-status( $other-server.name), REJECTED-SERVER,
      "Server $other-server.name() is $client.server-status($other-server.name)";
 
 #  is $client.nbr-servers, 2, 'Two servers found';

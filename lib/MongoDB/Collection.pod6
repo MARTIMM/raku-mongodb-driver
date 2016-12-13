@@ -76,8 +76,8 @@ database. The structure will be explained elsewhere.
 
 Example
 
-  my MongoDB::Database $database .= new( $client, 'contacts');
-  my MongoDB::Collection $collection .= new( $database, 'perl_users');
+  my MongoDB::Database $database .= new( :$client, :name<contacts>);
+  my MongoDB::Collection $collection .= new( :$database, :name<perl_users>);
 
 Creates a new Collection object. However, it is better to call collection on
 the database or client object as shown here;
@@ -88,6 +88,7 @@ the database or client object as shown here;
 or
 
   my MongoDB::Collection $collection = $client.collection('contacts.perl_users');
+  my MongoDB::Database $database = $collection.database;
 
 
 =head2 find

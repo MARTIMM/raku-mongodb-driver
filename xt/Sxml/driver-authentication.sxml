@@ -1,0 +1,60 @@
+$!report.run
+  title='Driver Authentication' class=MongoDB::Client
+  highlight-lang='lang-perl6' highlight-skin='doxy' linenumbers=1
+  distribution=MongoDB [
+
+  $|h2 [ Abstract ]
+  $|p [
+    MongoDB supports various authentication strategies across various versions.
+    When authentication is turned on in the database, a driver must authenticate
+    before it is allowed to communicate with the server. This spec defines when
+    and how a driver performs authentication with a MongoDB server.
+  ]
+  $|p [
+    This report is following
+    a specification from the $**a href='https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst' [
+      Mongodb
+    ] website and is shown below.
+  ]
+  
+  $|h2 [ Mongo credential ]
+  $|p [
+    Drivers SHOULD contain a type called MongoCredential. In this driver it is
+    called $*|code[ MongoDB::Authenticate::Credential ].
+  ]
+
+  $!code.add [=
+    use MongoDB::Authenticate::Credential;
+
+    my MongoDB::Authenticate::Credential $cred .= new(
+      :username<user>, :password<pencil>,
+      :auth-mechanism<SCRAM-SHA-1>
+    );
+
+    $!test.add t='ok $cred.defined' [
+      Credential is defined. Not all named arguments are used. There are also
+      :source and :mechanism-properties. Btw. the field mechanism is named
+       auth-mechanism because of the name authMechanism used in the url as an
+       option.
+    ]
+
+    $!test.add t='is $cred.password, "pencil"' [
+      Data can also be retrieved from it again.
+    ]
+  ]
+
+  $!code.add [=
+    use lib 't';
+    use Test-support;
+    use MongoDB::Client;
+
+    my MongoDB::Test-support $ts .= new;
+    my Int $p1 = $ts.server-control.get-port-number('s1');
+    my MongoDB::Client $client .= new(:uri("mongodb://localhost:$p1"));
+
+    $!test.add t='ok $client.defined' [
+      Returned client object is defined, even when the uri is not pointing
+      to an existing mongod server.
+    ]
+  ]
+]

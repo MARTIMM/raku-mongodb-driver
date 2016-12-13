@@ -17,34 +17,35 @@ sub EXPORT { {
 };
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:ver<0.35.5.2>:auth<https://github.com/MARTIMM>;
 
 #-----------------------------------------------------------------------------
 # Client object topology types
 enum TopologyType is export <
-  C-UNKNOWN-TPLGY C-STANDALONE-TPLGY C-REPLSET-WITH-PRIMARY-TPLGY
-  C-REPLSET-NO-PRIMARY-TPLGY
+  SINGLE-TPLGY
+  REPLSET-WITH-PRIMARY-TPLGY REPLSET-NO-PRIMARY-TPLGY
+  SHARDED-TPLGY UNKNOWN-TPLGY
 >;
 
 #-----------------------------------------------------------------------------
 # Status values of a Server.object
 enum ServerStatus is export <
-  C-UNKNOWN-SERVER C-NON-EXISTENT-SERVER C-DOWN-SERVER C-RECOVERING-SERVER       = 13;   # -
-  C-REJECTED-SERVER C-GHOST-SERVER
+  UNKNOWN-SERVER NON-EXISTENT-SERVER DOWN-SERVER RECOVERING-SERVER
+  REJECTED-SERVER GHOST-SERVER
 
-  C-REPLICA-PRE-INIT C-REPLICASET-PRIMARY C-REPLICASET-SECONDARY
-  C-REPLICASET-ARBITER
+  REPLICA-PRE-INIT REPLICASET-PRIMARY REPLICASET-SECONDARY
+  REPLICASET-ARBITER
 
-  C-SHARDING-SERVER C-MASTER-SERVER C-SLAVE-SERVER
+  SHARDING-SERVER MASTER-SERVER SLAVE-SERVER
 >;
 
 #-----------------------------------------------------------------------------
 # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
 enum WireOpcode is export (
-  :C-OP-REPLY(1),
-  :C-OP-MSG(1000), :C-OP-UPDATE(2001), :C-OP-INSERT(2002),
-  :C-OP-RESERVED(2003), :C-OP-QUERY(2004), :C-OP-GET-MORE(2005),
-  :C-OP-DELETE(2006), :C-OP-KILL-CURSORS(2007),
+  :OP-REPLY(1),
+  :OP-MSG(1000), :OP-UPDATE(2001), :OP-INSERT(2002),
+  :OP-RESERVED(2003), :OP-QUERY(2004), :OP-GET-MORE(2005),
+  :OP-DELETE(2006), :OP-KILL-CURSORS(2007),
 );
 
 #-----------------------------------------------------------------------------
@@ -59,13 +60,13 @@ enum QueryFindFlags is export (
 #-----------------------------------------------------------------------------
 # Response flags
 enum ResponseFlags is export (
-  :C-RF-CursorNotFound(0x01), :C-RF-QueryFailure(0x02),
-  :C-RF-ShardConfigStale(0x04), :C-RF-AwaitCapable(0x08),
+  :RF-CURSORNOTFOUND(0x01), :RF-QUERYFAILURE(0x02),
+  :RF-SHARDCONFIGSTALE(0x04), :RF-AWAITCAPABLE(0x08),
 );
 
 #-----------------------------------------------------------------------------
 # Socket values
-constant C-MAX-SOCKET-UNUSED-OPEN is export = 900; # Quarter of an hour unused
+constant MAX-SOCKET-UNUSED-OPEN is export = 900; # Quarter of an hour unused
 
 #-----------------------------------------------------------------------------
 # Other types
@@ -84,3 +85,12 @@ subset SocketType is export where .^name eq 'MongoDB::Socket';
 #
 signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
+#-----------------------------------------------------------------------------
+sub mongodb-driver-version ( --> Version ) is export {
+  MongoDB.^ver;
+}
+
+#-----------------------------------------------------------------------------
+sub mongodb-driver-author ( --> Str ) is export {
+  MongoDB.^auth;
+}

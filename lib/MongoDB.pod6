@@ -166,8 +166,9 @@ Base module to hold constants, enums and subs
 =head3 TopologyType
 
   enum TopologyType is export <
-    C-UNKNOWN-TPLGY C-STANDALONE-TPLGY C-REPLSET-WITH-PRIMARY-TPLGY
-    C-REPLSET-NO-PRIMARY-TPLGY
+    SINGLE-TPLGY
+    REPLSET-WITH-PRIMARY-TPLGY REPLSET-NO-PRIMARY-TPLGY
+    SHARDED-TPLGY UNKNOWN-TPLGY
   >;
 
 Used to describe the state of the Client object. See also C<MongoDB::Client>.
@@ -176,13 +177,13 @@ Used to describe the state of the Client object. See also C<MongoDB::Client>.
 =head3 ServerStatus
 
   enum ServerStatus is export <
-    C-UNKNOWN-SERVER C-NON-EXISTENT-SERVER C-DOWN-SERVER C-RECOVERING-SERVER       = 13;   # -
-    C-REJECTED-SERVER C-GHOST-SERVER
+    UNKNOWN-SERVER NON-EXISTENT-SERVER DOWN-SERVER RECOVERING-SERVER
+    REJECTED-SERVER GHOST-SERVER
 
-    C-REPLICA-PRE-INIT C-REPLICASET-PRIMARY C-REPLICASET-SECONDARY
-    C-REPLICASET-ARBITER
+    REPLICA-PRE-INIT REPLICASET-PRIMARY REPLICASET-SECONDARY
+    REPLICASET-ARBITER
 
-    C-SHARDING-SERVER C-MASTER-SERVER C-SLAVE-SERVER
+    SHARDING-SERVER MASTER-SERVER SLAVE-SERVER
   >;
 
 Used to describe the status of a Server object. See also C<MongoDB::Client>.
@@ -191,10 +192,10 @@ Used to describe the status of a Server object. See also C<MongoDB::Client>.
 =head3 WireOpcode
 
   enum WireOpcode is export (
-    :C-OP-REPLY(1),
-    :C-OP-MSG(1000), :C-OP-UPDATE(2001), :C-OP-INSERT(2002),
-    :C-OP-RESERVED(2003), :C-OP-QUERY(2004), :C-OP-GET-MORE(2005),
-    :C-OP-DELETE(2006), :C-OP-KILL-CURSORS(2007),
+    :OP-REPLY(1),
+    :OP-MSG(1000), :OP-UPDATE(2001), :OP-INSERT(2002),
+    :OP-RESERVED(2003), :OP-QUERY(2004), :OP-GET-MORE(2005),
+    :OP-DELETE(2006), :OP-KILL-CURSORS(2007),
   );
 
 Operational codes to transport data to or from the mongodb server. The codes are
@@ -216,8 +217,8 @@ Flags to be used with e.g. find(). See also C<MongoDB::Collection>.
 =head3 ResponseFlags
 
   enum ResponseFlags is export (
-    C-RF-CursorNotFound(0x01), C-RF-QueryFailure(0x02),
-    C-RF-ShardConfigStale(0x04), C-RF-AwaitCapable(0x08),
+    RF-CURSORNOTFOUND(0x01), RF-QUERYFAILURE(0x02),
+    RF-SHARDCONFIGSTALE(0x04), RF-AWAITCAPABLE(0x08),
   );
 
 Response flags found in result documents from the server. Used internally.
@@ -230,9 +231,9 @@ Response flags found in result documents from the server. Used internally.
 
 =head2 Constants
 
-=head3 C-MAX-SOCKET-UNUSED-OPEN
+=head3 MAX-SOCKET-UNUSED-OPEN
 
-  constant C-MAX-SOCKET-UNUSED-OPEN is export = 900;
+  constant MAX-SOCKET-UNUSED-OPEN is export = 900;
 
 Time in seconds that a socket can be left open unused.
 

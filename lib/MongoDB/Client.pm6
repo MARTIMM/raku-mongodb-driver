@@ -1,16 +1,18 @@
 use v6.c;
 
-use MongoDB;
+#-------------------------------------------------------------------------------
+unit package MongoDB:auth<https://github.com/MARTIMM>;
+
 use MongoDB::Uri;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Wire;
+use MongoDB::Authenticate::Credential;
+use MongoDB;
+
 use BSON::Document;
 use Semaphore::ReadersWriters;
-
-#-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Client {
@@ -29,7 +31,7 @@ class Client {
   has Semaphore::ReadersWriters $!rw-sem;
 
   has Str $!uri;
-  has Hash $!uri-data;
+  has Hash $.uri-data;
 
   has BSON::Document $.read-concern;
   has Str $!Replicaset;
@@ -38,6 +40,10 @@ class Client {
   has Bool $!repeat-discovery-loop;
 
   has Tap $!client-tap;
+
+  # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
+  has MongoDB::Authenticate::Credential $.credential;
+
 
 #`{{
   #-----------------------------------------------------------------------------
@@ -54,10 +60,12 @@ say 'new client 1';
 }}
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10
+    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
+    TopologyType :$topology-type = UNKNOWN-TPLGY
   ) {
 
-    $!topology-type = C-UNKNOWN-TPLGY;
+#TODO write letter about usefulness of setting topology type
+    $!topology-type = $topology-type;
 
     $!servers = {};
 
@@ -90,6 +98,12 @@ say 'new client 1';
     my @item-list = <username password database options>;
     my MongoDB::Uri $uri-obj .= new(:$!uri);
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+
+    $!credential .= new(
+      :username($uri-obj.server-data<username>),
+      :password($uri-obj.server-data<password>),
+      :auth-mechanism($uri-obj.server-data<authMechanism> // ''),
+    );
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 
@@ -136,7 +150,7 @@ say 'new client 1';
 
 #say "$*THREAD.id() New server object: $server-name";
             my MongoDB::Server $server .= new(
-              :client(self), :$server-name, :$!uri-data, :$loop-time
+              :client(self), :$server-name, :$loop-time
             );
 
             # Start server monitoring process its data
@@ -177,7 +191,7 @@ say 'new client 1';
 
     # Tap into the stream of monitor data
     $!client-tap = $server.tap-monitor( -> Hash $monitor-data {
-#say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
+say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
 
 #        if $monitor-data.defined and $monitor-data<ok>:exists {
 #          my Bool $found-new-servers = False;
@@ -224,7 +238,7 @@ say 'new client 1';
                $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>});
 
             # Not found by DNS so big chance that it doesn't exist
-            if $status ~~ C-NON-EXISTENT-SERVER {
+            if $status ~~ NON-EXISTENT-SERVER {
 
 #              $!client-tap.done;
               $!servers{$server-name}<server>.cleanup;
@@ -232,7 +246,7 @@ say 'new client 1';
             }
 
             # Connection failure
-            elsif $status ~~ C-DOWN-SERVER {
+            elsif $status ~~ DOWN-SERVER {
 
               # Check if the master server went down
               if $msname.defined and ($msname eq $server-name) {
@@ -258,27 +272,27 @@ say 'new client 1';
 #say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
             # Don't ever modify a rejected server
             if $prev-server<status>:exists
-               and $prev-server<status> ~~ C-REJECTED-SERVER {
+               and $prev-server<status> ~~ REJECTED-SERVER {
 
               $!rw-sem.writer(
                 'servers', {
-                debug-message("set server $server-name status to " ~ C-REJECTED-SERVER);
-                $!servers{$server-name}<status> = C-REJECTED-SERVER;
+                debug-message("set server $server-name status to " ~ REJECTED-SERVER);
+                $!servers{$server-name}<status> = REJECTED-SERVER;
               });
             }
 
             # Check for double master servers
             elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
               ~~ any(
-              C-MASTER-SERVER |
-              C-REPLICASET-PRIMARY
+              MASTER-SERVER |
+              REPLICASET-PRIMARY
             ) {
               # Is defined, be the second and rejected master server
               if $msname.defined {
                 if $msname ne $server-name {
                   $!rw-sem.writer(
                     'servers', {
-                    $!servers{$server-name}<status> = C-REJECTED-SERVER;
+                    $!servers{$server-name}<status> = REJECTED-SERVER;
                   });
                   error-message("Server $server-name rejected, second master");
                 }
@@ -304,7 +318,7 @@ say 'new client 1';
 
             # When primary, find all servers and add to todo list
             if $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-               ~~ C-REPLICASET-PRIMARY {
+               ~~ REPLICASET-PRIMARY {
 
               my Array $hosts = $!rw-sem.reader(
                 'servers', {
@@ -323,7 +337,7 @@ say 'new client 1';
 
             # When secondary get its primary and add to todo list
             elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-                  ~~ C-REPLICASET-SECONDARY {
+                  ~~ REPLICASET-SECONDARY {
 
               # Error when current master is not same as primary
               my $primary = $!rw-sem.reader(
@@ -386,7 +400,7 @@ say 'new client 1';
     });
     debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
-    my ServerStatus $sts = $h<status> // C-UNKNOWN-SERVER;
+    my ServerStatus $sts = $h<status> // UNKNOWN-SERVER;
   }
 
   #-----------------------------------------------------------------------------

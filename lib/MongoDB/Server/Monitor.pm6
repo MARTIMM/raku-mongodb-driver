@@ -123,10 +123,15 @@ class Server::Monitor {
 
             # Get server info
             $doc = self!query;
+
+            # then time response
+            $rtt = now - $t0;
+
             if $doc.defined {
 
-              # Calculation of mean Return Trip Time
-              $rtt = now - $t0;
+              # Calculation of mean Return Trip Time. See also 
+              # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
+              #
               $!weighted-mean-rtt .= new(
                 0.2 * $rtt + 0.8 * $!weighted-mean-rtt
               );
