@@ -1,18 +1,18 @@
 use v6.c;
 
-use MongoDB;
+#-------------------------------------------------------------------------------
+unit package MongoDB:auth<https://github.com/MARTIMM>;
+
 use MongoDB::Uri;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Wire;
-use MongoDB::MongoCredential;
+use MongoDB::Authenticate::Credential;
+use MongoDB;
 
 use BSON::Document;
 use Semaphore::ReadersWriters;
-
-#-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Client {
@@ -42,7 +42,7 @@ class Client {
   has Tap $!client-tap;
 
   # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
-  has MongoDB::MongoCredential $.credential;
+  has MongoDB::Authenticate::Credential $.credential;
 
 
 #`{{
@@ -64,6 +64,7 @@ say 'new client 1';
     TopologyType :$topology-type = UNKNOWN-TPLGY
   ) {
 
+#TODO write letter about usefulness of setting topology type
     $!topology-type = $topology-type;
 
     $!servers = {};
@@ -101,6 +102,7 @@ say 'new client 1';
     $!credential .= new(
       :username($uri-obj.server-data<username>),
       :password($uri-obj.server-data<password>),
+      :auth-mechanism($uri-obj.server-data<authMechanism> // ''),
     );
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");

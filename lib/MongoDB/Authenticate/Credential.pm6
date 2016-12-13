@@ -1,13 +1,13 @@
 use v6.c;
 
-use MongoDB;
+#use MongoDB;
 
 #-------------------------------------------------------------------------------
 # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
-class MongoCredential {
+class Authenticate::Credential {
   has Str $.username;
   has Str $.password;
   has Str $.source;
