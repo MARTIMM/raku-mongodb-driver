@@ -17,7 +17,7 @@ sub EXPORT { {
 };
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:ver<0.35.5.2>:auth<https://github.com/MARTIMM>;
+unit package MongoDB:ver<0.36.1>:auth<https://github.com/MARTIMM>;
 
 #-----------------------------------------------------------------------------
 # Client object topology types
