@@ -1,0 +1,127 @@
+$!report.run
+  title='Connection String URI Format' class=MongoDB::Client
+  highlight-lang='lang-perl6' highlight-skin='doxy' linenumbers=1
+  distribution=MongoDB [
+
+  #-----------------------------------------------------------------------------
+  $|h2 [ Standard Connection String Format ]
+  $|p [
+    This section describes the standard format of the MongoDB connection URI
+    used to connect to a MongoDB database server. The format is the same for all
+    official MongoDB drivers. For a list of drivers and links to driver
+    documentation, see MongoDB Drivers and Client Libraries.
+
+    The following is the standard URI connection scheme:
+  ]
+
+  $|p [
+    $|code [!
+      mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+    !]
+  ]
+
+  $!code.add [=
+    use MongoDB::Uri;
+
+    my MongoDB::Uri $uri-obj .= new(:uri<mongodb://localhost>);
+
+    $!test.add t='ok $uri-obj.defined'
+
+    $!test.add t='is $uri-obj.server-data<servers>[0]<host>, "localhost"' [
+      default server name
+    ]
+
+    $!test.add t='is $uri-obj.server-data<servers>[0]<port>, 27017' [
+      default port number
+    ]
+  ]
+
+  #-----------------------------------------------------------------------------
+  $|p1 [
+    In the specification shown above it is necessary to specify at least one
+    host and when there are more, all of these must be defined. In this driver
+    implementation however, it is not necessary when host is $*|code[localhost].
+
+    So for this driver it is;
+  ]
+
+  $|p [
+    $|code [!=
+      mongodb://[username:password@][host1][:port1],...[,[hostN][:portN]][/[database][?options]]
+    !]
+  ]
+
+  $!code.add [=
+    $uri-obj .= new(:uri<mongodb://>);
+
+    $!test.add t='is $uri-obj.server-data<servers>[0]<host>, "localhost"' [ All
+      is brought back to bare protocol specification and we get
+      $*|code[localhost].
+    ]
+
+    $!test.add t='is $uri-obj.server-data<servers>[0]<port>, 27017' [
+      and its default port number $*|code[27017].
+    ]
+
+    $uri-obj .= new(:uri<mongodb://,,,>);
+
+    $!test.add t='ok $uri-obj.server-data<servers>[1]<host>:!exists' [
+      No mather how many comma's are used to separate host specifications. So
+      here there is no second host $*|code[ localhost:27017 ].
+    ]
+  ]
+
+  #-----------------------------------------------------------------------------
+  $|h2 [ Username and password ]
+
+  $!code.add [=
+
+    $uri-obj .= new(:uri<mongodb://user:pencil@>);
+
+    $!test.add t='is $uri-obj.server-data<username>, "user"' [
+      Username found in uri is $*|code[user].
+    ]
+
+    $!test.add t='is $uri-obj.server-data<password>, "pencil"' [
+      Password found in uri is $*|code[pencil].
+    ]
+
+    $!test.add t='dies-ok { $uri-obj .= new(:uri<mongodb://user:@>); }' [
+      It is not correct to specify the username without its password.
+    ]
+  ]
+
+  #-----------------------------------------------------------------------------
+  $|h2 [ Database ]
+
+  $!code.add [=
+
+    $uri-obj .= new(:uri<mongodb://>);
+
+    $!test.add t='is $uri-obj.server-data<database>, "admin"' [
+      Default database is $*|code[admin].
+    ]
+
+    $uri-obj .= new(:uri<mongodb:///contacts>);
+
+    $!test.add t='is $uri-obj.server-data<database>, "contacts"' [
+      User defined database is $*|code[contacts].
+    ]
+  ]
+
+  #-----------------------------------------------------------------------------
+  $|h2 [ Options ]
+
+  $!code.add [=
+
+    $uri-obj .= new(:uri<mongodb://:65000/?replicaSet=test&authMechanism=SCRAM-SHA-1>);
+
+    $!test.add t='is $uri-obj.server-data<options><replicaSet>, "test"' [
+      Option replicaSet is $*|code[test].
+    ]
+
+    $!test.add t='is $uri-obj.server-data<options><authMechanism>, "SCRAM-SHA-1"' [
+      Option authMechanism is $*|code[SCRAM-SHA-1].
+    ]
+  ]
+]

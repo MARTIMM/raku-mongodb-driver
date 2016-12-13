@@ -1,5 +1,5 @@
 $!report.run
-  title='Server discovery' class=MongoDB::Client
+  title='Server Discovery' class=MongoDB::Client
   distribution=MongoDB [
 
   $|h2 [ Testing client behaviour ]
