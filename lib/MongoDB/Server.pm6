@@ -42,8 +42,9 @@ class Server {
 
   has Tap $!server-tap;
 
-  has Int $!max-wire-version;
-  has Int $!min-wire-version;
+  # May be read from Client
+  has Int $.max-wire-version;
+  has Int $.min-wire-version;
 
   #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
@@ -76,7 +77,7 @@ class Server {
 
 
     $!server-monitor .= new( :server(self), :$loop-time);
-    $!server-status = C-UNKNOWN-SERVER;
+    $!server-status = UNKNOWN-SERVER;
   }
 
   #-----------------------------------------------------------------------------
@@ -93,7 +94,7 @@ class Server {
 
 #say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
-          my ServerStatus $server-status = C-UNKNOWN-SERVER;
+          my ServerStatus $server-status = UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
@@ -114,11 +115,11 @@ class Server {
                 if $mdata<setName> eq $!uri-data<options><replicaSet> {
 
                   if $mdata<ismaster> {
-                    $server-status = C-REPLICASET-PRIMARY;
+                    $server-status = REPLICASET-PRIMARY;
                   }
 
                   elsif $mdata<secondary> {
-                    $server-status = C-REPLICASET-SECONDARY;
+                    $server-status = REPLICASET-SECONDARY;
                   }
 
 #TODO ... Arbiter etc
@@ -126,18 +127,18 @@ class Server {
 
                 # Replicaset name does not match
                 else {
-                  $server-status = C-REJECTED-SERVER;
+                  $server-status = REJECTED-SERVER;
                 }
               }
 
               # Server is in a replicaset but not initialized.
               elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
-                $server-status = C-REPLICA-PRE-INIT
+                $server-status = REPLICA-PRE-INIT
               }
 
               # Shouldn't happen
               else {
-                $server-status = C-REJECTED-SERVER;
+                $server-status = REJECTED-SERVER;
               }
             }
 
@@ -148,18 +149,18 @@ class Server {
               if $mdata<isreplicaset>:exists
                  or $mdata<setName>:exists
                  or $mdata<primary>:exists {
-                $server-status = C-REJECTED-SERVER;
+                $server-status = REJECTED-SERVER;
               }
 
               else {
                 # Must be master
                 if $mdata<ismaster> {
-                  $server-status = C-MASTER-SERVER;
+                  $server-status = MASTER-SERVER;
                 }
 
                 # Shouldn't happen
                 else {
-                  $server-status = C-REJECTED-SERVER;
+                  $server-status = REJECTED-SERVER;
                 }
               }
             }
@@ -170,11 +171,11 @@ class Server {
 
             if $monitor-data<reason>:exists
                and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
-              $server-status = C-NON-EXISTENT-SERVER;
+              $server-status = NON-EXISTENT-SERVER;
             }
 
             else {
-              $server-status = C-DOWN-SERVER;
+              $server-status = DOWN-SERVER;
             }
           }
 
@@ -200,10 +201,10 @@ class Server {
   method get-status ( --> ServerStatus ) {
 
     my int $count = 0;
-    my ServerStatus $server-status = C-UNKNOWN-SERVER;
+    my ServerStatus $server-status = UNKNOWN-SERVER;
 
     # Wait until changed, After 4 sec it must be known or stays unknown forever
-    while $count < 4 and $server-status ~~ C-UNKNOWN-SERVER {
+    while $count < 4 and $server-status ~~ UNKNOWN-SERVER {
       $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
 
       sleep 1;

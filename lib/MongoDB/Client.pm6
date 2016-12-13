@@ -238,7 +238,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
                $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>});
 
             # Not found by DNS so big chance that it doesn't exist
-            if $status ~~ C-NON-EXISTENT-SERVER {
+            if $status ~~ NON-EXISTENT-SERVER {
 
 #              $!client-tap.done;
               $!servers{$server-name}<server>.cleanup;
@@ -246,7 +246,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
             }
 
             # Connection failure
-            elsif $status ~~ C-DOWN-SERVER {
+            elsif $status ~~ DOWN-SERVER {
 
               # Check if the master server went down
               if $msname.defined and ($msname eq $server-name) {
@@ -272,27 +272,27 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
 #say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
             # Don't ever modify a rejected server
             if $prev-server<status>:exists
-               and $prev-server<status> ~~ C-REJECTED-SERVER {
+               and $prev-server<status> ~~ REJECTED-SERVER {
 
               $!rw-sem.writer(
                 'servers', {
-                debug-message("set server $server-name status to " ~ C-REJECTED-SERVER);
-                $!servers{$server-name}<status> = C-REJECTED-SERVER;
+                debug-message("set server $server-name status to " ~ REJECTED-SERVER);
+                $!servers{$server-name}<status> = REJECTED-SERVER;
               });
             }
 
             # Check for double master servers
             elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
               ~~ any(
-              C-MASTER-SERVER |
-              C-REPLICASET-PRIMARY
+              MASTER-SERVER |
+              REPLICASET-PRIMARY
             ) {
               # Is defined, be the second and rejected master server
               if $msname.defined {
                 if $msname ne $server-name {
                   $!rw-sem.writer(
                     'servers', {
-                    $!servers{$server-name}<status> = C-REJECTED-SERVER;
+                    $!servers{$server-name}<status> = REJECTED-SERVER;
                   });
                   error-message("Server $server-name rejected, second master");
                 }
@@ -318,7 +318,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
 
             # When primary, find all servers and add to todo list
             if $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-               ~~ C-REPLICASET-PRIMARY {
+               ~~ REPLICASET-PRIMARY {
 
               my Array $hosts = $!rw-sem.reader(
                 'servers', {
@@ -337,7 +337,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
 
             # When secondary get its primary and add to todo list
             elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-                  ~~ C-REPLICASET-SECONDARY {
+                  ~~ REPLICASET-SECONDARY {
 
               # Error when current master is not same as primary
               my $primary = $!rw-sem.reader(
@@ -400,7 +400,7 @@ say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl
     });
     debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
-    my ServerStatus $sts = $h<status> // C-UNKNOWN-SERVER;
+    my ServerStatus $sts = $h<status> // UNKNOWN-SERVER;
   }
 
   #-----------------------------------------------------------------------------

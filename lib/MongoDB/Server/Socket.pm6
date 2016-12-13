@@ -37,7 +37,7 @@ class Server::Socket {
   method check ( --> Bool ) {
 
     my Bool $is-closed = False;
-    if (time - $!time-last-used) > C-MAX-SOCKET-UNUSED-OPEN {
+    if (time - $!time-last-used) > MAX-SOCKET-UNUSED-OPEN {
 
       debug-message("close socket, timeout after {time - $!time-last-used} sec");
       $!sock.close if $!sock.defined;

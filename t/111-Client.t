@@ -24,20 +24,20 @@ subtest {
   my MongoDB::Client $client .= new( :uri("mongodb://:$p1"), :loop-time(1));
   my MongoDB::Server $server = $client.select-server;
 
-  is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
+  is $client.server-status("localhost:$p1"), MASTER-SERVER,
      "Status of server is master";
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
-  $server = $client.select-server(:needed-state(MongoDB::C-DOWN-SERVER));
-  is $server.get-status, MongoDB::C-DOWN-SERVER, "Status of server is down";
+  $server = $client.select-server(:needed-state(DOWN-SERVER));
+  is $server.get-status, DOWN-SERVER, "Status of server is down";
 
   # Bring server up again to see ift Client recovers...
   ok $ts.server-control.start-mongod("s1"), "Server 1 started";
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
-  is $client.server-status("localhost:$p1"), MongoDB::C-MASTER-SERVER,
+  is $client.server-status("localhost:$p1"), MASTER-SERVER,
      "Status of server is master again";
 
   $client.cleanup;
@@ -49,7 +49,7 @@ subtest {
   my Int $p3 = $ts.server-control.get-port-number('s3');
   my MongoDB::Client $client .= new( :uri("mongodb://:$p3"), :loop-time(3));
   my MongoDB::Server $server = $client.select-server;
-  is $client.server-status("localhost:$p3"), MongoDB::C-MASTER-SERVER,
+  is $client.server-status("localhost:$p3"), MASTER-SERVER,
      "Server is master";
 
   # Drop database test
@@ -101,8 +101,8 @@ subtest {
   info-message('shutdown server');
   ok $ts.server-control.stop-mongod('s3'), "Server 3 is stopped";
 
-  $server = $client.select-server(:needed-state(MongoDB::C-DOWN-SERVER));
-  is $server.get-status, MongoDB::C-DOWN-SERVER, "Server is down";
+  $server = $client.select-server(:needed-state(DOWN-SERVER));
+  is $server.get-status, DOWN-SERVER, "Server is down";
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');

@@ -326,7 +326,7 @@ class Wire {
       # MsgHeader header
       # standard message header
       #
-      my Buf $msg-header = self!enc-msg-header( $B-OP-INSERT.elems, C-OP-INSERT);
+      my Buf $msg-header = self!enc-msg-header( $B-OP-INSERT.elems, OP-INSERT);
 
       # send message without waiting for response
       #
@@ -368,7 +368,7 @@ class Wire {
       #
       my Buf $msg-header = self!enc-msg-header(
         $B-OP-KILL_CURSORS.elems,
-        BSON::C-OP-KILL-CURSORS
+        BSON::OP-KILL-CURSORS
       );
 
       # send message without waiting for response
@@ -421,7 +421,7 @@ class Wire {
       # standard message header
       #
       my Buf $msg-header = self!enc-msg-header(
-        $B-OP-UPDATE.elems, C-OP-UPDATE
+        $B-OP-UPDATE.elems, OP-UPDATE
       );
 
       # send message without waiting for response
@@ -469,7 +469,7 @@ class Wire {
       # standard message header
       #
       my Buf $msg-header = self!enc-msg-header(
-        $B-OP-DELETE.elems, C-OP-DELETE
+        $B-OP-DELETE.elems, OP-DELETE
       );
 
       # send message without waiting for response

@@ -2,6 +2,9 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.36.1
+  * Renamed many enumeration values.
+  * Refactored some code from Client and Server into MongoDB::Authenticate::* (Credential and Scram)
 * 0.36.0
   * Added exported subs mongodb-driver-version() and mongodb-driver-author() to MongoDB.pm6
 * 0.35.5

@@ -35,10 +35,10 @@ subtest {
   # Should not find a server, need replicaSet option
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2"));
   my MongoDB::Server $server = $client.select-server(
-    :needed-state(MongoDB::C-REJECTED-SERVER)
+    :needed-state(REJECTED-SERVER)
   );
 #  nok $server.defined, 'No master server found';
-  is $server.get-status, MongoDB::C-REJECTED-SERVER, "Server 2 is rejected";
+  is $server.get-status, REJECTED-SERVER, "Server 2 is rejected";
 
 }, "Replica server pre-init rejected";
 
@@ -54,11 +54,11 @@ subtest {
 
   my MongoDB::Server $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No master server found';
-  is $client.server-status('localhost:' ~ $p2), MongoDB::C-REPLICA-PRE-INIT,
+  is $client.server-status('localhost:' ~ $p2), REPLICA-PRE-INIT,
      "Server is in replica initialization state";
 
-  $server = $client.select-server: :needed-state(MongoDB::C-REPLICA-PRE-INIT);
-  is $server.get-status, MongoDB::C-REPLICA-PRE-INIT,
+  $server = $client.select-server: :needed-state(REPLICA-PRE-INIT);
+  is $server.get-status, REPLICA-PRE-INIT,
      "Selected server is in replica initialization state";
 
   # Must use :$server because otherwise a master would be searched for
@@ -94,10 +94,10 @@ subtest {
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server(
-    :needed-state(MongoDB::C-REPLICA-PRE-INIT)
+    :needed-state(REPLICA-PRE-INIT)
   );
 
-  is $server.get-status, MongoDB::C-REPLICA-PRE-INIT,
+  is $server.get-status, REPLICA-PRE-INIT,
      "Selected server is in replica initialization state";
 
   my MongoDB::Database $database = $client.database('test');
@@ -143,7 +143,7 @@ subtest {
 
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
-  is $client.server-status("localhost:$p2"), MongoDB::C-REPLICASET-PRIMARY,
+  is $client.server-status("localhost:$p2"), REPLICASET-PRIMARY,
      "Server is replica server primary";
 
   my MongoDB::Database $database = $client.database('test');

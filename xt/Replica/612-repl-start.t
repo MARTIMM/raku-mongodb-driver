@@ -43,7 +43,7 @@ subtest {
   my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, "Server $server.name() seleced";
-  is $server.get-status, MongoDB::C-REPLICASET-PRIMARY, 'Server 2 is primary';
+  is $server.get-status, REPLICASET-PRIMARY, 'Server 2 is primary';
 
   diag "Get server info. Get the repl version and update version";
   my MongoDB::Database $db-admin = $client.database('admin');
