@@ -102,7 +102,11 @@ say 'new client 1';
     $!credential .= new(
       :username($uri-obj.server-data<username>),
       :password($uri-obj.server-data<password>),
-      :auth-mechanism($uri-obj.server-data<authMechanism> // ''),
+      :auth-source(
+        $uri-obj.server-data<database> // $uri-obj.server-data<authSource>
+      ),
+      :auth-mechanism($uri-obj.server-data<authMechanism>),
+      :auth-mechanism-properties($uri-obj.server-data<authMechanismProperties>)
     );
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");

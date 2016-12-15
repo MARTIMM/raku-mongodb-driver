@@ -13,6 +13,17 @@ use Test;
 ok $cred.defined, 'T0';
 is $cred.password, "pencil", 'T1';
 
+
+    my $x = {
+      $cred .= new(
+        :username<user>, :password<pencil>,
+        :auth-mechanism<MONGODB-X509>
+      );
+    };
+
+
+dies-ok $x(), 'T2';
+
     use lib 't';
     use Test-support;
     use MongoDB::Client;
@@ -22,7 +33,7 @@ is $cred.password, "pencil", 'T1';
     my MongoDB::Client $client .= new(:uri("mongodb://localhost:$p1"));
 
 
-ok $client.defined, 'T2';
+ok $client.defined, 'T3';
 
 
 done-testing;

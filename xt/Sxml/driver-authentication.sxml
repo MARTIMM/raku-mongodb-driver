@@ -1,6 +1,6 @@
 $!report.run
   title='Driver Authentication' class=MongoDB::Client
-  highlight-lang='lang-perl6' highlight-skin='doxy' linenumbers=1
+  highlight-lang='lang-perl6' highlight-skin='default' linenumbers=1
   distribution=MongoDB [
 
   $|h2 [ Abstract ]
@@ -16,7 +16,8 @@ $!report.run
       Mongodb
     ] website and is shown below.
   ]
-  
+
+  #-----------------------------------------------------------------------------
   $|h2 [ Mongo credential ]
   $|p [
     Drivers SHOULD contain a type called MongoCredential. In this driver it is
@@ -42,6 +43,26 @@ $!report.run
       Data can also be retrieved from it again.
     ]
   ]
+
+  #-----------------------------------------------------------------------------
+  $|p1 [ Some combinations of credential parameters should fail ]
+
+  $!code.add [=
+
+    my $x = {
+      $cred .= new(
+        :username<user>, :password<pencil>,
+        :auth-mechanism<MONGODB-X509>
+      );
+    };
+
+    $!test.add t='dies-ok $x()' [
+      Mechanism MONGODB-X509 does not expect a password
+    ]
+  ]
+
+  #-----------------------------------------------------------------------------
+  $|p1 [ Credential parameters are set using uri ]
 
   $!code.add [=
     use lib 't';

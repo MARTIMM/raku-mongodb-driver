@@ -4,13 +4,13 @@ Module:-
 Class:MongoDB::Client
 Distribution:MongoDB
 Label:-
-OS-Kernel:linux:4.8.11.100.fc.23.x.86._.64
+OS-Kernel:linux:4.8.13.100.fc.23.x.86._.64
 OS-Distro:fedora:23.Workstation.Edition:23:False
 Perl:Perl 6:6.c
-Compiler:rakudo:2016.11.238.g.2.f.502.b.4
+Compiler:rakudo:2016.11.236.g.7.b.09.bee
 VM:moar:2016.11.41.gd.2139.b.5
-Total: 3
-T:3.00 0.00 3.00
+Total: 2
+T:2.00 0.00 2.00
 B:0.00 0.00 0.00
 D:0.00 0.00 0.00
 S:0.00 0.00 0.00
