@@ -1,6 +1,6 @@
 $!report.run
   title='Connection String URI Format' class=MongoDB::Client
-  highlight-lang='lang-perl6' highlight-skin='doxy' linenumbers=1
+  highlight-lang='lang-perl6' highlight-skin='default' linenumbers=1
   distribution=MongoDB [
 
   #-----------------------------------------------------------------------------
