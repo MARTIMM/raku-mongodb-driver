@@ -3,13 +3,13 @@ use v6.c;
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
+use MongoDB;
 use MongoDB::Uri;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
 use MongoDB::Wire;
 use MongoDB::Authenticate::Credential;
-use MongoDB;
 
 use BSON::Document;
 use Semaphore::ReadersWriters;
@@ -99,15 +99,22 @@ say 'new client 1';
     my MongoDB::Uri $uri-obj .= new(:$!uri);
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
-    $!credential .= new(
-      :username($uri-obj.server-data<username>),
-      :password($uri-obj.server-data<password>),
-      :auth-source(
-        $uri-obj.server-data<database> // $uri-obj.server-data<authSource>
-      ),
-      :auth-mechanism($uri-obj.server-data<authMechanism>),
-      :auth-mechanism-properties($uri-obj.server-data<authMechanismProperties>)
-    );
+    my %cred-data = {};
+    my $set = sub ( *@k ) {
+      my $sk = shift @k;
+      for @k -> $rk {
+        return if %cred-data{$sk};
+        %cred-data{$sk} = $uri-obj.server-data{$rk}
+          if ? $rk and ? $uri-obj.server-data{$rk};
+      }
+    };
+
+    $set( 'username', 'username');
+    $set( 'password', 'password');
+    $set( 'auth-source', 'database', 'authSource', 'admin');
+    $set( 'auth-mechanism', 'authMechanism');
+    $set( 'auth-mechanism-properties', 'authMechanismProperties');
+    $!credential .= new(|%cred-data);
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
 

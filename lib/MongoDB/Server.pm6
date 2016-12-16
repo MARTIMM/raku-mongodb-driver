@@ -66,7 +66,7 @@ class Server {
 
     $!client = $client;
     $!uri-data = $client.uri-data;
-    $!credential = $client.credential;
+    $!credential := $client.credential;
 
     @!sockets = ();
 

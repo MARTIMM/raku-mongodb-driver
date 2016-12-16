@@ -18,17 +18,18 @@ class Authenticate::Credential {
 
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    :$username, :$password,
-    :$auth-source, :$auth-mechanism, :$auth-mechanism-properties
+    Str :$username = '', Str :$password = '',
+    Str :$auth-source = 'admin', Str :$auth-mechanism = '',
+    Str :$auth-mechanism-properties = ''
   ) {
 
-    $!username = $username // '';
-    $!password = $password // '';
-    $!auth-source = $auth-source // 'admin';
-    $!auth-mechanism = $auth-mechanism // '';
+    $!username = $username;
+    $!password = $password;
+    $!auth-source = $auth-source;
+    $!auth-mechanism = $auth-mechanism;
 
     $!auth-mechanism-properties = {};
-    my Str $auth-prop = $auth-mechanism-properties // '';
+    my Str $auth-prop = $auth-mechanism-properties;
     for $auth-prop.split(',') -> $prop {
       my Str ( $key, $value) = $prop.split(':');
       $!auth-mechanism-properties{$key} = $value if ?$key and ?$value;
@@ -106,7 +107,8 @@ class Authenticate::Credential {
 
       default {
 
-        fatal-message("Unknown mechanism '$!auth-mechanism'");
+        fatal-message("Unknown mechanism '$!auth-mechanism'")
+          if ? $!auth-mechanism;
       }
     }
   }
