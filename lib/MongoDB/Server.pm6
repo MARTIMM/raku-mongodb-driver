@@ -298,12 +298,11 @@ class Server {
     # Use return value to see if authentication is needed.
     my Bool $opened-before = $sock.open;
 
+#TODO check must be made on autenticate flag only and determined from server
     # We can only authenticate when all 3 data are True and when the socket is
     # opened anew.
-    if not $opened-before
-       and $authenticate
-       and ? $!uri-data<username>
-       and ? $!uri-data<password> {
+    if not $opened-before and $authenticate
+       and (? $!uri-data<username> or ? $!uri-data<password>) {
 
       # get authentication mechanism
       my Str $auth-mechanism = $!credential.auth-mechanism;

@@ -99,7 +99,7 @@ say 'new client 1';
     my MongoDB::Uri $uri-obj .= new(:$!uri);
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
-    my %cred-data = {};
+    my %cred-data = %();
     my $set = sub ( *@k ) {
       my $sk = shift @k;
       for @k -> $rk {
