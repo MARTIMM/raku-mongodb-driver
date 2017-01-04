@@ -6,6 +6,7 @@ use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
+use BSON::Document;
 
 #-------------------------------------------------------------------------------
 #set-logfile($*OUT);

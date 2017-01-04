@@ -1,10 +1,11 @@
 use v6.c;
 
-use MongoDB;
-use MongoDB::MDBConfig;
-
 #-------------------------------------------------------------------------------
 unit package MongoDB;
+
+use Config::DataLang::Refine;
+use MongoDB;
+use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
 class Server::Control {

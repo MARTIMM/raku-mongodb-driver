@@ -1,6 +1,6 @@
 $!report.run
   title='Driver Authentication' class=MongoDB::Client
-  highlight-lang='lang-perl6' highlight-skin='doxy' linenumbers=1
+  highlight-lang=lang-perl6 highlight-skin=default linenumbers=1
   distribution=MongoDB [
 
   $|h2 [ Abstract ]
@@ -16,21 +16,35 @@ $!report.run
       Mongodb
     ] website and is shown below.
   ]
-  
+
+  #-----------------------------------------------------------------------------
   $|h2 [ Mongo credential ]
   $|p [
-    Drivers SHOULD contain a type called MongoCredential. In this driver it is
+    Drivers should contain a type called MongoCredential. In this driver it is
     called $*|code[ MongoDB::Authenticate::Credential ].
   ]
 
-  $!code.add [=
+  $!code.add [!=
+    use lib 't';
+    use Test-support;
+    use MongoDB;
+    use MongoDB::Client;
+    use MongoDB::Database;
+    use MongoDB::HL::Users;
     use MongoDB::Authenticate::Credential;
+    use BSON::Document;
+
+    set-logfile($*OUT);
+    set-exception-process-level(MongoDB::Severity::Trace);
+
+    my MongoDB::Test-support $ts .= new;
+    my MongoDB::Client $client;
 
     my MongoDB::Authenticate::Credential $cred .= new(
       :username<user>, :password<pencil>,
       :auth-mechanism<SCRAM-SHA-1>
     );
-
+  !][=
     $!test.add t='ok $cred.defined' [
       Credential is defined. Not all named arguments are used. There are also
       :source and :mechanism-properties. Btw. the field mechanism is named
@@ -43,18 +57,110 @@ $!report.run
     ]
   ]
 
-  $!code.add [=
-    use lib 't';
-    use Test-support;
-    use MongoDB::Client;
+  #-----------------------------------------------------------------------------
+  $|p1 [ Some combinations of credential parameters should fail ]
 
-    my MongoDB::Test-support $ts .= new;
-    my Int $p1 = $ts.server-control.get-port-number('s1');
-    my MongoDB::Client $client .= new(:uri("mongodb://localhost:$p1"));
+  $!code.add [=
+
+    my $x = {
+      $cred .= new(
+        :username<user>, :password<pencil>, :auth-mechanism<MONGODB-X509>
+      );
+    };
+
+    $!test.add t='dies-ok $x' [
+      Mechanism $**code[MONGODB-X509] does not expect a password
+    ]
+
+    my $y = {
+      $cred .= new( :password<pencil>, :auth-mechanism<MONGODB-CR>);
+    };
+
+    $!test.add t='dies-ok $y' [
+      Mechanism $**code[MONGODB-CR] must have a username
+    ]
+  ]
+
+  #-----------------------------------------------------------------------------
+  $|p1 [
+    Credential parameters are taken from the information in the uri. The
+    authentication mechanism can also be guessed from the max wire version from
+    the info returned by the $**code[isMaster] command. This, however can only
+    be checked after a socket has been opened caused by a user action.
+    B.t.w Cleanup the client object when done because its concurrent processes
+    will keep connected to the server even after undefining.
+  ]
+
+  $|p1 [
+    The driver will not show much if no user or password is given. So, in order
+    to test that a user must be created. All of this can only be done when the
+    server is not yet in authentication mode or, it is, and one can login using
+    an administrative account. We will create an account $**code[user] with
+    pasword $**code[pencil]. It gets read write rights to the database
+    $*|code[tdb].
+  ]
+
+  $!code.add [!=
+    my Int $port1 = $ts.server-control.get-port-number('s1');
+    $client .= new(:uri("mongodb://localhost"));
+    my MongoDB::Database $database = $client.database('tdb');
+    my MongoDB::HL::Users $users .= new(:$database);
+
+    my BSON::Document $doc = $users.create-user(
+      'user', 'pencil',
+      :roles([(role => 'readWrite', db => 'tdb'),])
+    );
+  !][=
+    $!test.add t='ok $doc<ok>' [User $**code[user] created]
+  ]
+
+  $|p [
+    Now we can try to login using the credentials
+  ]
+
+  $!code.add [=
+    $client .= new(:uri("mongodb://user:pencil@localhost:$port1/tdb"));
+    $database = $client.database('tdb');
 
     $!test.add t='ok $client.defined' [
       Returned client object is defined, even when the uri is not pointing
       to an existing mongod server.
     ]
+
+    $!test.add t='is $client.credential.auth-mechanism, ""' [
+      Mechanism is not yet defined.
+    ]
+  ][!=
+    $doc = $database.run-command: (
+      insert => 'tcol',
+      documents => [
+        BSON::Document.new: (
+          name => 'Larry',
+          surname => 'Walll',
+        ),
+      ]
+    );
+say "Doc:", $doc.perl;
+
+  !][
+    $!test.add t='is $doc<ok>, 1' [insert request ok]
+    $!test.add t='is $doc<n>, 1' [inserted 1 document]
+    $!test.add t='is $client.credential.auth-mechanism, "SCRAM-SHA-1"' [
+      Mechanism is a SCRAM-SHA-1 version
+    ]
+
+    $client.cleanup;
+  ]
+
+  #-----------------------------------------------------------------------------
+  $!code.add [=
+    $client .= new(:uri("mongodb://localhost:$port1"));
+
+    $!test.add t='ok $client.defined' [
+      Returned client object is defined, even when the uri is not pointing
+      to an existing mongod server.
+    ]
+
+    $client.cleanup;
   ]
 ]

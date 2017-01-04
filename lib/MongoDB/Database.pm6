@@ -1,11 +1,11 @@
 use v6.c;
 
+#-------------------------------------------------------------------------------
+unit package MongoDB:auth<https://github.com/MARTIMM>;
+
 use MongoDB;
 use MongoDB::Collection;
 use BSON::Document;
-
-#-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Database {

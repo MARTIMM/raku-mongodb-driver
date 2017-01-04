@@ -109,7 +109,15 @@ role Header {
   ) {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
-    my Buf $query-buffer = [~]
+#TODO sometimes an error here
+#Error at /home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/site#sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) 468:Cannot call method 'Stringy' on a null object
+#  in method ASSIGN-KEY at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) line 353
+#
+#Cannot call method 'Stringy' on a null object
+#  in block  at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) line 668
+#  in method encode-query at /home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 112
+
+      my Buf $query-buffer = [~]
 
       # int32 flags
       # bit vector of query options
