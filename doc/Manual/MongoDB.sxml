@@ -6,7 +6,8 @@ $!d5b.article [
              copy-year='2015, 2016 ... Inf' copy-holder='Marcel Timmerman' [
 
     $|para [
-      MongoDB is a $**citation[NoSQL] database which uses $**citation[BSON] to 
+      MongoDB is a $**glossterm linkend=nosql [Non SQL] database which uses
+      $**glossterm linkend=bson [Binary JSON] to 
       store and load information in a database. With the mongodb package a
       shell program called mongo is available to give instructions to a
       mongodb server.
@@ -14,10 +15,10 @@ $!d5b.article [
 
     $|para [ To work with data on the server from within a program a driver is
       needed. There are drivers for many program languages. This document
-      introduces a driver for the Perl6 language. In the perl6 ecosystem,
+      describes a driver for the Perl6 language. In the perl6 ecosystem,
       which might grow into a cpan like system later, there are two packages
-      needed to work with the driver. These are $**citation[MongoDB] and
-      BSON.
+      needed to work with the driver. These are $**glossterm linkend=mongodb
+      [MongoDB] and BSON.
     ]
 
     $|para [
@@ -30,8 +31,7 @@ $!d5b.article [
   $|sect1 [
     $|title [Introduction]
     $|para [
- BSON is a binary version of the javascript JSON.
-     ]
+    ]
   ]
 
   $|sect1 [
@@ -43,10 +43,20 @@ $!d5b.article [
   $|sect1 [
     $|title [Dependencies]
     $|para [
+
     ]
+
     $|sect2 [
       $|title [BSON]
       $|para [
+        BSON is a binary version of the textual version $**citation[JSON].
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB server ]
+      $|para [
+
       ]
     ]
   ]
@@ -65,13 +75,102 @@ $!d5b.article [
 
 #   $|bibliolist:
 #      $|title: Bibliography
-  $|bibliography [
-    $|biblioentry [
+#  $|bibliography [
+#    $|biblioentry [
 #      $|abbrev [MIMETYPES]
 #      $|title [A list of all mimetypes]
 #      $|abstract [A list of mimetypes can be found on the]
 #      $|ulink url=http://www.sitepoint.com/web-foundations/mime-types-complete-list/ [
 #      ]
+#    ]
+#  ]
+
+  $|glossary [
+    $|title [MongoDB Driver Glossary]
+
+    $|glossdiv [
+      $|title [B]
+
+      $|glossentry xml:id=bson [
+        $|glossterm [Binary JSON]
+        $|acronim [JSON]
+        $|glossdef [
+          $|para [
+            BSON is a computer data interchange format used mainly as a data
+            storage and network transfer format in the MongoDB database.
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [J]
+
+      $|glossentry xml:id=json [
+        $|glossterm [JavaScript Object Notation]
+        $|acronim [JSON]
+        $|glossdef [
+          $|para [
+            JavaScript Object Notation) is an open-standard format that uses
+            human-readable text to transmit data objects consisting of
+            attribute-value pairs
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [M]
+
+      $|glossentry xml:id=mongodb [
+        $|glossterm [MongoDB]
+        $|acronim [MongoDB]
+        $|glossdef [
+          $|para [
+            MongoDB (from humongous) is a free and open-source cross-platform
+            document-oriented database program
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [N]
+
+      $|glossentry xml:id=nosql [
+        $|glossterm [Non SQL]
+        $|acronim [NoSql]
+        $|glossdef [
+          $|para [
+            A NoSQL (originally referring to "non $**glossterm linkend=sql
+            [Structured Query Language]", "non relational" or "not only SQL"
+            database provides a mechanism for storage and retrieval of data
+            which is modeled in means other than the tabular relations used in
+            relational databases. 
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [S]
+
+      $|glossentry xml:id=sql [
+        $|glossterm [Structured Query Language]
+        $|acronim [Sql]
+        $|glossdef [
+          $|para [
+            SQL or Structured Query Language is a special-purpose
+            domain-specific language used in programming and designed for
+            managing data held in a relational database management system
+            (RDBMS)
+          ]
+        ]
+      ]
     ]
   ]
 ]
