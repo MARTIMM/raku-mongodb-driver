@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE article [
-        <!ENTITY library "Library">
-        <!ENTITY nbsp " ">
-]>
-<article xmlns="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xl="http://www.w3.org/1999/xlink" version="5.0" xml:lang="en"><title>Perl 6 MongoDB driver</title><info><author><personname><firstname>Marcel</firstname><surname>Timmerman</surname></personname><email>mt1957@gmail.com</email></author><address><city>Haarlem</city><country>Netherlands</country></address><copyright><year>2015, 2016 ... Inf</year><holder>Marcel Timmerman</holder></copyright><date>2015-04-02</date><abstract><para>MongoDB is a&nbsp;<citation>NoSQL</citation> database which uses&nbsp;<abbrev>BSON</abbrev> to store and load information in a database. For Perl 6 there are two driver libraries&nbsp;<citation>MongoDB</citation> and&nbsp;<citation>BSON</citation> . BSON is a binary version of the javascript JSON.</para><para>The latest version of this document is generated on date 2015-04-02</para></abstract></info><sect1><title>Introduction</title><para/></sect1><sect1><title>Implementation</title><para/></sect1><sect1><title>Dependencies</title><para/></sect1><sect1><title>Examples</title><para/><sect2><title>Starting and stopping</title><para/></sect2></sect1><bibliography><biblioentry/></bibliography></article>

@@ -1,0 +1,24 @@
+[ option.xml-prelude ]
+  show          = true
+
+[ option.doctype ]
+  show          = true
+
+[ option.doctype.entities ]
+  mongodb       = 'MongoDB driver'
+  nbsp          = ' '
+
+[output]
+  fileext       = 'xml'
+
+[ output.program ]
+  pdf           = 'xsltproc --encoding utf-8 --xinclude %op/stylesheet.xsl - | xep -fo - -pdf %of.pdf'
+  xsl           = 'xmllint --format - > %of.xsl'
+  xml           = 'xmllint --format - > %of.%oe'
+  chk           = 'xmllint --format - | tee MongoDB.xml | rnv /usr/share/xml/docbook5/schema/rng/5.0/docbook.rnc'
+
+[ module ]
+  lorem         = 'SxmlLib::LoremIpsum'
+  d5b           = 'SxmlLib::Docbook5::Basic'
+  d5f           = 'SxmlLib::Docbook5::FixedLayout'
+  file          = 'SxmlLib::File'
