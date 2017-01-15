@@ -202,7 +202,7 @@ say 'new client 1';
 
     # Tap into the stream of monitor data
     $!client-tap = $server.tap-monitor( -> Hash $monitor-data {
-say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
+#say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
 
 #        if $monitor-data.defined and $monitor-data<ok>:exists {
 #          my Bool $found-new-servers = False;
