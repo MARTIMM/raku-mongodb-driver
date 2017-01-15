@@ -18,12 +18,12 @@ $!d5b.article [
       describes a driver for the Perl6 language. In the perl6 ecosystem,
       which might grow into a cpan like system later, there are two packages
       needed to work with the driver. These are $**glossterm linkend=mongodb
-      [MongoDB] and BSON.
+      [MongoDB] and BSON. BSON is automatically installed with other necessary
+      modules.
     ]
 
     $|para [
-      The latest version of this document is generated on date
-      $!SxmlCore.date []
+      The latest version of this document is generated on date $!SxmlCore.date
     ]
   ]
 
@@ -31,12 +31,134 @@ $!d5b.article [
   $|sect1 [
     $|title [Introduction]
     $|para [
+      The purpose of this document is to show how to work with the perl6
+      mongodb driver and not about how to design your database among other
+      things. There are plenty of good books and documents out there not to
+      mention the mongodb website. A few things need to be repeated in this
+      document however, despite the information displayed elsewhere because
+      otherwise too many references to other places would disturb the flow.
+      There quite a few modules written to perform the tasks at hand but not
+      all modules will be explained here because many of them are modules
+      defining classes to be used in the background and are not used by
+      applications directly.
+    ]
+
+    $|para [
+      This document assumes that the reader is aware of at least the basics of
+      the mongodb database and what one can do with it. Also some perl 6
+      knowledge will be necessary.
+    ]
+
+    $|para [
+      As a last remark, the driver is still in development. Although many parts
+      are accomplished, some parts still need to be implemented like
+      authentication agains kerberos or LDAP. Furthermore, there are some
+      improvements needed to speedup the operations.
+    ]
+
+    $|para [
+      The following sections will be explained:
+
+      $|itemizedlist spacing=compact [
+        $|listitem [
+          $|emphasis[Implementation].
+
+          $|itemizedlist spacing=compact [
+            $|listitem [
+              $|emphasis[BSON::Document]. This is the basic vehicle to insert,
+              update retrieve and send commands to the database server. In this
+              section there is an explanation of the supported types as well as
+              different ways to make requests. Here some detailed perl6 is
+              necessary to understand mistakes often made when creating the data
+              structures.
+            ]
+
+            $|listitem [
+              $|emphasis[URI]. The URI tells the software how to connect to a server
+              and select the proper server.
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Client]. This module is the starting point of all
+              applications which need access to a mongodb database server.
+              
+              
+#              cleanup!
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Database].
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Collection].
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Cursor].
+            ]
+          ]
+        ]
+
+        $|listitem [
+          $|emphasis[Dependensies]. There are some dependencies which are
+          explained a bit here. These are e.g. the server and its version,
+          modules like BSON, PKCS5, Auth::SCRAM etcetera.
+        ]
+
+        $|listitem [
+          $|emphasis[Examples]. Of course, a document whithout examples is a
+          bit like an empty box as a present.
+        ]
+      ]
     ]
   ]
 
   $|sect1 [
     $|title [Implementation]
     $|para [
+    ]
+
+    $|sect2 [
+      $|title [BSON::Document]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [URI]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Client]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Database]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Collection]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Cursor]
+      $|para [
+
+      ]
     ]
   ]
 
@@ -49,7 +171,7 @@ $!d5b.article [
     $|sect2 [
       $|title [BSON]
       $|para [
-        BSON is a binary version of the textual version $**citation[JSON].
+
       ]
     ]
 
@@ -66,7 +188,7 @@ $!d5b.article [
     $|para [
     ]
     $|sect2 [
-      $|title [Starting and stopping]
+#      $|title [Starting and stopping]
       $|para [
       ]
     ]
@@ -84,6 +206,16 @@ $!d5b.article [
 #      ]
 #    ]
 #  ]
+  $|bibliography [
+    $|title [Biliography]
+    
+    $|bibliomixed [
+      $|bibliomset relation=book [
+      
+      ]
+    ]
+  ]
+
 
   $|glossary [
     $|title [MongoDB Driver Glossary]
@@ -172,5 +304,8 @@ $!d5b.article [
         ]
       ]
     ]
+
+
+    $|index
   ]
 ]
