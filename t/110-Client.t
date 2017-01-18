@@ -4,12 +4,14 @@ use lib 't';
 use Test;
 use Test-support;
 use MongoDB;
+use MongoDB::Log;
 use MongoDB::Client;
 use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+add-send-to( 'screen', :to($*OUT), :level(* >= TRACE));
+drop-send-to('mongodb');
+
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;

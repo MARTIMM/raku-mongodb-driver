@@ -1,11 +1,15 @@
 use v6.c;
 use MongoDB::Log :ALL;
 
+#`{{
 sub EXPORT { {
-    '&set-exception-process-level'      => &set-exception-process-level,
-    '&set-exception-processing'         => &set-exception-processing,
-    '&set-logfile'                      => &set-logfile,
-    '&open-logfile'                     => &open-logfile,
+#    '&set-exception-process-level'      => &set-exception-process-level,
+#    '&set-exception-processing'         => &set-exception-processing,
+#    '&set-logfile'                      => &set-logfile,
+#    '&open-logfile'                     => &open-logfile,
+
+    '&add-send-to'                      => &add-send-to,
+    '&drop-send-to'                     => &drop-send-to,
 
     '&trace-message'                    => &trace-message,
     '&debug-message'                    => &debug-message,
@@ -15,6 +19,7 @@ sub EXPORT { {
     '&fatal-message'                    => &fatal-message,
   }
 };
+}}
 
 #-------------------------------------------------------------------------------
 unit package MongoDB:ver<0.36.1>:auth<https://github.com/MARTIMM>;
