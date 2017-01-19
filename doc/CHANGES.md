@@ -2,6 +2,8 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.36.2
+  * Modified the logging module to use Log::Async
 * 0.36.1
   * Renamed many enumeration values.
   * Refactored some code from Client and Server into MongoDB::Authenticate::* (Credential and Scram)
