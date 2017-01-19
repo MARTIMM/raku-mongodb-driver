@@ -1,9 +1,12 @@
 use v6.c;
 
+use Log::Async;
+
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
-use Log::Async;
+enum Loglevels <<:Trace(1) Debug Info Warn Error Fatal>>;
+
 use Terminal::ANSIColor;
 
 #-------------------------------------------------------------------------------
@@ -20,10 +23,10 @@ class Log is Log::Async {
   #-----------------------------------------------------------------------------
   # add channel
   method add-send-to (
-    Str:D $key, :$level = INFO, Code :$code,
+    Str:D $key, :$level = Info, Code :$code,
     Any :$to is copy = $*OUT, Str :$pipe
   ) {
-
+#say "$key, $to, $level, {$code//'-'}";
     if $pipe {
       my Proc $p = shell( $pipe, :in) or die "error opening pipe to $pipe";
       $to = $p.in;
@@ -35,10 +38,18 @@ class Log is Log::Async {
 
   #-----------------------------------------------------------------------------
   # drop channel
-  method drop-send-to ( Str:D $key, Any :$to = $*OUT, :$level = INFO) {
+  method drop-send-to ( Str:D $key ) {
 
     $!send-to-setup{$key}:exists and $!send-to-setup{$key}:delete;
     self!start-send-to;
+  }
+
+  #-----------------------------------------------------------------------------
+  # drop all channel
+  method drop-all-send-to ( ) {
+
+    self.close-taps;
+    $!send-to-setup = {};
   }
 
   #-----------------------------------------------------------------------------
@@ -85,17 +96,20 @@ class Log is Log::Async {
       $m = { :$msg, :$level, :$when };
     }
 
-    (start $.source.emit($m)).then({ say $^p.cause unless $^p.status == Kept });
+    (start $.source.emit($m)).then( {
+#        say LogLevel::TRACE;
+#        say LogLevel::Trace;
+#        say MongoDB::Log::Trace;
+#say .perl;
+        say $^p.cause unless $^p.status == Kept
+      }
+    );
   }
 }
 
 set-logger(MongoDB::Log.new);
 logger.close-taps;
 
-sub EXPORT { {
-    '&logger'                           => &logger,
-  }
-};
 
 #-------------------------------------------------------------------------------
 class Message is Exception {
@@ -189,27 +203,27 @@ my Code $log-code = sub (
 }
 
 sub trace-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(TRACE), :code($log-code));
+  logger.log( :$msg, :level(Trace), :code($log-code));
 }
 
 sub debug-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(DEBUG), :code($log-code));
+  logger.log( :$msg, :level(Debug), :code($log-code));
 }
 
 sub info-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(INFO), :code($log-code));
+  logger.log( :$msg, :level(Info), :code($log-code));
 }
 
 sub warn-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(WARNING), :code($log-code-cf));
+  logger.log( :$msg, :level(Warn), :code($log-code-cf));
 }
 
 sub error-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(ERROR), :code($log-code-cf));
+  logger.log( :$msg, :level(Error), :code($log-code-cf));
 }
 
 sub fatal-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(FATAL), :code($log-code-cf));
+  logger.log( :$msg, :level(Fatal), :code($log-code-cf));
   sleep 0.5;
   die MongoDB::Message.new( :message($msg));
 }
@@ -256,16 +270,18 @@ my Code $code = -> $m {
 
 #-------------------------------------------------------------------------------
 sub add-send-to ( |c ) is export { logger.add-send-to( |c, :$code); }
-sub drop-send-to ( |c ) is export { logger.drop-send-to( |c, :$code); }
+sub drop-send-to ( |c ) is export { logger.drop-send-to(|c); }
+sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 
 #-------------------------------------------------------------------------------
 # Activate some channels. Display messages only on error and fatal to the screen
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
-add-send-to( 'screen', :to($*OUT), :level(* >= ERROR));
-add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :level(* >= TRACE));
+add-send-to( 'screen', :to($*OUT), :level(* >= Error));
+add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :level(* >= Info));
 
-
-
+#say "Info: ", MongoDB::Loglevels::Info.value;
+#say "INFO: ", Loglevels::INFO.value;
+#exit 0;
 
 
 

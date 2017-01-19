@@ -9,8 +9,9 @@ use MongoDB::Database;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+#drop-send-to('mongodb');
+#drop-send-to('screen');
+#add-send-to( 'screen', :to($*OUT), :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -127,5 +128,7 @@ try {
 #
 $client1.cleanup;
 info-message("Test $?FILE stop");
+sleep .2;
+drop-all-send-to();
 done-testing();
 exit(0);

@@ -4,14 +4,13 @@ use lib 't';
 use Test;
 use Test-support;
 use MongoDB;
-use MongoDB::Log;
 use MongoDB::Client;
 use MongoDB::Server;
 
 #-------------------------------------------------------------------------------
-add-send-to( 'screen', :to($*OUT), :level(* >= TRACE));
-drop-send-to('mongodb');
-
+#drop-send-to('mongodb');
+#drop-send-to('screen');
+#add-send-to( 'screen', :to($*OUT), :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -88,5 +87,7 @@ subtest {
 # Cleanup
 #
 info-message("Test $?FILE end");
+sleep .2;
+drop-all-send-to();
 done-testing();
 exit(0);

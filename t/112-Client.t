@@ -12,8 +12,9 @@ use MongoDB::HL::Users;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
+#drop-send-to('mongodb');
+#drop-send-to('screen');
+#add-send-to( 'screen', :to($*OUT), :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -116,5 +117,7 @@ subtest {
 #
 restart-to-normal;
 info-message("Test $?FILE end");
+sleep .2;
+drop-all-send-to();
 done-testing();
 exit(0);

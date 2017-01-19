@@ -3,7 +3,6 @@ use v6.c;
 use BSON;
 use BSON::Document;
 use MongoDB;
-use MongoDB::Log;
 use MongoDB::Header;
 
 #-------------------------------------------------------------------------------
