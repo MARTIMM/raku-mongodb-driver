@@ -1,0 +1,311 @@
+$!d5b.article [
+  $|title [ Perl 6 MongoDB driver ]
+
+  $!d5b.info firstname=Marcel surname=Timmerman email=mt1957@gmail.com
+             city=Haarlem country=Netherlands
+             copy-year='2015, 2016 ... Inf' copy-holder='Marcel Timmerman' [
+
+    $|para [
+      MongoDB is a $**glossterm linkend=nosql [Non SQL] database which uses
+      $**glossterm linkend=bson [Binary JSON] to 
+      store and load information in a database. With the mongodb package a
+      shell program called mongo is available to give instructions to a
+      mongodb server.
+    ]
+
+    $|para [ To work with data on the server from within a program a driver is
+      needed. There are drivers for many program languages. This document
+      describes a driver for the Perl6 language. In the perl6 ecosystem,
+      which might grow into a cpan like system later, there are two packages
+      needed to work with the driver. These are $**glossterm linkend=mongodb
+      [MongoDB] and BSON. BSON is automatically installed with other necessary
+      modules.
+    ]
+
+    $|para [
+      The latest version of this document is generated on date $!SxmlCore.date
+    ]
+  ]
+
+
+  $|sect1 [
+    $|title [Introduction]
+    $|para [
+      The purpose of this document is to show how to work with the perl6
+      mongodb driver and not about how to design your database among other
+      things. There are plenty of good books and documents out there not to
+      mention the mongodb website. A few things need to be repeated in this
+      document however, despite the information displayed elsewhere because
+      otherwise too many references to other places would disturb the flow.
+      There quite a few modules written to perform the tasks at hand but not
+      all modules will be explained here because many of them are modules
+      defining classes to be used in the background and are not used by
+      applications directly.
+    ]
+
+    $|para [
+      This document assumes that the reader is aware of at least the basics of
+      the mongodb database and what one can do with it. Also some perl 6
+      knowledge will be necessary.
+    ]
+
+    $|para [
+      As a last remark, the driver is still in development. Although many parts
+      are accomplished, some parts still need to be implemented like
+      authentication agains kerberos or LDAP. Furthermore, there are some
+      improvements needed to speedup the operations.
+    ]
+
+    $|para [
+      The following sections will be explained:
+
+      $|itemizedlist spacing=compact [
+        $|listitem [
+          $|emphasis[Implementation].
+
+          $|itemizedlist spacing=compact [
+            $|listitem [
+              $|emphasis[BSON::Document]. This is the basic vehicle to insert,
+              update retrieve and send commands to the database server. In this
+              section there is an explanation of the supported types as well as
+              different ways to make requests. Here some detailed perl6 is
+              necessary to understand mistakes often made when creating the data
+              structures.
+            ]
+
+            $|listitem [
+              $|emphasis[URI]. The URI tells the software how to connect to a server
+              and select the proper server.
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Client]. This module is the starting point of all
+              applications which need access to a mongodb database server.
+              
+              
+#              cleanup!
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Database].
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Collection].
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Cursor].
+            ]
+          ]
+        ]
+
+        $|listitem [
+          $|emphasis[Dependensies]. There are some dependencies which are
+          explained a bit here. These are e.g. the server and its version,
+          modules like BSON, PKCS5, Auth::SCRAM etcetera.
+        ]
+
+        $|listitem [
+          $|emphasis[Examples]. Of course, a document whithout examples is a
+          bit like an empty box as a present.
+        ]
+      ]
+    ]
+  ]
+
+  $|sect1 [
+    $|title [Implementation]
+    $|para [
+    ]
+
+    $|sect2 [
+      $|title [BSON::Document]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [URI]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Client]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Database]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Collection]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Cursor]
+      $|para [
+
+      ]
+    ]
+  ]
+
+  $|sect1 [
+    $|title [Dependencies]
+    $|para [
+
+    ]
+
+    $|sect2 [
+      $|title [BSON]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB server ]
+      $|para [
+
+      ]
+    ]
+  ]
+
+  $|sect1 [
+    $|title [Examples]
+    $|para [
+    ]
+    $|sect2 [
+#      $|title [Starting and stopping]
+      $|para [
+      ]
+    ]
+  ]
+
+
+#   $|bibliolist:
+#      $|title: Bibliography
+#  $|bibliography [
+#    $|biblioentry [
+#      $|abbrev [MIMETYPES]
+#      $|title [A list of all mimetypes]
+#      $|abstract [A list of mimetypes can be found on the]
+#      $|ulink url=http://www.sitepoint.com/web-foundations/mime-types-complete-list/ [
+#      ]
+#    ]
+#  ]
+  $|bibliography [
+    $|title [Biliography]
+    
+    $|bibliomixed [
+      $|bibliomset relation=book [
+      
+      ]
+    ]
+  ]
+
+
+  $|glossary [
+    $|title [MongoDB Driver Glossary]
+
+    $|glossdiv [
+      $|title [B]
+
+      $|glossentry xml:id=bson [
+        $|glossterm [Binary JSON]
+        $|acronim [JSON]
+        $|glossdef [
+          $|para [
+            BSON is a computer data interchange format used mainly as a data
+            storage and network transfer format in the MongoDB database.
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [J]
+
+      $|glossentry xml:id=json [
+        $|glossterm [JavaScript Object Notation]
+        $|acronim [JSON]
+        $|glossdef [
+          $|para [
+            JavaScript Object Notation) is an open-standard format that uses
+            human-readable text to transmit data objects consisting of
+            attribute-value pairs
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [M]
+
+      $|glossentry xml:id=mongodb [
+        $|glossterm [MongoDB]
+        $|acronim [MongoDB]
+        $|glossdef [
+          $|para [
+            MongoDB (from humongous) is a free and open-source cross-platform
+            document-oriented database program
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [N]
+
+      $|glossentry xml:id=nosql [
+        $|glossterm [Non SQL]
+        $|acronim [NoSql]
+        $|glossdef [
+          $|para [
+            A NoSQL (originally referring to "non $**glossterm linkend=sql
+            [Structured Query Language]", "non relational" or "not only SQL"
+            database provides a mechanism for storage and retrieval of data
+            which is modeled in means other than the tabular relations used in
+            relational databases. 
+          ]
+        ]
+      ]
+    ]
+
+
+    $|glossdiv [
+      $|title [S]
+
+      $|glossentry xml:id=sql [
+        $|glossterm [Structured Query Language]
+        $|acronim [Sql]
+        $|glossdef [
+          $|para [
+            SQL or Structured Query Language is a special-purpose
+            domain-specific language used in programming and designed for
+            managing data held in a relational database management system
+            (RDBMS)
+          ]
+        ]
+      ]
+    ]
+
+
+    $|index
+  ]
+]

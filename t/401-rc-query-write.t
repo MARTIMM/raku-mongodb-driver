@@ -8,8 +8,9 @@ use MongoDB::Client;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+#drop-send-to('mongodb');
+#drop-send-to('screen');
+#add-send-to( 'screen', :to($*OUT), :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -21,7 +22,6 @@ my BSON::Document $req;
 my BSON::Document $doc;
 
 # Drop database first, not checked for success.
-#
 $database.run-command(BSON::Document.new: (dropDatabase => 1));
 
 #-------------------------------------------------------------------------------
@@ -194,6 +194,9 @@ subtest {
 #
 $client.cleanup;
 info-message("Test $?FILE stop");
+
+sleep .2;
+drop-all-send-to();
 done-testing();
 exit(0);
 

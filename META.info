@@ -11,7 +11,8 @@
     "Base64",
     "OpenSSL",
     "URI::Escape",
-    "Unicode::PRECIS"
+    "Unicode::PRECIS",
+    "Log::Async"
   ],
   "description": "MongoDB driver",
   "license": "The Artistic License 2.0",
