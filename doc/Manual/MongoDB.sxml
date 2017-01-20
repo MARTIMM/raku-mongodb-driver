@@ -68,8 +68,8 @@ $!d5b.article [
               $|emphasis[BSON::Document]. This is the basic vehicle to insert,
               update retrieve and send commands to the database server. In this
               section there is an explanation of the supported types as well as
-              different ways to make requests. Here some detailed perl6 is
-              necessary to understand mistakes often made when creating the data
+              different ways to make requests. Some detailed perl6 is necessary
+              to understand mistakes often made when creating the data
               structures.
             ]
 
