@@ -1,7 +1,6 @@
 branches:
   only:
     - master
-    - travis
 
 language: perl6
 
@@ -31,11 +30,14 @@ install:
 
   - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 
-  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
-  - rakudobrew build-panda
-  - panda installdeps .
-  - panda update
+#  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
+#  - rakudobrew build-panda
+#  - panda installdeps .
+#  - panda update
 #  - panda install BSON Digest::MD5
+  - rakudobrew build zef
+  - zef update
+  - zef --depsonly install .
 
 
 # Cannot use the mongod service because the version is too low (2.4.12)
