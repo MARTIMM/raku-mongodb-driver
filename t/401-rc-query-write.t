@@ -10,7 +10,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 #drop-send-to('mongodb');
 #drop-send-to('screen');
-#add-send-to( 'screen', :to($*OUT), :level(* >= MongoDB::Loglevels::Trace));
+#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
