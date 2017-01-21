@@ -4,9 +4,16 @@ use v6.c;
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 use BSON::Document;
+
+use MongoDB;
 use MongoDB::Collection;
 use MongoDB::Server::Control;
 use MongoDB::Client;
+
+#-------------------------------------------------------------------------------
+#drop-send-to('mongodb');
+#drop-send-to('screen');
+#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
 
 #-------------------------------------------------------------------------------
 class Test-support {
