@@ -30,7 +30,7 @@ class Server::Socket {
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
 
-    info-message("New socket for $!thread-id at time $!time-last-used");
+    trace-message("new socket");
   };
 
   #-----------------------------------------------------------------------------
@@ -52,7 +52,7 @@ class Server::Socket {
   # Open socket, returns True when already opened before otherwise it is opened
   method open ( --> Bool ) {
 
-    die "Thread $*THREAD.id() is not owner of this socket"
+    fatal-message("thread $*THREAD.id() is not owner of this socket")
       unless $.thread-id == $*THREAD.id();
     return True if $!is-open;
 
@@ -61,7 +61,7 @@ class Server::Socket {
 
     $!thread-id = $*THREAD.id;
 
-    trace-message("Open socket");
+    trace-message("open socket");
     $!is-open = True;
     $!time-last-used = time;
     
@@ -71,13 +71,13 @@ class Server::Socket {
   #-----------------------------------------------------------------------------
   method send ( Buf:D $b --> Nil ) {
 
-    die "Thread $*THREAD.id() is not owner of this socket"
+    fatal-message("thread $*THREAD.id() is not owner of this socket")
       unless $.thread-id == $*THREAD.id();
 
-    die "Socket not opened" unless $!sock.defined;
+    fatal-message("Socket not opened") unless $!sock.defined;
 
 #TODO Check if sock is usable
-    trace-message("Socket send, size: $b.elems()");
+    trace-message("socket send, size: $b.elems()");
     $!sock.write($b);
     $!time-last-used = time;
   }
@@ -85,22 +85,22 @@ class Server::Socket {
   #-----------------------------------------------------------------------------
   method receive ( int $nbr-bytes --> Buf ) {
 
-    die "Thread $*THREAD.id() is not owner of this socket"
+    fatal-message("thread $*THREAD.id() is not owner of this socket")
       unless $.thread-id == $*THREAD.id();
 
-    die "Socket not opened" unless $!sock.defined;
+    fatal-message("socket not opened") unless $!sock.defined;
 
 #TODO Check if sock is usable
     my Buf $b = $!sock.read($nbr-bytes);
     $!time-last-used = time;
-    trace-message("Socket receive, request size $nbr-bytes, received size $b.elems()");
+    trace-message("socket receive, request size $nbr-bytes, received size $b.elems()");
     $b;
   }
 
   #-----------------------------------------------------------------------------
   method close ( ) {
 
-    die "Thread $*THREAD.id() is not owner of this socket"
+    fatal-message("thread $*THREAD.id() is not owner of this socket")
       unless $.thread-id == $*THREAD.id();
 
     $!sock.close if $!sock.defined;
@@ -114,10 +114,10 @@ class Server::Socket {
   #-----------------------------------------------------------------------------
   method close-on-fail ( ) {
 
-    die "Thread $*THREAD.id() is not owner of this socket"
+    fatal-message("thread $*THREAD.id() is not owner of this socket")
       unless $.thread-id == $*THREAD.id();
 
-    trace-message("'Close' socket on failure");
+    trace-message("'close' socket on failure");
     $!sock = Nil;
     $!is-open = False;
     $!time-last-used = time;
