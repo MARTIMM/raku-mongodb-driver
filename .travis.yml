@@ -35,7 +35,7 @@ install:
 #  - panda installdeps .
 #  - panda update
 #  - panda install BSON Digest::MD5
-  - rakudobrew build-zef ${TRAVIS_PERL6_VERSION#latest}
+  - rakudobrew build-zef
   - zef update
   - zef --depsonly install .
 
