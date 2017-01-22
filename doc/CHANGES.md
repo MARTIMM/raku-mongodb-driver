@@ -4,6 +4,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
 * 0.36.2
   * Modified the logging module to use Log::Async
+  * Modified log levels in module Socket. Also die statements changed into fatal-messages.
 * 0.36.1
   * Renamed many enumeration values.
   * Refactored some code from Client and Server into MongoDB::Authenticate::* (Credential and Scram)
