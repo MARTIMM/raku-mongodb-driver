@@ -24,7 +24,7 @@ class Log is Log::Async {
   # add channel
   method add-send-to (
     Str:D $key, :$level = Info, Code :$code,
-    Any :$to is copy = $*OUT, Str :$pipe
+    Any :$to is copy = $*ERR, Str :$pipe
   ) {
 #say "$key, $to, $level, {$code//'-'}";
     if $pipe {
@@ -33,6 +33,33 @@ class Log is Log::Async {
     }
 
     $!send-to-setup{$key} = [ $to, $level, $code];
+    self!start-send-to;
+  }
+
+  #-----------------------------------------------------------------------------
+  # modify channel
+  method modify-send-to (
+    Str:D $key, :$level = Info, Code :$code,
+    Any :$to is copy = $*ERR, Str :$pipe
+  ) {
+#say "$key, $to, $level, {$code//'-'}";
+
+    unless $!send-to-setup{$key}:exists {
+      note "key $key not found";
+      return;
+    }
+
+    if $pipe {
+      my Proc $p = shell( $pipe, :in) or die "error opening pipe to $pipe";
+      $to = $p.in;
+    }
+
+    my Array $psto = $!send-to-setup{$key};
+    $psto[0] = $to if ? $to;
+    $psto[1] = $level if ? $level;
+    $psto[2] = $code if ? $code;
+    $!send-to-setup{$key} = $psto;
+
     self!start-send-to;
   }
 
@@ -270,6 +297,7 @@ my Code $code = -> $m {
 
 #-------------------------------------------------------------------------------
 sub add-send-to ( |c ) is export { logger.add-send-to( |c, :$code); }
+sub modify-send-to ( |c ) is export { logger.modify-send-to( |c, :$code); }
 sub drop-send-to ( |c ) is export { logger.drop-send-to(|c); }
 sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 
@@ -278,10 +306,6 @@ sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
 add-send-to( 'screen', :to($*ERR), :level(* >= Error));
 add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :level(* >= Info));
-
-#say "Info: ", MongoDB::Loglevels::Info.value;
-#say "INFO: ", Loglevels::INFO.value;
-#exit 0;
 
 
 

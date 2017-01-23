@@ -9,6 +9,7 @@ sub EXPORT { {
 #    '&open-logfile'                     => &open-logfile,
 
     '&add-send-to'                      => &add-send-to,
+    '&modify-send-to'                   => &modify-send-to,
     '&drop-send-to'                     => &drop-send-to,
     '&drop-all-send-to'                 => &drop-all-send-to,
 
