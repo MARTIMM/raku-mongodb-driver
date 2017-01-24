@@ -39,12 +39,12 @@ class Log is Log::Async {
   #-----------------------------------------------------------------------------
   # modify channel
   method modify-send-to (
-    Str:D $key, :$level = Info, Code :$code,
-    Any :$to is copy = $*ERR, Str :$pipe
+    Str $key, :$level, Code :$code,
+    Any :$to is copy, Str :$pipe
   ) {
 #say "$key, $to, $level, {$code//'-'}";
 
-    unless $!send-to-setup{$key}:exists {
+    if $!send-to-setup{$key}:!exists {
       note "key $key not found";
       return;
     }
