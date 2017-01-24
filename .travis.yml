@@ -35,14 +35,15 @@ install:
 #  - panda installdeps .
 #  - panda update
 #  - panda install BSON Digest::MD5
-#  - rakudobrew build
 
-  - git clone https://github.com/tadzik/rakudobrew ~/.rakudobrew
-  - export PATH=~/.rakudobrew/bin:$PATH
-  - rakudobrew init
+  - rakudobrew build moar
 
-  - git clone https://github.com/ugexe/zef.git
-  - perl6 -Izef/lib zef/bin/zef install zef
+#  - git clone https://github.com/tadzik/rakudobrew ~/.rakudobrew
+#  - export PATH=~/.rakudobrew/bin:$PATH
+#  - rakudobrew init
+
+  - echo $HOME
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-zef.sh
   - zef --depsonly install .
 
 
