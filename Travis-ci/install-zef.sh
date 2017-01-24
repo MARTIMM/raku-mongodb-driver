@@ -9,3 +9,5 @@ cd zef
 perl6 -Ilib bin/zef install .
 cd ..
 
+exit 0
+
