@@ -36,7 +36,7 @@ install:
 #  - panda update
 #  - panda install BSON Digest::MD5
 
-  - rakudobrew build moar
+  - rakudobrew build
 
 #  - git clone https://github.com/tadzik/rakudobrew ~/.rakudobrew
 #  - export PATH=~/.rakudobrew/bin:$PATH
