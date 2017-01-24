@@ -10,9 +10,9 @@ use BSON::ObjectId;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-drop-send-to('mongodb');
-drop-send-to('screen');
-add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+#drop-send-to('mongodb');
+#drop-send-to('screen');
+#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
