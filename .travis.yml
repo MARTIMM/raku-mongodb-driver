@@ -28,7 +28,6 @@ install:
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
 
-  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 
 #  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
 #  - rakudobrew build-panda
@@ -36,7 +35,9 @@ install:
 #  - panda update
 #  - panda install BSON Digest::MD5
 
-  - rakudobrew build
+#  - rakudobrew build
+
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 
 #  - git clone https://github.com/tadzik/rakudobrew ~/.rakudobrew
 #  - export PATH=~/.rakudobrew/bin:$PATH
