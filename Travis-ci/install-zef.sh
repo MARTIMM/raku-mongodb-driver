@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
-set -v
+set -vx
 
 # Install zef
 
-/bin/ls -lR
+#/bin/ls -lR
 
 cd ${TRAVIS_BUILD_DIR}/Travis-ci
 
