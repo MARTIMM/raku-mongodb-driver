@@ -43,7 +43,7 @@ install:
 #  - export PATH=~/.rakudobrew/bin:$PATH
 #  - rakudobrew init
 
-  - echo $HOME
+#  - echo $HOME
   - sh $TRAVIS_BUILD_DIR/Travis-ci/install-zef.sh
   - zef --depsonly install .
 
