@@ -19,7 +19,8 @@ class Wire {
     MongoDB::CollectionType:D $collection,
     BSON::Document:D $qdoc, BSON::Document $projection?,
     QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
-    Int :$number-to-return, :$server where .^name eq 'MongoDB::Server'
+    Int :$number-to-return, ServerType :$server
+
     --> BSON::Document
   ) {
 
@@ -36,13 +37,6 @@ class Wire {
     my BSON::Document $result;
 
     try {
-#      $client = $collection.database.client;
-
-      # Check if the server ticket is defined and thus a server is reserved
-      # for this communication.
-      #
-      fatal-message("No server available") unless $!server.defined;
-
       my $full-collection-name = $collection.full-collection-name;
 
       ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
@@ -52,7 +46,6 @@ class Wire {
 
       $!socket = $server.get-socket;
       $!socket.send($encoded-query);
-#say "$*THREAD.id() sock $!socket";
 
       # Read 4 bytes for int32 response size
       my Buf $size-bytes = self!get-bytes(4);
@@ -66,7 +59,6 @@ class Wire {
 
       # Receive remaining response bytes from socket. Prefix it with the
       # already read bytes and decode. Return the resulting document.
-      #
       my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
 
       $result = $d.decode-reply($server-reply);
@@ -76,7 +68,6 @@ class Wire {
         unless $request-id == $result<message-header><response-to>;
 
       # Catch all thrown exceptions and take out the server if needed
-      #
       CATCH {
 #say .WHAT;
 #say "$*THREAD.id() Error wire query: ", $_;
@@ -99,7 +90,7 @@ class Wire {
           error-message(.message);
         }
 
-        # If not one of the above errors, rethrow the error
+        # If not one of the above errors, rethrow the error after showing
         default {
           .say;
           .rethrow;
