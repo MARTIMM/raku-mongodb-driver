@@ -62,5 +62,5 @@ cache:
   timeout: 1200
   directories:
 #    - $HOME/Travis-ci/P6Software
-    - $HOME/Travis-ci/MongoDB
+    - $HOME/Travis-ci
     - $HOME/.rakudobrew
