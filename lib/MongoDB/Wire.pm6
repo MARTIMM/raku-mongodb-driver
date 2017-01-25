@@ -105,7 +105,7 @@ class Wire {
   #
   method get-more (
     $cursor, Int :$number-to-return, 
-    :$server where .^name eq 'MongoDB::Server'
+    ServerType:D :$server where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
 
@@ -122,9 +122,6 @@ class Wire {
         $cursor.full-collection-name, $cursor.id, :$number-to-return
       );
 
-#      $client = $cursor.client;
-
-      fatal-message("No server available") unless $!server.defined;
       $!socket = $server.get-socket;
       $!socket.send($encoded-get-more);
 
@@ -183,10 +180,7 @@ class Wire {
 
   #-----------------------------------------------------------------------------
   #
-  method kill-cursors (
-    @cursors where .elems > 0,
-    :$server! where .^name eq 'MongoDB::Server'
-  ) {
+  method kill-cursors ( @cursors where .elems > 0, ServerType:D :$server! ) {
 
     $!server = $server;
 
