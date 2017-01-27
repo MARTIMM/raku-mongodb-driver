@@ -10,9 +10,9 @@ unit package MongoDB:auth<https://github.com/MARTIMM>;
 #-------------------------------------------------------------------------------
 role Header {
 
-  # These variables must be shared between role Header objects.
-  #
-  my Bool $debug = False;
+  # Request id must be kept among all objects of this type so the request can
+  # be properly be updated.
+#TODO semaphore protection when in thread other than main?
   my Int $request-id = 0;
 
   #-----------------------------------------------------------------------------
