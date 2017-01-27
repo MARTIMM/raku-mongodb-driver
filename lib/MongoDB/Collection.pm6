@@ -61,7 +61,7 @@ class Collection {
     my BSON::Document $cr .= new: $criteria;
     my BSON::Document $pr .= new: $projection;
     my BSON::Document $server-reply = $wire.query(
-      self, $cr, $pr, :@flags, :$number-to-skip,
+      $!full-collection-name, $cr, $pr, :@flags, :$number-to-skip,
       :$number-to-return, :$server
     );
 
@@ -100,8 +100,8 @@ class Collection {
     }
 
     my BSON::Document $server-reply = $wire.query(
-      self, $criteria, $projection, :@flags, :$number-to-skip,
-      :$number-to-return, :$server
+      $!full-collection-name, $criteria, $projection, :@flags,
+      :$number-to-skip, :$number-to-return, :$server
     );
 
     unless $server-reply.defined {

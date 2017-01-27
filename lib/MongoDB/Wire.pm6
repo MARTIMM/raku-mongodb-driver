@@ -16,7 +16,7 @@ class Wire {
 
   #-----------------------------------------------------------------------------
   method query (
-    MongoDB::CollectionType:D $collection,
+    Str $full-collection-name,
     BSON::Document:D $qdoc, BSON::Document $projection?,
     QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
     Int :$number-to-return, ServerType :$server
@@ -37,8 +37,6 @@ class Wire {
     my BSON::Document $result;
 
     try {
-      my $full-collection-name = $collection.full-collection-name;
-
       ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
         $full-collection-name, $projection,
         :$flags, :$number-to-skip, :$number-to-return
