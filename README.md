@@ -227,7 +227,8 @@ There has been a lot of changes in the API.
 * [MongoDB::Database](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Database.pdf)
 * [MongoDB::Collection](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Collection.pdf)
 * [MongoDB::Cursor](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Cursor.pdf)
-* doc/Server.pdf
+* [MongoDB::Server](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Server.pdf)
+
 * doc/Users.pdf
 
 #### Notes
