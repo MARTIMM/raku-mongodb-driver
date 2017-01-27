@@ -11,9 +11,9 @@ use MongoDB::Collection;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -87,7 +87,7 @@ subtest {
 
       CATCH {
         default {
-          .say;
+          like .message, /:s Failed to connect\: connection refused/, .message
         }
       }
 

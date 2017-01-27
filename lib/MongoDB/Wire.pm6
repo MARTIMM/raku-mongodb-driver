@@ -19,7 +19,7 @@ class Wire {
     Str $full-collection-name,
     BSON::Document:D $qdoc, BSON::Document $projection?,
     QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
-    Int :$number-to-return, ServerType :$server
+    Int :$number-to-return, ServerType :$server, Bool :$authenticate = True 
 
     --> BSON::Document
   ) {
@@ -42,7 +42,7 @@ class Wire {
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      $!socket = $server.get-socket;
+      $!socket = $server.get-socket(:$authenticate);
       $!socket.send($encoded-query);
 
       # Read 4 bytes for int32 response size
@@ -67,8 +67,8 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#say .WHAT;
-#say "$*THREAD.id() Error wire query: ", $_;
+#note .WHAT;
+#note "$*THREAD.id() Error wire query: ", $_;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
@@ -80,7 +80,8 @@ class Wire {
         when .message ~~ m:s/Failed to resolve host name/ ||
              .message ~~ m:s/Failed to connect\: connection refused/ {
 
-          error-message(.message);
+#          error-message(.message);
+          .rethrow;
         }
 
         # From BSON::Document
@@ -90,7 +91,7 @@ class Wire {
 
         # If not one of the above errors, rethrow the error after showing
         default {
-          .say;
+          .note;
           .rethrow;
         }
       }
@@ -145,7 +146,7 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-#.say;
+#.note;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
@@ -213,7 +214,7 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-#.say;
+#.note;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
