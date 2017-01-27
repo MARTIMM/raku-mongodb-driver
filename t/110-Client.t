@@ -7,6 +7,8 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Server;
 
+use BSON::Document;
+
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
@@ -59,6 +61,16 @@ subtest {
 #  is $client.nbr-servers, 1, 'One server found';
   is $client.server-status("localhost:$p1"), MASTER-SERVER,
      "Status of server is $client.server-status("localhost:$p1")";
+
+  my BSON::Document $result = $server.raw-query(
+    'admin.$cmd', BSON::Document.new((isMaster => 1)), :!authentication
+  );
+
+  is $result<starting-from>, 0, 'start from beginning';
+  is $result<number-returned>, 1, 'one document returned';
+  ok $result<documents>[0]<ismaster>, 'isMaster returned master = true';
+
+#  note $result.perl;
 
   $client.cleanup;
 }, "Standalone server";
