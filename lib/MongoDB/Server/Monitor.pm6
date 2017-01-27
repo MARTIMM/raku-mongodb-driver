@@ -2,7 +2,6 @@ use v6.c;
 
 use MongoDB;
 use MongoDB::Server::Socket;
-use MongoDB::Wire;
 use BSON;
 use BSON::Document;
 use Semaphore::ReadersWriters;
@@ -11,17 +10,6 @@ use Semaphore::ReadersWriters;
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
-# Complete standalone and thereby thread save, to monitor a mongo server. To
-# separate everything, several code sections are taken from Database, Collection
-# and Wire modules with several shortcuts because the operation to get the
-# information is simple.
-#
-# - Server object is past from the Server object to initiate the polling.
-# - Read and write concern info and some other query options are not needed.
-# - No server shutdown on failures. Communicate through channel.
-# - Full collection name is fixed. Document and encoding is fixed.
-# - No Cursor object needed. One document is pulled out directly from result.
-#
 # Note: Because Supplier is inherited, BUILD cannot get its named parameters.
 # when a new() method is defined, Supplier gets wrong parameters. Therefore
 # BUILD is replaced by monitor-init() and must be called explicitly
@@ -43,7 +31,6 @@ class Server::Monitor {
 
   has BSON::Document $!monitor-command;
   has BSON::Document $!monitor-result;
-  has MongoDB::Wire $!wire;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
@@ -70,10 +57,6 @@ class Server::Monitor {
     $!monitor-data-supplier .= new;
 
     $!monitor-command .= new: (isMaster => 1);
-#    $!monitor-command.encode;
-#    $!monitor-command does MongoDB::Header;
-    
-    $!wire .= new;
   }
 
 #  #-----------------------------------------------------------------------------
@@ -125,10 +108,9 @@ class Server::Monitor {
             $t0 = now;
 
             # Get server info
-            $doc = $!wire.query(
+            $doc = $!server.raw-query(
               'admin.$cmd', $!monitor-command,
-              :number-to-skip(0), :number-to-return(1),
-              :$!server, :!authenticate
+              :number-to-skip(0), :number-to-return(1), :!authenticate
             );
 
             # then time response
