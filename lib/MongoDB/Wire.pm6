@@ -16,7 +16,7 @@ class Wire {
 
   #-----------------------------------------------------------------------------
   method query (
-    Str $full-collection-name,
+    Str:D $full-collection-name,
     BSON::Document:D $qdoc, BSON::Document $projection?,
     QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
     Int :$number-to-return, ServerType :$server, Bool :$authenticate = True 
