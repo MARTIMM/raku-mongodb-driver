@@ -10,9 +10,9 @@ unit package MongoDB:auth<https://github.com/MARTIMM>;
 #-------------------------------------------------------------------------------
 role Header {
 
-  # These variables must be shared between role Header objects.
-  #
-  my Bool $debug = False;
+  # Request id must be kept among all objects of this type so the request can
+  # be properly be updated.
+#TODO semaphore protection when in thread other than main?
   my Int $request-id = 0;
 
   #-----------------------------------------------------------------------------
@@ -28,7 +28,7 @@ role Header {
   }
 
   #-----------------------------------------------------------------------------
-  method encode-message-header ( Int $buffer-size, WireOpcode $op-code --> List ) {
+  method !encode-message-header ( Int $buffer-size, WireOpcode $op-code --> List ) {
 
     my Int $used-request-id = $request-id++;
 
@@ -158,7 +158,7 @@ role Header {
     # standard message header
     #
     ( my Buf $encoded-query, my Int $u-request-id) = 
-      self.encode-message-header( $query-buffer.elems, OP-QUERY);
+      self!encode-message-header( $query-buffer.elems, OP-QUERY);
 
     return ( $encoded-query ~ $query-buffer, $u-request-id);
   }
@@ -204,7 +204,7 @@ role Header {
     # (watch out for inconsistent OP_code and messsage name)
     #
     ( my Buf $encoded-get-more, my Int $u-request-id) = 
-      self.encode-message-header( $get-more-buffer.elems, OP-GET-MORE);
+      self!encode-message-header( $get-more-buffer.elems, OP-GET-MORE);
 
     return ( $encoded-get-more ~ $get-more-buffer, $u-request-id);
   }
@@ -236,7 +236,7 @@ role Header {
     # standard message header
     #
     ( my Buf $encoded-kill-cursors, my Int $u-request-id) = 
-      self.encode-message-header( $kill-cursors-buffer.elems, OP-KILL-CURSORS);
+      self!encode-message-header( $kill-cursors-buffer.elems, OP-KILL-CURSORS);
 
     return ( $encoded-kill-cursors ~ $kill-cursors-buffer, $u-request-id);
   }

@@ -2,21 +2,24 @@
 
 use v6;
 
-use Bench;
+use lib 't';
+use Test-support;
+
+use MongoDB;
 use MongoDB::Client;
 
-constant $port = 65000;
+use Bench;
+
+my MongoDB::Test-support $ts .= new;
+my Int $p1 = $ts.server-control.get-port-number('s1');
+my MongoDB::Client $cln .= new( :uri('mongodb://localhost' ~ ":$p1"));
 
 my $b = Bench.new;
-my MongoDB::Client $cln .= instance( :uri('mongodb://localhost' ~ ":$port"));;
-my MongoDB::Server $srv;
-my MongoDB::Socket $sck;
-
 $b.timethese(
   50, {
     connect => sub {
-      $srv = $cln.select-server;
-      $sck = $srv.get-socket;
+      my $srv = $cln.select-server;
+      my $sck = $srv.get-socket;
       $sck.close;
     }
   }

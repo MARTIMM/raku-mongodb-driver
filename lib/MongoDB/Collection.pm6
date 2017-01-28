@@ -53,7 +53,7 @@ class Collection {
 
     my ServerType $server = $!database.client.select-server(:read-concern($rc));
 
-    if not $server.defined {
+    unless $server.defined {
       error-message("No server object for query");
       return MongoDB::Cursor;
     }
@@ -61,11 +61,11 @@ class Collection {
     my BSON::Document $cr .= new: $criteria;
     my BSON::Document $pr .= new: $projection;
     my BSON::Document $server-reply = $wire.query(
-      self, $cr, $pr, :@flags, :$number-to-skip,
+      $!full-collection-name, $cr, $pr, :@flags, :$number-to-skip,
       :$number-to-return, :$server
     );
 
-    if not $server-reply.defined {
+    unless $server-reply.defined {
       error-message("No server reply on query");
       return MongoDB::Cursor;
     }
@@ -94,17 +94,17 @@ class Collection {
 
     my ServerType $server = $!database.client.select-server(:read-concern($rc));
 
-    if not $server.defined {
+    unless $server.defined {
       error-message("No server object for query");
       return MongoDB::Cursor;
     }
 
     my BSON::Document $server-reply = $wire.query(
-      self, $criteria, $projection, :@flags, :$number-to-skip,
-      :$number-to-return, :$server
+      $!full-collection-name, $criteria, $projection, :@flags,
+      :$number-to-skip, :$number-to-return, :$server
     );
 
-    if not $server-reply.defined {
+    unless $server-reply.defined {
       error-message("No server reply on query");
       return MongoDB::Cursor;
     }

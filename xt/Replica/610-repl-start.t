@@ -13,8 +13,9 @@ use MongoDB::Cursor;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+drop-send-to('mongodb');
+#drop-send-to('screen');
+modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -41,6 +42,9 @@ subtest {
   is $server.get-status, REJECTED-SERVER, "Server 2 is rejected";
 
 }, "Replica server pre-init rejected";
+
+done-testing;
+exit(0);
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -121,7 +125,7 @@ subtest {
           ),
         ]
       ),
-    ), :$server
+    )
   );
 
   sleep 10;

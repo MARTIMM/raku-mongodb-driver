@@ -27,10 +27,8 @@ class Cursor does Iterable {
   #-----------------------------------------------------------------------------
   # Support for the newer BSON::Document
   multi submethod BUILD (
-    MongoDB::CollectionType:D :$collection!,
-    BSON::Document:D :$server-reply!,
-    :$server! where .^name eq 'MongoDB::Server',
-    Int :$number-to-return = 0
+    MongoDB::CollectionType:D :$collection!, BSON::Document:D :$server-reply!,
+    ServerType:D :$server!, Int :$number-to-return = 0
   ) {
 
     $!client = $collection.database.client;
@@ -56,10 +54,8 @@ class Cursor does Iterable {
 
   # This can be set with data received from a command e.g. listDatabases
   multi submethod BUILD (
-    MongoDB::ClientType:D :$client!,
-    BSON::Document:D :$cursor-doc!,
-    BSON::Document :$read-concern,
-    Int :$number-to-return = 0
+    MongoDB::ClientType:D :$client!, BSON::Document:D :$cursor-doc!,
+    BSON::Document :$read-concern, Int :$number-to-return = 0
   ) {
 
     $!client = $client;
@@ -148,7 +144,7 @@ class Cursor does Iterable {
 
     # Invalidate cursor on database only if id is valid
     if [+] @$.id {
-      MongoDB::Wire.new.kill-cursors( (self,), :$!server, :$!number-to-return);
+      MongoDB::Wire.new.kill-cursors( (self,), :$!server);
 
       # Invalidate cursor id with 8 0x00 bytes
       $!id = Buf.new(0x00 xx 8);

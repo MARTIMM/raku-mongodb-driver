@@ -16,10 +16,11 @@ class Wire {
 
   #-----------------------------------------------------------------------------
   method query (
-    MongoDB::CollectionType:D $collection,
+    Str:D $full-collection-name,
     BSON::Document:D $qdoc, BSON::Document $projection?,
     QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
-    Int :$number-to-return, :$server where .^name eq 'MongoDB::Server'
+    Int :$number-to-return, ServerType :$server, Bool :$authenticate = True 
+
     --> BSON::Document
   ) {
 
@@ -36,23 +37,13 @@ class Wire {
     my BSON::Document $result;
 
     try {
-#      $client = $collection.database.client;
-
-      # Check if the server ticket is defined and thus a server is reserved
-      # for this communication.
-      #
-      fatal-message("No server available") unless $!server.defined;
-
-      my $full-collection-name = $collection.full-collection-name;
-
       ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
         $full-collection-name, $projection,
         :$flags, :$number-to-skip, :$number-to-return
       );
 
-      $!socket = $server.get-socket;
+      $!socket = $server.get-socket(:$authenticate);
       $!socket.send($encoded-query);
-#say "$*THREAD.id() sock $!socket";
 
       # Read 4 bytes for int32 response size
       my Buf $size-bytes = self!get-bytes(4);
@@ -66,7 +57,6 @@ class Wire {
 
       # Receive remaining response bytes from socket. Prefix it with the
       # already read bytes and decode. Return the resulting document.
-      #
       my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
 
       $result = $d.decode-reply($server-reply);
@@ -76,10 +66,9 @@ class Wire {
         unless $request-id == $result<message-header><response-to>;
 
       # Catch all thrown exceptions and take out the server if needed
-      #
       CATCH {
-#say .WHAT;
-#say "$*THREAD.id() Error wire query: ", $_;
+#note .WHAT;
+#note "$*THREAD.id() Error wire query: ", $_;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
@@ -91,7 +80,8 @@ class Wire {
         when .message ~~ m:s/Failed to resolve host name/ ||
              .message ~~ m:s/Failed to connect\: connection refused/ {
 
-          error-message(.message);
+#          error-message(.message);
+          .rethrow;
         }
 
         # From BSON::Document
@@ -99,9 +89,9 @@ class Wire {
           error-message(.message);
         }
 
-        # If not one of the above errors, rethrow the error
+        # If not one of the above errors, rethrow the error after showing
         default {
-          .say;
+          .note;
           .rethrow;
         }
       }
@@ -114,7 +104,7 @@ class Wire {
   #
   method get-more (
     $cursor, Int :$number-to-return, 
-    :$server where .^name eq 'MongoDB::Server'
+    ServerType:D :$server where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
 
@@ -131,9 +121,6 @@ class Wire {
         $cursor.full-collection-name, $cursor.id, :$number-to-return
       );
 
-#      $client = $cursor.client;
-
-      fatal-message("No server available") unless $!server.defined;
       $!socket = $server.get-socket;
       $!socket.send($encoded-get-more);
 
@@ -159,7 +146,7 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-#.say;
+#.note;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
@@ -192,10 +179,7 @@ class Wire {
 
   #-----------------------------------------------------------------------------
   #
-  method kill-cursors (
-    @cursors where .elems > 0,
-    :$server! where .^name eq 'MongoDB::Server'
-  ) {
+  method kill-cursors ( @cursors where .elems > 0, ServerType:D :$server! ) {
 
     $!server = $server;
 
@@ -230,7 +214,7 @@ class Wire {
       # Catch all thrown exceptions and take out the server if needed
       #
       CATCH {
-#.say;
+#.note;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program

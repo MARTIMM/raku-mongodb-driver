@@ -7,7 +7,7 @@ $!d5b.article [
 
     $|para [
       MongoDB is a $**glossterm linkend=nosql [Non SQL] database which uses
-      $**glossterm linkend=bson [Binary JSON] to 
+      $**glossterm linkend=bson [Binary JSON (BSON)] to 
       store and load information in a database. With the mongodb package a
       shell program called mongo is available to give instructions to a
       mongodb server.
@@ -33,11 +33,11 @@ $!d5b.article [
     $|para [
       The purpose of this document is to show how to work with the perl6
       mongodb driver and not about how to design your database among other
-      things. There are plenty of good books and documents out there not to
-      mention the mongodb website. A few things need to be repeated in this
+      things. There are plenty of good books and documents out there, not to
+      mention, the mongodb website. A few things need to be repeated in this
       document however, despite the information displayed elsewhere because
       otherwise too many references to other places would disturb the flow.
-      There quite a few modules written to perform the tasks at hand but not
+      There are quite a few modules written to perform the tasks at hand but not
       all modules will be explained here because many of them are modules
       defining classes to be used in the background and are not used by
       applications directly.

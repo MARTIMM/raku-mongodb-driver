@@ -32,21 +32,20 @@ shell( "perl6 --doc=HTML '$pod' | wkhtmltopdf - '$pdf'");
 
 =TITLE class MongoDB::Server
 
-=SUBTITLE Mongod server object and info
+=SUBTITLE Mongod server object
 
-  package MongoDB { class Server { ... } }
+  unit package MongoDB;
+  class Server { ... }
 
 =head1 Synopsis
 
   my MongoDB::Client $client .= new(:uri<mongodb://>);
-  my Str $server-ticket = $client.select-server;
-  my MongoDB::Server $server = $client.store.get-stored-object($server-ticket);
-  my MongoDB::Socket $socket = $server.get-socket;
+  my MongoDB::Server $server = $client.select-server;
 
 This class is used to provide sockets for communication with a mongo database
 server. The class is loaded and controlled by the C<MongoDB::Client> module.
 I<Users should not use this class directly but ask for a server using methods
-from a Client object. And even that users should not do. All server
+from a Client object. And even that users should do it carefully. All server
 communication is controlled internally>.
 
 
@@ -95,6 +94,22 @@ and will throw an exception when it fails. C<MongoDB::Client> creates the
 Server object normally and catches the exception on failure.
 I<Do not use this method directly!>.
 
+=head2 server-init
+
+  method server-init ( )
+
+Do not use it. Get a Server object from the Client object.
+
+=head2 get-status
+
+Get current status about this server. C<server-status()> in the Client object
+will return the same information.
+
+=head2 tap-monitor
+
+  method tap-monitor ( |c --> Tap )
+
+Do not use it! This is for internal use only.
 
 =head2 get-socket
 
@@ -104,25 +119,32 @@ Get a MongoDB::Socket object. By default there can be only 3 open sockets per
 server object. See also set-max-sockets() below. When operations are done the
 socket must be closed to prevent problems.
 
+=head2 raw-query
 
+  method raw-query (
+    Str:D $full-collection-name, BSON::Document:D $query,
+    Int :$number-to-skip = 0, Int :$number-to-return = 1,
+    Bool :$authenticate = True
+    --> BSON::Document
+  )
+
+Direct a query to this server. Not often used but needed when to get specific
+information or to modify a server e.g. to transform a standalone server into
+a replica server. The normal queries using C<run-command()>.will sit and wait
+for a master or primary server becomes available.
+
+=begin comment
 =head2 perl
 
   method perl ( --> Str )
 
 Simple string representation of this object.
-
+=end comment
 
 =head2 name
 
   method name ( --> Str )
 
 Returns a string in the format <servername> ':' <port number>.
-
-
-=head2 set-max-sockets
-
-  method set-max-sockets ( Int $max-sockets where $_ >= 3 )
-
-Modifies the maximum number of sockets.
 
 =end pod

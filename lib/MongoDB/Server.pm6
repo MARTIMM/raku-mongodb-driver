@@ -1,6 +1,7 @@
 use v6.c;
 
 use MongoDB;
+use MongoDB::Wire;
 use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 use MongoDB::Authenticate::Credential;
@@ -361,6 +362,21 @@ class Server {
 
     # Return a usable socket which is opened and authenticated upon if needed.
     $sock;
+  }
+
+  #-----------------------------------------------------------------------------
+  method raw-query (
+    Str:D $full-collection-name, BSON::Document:D $query,
+    Int :$number-to-skip = 0, Int :$number-to-return = 1,
+    Bool :$authenticate = True
+    --> BSON::Document
+  ) {
+    debug-message("server directed query on collection $full-collection-name on server {self.name}");
+    return MongoDB::Wire.new.query(
+      $full-collection-name, $query,
+      :$number-to-skip, :number-to-return,
+      :server(self), :$authenticate
+    );
   }
 
   #-----------------------------------------------------------------------------

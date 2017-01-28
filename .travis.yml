@@ -28,15 +28,23 @@ install:
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
 #  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
 
-  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 
 #  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
 #  - rakudobrew build-panda
 #  - panda installdeps .
 #  - panda update
 #  - panda install BSON Digest::MD5
-  - rakudobrew build zef
-  - zef update
+
+#  - rakudobrew build
+
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
+
+#  - git clone https://github.com/tadzik/rakudobrew ~/.rakudobrew
+#  - export PATH=~/.rakudobrew/bin:$PATH
+#  - rakudobrew init
+
+#  - echo $HOME
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-zef.sh
   - zef --depsonly install .
 
 
@@ -54,5 +62,5 @@ cache:
   timeout: 1200
   directories:
 #    - $HOME/Travis-ci/P6Software
-    - $HOME/Travis-ci/MongoDB
+    - $HOME/Travis-ci
     - $HOME/.rakudobrew
