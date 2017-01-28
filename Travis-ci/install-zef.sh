@@ -26,6 +26,6 @@ else
   zef update
 
 fi
-/bin/ls -l ${TRAVIS_BUILD_DIR}/.rakudobrew
+/bin/ls -l ${HOME}/.rakudobrew
 
 exit 0
