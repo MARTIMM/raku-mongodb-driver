@@ -6,6 +6,12 @@ set -vx
 
 #/bin/ls -lR
 
+# Cleanup ald and new mess
+cd ${TRAVIS_BUILD_DIR}/
+rm -rf .panda-work
+rm -rf .precomp
+
+
 cd ${TRAVIS_BUILD_DIR}/Travis-ci
 
 if [ ! -e zef ]
@@ -18,8 +24,8 @@ then
 else
 
   zef update
-  
+
 fi
+/bin/ls -l ${TRAVIS_BUILD_DIR}/.rakudobrew
 
 exit 0
-
