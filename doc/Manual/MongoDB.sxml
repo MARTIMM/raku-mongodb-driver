@@ -35,12 +35,20 @@ $!d5b.article [
       mongodb driver and not about how to design your database among other
       things. There are plenty of good books and documents out there, not to
       mention, the mongodb website. A few things need to be repeated in this
-      document however, despite the information displayed elsewhere because
-      otherwise too many references to other places would disturb the flow.
+      document however.
+    ]
+
+    $|para [
       There are quite a few modules written to perform the tasks at hand but not
       all modules will be explained here because many of them are modules
       defining classes to be used in the background and are not used by
       applications directly.
+    ]
+
+    $|para [
+      Furthermore, this document is not a reference. There are other documents
+      for that, written to document the attributes, (sub)methods and subs in a
+      class. There will be a list of references at the end of the document.
     ]
 
     $|para [
@@ -81,8 +89,8 @@ $!d5b.article [
             $|listitem [
               $|emphasis[MongoDB::Client]. This module is the starting point of all
               applications which need access to a mongodb database server.
-              
-              
+
+
 #              cleanup!
             ]
 
@@ -96,6 +104,14 @@ $!d5b.article [
 
             $|listitem [
               $|emphasis[MongoDB::Cursor].
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Server].
+            ]
+
+            $|listitem [
+              $|emphasis[MongoDB::Server::Control].
             ]
           ]
         ]
@@ -138,12 +154,47 @@ $!d5b.article [
       $|para [
 
       ]
+
+      $|sect3 [
+        $|title [Making a connection]
+        $|para [
+
+        ]
+      ]
+
+      $|sect3 [
+        $|title [Server states]
+        $|para [
+
+        ]
+      ]
+
+      $|sect3 [
+        $|title [Toplogy]
+        $|para [
+
+        ]
+      ]
+
+      $|sect3 [
+        $|title [Server selection]
+        $|para [
+
+        ]
+      ]
     ]
 
     $|sect2 [
       $|title [MongoDB::Database]
       $|para [
 
+      ]
+
+      $|sect3 [
+        $|title [run-command()]
+        $|para [
+
+        ]
       ]
     ]
 
@@ -152,10 +203,45 @@ $!d5b.article [
       $|para [
 
       ]
+
+      $|sect3 [
+        $|title [find()]
+        $|para [
+
+        ]
+      ]
     ]
 
     $|sect2 [
       $|title [MongoDB::Cursor]
+      $|para [
+
+      ]
+
+      $|sect3 [
+        $|title [fetch()]
+        $|para [
+
+        ]
+      ]
+
+      $|sect3 [
+        $|title [iterating over documents]
+        $|para [
+
+        ]
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Server]
+      $|para [
+
+      ]
+    ]
+
+    $|sect2 [
+      $|title [MongoDB::Server::Control]
       $|para [
 
       ]
@@ -188,37 +274,94 @@ $!d5b.article [
     $|para [
     ]
     $|sect2 [
-#      $|title [Starting and stopping]
+      $|title [Starting and stopping a server using the configuration]
+      $|para [
+        This method, using a configuration file, is also used to test
+        the modules to help starting and stopping a locally installed server.
+        There are several steps in order to configure it properly.
+
+        $|itemizedlist spacing=compact [
+          $|listitem [
+            $|emphasis[Configuration file].
+          ]
+
+          $|listitem [
+            $|emphasis[Server selection].
+          ]
+
+          $|listitem [
+            $|emphasis[Starting and stopping].
+          ]
+        ]
+      ]
+
+      $|sect3 [
+        $|title [Configuration file]
+        $|para [
+
+        ]
+      ]
+
+      $|sect3 [
+        $|title [Server selection]
+        $|para [
+
+        ]
+      ]
+
+      $|sect3 [
+        $|title [Starting and stopping]
+        $|para [
+
+        ]
+      ]
+    ]
+
+    $|sect2 [
+      $|title [Making a replica server]
       $|para [
       ]
-    ]
-  ]
 
+      $|sect3 [
+        $|title [Preparing]
+        $|para [
 
-#   $|bibliolist:
-#      $|title: Bibliography
-#  $|bibliography [
-#    $|biblioentry [
-#      $|abbrev [MIMETYPES]
-#      $|title [A list of all mimetypes]
-#      $|abstract [A list of mimetypes can be found on the]
-#      $|ulink url=http://www.sitepoint.com/web-foundations/mime-types-complete-list/ [
-#      ]
-#    ]
-#  ]
-  $|bibliography [
-    $|title [Biliography]
-    
-    $|bibliomixed [
-      $|bibliomset relation=book [
-      
+        ]
+      ]
+
+      $|sect3 [
+        $|title [Initializing]
+        $|para [
+
+        ]
       ]
     ]
   ]
 
+  #-----------------------------------------------------------------------------
+  # References to books, websites
+  $|sect1 [
+    $|title [References to books, websites, articles and pod-documents]
 
+    $|sect2 [
+      $|title [Web Pages]
+
+      $|sect3 [
+        $|para [
+          MongoDB Manual covering all aspects of what is possible.
+          Source is from MongoDB, Inc.
+          $|link xlink:href=http://docs.mongodb.com/master/MongoDB-manual.epub [
+            EPub edition
+          ]
+        ]
+      ]
+    ]
+  ]
+
+  #-----------------------------------------------------------------------------
+  # Glossary of things
   $|glossary [
-    $|title [MongoDB Driver Glossary]
+    $|title [MongoDB Driver Glossary and References]
 
     $|glossdiv [
       $|title [B]
@@ -230,6 +373,10 @@ $!d5b.article [
           $|para [
             BSON is a computer data interchange format used mainly as a data
             storage and network transfer format in the MongoDB database.
+            See also on
+            $*|link xlink:href=https://nl.wikipedia.org/wiki/BSON [
+              WikipediA
+            ].
           ]
         ]
       ]
@@ -246,7 +393,11 @@ $!d5b.article [
           $|para [
             JavaScript Object Notation) is an open-standard format that uses
             human-readable text to transmit data objects consisting of
-            attribute-value pairs
+            attribute-value pairs.
+            See also on
+            $*|link xlink:href=https://nl.wikipedia.org/wiki/JSON [
+              WikipediA
+            ].
           ]
         ]
       ]
@@ -262,7 +413,7 @@ $!d5b.article [
         $|glossdef [
           $|para [
             MongoDB (from humongous) is a free and open-source cross-platform
-            document-oriented database program
+            document-oriented database program.
           ]
         ]
       ]
@@ -304,8 +455,7 @@ $!d5b.article [
         ]
       ]
     ]
-
-
-    $|index
   ]
+
+  $|index
 ]
