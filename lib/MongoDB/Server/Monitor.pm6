@@ -10,10 +10,6 @@ use Semaphore::ReadersWriters;
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
-# Note: Because Supplier is inherited, BUILD cannot get its named parameters.
-# when a new() method is defined, Supplier gets wrong parameters. Therefore
-# BUILD is replaced by monitor-init() and must be called explicitly
-#
 class Server::Monitor {
 
   has MongoDB::ServerType $!server;
