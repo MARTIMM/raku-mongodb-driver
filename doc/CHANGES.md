@@ -26,10 +26,11 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 * 0.35.2
   * Bugfix in authentication method names. Changes in Auth::SCRAM
 * 0.35.1
-  * Added normalization for username and passwords. At the moment the UsernameCasePreserved profile is used until there is some consensus about it.
+  * Added normalization for username and passwords using Unicode::Precis. At the moment the UsernameCasePreserved profile is used until there is some consensus about it.
 * 0.35.0
   Auth::SCRAM implemented. No username/password normalization yet.
 * 0.34.7
+  * Authentication per socket only when server is in authentication mode.
   * Look for authentication mechanism in the options of the URI. If not there look into the version of the server. 2.* uses MONGODB-CR and 3.* uses SCRAM-SHA-1 by default.
 * 0.34.6
   * Renamed DESTROY in Client into cleanup(). A client object never gets destroyed because there are several cross links from Server and Monitor objects. Secondly there are threads setup to monitor the server state and to process new server data. These are not going away by themselves. Server as well as Socket has also their cleanup methods called by Client to stop the concurrent processes.
