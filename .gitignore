@@ -11,3 +11,4 @@ Travis-ci/P6*
 .precomp
 */.precomp
 *.zargo~
+~*
