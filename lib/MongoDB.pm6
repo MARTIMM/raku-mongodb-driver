@@ -21,22 +21,30 @@ unit package MongoDB:ver<0.36.1>:auth<https://github.com/MARTIMM>;
 
 #-----------------------------------------------------------------------------
 # Client object topology types
+# See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 enum TopologyType is export <
-  SINGLE-TPLGY
-  REPLSET-WITH-PRIMARY-TPLGY REPLSET-NO-PRIMARY-TPLGY
-  SHARDED-TPLGY UNKNOWN-TPLGY
+  TT-Single TT-ReplicaSetNoPrimary TT-ReplicaSetWithPrimary
+  TT-Sharded TT-Unknown
 >;
 
 #-----------------------------------------------------------------------------
 # Status values of a Server.object
+# See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
+
+# Mapping Old to new server state values
+# SS-Unknown:           UNKNOWN-SERVER NON-EXISTENT-SERVER DOWN-SERVER
+#                       RECOVERING-SERVER REJECTED-SERVER
+# SS-Standalone         MASTER-SERVER SLAVE-SERVER
+# SS-Mongos             SHARDING-SERVER
+# SS-RSPrimary          REPLICASET-PRIMARY
+# SS-RSSecondary        REPLICASET-SECONDARY
+# SS-RSArbiter          REPLICASET-ARBITER
+# SS-RSOther            REPLICA-PRE-INIT
+# SS-RSGhost            GHOST-SERVER
+
 enum ServerStatus is export <
-  UNKNOWN-SERVER NON-EXISTENT-SERVER DOWN-SERVER RECOVERING-SERVER
-  REJECTED-SERVER GHOST-SERVER
-
-  REPLICA-PRE-INIT REPLICASET-PRIMARY REPLICASET-SECONDARY
-  REPLICASET-ARBITER
-
-  SHARDING-SERVER MASTER-SERVER SLAVE-SERVER
+  SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary RSSecondary
+  SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
 >;
 
 #-----------------------------------------------------------------------------

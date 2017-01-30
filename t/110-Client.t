@@ -32,7 +32,7 @@ subtest {
   $server = $client.select-server(:3check-cycles);
   nok $server.defined, 'No servers selected';
 #  is $client.nbr-servers, 1, 'One server object set';
-  is $client.server-status($server-name), NON-EXISTENT-SERVER,
+  is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
 
   $client.cleanup;
@@ -45,7 +45,7 @@ subtest {
   $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
 #  is $client.nbr-servers, 1, 'One server object set';
-  is $client.server-status('localhost:65535'), DOWN-SERVER,
+  is $client.server-status('localhost:65535'), SS-Unknown,
      "Status of server is $client.server-status('localhost:65535')";
 
   $client.cleanup;

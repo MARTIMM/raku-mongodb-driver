@@ -20,6 +20,7 @@ class Server {
   # Used by Socket
   has Str $.server-name;
   has PortType $.server-port;
+  has Str $.server-error;
 
   has ClientType $!client;
 
@@ -78,7 +79,7 @@ class Server {
 
 
     $!server-monitor .= new( :server(self), :$loop-time);
-    $!server-status = UNKNOWN-SERVER;
+    $!server-status = SS-Unknown;
   }
 
   #-----------------------------------------------------------------------------
@@ -95,7 +96,8 @@ class Server {
 
 #say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
-          my ServerStatus $server-status = UNKNOWN-SERVER;
+          my ServerStatus $server-status = SS-Unknown;
+          my Str $server-error
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
@@ -172,11 +174,13 @@ class Server {
 
             if $monitor-data<reason>:exists
                and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
-              $server-status = NON-EXISTENT-SERVER;
+              $server-status = SS-Unknown;
+              $server-error = $monitor-data<reason>;
             }
 
             else {
-              $server-status = DOWN-SERVER;
+              $server-status = SS-Unknown;
+              $server-error = 'Server did not respond';
             }
           }
 
@@ -184,6 +188,7 @@ class Server {
           $!rw-sem.writer( 's-status', {
               debug-message("set status of {self.name()} $server-status");
               $!server-status = $server-status;
+              $!error = $server-error;
             }
           );
 
@@ -202,10 +207,10 @@ class Server {
   method get-status ( --> ServerStatus ) {
 
     my int $count = 0;
-    my ServerStatus $server-status = UNKNOWN-SERVER;
+    my ServerStatus $server-status = SS-Unknown;
 
     # Wait until changed, After 4 sec it must be known or stays unknown forever
-    while $count < 4 and $server-status ~~ UNKNOWN-SERVER {
+    while $count < 4 and $server-status ~~ SS-Unknown {
       $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
 
       sleep 1;

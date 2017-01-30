@@ -30,8 +30,8 @@ subtest {
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
-  $server = $client.select-server(:needed-state(DOWN-SERVER));
-  is $server.get-status, DOWN-SERVER, "Status of server is down";
+  $server = $client.select-server(:needed-state(SS-Unknown));
+  is $server.get-status, SS-Unknown, "Status of server is down";
 
   # Bring server up again to see ift Client recovers...
   ok $ts.server-control.start-mongod("s1"), "Server 1 started";
@@ -102,8 +102,8 @@ subtest {
   info-message('shutdown server');
   ok $ts.server-control.stop-mongod('s3'), "Server 3 is stopped";
 
-  $server = $client.select-server(:needed-state(DOWN-SERVER));
-  is $server.get-status, DOWN-SERVER, "Server is down";
+  $server = $client.select-server(:needed-state(SS-Unknown));
+  is $server.get-status, SS-Unknown, "Server is down";
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');

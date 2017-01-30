@@ -47,7 +47,7 @@ class Client {
   #-----------------------------------------------------------------------------
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
-    TopologyType :$topology-type = UNKNOWN-TPLGY
+    TopologyType :$topology-type = Unknown
   ) {
 
     $!topology-type = $topology-type;
@@ -233,15 +233,8 @@ class Client {
             my ServerStatus $status =
                $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>});
 
-            # Not found by DNS so big chance that it doesn't exist
-            if $status ~~ NON-EXISTENT-SERVER {
-
-              $!servers{$server-name}<server>.cleanup;
-              error-message("Stopping monitor: $monitor-data<reason>");
-            }
-
-            # Connection failure
-            elsif $status ~~ DOWN-SERVER {
+            # Not found by DNS or connection failure
+            if $status ~~ SS-Unknown {
 
               # Check if the master server went down
               if $msname.defined and ($msname eq $server-name) {
@@ -251,7 +244,7 @@ class Client {
                 $msname = Nil;
               }
 
-              warn-message("Server is down: $monitor-data<reason>");
+              warn-message("Server is down: $server.error");
             }
           }
 
@@ -395,7 +388,7 @@ class Client {
     });
     debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
-    my ServerStatus $sts = $h<status> // UNKNOWN-SERVER;
+    my ServerStatus $sts = $h<status> // ServerStatus::Unknown;
   }
 
   #-----------------------------------------------------------------------------
