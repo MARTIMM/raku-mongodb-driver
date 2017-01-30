@@ -8,24 +8,12 @@ use MongoDB;
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
-role Header {
+class Header {
 
   # Request id must be kept among all objects of this type so the request can
   # be properly be updated.
 #TODO semaphore protection when in thread other than main?
   my Int $request-id = 0;
-
-  #-----------------------------------------------------------------------------
-  # Needed call because of error:
-  # Cannot call AUTOGEN(BSON::Document+{BSON::Header}: ); none of these signatures match:
-  #     (BSON::Document $: List :$pairs!, *%_)
-  #     (BSON::Document $: Buf :$buf!, *%_)
-  #   in block <unit> at ...
-  # The signatures are from BUILD submethods defined in BSON::Document
-  #
-  multi submethod BUILD ( ) {
-
-  }
 
   #-----------------------------------------------------------------------------
   method !encode-message-header ( Int $buffer-size, WireOpcode $op-code --> List ) {
@@ -103,7 +91,8 @@ role Header {
 
   #-----------------------------------------------------------------------------
   method encode-query (
-    Str:D $full-collection-name, BSON::Document $projection?,
+    Str:D $full-collection-name, BSON::Document $query,
+    BSON::Document $projection?,
     Int :$flags = 0, Int :$number-to-skip = 0, Int :$number-to-return = 0
     --> List
   ) {
@@ -143,7 +132,7 @@ role Header {
       # document query
       # query object
       #
-      self.encode
+      $query.encode
     ;
 
 
@@ -154,13 +143,12 @@ role Header {
       $query-buffer ~= $projection.encode;
     }
 
-    # MsgHeader header
-    # standard message header
-    #
-    ( my Buf $encoded-query, my Int $u-request-id) = 
+    # encode message header and get used request id
+    ( my Buf $message-header, my Int $u-request-id) = 
       self!encode-message-header( $query-buffer.elems, OP-QUERY);
 
-    return ( $encoded-query ~ $query-buffer, $u-request-id);
+    # return total encoded buffer with request id
+    return ( $message-header ~ $query-buffer, $u-request-id);
   }
 
   #-----------------------------------------------------------------------------
@@ -199,14 +187,12 @@ role Header {
       $cursor-id
     ;
 
-    # MsgHeader header
-    # standard message header
-    # (watch out for inconsistent OP_code and messsage name)
-    #
-    ( my Buf $encoded-get-more, my Int $u-request-id) = 
+    # encode message header and get used request id
+    ( my Buf $message-header, my Int $u-request-id) = 
       self!encode-message-header( $get-more-buffer.elems, OP-GET-MORE);
 
-    return ( $encoded-get-more ~ $get-more-buffer, $u-request-id);
+    # return total encoded buffer with request id
+    return ( $message-header ~ $get-more-buffer, $u-request-id);
   }
 
   #-----------------------------------------------------------------------------
