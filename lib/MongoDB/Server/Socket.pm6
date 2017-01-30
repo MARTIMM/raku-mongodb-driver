@@ -64,7 +64,7 @@ class Server::Socket {
     trace-message("open socket");
     $!is-open = True;
     $!time-last-used = time;
-    
+
     False;
   }
 
@@ -130,12 +130,13 @@ class Server::Socket {
     try {
       if $!sock.defined {
         $!sock.close;
+        $!sock = Nil;
       }
-      
+
       else {
         $!sock = Nil;
       }
-      
+
       $!is-open = False;
 
       CATCH {

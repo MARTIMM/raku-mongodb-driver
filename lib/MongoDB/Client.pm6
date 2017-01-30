@@ -251,7 +251,6 @@ say 'new client 1';
             # Not found by DNS so big chance that it doesn't exist
             if $status ~~ NON-EXISTENT-SERVER {
 
-#              $!client-tap.done;
               $!servers{$server-name}<server>.cleanup;
               error-message("Stopping monitor: $monitor-data<reason>");
             }
@@ -590,6 +589,8 @@ say 'new client 1';
     # stop loop and wait for exit
     $!repeat-discovery-loop = False;
     $!Background-discovery.result;
+
+    $!client-tap.close;
 
     # Remove all servers concurrently. Shouldn't be many per client.
     $!rw-sem.writer(

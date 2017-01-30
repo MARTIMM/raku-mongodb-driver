@@ -221,9 +221,10 @@ class Server {
   #
   method tap-monitor ( |c --> Tap ) {
 
-    my Supply $supply = $!server-monitor.get-supply;
+    $!server-monitor.get-supply.tap(|c);
+#    my Supply $supply = $!server-monitor.get-supply;
 #    $supply.act(|c);
-    $supply.tap(|c);
+#    $supply.tap(|c);
   }
 
   #-----------------------------------------------------------------------------
@@ -391,10 +392,10 @@ class Server {
 
     # Its possible that server moditor is not defined when a server is
     # non existent or some other reason.
+    $!server-tap.close if $!server-tap.defined;
     $!server-monitor.stop-monitor if $!server-monitor.defined;
 
     # Clear all sockets
-
     $!rw-sem.writer( 's-select', {
         for ^(@!sockets.elems) -> $si {
           next unless @!sockets[$si].defined;
