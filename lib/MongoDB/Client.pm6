@@ -44,27 +44,12 @@ class Client {
   # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
   has MongoDB::Authenticate::Credential $.credential;
 
-
-#`{{
-  #-----------------------------------------------------------------------------
-  # Explicitly create an object using the undefined class name to prevent
-  # changes in the existing class when used as an invocant.
-  #
-  method new ( Str:D :$uri, BSON::Document :$read-concern ) {
-
-say 'new client 0';
-    my $x = MongoDB::Client.bless( :$uri, :$read-concern);
-say 'new client 1';
-    $x;
-  }
-}}
   #-----------------------------------------------------------------------------
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
     TopologyType :$topology-type = UNKNOWN-TPLGY
   ) {
 
-#TODO write letter about usefulness of setting topology type
     $!topology-type = $topology-type;
 
     $!servers = {};
