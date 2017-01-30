@@ -156,29 +156,153 @@ $!d5b.article [
       ]
 
       $|sect3 [
+        $|title [Server states and topology]
+        $|para [
+
+          $|table rules=all [
+            $|title [Topology controlled by server states]
+            $|thead [
+              $|tr [
+                $|th [isMaster command result]
+                $|th [Server state]
+                $|th [Topology type]
+                $|th [Remarks]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [
+                  Initial, or after a network error or failed ismaster call, or
+                  "ok: 1" not in ismaster response.
+                ]
+                $|td [SS-Unknown]
+                $|td [TT-Unknown]
+                $|td [
+                  When a deployment has topology type "Unknown", no servers are
+                  suitable for read or write operations. These are servers which did not
+                  respond on initial connection or threw an exception because of
+                  a DNS lookup failure.
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [No "msg: isdbgrid", no setName, and no "isreplicaset: true".]
+                $|td [SS-Standalone]
+                $|td []
+                $|td [
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td ["msg: isdbgrid"]
+                $|td [SS-Mongos]
+                $|td [TT-Sharded]
+                $|td [
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [Not yet checked, but another member thinks it is the primary.]
+                $|td [SS-PossiblePrimary]
+                $|td []
+                $|td [
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td ["ismaster: true", "setName" in response.]
+                $|td [SS-RSPrimary]
+                $|td []
+                $|td [
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td ["secondary: true", "setName" in response.]
+                $|td [SS-RSSecondary]
+                $|td []
+                $|td [
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td ["arbiterOnly: true", "setName" in response.]
+                $|td [SS-RSArbiter]
+                $|td []
+                $|td [
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td ["setName" in response, "hidden: true" or not primary, secondary, nor arbiter.]
+                $|td [SS-RSOther]
+                $|td []
+                $|td [
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td ["isreplicaset: true" in response.]
+                $|td [SS-RSGhost]
+                $|td []
+                $|td [
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+
+      $|sect3 [
         $|title [Making a connection]
         $|para [
-
-        ]
-      ]
-
-      $|sect3 [
-        $|title [Server states]
-        $|para [
-
-        ]
-      ]
-
-      $|sect3 [
-        $|title [Toplogy]
-        $|para [
-
         ]
       ]
 
       $|sect3 [
         $|title [Server selection]
         $|para [
+
+          $|itemizedlist spacing=compact [
+            $|listitem [
+              Record the server selection start time
+            ]
+            $|listitem [
+              If the topology wire version is invalid, raise an error
+            ]
+            $|listitem [
+              Find suitable servers by topology type and operation type
+            ]
+            $|listitem [
+              If there are any suitable servers, choose one at random from those within the latency window and return it; otherwise, continue to step #5
+            ]
+            $|listitem [
+              Request an immediate topology check, then block the server selection thread until the topology changes or until the server selection timeout has elapsed
+            ]
+            $|listitem [
+              If more than serverSelectionTimeoutMS milliseconds have elapsed since the selection start time, raise a server selection error
+            ]
+            $|listitem [
+              Goto Step #2
+            ]
+          ]
 
         ]
       ]
