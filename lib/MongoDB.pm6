@@ -1,13 +1,7 @@
 use v6.c;
 use MongoDB::Log :ALL;
 
-#`{{}}
 sub EXPORT { {
-#    '&set-exception-process-level'      => &set-exception-process-level,
-#    '&set-exception-processing'         => &set-exception-processing,
-#    '&set-logfile'                      => &set-logfile,
-#    '&open-logfile'                     => &open-logfile,
-
     '&add-send-to'                      => &add-send-to,
     '&modify-send-to'                   => &modify-send-to,
     '&drop-send-to'                     => &drop-send-to,
@@ -19,16 +13,6 @@ sub EXPORT { {
     '&warn-message'                     => &warn-message,
     '&error-message'                    => &error-message,
     '&fatal-message'                    => &fatal-message,
-
-#`{{
-    'Log::Async::LogLevels'             => LogLevels,
-     Trace                              => Log::Trace,
-     Debug                              => Log::Debug,
-     Info                               => Log::Info,
-     Warn                               => Log::Warn,
-     Error                              => Log::Error,
-     Fatal                              => Log::Fatal,
-}}
   }
 };
 
