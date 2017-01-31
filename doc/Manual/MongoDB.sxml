@@ -160,109 +160,155 @@ $!d5b.article [
         $|para [
 
           $|table rules=all [
-            $|title [Topology controlled by server states]
+            $|title [Server states depending on isMaster outcome]
             $|thead [
               $|tr [
-                $|th [isMaster command result]
                 $|th [Server state]
-                $|th [Topology type]
-                $|th [Remarks]
+                $|th [isMaster command result]
               ]
             ]
 
             $|tbody [
               $|tr [
+                $|td [SS-Unknown]
                 $|td [
                   Initial, or after a network error or failed ismaster call, or
                   "ok: 1" not in ismaster response.
                 ]
-                $|td [SS-Unknown]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-Standalone]
+                $|td [
+                  No "msg: isdbgrid", no setName, and no "isreplicaset: true".
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-Mongos]
+                $|td ["msg: isdbgrid"]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-PossiblePrimary]
+                $|td [
+                  Not yet checked, but another member thinks it is the primary.
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-RSPrimary]
+                $|td ["ismaster: true", "setName" in response.]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-RSSecondary]
+                $|td ["secondary: true", "setName" in response.]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-RSArbiter]
+                $|td ["arbiterOnly: true", "setName" in response.]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-RSOther]
+                $|td [
+                  "setName" in response, "hidden: true" or not primary,
+                  secondary, nor arbiter. E.g. starting up or recovering.
+                ]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [SS-RSGhost]
+                $|td [
+                  "isreplicaset: true" in response. E.g.  briefly during server
+                  startup, in an uninitialized replica set, or when the server
+                  is shunned (removed from the replica set config).
+                ]
+              ]
+            ]
+          ]
+
+          $|table rules=all [
+            $|title [Topology controlled by server states]
+            $|thead [
+              $|tr [
+                $|th [Topology type]
+                $|th [Server states]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
                 $|td [TT-Unknown]
                 $|td [
-                  When a deployment has topology type "Unknown", no servers are
-                  suitable for read or write operations. These are servers which did not
-                  respond on initial connection or threw an exception because of
-                  a DNS lookup failure.
+                  When a deployment has this topology type, no servers are
+                  suitable for read or write operations. These are servers which
+                  did not respond on initial connection or threw an exception
+                  because of e.g. a DNS lookup failure. All server states of
+                  these servers herded by the Client object is SS-Unknown.
                 ]
               ]
             ]
 
             $|tbody [
               $|tr [
-                $|td [No "msg: isdbgrid", no setName, and no "isreplicaset: true".]
-                $|td [SS-Standalone]
-                $|td []
+                $|td [TT-Single]
                 $|td [
+                  A deployment of topology type TT-Single contains only a single
+                  server of any state except SS-Unknown. This topology type
+                  signifies a direct  connection intended to receive all read
+                  and write operations.
                 ]
               ]
             ]
 
             $|tbody [
               $|tr [
-                $|td ["msg: isdbgrid"]
-                $|td [SS-Mongos]
                 $|td [TT-Sharded]
                 $|td [
+                  A deployment of topology type TT-Sharded contains one or more
+                  servers of type SS-Mongos or SS-Unknown of at least one is
+                  SS-Mongos.
                 ]
               ]
             ]
 
             $|tbody [
               $|tr [
-                $|td [Not yet checked, but another member thinks it is the primary.]
-                $|td [SS-PossiblePrimary]
-                $|td []
+                $|td [TT-ReplicaSetNoPrimary]
                 $|td [
+                  A deployment with this topology type can have a mix of server
+                  types: SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost,
+                  SS-Unknown or SS-PossiblePrimary.
                 ]
               ]
             ]
 
             $|tbody [
               $|tr [
-                $|td ["ismaster: true", "setName" in response.]
-                $|td [SS-RSPrimary]
-                $|td []
+                $|td [TT-ReplicaSetWithPrimary]
                 $|td [
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td ["secondary: true", "setName" in response.]
-                $|td [SS-RSSecondary]
-                $|td []
-                $|td [
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td ["arbiterOnly: true", "setName" in response.]
-                $|td [SS-RSArbiter]
-                $|td []
-                $|td [
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td ["setName" in response, "hidden: true" or not primary, secondary, nor arbiter.]
-                $|td [SS-RSOther]
-                $|td []
-                $|td [
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td ["isreplicaset: true" in response.]
-                $|td [SS-RSGhost]
-                $|td []
-                $|td [
+                  A deployment with this topology type can have a mix of server
+                  types: SS-RSPrimary, SS-RSSecondary, SS-RSArbiter, SS-RSOther,
+                  SS-RSGhost, SS-Unknown or SS-PossiblePrimary.
                 ]
               ]
             ]
