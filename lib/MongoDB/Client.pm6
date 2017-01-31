@@ -18,6 +18,7 @@ use Semaphore::ReadersWriters;
 class Client {
 
   has TopologyType $!topology-type;
+  has TopologyType $!user-request-topology;
 
   # Store all found servers here. key is the name of the server which is
   # the server address/ip and its port number. This should be unique.
@@ -47,10 +48,11 @@ class Client {
   #-----------------------------------------------------------------------------
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
-    TopologyType :$topology-type = Unknown
+    TopologyType :$topology-type = TT-Unknown
   ) {
 
-    $!topology-type = $topology-type;
+    $!user-request-topology = $topology-type;
+    $!topology-type = TT-Unknown;
 
     $!servers = {};
 
@@ -61,7 +63,7 @@ class Client {
 
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
-#TODO check before create
+
     # Insert only when server is not defined yet. W've been here before.
     $!rw-sem.add-mutex-names(
       <servers todo master>,
@@ -94,11 +96,11 @@ class Client {
       }
     };
 
-    $set( 'username', 'username');
-    $set( 'password', 'password');
-    $set( 'auth-source', 'database', 'authSource', 'admin');
-    $set( 'auth-mechanism', 'authMechanism');
-    $set( 'auth-mechanism-properties', 'authMechanismProperties');
+    $set( 'username',                   'username');
+    $set( 'password',                   'password');
+    $set( 'auth-source',                'database', 'authSource', 'admin');
+    $set( 'auth-mechanism',             'authMechanism');
+    $set( 'auth-mechanism-properties',  'authMechanismProperties');
     $!credential .= new(|%cred-data);
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
@@ -106,6 +108,7 @@ class Client {
     # Setup todo list with servers to be processed, Safety net not needed yet
     # because threads are not started.
     for @($uri-obj.server-data<servers>) -> Hash $server-data {
+      trace-message("todo: $server-data<host>:$server-data<port>");
       $!todo-servers.push("$server-data<host>:$server-data<port>");
     }
 
@@ -113,29 +116,20 @@ class Client {
     $!Background-discovery = Promise.start( {
 
         $!repeat-discovery-loop = True;
-        loop {
-
-#          sleep 1;
+        repeat {
 
           # Start processing when something is found in todo hash
           my Str $server-name = $!rw-sem.writer(
             'todo', {
-              my Str $s;
-              if $!todo-servers.elems {
-                $s = $!todo-servers.shift;
-              }
-
-              $s;
+              ($!todo-servers.shift if $!todo-servers.elems) // Str;
             }
           );
 
           if $server-name.defined {
 
             trace-message("Processing server $server-name");
-
             my Bool $server-processed = $!rw-sem.reader(
-              'servers',
-              { $!servers{$server-name}:exists; }
+              'servers', { $!servers{$server-name}:exists; }
             );
 
             # Check if server was managed before
@@ -144,15 +138,15 @@ class Client {
               next;
             }
 
-#say "$*THREAD.id() New server object: $server-name";
+            # Create Server object
             my MongoDB::Server $server .= new(
               :client(self), :$server-name, :$loop-time
             );
 
-            # Start server monitoring process its data
-#say "$*THREAD.id() Init server object and start monitoring: $server-name";
+            # And start server monitoring
             $server.server-init;
-#say "$*THREAD.id() Tap from monitor: $server-name";
+
+            # And process its data
             self!process-monitor-data($server);
           }
 
@@ -167,15 +161,14 @@ class Client {
             default {
                # Keep this .say in. It helps debugging when an error takes place
                # The error will not be seen before the result of Promise is read
-               .say;
+               .note;
                .rethrow;
             }
           }
 
-          last unless $!repeat-discovery-loop;
-        }
+        } while $!repeat-discovery-loop;
 
-        debug-message("Stop discovery loop");
+        debug-message("server discovery loop stopped");
       }
     );
   }
@@ -187,179 +180,86 @@ class Client {
 
     # Tap into the stream of monitor data
     $!client-tap = $server.tap-monitor( -> Hash $monitor-data {
-#say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
+#note "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
 
-#        if $monitor-data.defined and $monitor-data<ok>:exists {
-#          my Bool $found-new-servers = False;
-#say "Monitor $server-name: ", $monitor-data.perl if $monitor-data.defined;
+        # Store partial result as soon as possible
+        my Hash $server-sts-data = $server.get-status;
+        $!rw-sem.writer(
+          'servers', {
+          debug-message("saved status of $server-name is $server-sts-data<status>");
+          $!servers{$server-name} = {
+            server => $server,
+            status => $server-sts-data<status>,
+            error => $server-sts-data<error>,
+            is-master => $server-sts-data<is-master>,
+            timestamp => now,
+            server-data => $monitor-data
+          };
+        });
+#note "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
 
-          # Make the processing of the monitor data atomic
+        # Only when data is ok
+        if not $monitor-data.defined {
 
-#say "$*THREAD.id() get prev server data";
-          my Hash $prev-server = $!rw-sem.reader(
-            'servers', {
-#say "$*THREAD.id() Reader code $server-name";
-            $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
-          });
-#say "$*THREAD.id() prev server data retrieved";
+          error-message("No monitor data received");
+        }
 
-          my $msname = $!rw-sem.reader( 'master', {$!master-servername;});
-#say "$*THREAD.id() get master {$msname//'-'}";
+        # Monitoring data is ok
+        elsif $monitor-data<ok> {
 
+          # When primary, find all servers and add to todo list
+          if $server-sts-data<status> ~~ SS-RSPrimary {
 
-          # Store partial result as soon as possible
-          my $server-status = $server.get-status;
-          $!rw-sem.writer(
-            'servers', {
-            debug-message("saved status of $server-name is $server-status");
-            $!servers{$server-name} = {
-              server => $server,
-              status => $server-status,
-              timestamp => now,
-              server-data => $monitor-data
-            };
-          });
-#say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
-
-          # Only when data is ok
-          if not $monitor-data.defined {
-
-            error-message("No monitor data received");
-          }
-
-          # There are errors while monitoring
-          elsif not $monitor-data<ok> {
-
-            my ServerStatus $status =
-               $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>});
-
-            # Not found by DNS or connection failure
-            if $status ~~ SS-Unknown {
-
-              # Check if the master server went down
-              if $msname.defined and ($msname eq $server-name) {
-
-#say "$*THREAD.id() reset master";
-                $!rw-sem.writer( 'master', {$!master-servername = Nil;});
-                $msname = Nil;
-              }
-
-              warn-message("Server is down: $server.error");
-            }
-          }
-
-
-          # Monitoring data is ok
-          else {
-
-#say "$*THREAD.id() Master server name: ", $msname // '-';
-#say "$*THREAD.id() Master prev stat: ", $prev-server<status>:exists 
-#                  ?? $prev-server<status>
-#                  !! '-';
-
-#say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
-            # Don't ever modify a rejected server
-            if $prev-server<status>:exists
-               and $prev-server<status> ~~ REJECTED-SERVER {
-
-              $!rw-sem.writer(
-                'servers', {
-                debug-message("set server $server-name status to " ~ REJECTED-SERVER);
-                $!servers{$server-name}<status> = REJECTED-SERVER;
-              });
-            }
-
-            # Check for double master servers
-            elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-              ~~ any(
-              MASTER-SERVER |
-              REPLICASET-PRIMARY
-            ) {
-              # Is defined, be the second and rejected master server
-              if $msname.defined {
-                if $msname ne $server-name {
-                  $!rw-sem.writer(
-                    'servers', {
-                    $!servers{$server-name}<status> = REJECTED-SERVER;
-                  });
-                  error-message("Server $server-name rejected, second master");
-                }
-              }
-
-              # Not defined, be the first master server. No need to save status
-              # because its done already
-              else {
-
-                $msname = $!rw-sem.writer(
-                  'master', {
-                    debug-message("save master servername $server-name");
-                    $!master-servername = $server-name;
-                  }
-                );
-              }
-            }
-
-            else {
-
-#say "$*THREAD.id() H4: $!servers{$server-name}<status>, ", $msname // '-', ', ', $server-name;
-            }
-
-            # When primary, find all servers and add to todo list
-            if $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-               ~~ REPLICASET-PRIMARY {
-
-              my Array $hosts = $!rw-sem.reader(
-                'servers', {
+            my Array $hosts = $!rw-sem.reader(
+              'servers', {
                 $!servers{$server-name}<server-data><monitor><hosts>;
-              });
-
-              for @$hosts -> $hostspec {
-                # If not push onto todo list
-                next unless $hostspec ne $server-name;
-
-                debug-message("Push $hostspec from primary list on todo list");
-                $!rw-sem.writer( 'todo', {$!todo-servers.push($hostspec);});
-#say "$*THREAD.id() Add $hostspec, $!todo-servers.elems()";
               }
+            );
+
+            for @$hosts -> $hostspec {
+              # If not push onto todo list
+              next unless $hostspec ne $server-name;
+
+              debug-message("Push $hostspec from primary list on todo list");
+              $!rw-sem.writer( 'todo', {$!todo-servers.push($hostspec);});
+#note "$*THREAD.id() Add $hostspec, $!todo-servers.elems()";
             }
+          }
 
-            # When secondary get its primary and add to todo list
-            elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-                  ~~ REPLICASET-SECONDARY {
+          # When secondary get its primary and add to todo list
+          elsif $server-sts-data<status> ~~ SS-RSSecondary {
 
-              # Error when current master is not same as primary
-              my $primary = $!rw-sem.reader(
-                'servers', {
+            my Str $primary = $!rw-sem.reader(
+              'servers', {
                 $!servers{$server-name}<server-data><monitor><primary>;
-              });
-
-              if $msname.defined and $msname ne $primary {
-                error-message(
-                  "Server $primary found but != current master $msname"
-                );
               }
+            );
 
-              # When defined w've already processed it, if not, go for it
-              elsif not $msname.defined {
-
-                trace-message("Push primary $primary on todo list");
-                $!rw-sem.writer( 'todo', {$!todo-servers.push($primary);});
-#say "$*THREAD.id() Add primary $primary, $!todo-servers.elems()";
-              }
-            }
-
-#TODO $!master-servername must be able to change when server roles are changed
-#TODO Define client topology
+            trace-message("Push primary $primary on todo list");
+            $!rw-sem.writer( 'todo', {$!todo-servers.push($primary);});
+#note "$*THREAD.id() Add primary $primary, $!todo-servers.elems()";
           }
+        }
 
-          CATCH {
-            default {
-               # Keep this .say in. It helps debugging when an error takes place
-               # The error will not be seen before the result of Promise is read
-               .say;
-              .rethrow;
-            }
+        # There are errors while monitoring
+        else {
+
+          # Not found by DNS or connection failure
+          if $server-sts-data<status> ~~ SS-Unknown {
+
+            warn-message("Server is down: $server-sts-data<error>");
           }
+        }
+
+
+        CATCH {
+          default {
+             # Keep this .say in. It helps debugging when an error takes place
+             # The error will not be seen before the result of Promise is read
+             .note;
+            .rethrow;
+          }
+        }
       }
     );
   }
@@ -376,9 +276,9 @@ class Client {
   # Called from thread above where Server object is created.
   method server-status ( Str:D $server-name --> ServerStatus ) {
 
-#say "$*THREAD.id() before check";
+#note "$*THREAD.id() before check";
     self!check-discovery-process;
-#say "$*THREAD.id() after check";
+#note "$*THREAD.id() after check";
 #    self!check-todo-process;
 
     my Hash $h = $!rw-sem.reader(
@@ -388,11 +288,11 @@ class Client {
     });
     debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
-    my ServerStatus $sts = $h<status> // ServerStatus::Unknown;
+    my ServerStatus $sts = $h<status> // SS-Unknown;
   }
 
   #-----------------------------------------------------------------------------
-  method client-topology ( --> TopologyType ) {
+  method topology ( --> TopologyType ) {
 
     $!topology-type;
   }
@@ -425,14 +325,12 @@ class Client {
     --> MongoDB::Server
   ) {
 
-#say "$*THREAD.id() select-server";
+#note "$*THREAD.id() select-server";
     self!check-discovery-process;
-#say "$*THREAD.id() select-server check done";
+#note "$*THREAD.id() select-server check done";
 
     my Hash $h;
-
-    WHILELOOP:
-    while $check-cycles != 0 {
+    repeat {
 
       # Take this into the loop because array can still change, might even
       # be empty when hastely called right after new()
@@ -441,34 +339,27 @@ class Client {
            [$!servers.keys];
          }
        );
-#say "$*THREAD.id() select-server {@$server-names}";
+#note "$*THREAD.id() select-server {@$server-names}";
       for @$server-names -> $msname {
         my Hash $shash = $!rw-sem.reader(
           'servers', {
-#say "$*THREAD.id() select-server :needed-state, {$msname//'-'}";
+#note "$*THREAD.id() select-server :needed-state, {$msname//'-'}";
             my Hash $h;
             if $!servers{$msname}.defined {
-#say "$*THREAD.id() select-server :needed-state, $!servers{$msname}<status>";
+#note "$*THREAD.id() select-server :needed-state, $!servers{$msname}<status>";
               $h = $!servers{$msname};
-            }
-
-            else {
-              $h = {};
             }
 
             $h;
           }
         );
 
-        if $shash<status> == $needed-state {
-          $h = $shash;
-          last WHILELOOP;
-        }
+        $h = $shash if $shash<status> == $needed-state;
       }
 
       $check-cycles--;
       sleep 1;
-    }
+    } while $h.defined or $check-cycles != 0;
 
     if $h.defined and $h<server> {
       info-message("Server $h<server>.name() selected");
@@ -498,7 +389,7 @@ class Client {
     while $check-cycles != 0 {
       $msname = $!rw-sem.reader( 'master', {$!master-servername;});
 
-#say "$*THREAD.id() select-server, {$msname//'-'}";
+#note "$*THREAD.id() select-server, {$msname//'-'}";
       if $msname.defined {
         $h = $!rw-sem.reader( 'servers', {$!servers{$msname};});
         last;

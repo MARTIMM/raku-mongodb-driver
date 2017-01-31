@@ -12,7 +12,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -31,9 +31,10 @@ subtest {
 
   $server = $client.select-server(:3check-cycles);
   nok $server.defined, 'No servers selected';
-#  is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
+
+  is $client.topology, TT-Unknown, "Topology $client.topology()";
 
   $client.cleanup;
 }, 'Non existent server';
@@ -44,12 +45,17 @@ subtest {
   $client .= new(:uri("mongodb://localhost:65535"));
   $server = $client.select-server(:2check-cycles);
   nok $server.defined, 'No servers selected';
-#  is $client.nbr-servers, 1, 'One server object set';
   is $client.server-status('localhost:65535'), SS-Unknown,
      "Status of server is $client.server-status('localhost:65535')";
 
+  is $client.topology, TT-Unknown, "Topology $client.topology()";
+
   $client.cleanup;
 }, 'Down server';
+
+done-testing();
+exit(0);
+=finish
 
 #-------------------------------------------------------------------------------
 subtest {

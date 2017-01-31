@@ -20,7 +20,6 @@ class Server {
   # Used by Socket
   has Str $.server-name;
   has PortType $.server-port;
-  has Str $.server-error;
 
   has ClientType $!client;
 
@@ -38,7 +37,9 @@ class Server {
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
   # Set status to its default starting status
-  has ServerStatus $!server-status;
+  has ServerStatus $!status;
+  has Str $!error;
+  has Bool $!is-master;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
@@ -77,9 +78,11 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
-
     $!server-monitor .= new( :server(self), :$loop-time);
-    $!server-status = SS-Unknown;
+
+    $!status = SS-Unknown;
+    $!error = '';
+    $!is-master = False;
   }
 
   #-----------------------------------------------------------------------------
@@ -92,12 +95,16 @@ class Server {
 
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
+
+        # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#parsing-an-ismaster-response
         try {
 
-#say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
           my ServerStatus $server-status = SS-Unknown;
-          my Str $server-error
+          my Str $server-error = '';
+          my Bool $is-master = False;
+
           if $monitor-data<ok> {
 
             my $mdata = $monitor-data<monitor>;
@@ -108,64 +115,39 @@ class Server {
               }
             );
 
-            # Does the caller want to have a replicaset
-            if $!uri-data<options><replicaSet> {
+            # Shard server
+            if $mdata<msg>:exists and $mdata<msg> eq 'isdbgrid' {
+              $server-status = SS-Mongos;
+            }
 
-              # Server is in a replicaset and initialized
-              if $mdata<isreplicaset>:!exists and $mdata<setName> {
+            # Replica server in preinitialization state
+            elsif ? $mdata<isreplicaset> {
+              $server-status = SS-RSGhost;
+            }
 
-                # Is the server in the replicaset matching the callers request
-                if $mdata<setName> eq $!uri-data<options><replicaSet> {
-
-                  if $mdata<ismaster> {
-                    $server-status = REPLICASET-PRIMARY;
-                  }
-
-                  elsif $mdata<secondary> {
-                    $server-status = REPLICASET-SECONDARY;
-                  }
-
-#TODO ... Arbiter etc
-                }
-
-                # Replicaset name does not match
-                else {
-                  $server-status = REJECTED-SERVER;
-                }
+            # 
+            elsif ? $mdata<setName> {
+              $is-master = ? $mdata<ismaster>;
+              if $is-master {
+                $server-status = SS-RSPrimary;
               }
 
-              # Server is in a replicaset but not initialized.
-              elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
-                $server-status = REPLICA-PRE-INIT
+              elsif ? $mdata<secondary> {
+                $server-status = SS-RSSecondary;
               }
 
-              # Shouldn't happen
+              elsif ? $mdata<arbiterOnly> {
+                $server-status = SS-RSArbiter;
+              }
+
               else {
-                $server-status = REJECTED-SERVER;
+                $server-status = SS-RSOther;
               }
             }
 
-            # Need one standalone server
             else {
-
-              # Must not be any type of replicaset server
-              if $mdata<isreplicaset>:exists
-                 or $mdata<setName>:exists
-                 or $mdata<primary>:exists {
-                $server-status = REJECTED-SERVER;
-              }
-
-              else {
-                # Must be master
-                if $mdata<ismaster> {
-                  $server-status = MASTER-SERVER;
-                }
-
-                # Shouldn't happen
-                else {
-                  $server-status = REJECTED-SERVER;
-                }
-              }
+              $server-status = SS-Standalone;
+              $is-master = ? $mdata<ismaster>;
             }
           }
 
@@ -174,12 +156,10 @@ class Server {
 
             if $monitor-data<reason>:exists
                and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
-              $server-status = SS-Unknown;
               $server-error = $monitor-data<reason>;
             }
 
             else {
-              $server-status = SS-Unknown;
               $server-error = 'Server did not respond';
             }
           }
@@ -187,15 +167,24 @@ class Server {
           # Set the status with the new value
           $!rw-sem.writer( 's-status', {
               debug-message("set status of {self.name()} $server-status");
-              $!server-status = $server-status;
+              $!status = $server-status;
               $!error = $server-error;
+              $!is-master = $is-master;
             }
           );
 
           CATCH {
             default {
-              .say;
-              .rethrow;
+              .note;
+
+              # Set the status with the  value
+              $!rw-sem.writer( 's-status', {
+                  error-message("{.message}, {self.name()} {SS-Unknown}");
+                  $!status = SS-Unknown;
+                  $!error = .message;
+                  $!is-master = False;
+                }
+              );
             }
           }
         }
@@ -204,20 +193,28 @@ class Server {
   }
 
   #-----------------------------------------------------------------------------
-  method get-status ( --> ServerStatus ) {
+  method get-status ( --> Hash ) {
 
     my int $count = 0;
     my ServerStatus $server-status = SS-Unknown;
+    my Hash $server-sts-data = {};
 
-    # Wait until changed, After 4 sec it must be known or stays unknown forever
-    while $count < 4 and $server-status ~~ SS-Unknown {
-      $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
+    # Wait until changed, After 4 sec it should be known
+    repeat {
 
-      sleep 1;
+      # Don't sleep on the first round
+      sleep 1 if $count;
       $count++;
-    }
 
-    $server-status;
+      $server-sts-data = $!rw-sem.reader(
+        's-status', { %( :$!status, :$!is-master, :$!error ); }
+      );
+
+      $server-status = $server-sts-data<status>;
+
+    } while $server-status ~~ SS-Unknown and $count < 4;
+
+    $server-sts-data;
   }
 
   #-----------------------------------------------------------------------------
@@ -239,7 +236,7 @@ class Server {
   # optional.
   method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
-#say "$*THREAD.id() Get sock, authenticate = $authenticate";
+#note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
     # Get a free socket entry
     my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {

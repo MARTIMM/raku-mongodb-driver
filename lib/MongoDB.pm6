@@ -43,7 +43,7 @@ enum TopologyType is export <
 # SS-RSGhost            GHOST-SERVER
 
 enum ServerStatus is export <
-  SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary RSSecondary
+  SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary SS-RSSecondary
   SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
 >;
 
