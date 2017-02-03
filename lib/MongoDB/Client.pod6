@@ -51,7 +51,7 @@ server is detected.
 
 Create a C<MongoDB::Client> object.
 
-B<Note>. It is important to keep following in mind to prevent data leakage.
+B<Note>. It is important to keep the following in mind to prevent memory leakage.
 The object must be cleaned up by hand before the variable is reused. This is
 because the Client object creates some background processes to keep an eye on
 the server and to update server object states and topology.
@@ -66,15 +66,17 @@ before continuing. This also means that you must not use another object to
 create one!
 
   my MongoDB::Client $c1, $c2;
+
+  # first time use, no leakage
   $c1 .= new(...);
 
   # In this proces $c1 will be destroyed!!
   $c2 = $c1.new(...);
 
-  # This is usable however because we want to overwrite the object anyway
+  # This is ok however because we want to overwrite the object anyway
   $c2 .= new(...);
 
-  # And this will result in data leakage
+  # And this will result in memory leakage because $c2 was already defined.
   $c2 = MongoDB::Client.new(...);
 
 =head3 read-concern
