@@ -37,8 +37,6 @@ class Client {
   has Promise $!Background-discovery;
   has Bool $!repeat-discovery-loop;
 
-#  has Tap $!client-tap;
-
   # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
   has MongoDB::Authenticate::Credential $.credential;
 
@@ -139,9 +137,6 @@ class Client {
             # And start server monitoring
             $server.server-init;
 
-#            # And process its data
-#            self!process-monitor-data($server);
-
 #TODO symplify to value instead of Hash
             $!rw-sem.writer(
               'servers', { $!servers{$server-name} = { server => $server, } }
@@ -151,8 +146,6 @@ class Client {
           }
 
           else {
-
-            self!process-topology;
 
             # When there is no work take a nap! This sleeping period is the
             # moment we do not process the todo list
@@ -261,98 +254,6 @@ note "server status of $server-name is $status";
       }
     );
   }
-
-#`{{
-  #-----------------------------------------------------------------------------
-  method !process-monitor-data ( MongoDB::Server $server ) {
-
-    my Str $server-name = $server.name;
-
-    # Tap into the stream of monitor data
-    $!client-tap = $server.tap-monitor( -> Hash $monitor-data {
-#note "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
-
-        # Store partial result as soon as possible
-        my Hash $server-sts-data = $server.get-status;
-        $!rw-sem.writer(
-          'servers', {
-          debug-message("saved status of $server-name is $server-sts-data<status>");
-          $!servers{$server-name} = {
-            server => $server,
-            status => $server-sts-data<status>,
-            error => $server-sts-data<error>,
-            is-master => $server-sts-data<is-master>,
-            timestamp => now,
-            server-data => $monitor-data
-          };
-        });
-#note "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
-
-        # Only when data is ok
-        if not $monitor-data.defined {
-
-          error-message("No monitor data received");
-        }
-
-        # Monitoring data is ok
-        elsif $monitor-data<ok> {
-
-          # When primary, find all servers and add to todo list
-          if $server-sts-data<status> ~~ SS-RSPrimary {
-
-            my Array $hosts = $!rw-sem.reader(
-              'servers', {
-                $!servers{$server-name}<server-data><monitor><hosts>;
-              }
-            );
-
-            for @$hosts -> $hostspec {
-              # If not push onto todo list
-              next unless $hostspec ne $server-name;
-
-              debug-message("Push $hostspec from primary list on todo list");
-              $!rw-sem.writer( 'todo', {$!todo-servers.push($hostspec);});
-#note "$*THREAD.id() Add $hostspec, $!todo-servers.elems()";
-            }
-          }
-
-          # When secondary get its primary and add to todo list
-          elsif $server-sts-data<status> ~~ SS-RSSecondary {
-
-            my Str $primary = $!rw-sem.reader(
-              'servers', {
-                $!servers{$server-name}<server-data><monitor><primary>;
-              }
-            );
-
-            trace-message("Push primary $primary on todo list");
-            $!rw-sem.writer( 'todo', {$!todo-servers.push($primary);});
-#note "$*THREAD.id() Add primary $primary, $!todo-servers.elems()";
-          }
-        }
-
-        # There are errors while monitoring
-        else {
-
-          # Not found by DNS or connection failure
-          if $server-sts-data<status> ~~ SS-Unknown {
-
-            warn-message("Server error: $server-sts-data<error>");
-          }
-        }
-
-        CATCH {
-          default {
-            # Keep this .note in. It helps debugging when an error takes place
-            # The error will not be seen before the result of Promise is read
-            .note;
-            .rethrow;
-          }
-        }
-      }
-    );
-  }
-}}
 
   #-----------------------------------------------------------------------------
   # Return number of servers
@@ -554,8 +455,6 @@ note "server status of $server-name is $status";
     $!repeat-discovery-loop = False;
     $!Background-discovery.result;
 
-#    $!client-tap.close;
-
     # Remove all servers concurrently. Shouldn't be many per client.
     $!rw-sem.writer(
       'servers', {
@@ -573,7 +472,6 @@ note "server status of $server-name is $status";
 
     $!servers = Nil;
     $!todo-servers = Nil;
-#    $!client-tap = Nil;
 
     debug-message("Client destroyed");
   }
