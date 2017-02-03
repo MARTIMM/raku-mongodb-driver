@@ -57,7 +57,6 @@ class Server {
     ClientType:D :$client,
     Str:D :$server-name,
     Hash :$uri-data = %(),
-    Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
@@ -78,7 +77,7 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
-    $!server-monitor .= new( :server(self), :$loop-time);
+    $!server-monitor .= new(:server(self));
 
     $!status = SS-Unknown;
     $!error = '';

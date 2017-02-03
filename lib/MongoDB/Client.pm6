@@ -54,7 +54,7 @@ class Client {
 
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
+    Str:D :$uri, BSON::Document :$read-concern,
     TopologyType :$topology-type = TT-Unknown
   ) {
 
@@ -142,9 +142,7 @@ class Client {
             }
 
             # Create Server object
-            my MongoDB::Server $server .= new(
-              :client(self), :$server-name, :$loop-time
-            );
+            my MongoDB::Server $server .= new( :client(self), :$server-name);
 
             # And start server monitoring
             $server.server-init;

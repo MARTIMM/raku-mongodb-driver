@@ -47,9 +47,7 @@ server is detected.
 
 =head2 new
 
-  submethod BUILD (
-    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10
-  )
+  submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern, Int )
 
 Create a C<MongoDB::Client> object.
 

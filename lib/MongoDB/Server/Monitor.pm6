@@ -34,7 +34,7 @@ class Server::Monitor {
   # Call before monitor-server to set the $!server object!
   # Inheriting from Supplier prevents use of proper BUILD 
   #
-  submethod BUILD ( MongoDB::ServerType:D :$server, Int :$loop-time = 10 ) {
+  submethod BUILD ( MongoDB::ServerType:D :$server ) {
 
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
@@ -49,7 +49,7 @@ class Server::Monitor {
     $!weighted-mean-rtt .= new(0);
 
     $!server-monitor-control .= new(1);
-    $!monitor-looptime = $loop-time;
+    $!monitor-looptime = 10;
     $!monitor-data-supplier .= new;
 
     $!monitor-command .= new: (isMaster => 1);
