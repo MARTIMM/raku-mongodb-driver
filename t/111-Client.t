@@ -22,7 +22,7 @@ my MongoDB::Test-support $ts .= new;
 subtest {
 
   my Int $p1 = $ts.server-control.get-port-number('s1');
-  my MongoDB::Client $client .= new( :uri("mongodb://:$p1"), :loop-time(1));
+  my MongoDB::Client $client .= new( :uri("mongodb://:$p1"));
   my MongoDB::Server $server = $client.select-server;
 
   is $client.server-status("localhost:$p1"), MASTER-SERVER,
@@ -48,7 +48,7 @@ subtest {
 subtest {
 
   my Int $p3 = $ts.server-control.get-port-number('s3');
-  my MongoDB::Client $client .= new( :uri("mongodb://:$p3"), :loop-time(3));
+  my MongoDB::Client $client .= new( :uri("mongodb://:$p3"));
   my MongoDB::Server $server = $client.select-server;
   is $client.server-status("localhost:$p3"), MASTER-SERVER,
      "Server is master";
@@ -119,7 +119,5 @@ subtest {
 # Cleanup
 #
 info-message("Test $?FILE end");
-sleep .2;
-drop-all-send-to();
 done-testing();
 exit(0);
