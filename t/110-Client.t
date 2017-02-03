@@ -11,8 +11,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -49,6 +49,7 @@ subtest {
 subtest {
 
   my Str $server-name = "localhost:$p1";
+
   $client .= new(:uri("mongodb://$server-name"));
   sleep(2);
 
@@ -83,14 +84,11 @@ subtest {
 # Cleanup
 #
 info-message("Test $?FILE end");
-sleep .2;
-drop-all-send-to();
 done-testing();
 exit(0);
-
-
-
 =finish
+
+
 
 
   my BSON::Document $result = $server.raw-query(
