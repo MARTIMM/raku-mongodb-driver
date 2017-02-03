@@ -41,6 +41,18 @@ class Client {
   has MongoDB::Authenticate::Credential $.credential;
 
   #-----------------------------------------------------------------------------
+  method new ( |c ) {
+
+    # In case of an assignement like $c .= new(...) $c should be cleaned first
+    if self.defined and $!servers.defined {
+      warn-message('User client object still defined, will be cleaned first');
+      self.cleanup;
+    }
+
+    MongoDB::Client.bless(|c);
+  }
+
+  #-----------------------------------------------------------------------------
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
     TopologyType :$topology-type = TT-Unknown

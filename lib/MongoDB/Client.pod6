@@ -51,6 +51,34 @@ server is detected.
     Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10
   )
 
+Create a C<MongoDB::Client> object.
+
+B<Note>. It is important to keep following in mind to prevent data leakage.
+The object must be cleaned up by hand before the variable is reused. This is
+because the Client object creates some background processes to keep an eye on
+the server and to update server object states and topology.
+
+  my MongoDB::Client $c .= new( ... );
+  # ... work with object
+  $c.cleanup;
+
+Some help is given by the object creation. When it notices that the object is
+defined along with some internal variables, it will destroy that object first
+before continuing. This also means that you must not use another object to
+create one!
+
+  my MongoDB::Client $c1, $c2;
+  $c1 .= new(...);
+
+  # In this proces $c1 will be destroyed!!
+  $c2 = $c1.new(...);
+
+  # This is usable however because we want to overwrite the object anyway
+  $c2 .= new(...);
+
+  # And this will result in data leakage
+  $c2 = MongoDB::Client.new(...);
+
 =head3 read-concern
 
 Read concern will overwrite the default concern.
@@ -258,5 +286,14 @@ string of two names separated by a dot '.'.
 
 When the read-concern is defined it overides the one from Client. If not
 defined, the structure of the client is taken.
+
+
+=head2 cleanup
+
+  method cleanup ( )
+
+Stop any background work on the Server object as well as the Monitor object.
+Cleanup structures so the object can be cleaned further by the GC later.
+
 
 =end pod

@@ -34,7 +34,6 @@ subtest {
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
-  $client.cleanup;
 
   $server-name = "localhost:65535";
   $client .= new(:uri("mongodb://$server-name"));
@@ -43,7 +42,6 @@ subtest {
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
-  $client.cleanup;
 
 }, 'Unknown server';
 
@@ -59,7 +57,6 @@ subtest {
      "Status of server is $client.server-status($server-name)";
 
   is $client.topology, TT-Single, "Topology $client.topology()";
-  $client.cleanup;
 
 }, "Standalone server";
 
