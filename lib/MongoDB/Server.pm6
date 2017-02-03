@@ -95,7 +95,7 @@ class Server {
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
 
-note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+#note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
         # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#parsing-an-ismaster-response
         try {

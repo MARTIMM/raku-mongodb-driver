@@ -181,7 +181,6 @@ class Client {
   #-----------------------------------------------------------------------------
   method !process-topology ( ) {
 
-note "process topology";
     $!rw-sem.writer( 'topology', {
 
     #TODO take user topology request into account
@@ -199,7 +198,6 @@ note "process topology";
         for $servers.keys -> $server-name {
 
           my ServerStatus $status = $servers{$server-name}<server>.get-status<status> // SS-Unknown;
-note "server status of $server-name is $status";
 
           if $status ~~ SS-Standalone {
             if $found-standalone or $found-sharded or $found-replica {
