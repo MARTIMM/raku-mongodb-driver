@@ -337,13 +337,18 @@ $!d5b.article [
               Find suitable servers by topology type and operation type
             ]
             $|listitem [
-              If there are any suitable servers, choose one at random from those within the latency window and return it; otherwise, continue to step #5
+              If there are any suitable servers, choose one at random from those
+              within the latency window and return it; otherwise, continue to
+              step #5
             ]
             $|listitem [
-              Request an immediate topology check, then block the server selection thread until the topology changes or until the server selection timeout has elapsed
+              Request an immediate topology check, then block the server
+              selection thread until the topology changes or until the server
+              selection timeout has elapsed
             ]
             $|listitem [
-              If more than serverSelectionTimeoutMS milliseconds have elapsed since the selection start time, raise a server selection error
+              If more than serverSelectionTimeoutMS milliseconds have elapsed
+              since the selection start time, raise a server selection error
             ]
             $|listitem [
               Goto Step #2
