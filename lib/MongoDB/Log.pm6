@@ -157,8 +157,9 @@ sub search-callframe ( $type --> CallFrame ) {
   # 3  -> m { ... }
   # 4  *-message(sub) helper functions
   #
-  my $fn = 5;
+  my $fn = 4;
   while my CallFrame $cf = callframe($fn++) {
+
     # End loop with the program that starts on line 1 and code object is
     # a hollow shell.
     if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
@@ -171,6 +172,12 @@ sub search-callframe ( $type --> CallFrame ) {
     if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
 
       $cf = Nil;
+      last;
+    }
+
+    if ?$cf and $type ~~ Sub
+       and $cf.code.name ~~ m/[trace|debug|info|warn|error|fatal] '-message'/ {
+
       last;
     }
 
