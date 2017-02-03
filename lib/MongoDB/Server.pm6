@@ -96,14 +96,14 @@ class Server {
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
 
+note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+
         # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#parsing-an-ismaster-response
         try {
 
-note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
-
+          my Bool $is-master = False;
           my ServerStatus $server-status = SS-Unknown;
           my Str $server-error = '';
-          my Bool $is-master = False;
 
           if $monitor-data<ok> {
 
@@ -115,40 +115,7 @@ note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).per
               }
             );
 
-            # Shard server
-            if $mdata<msg>:exists and $mdata<msg> eq 'isdbgrid' {
-              $server-status = SS-Mongos;
-            }
-
-            # Replica server in preinitialization state
-            elsif ? $mdata<isreplicaset> {
-              $server-status = SS-RSGhost;
-            }
-
-            # 
-            elsif ? $mdata<setName> {
-              $is-master = ? $mdata<ismaster>;
-              if $is-master {
-                $server-status = SS-RSPrimary;
-              }
-
-              elsif ? $mdata<secondary> {
-                $server-status = SS-RSSecondary;
-              }
-
-              elsif ? $mdata<arbiterOnly> {
-                $server-status = SS-RSArbiter;
-              }
-
-              else {
-                $server-status = SS-RSOther;
-              }
-            }
-
-            else {
-              $server-status = SS-Standalone;
-              $is-master = ? $mdata<ismaster>;
-            }
+            ( $server-status, $is-master) = self!process-status($mdata);
           }
 
           # Server did not respond
@@ -190,6 +157,51 @@ note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).per
         }
       }
     );
+  }
+
+  #-----------------------------------------------------------------------------
+  method !process-status ( BSON::Document $mdata --> List ) {
+
+    my Bool $is-master = False;
+    my ServerStatus $server-status = SS-Unknown;
+
+    # Shard server
+    if $mdata<msg>:exists and $mdata<msg> eq 'isdbgrid' {
+      $server-status = SS-Mongos;
+    }
+
+    # Replica server in preinitialization state
+    elsif ? $mdata<isreplicaset> {
+      $server-status = SS-RSGhost;
+    }
+
+    elsif ? $mdata<setName> {
+      $is-master = ? $mdata<ismaster>;
+      if $is-master {
+        $server-status = SS-RSPrimary;
+        $!client.add-servers($mdata<hosts>);
+      }
+
+      elsif ? $mdata<secondary> {
+        $server-status = SS-RSSecondary;
+        $!client.add-servers($mdata<primary>);
+      }
+
+      elsif ? $mdata<arbiterOnly> {
+        $server-status = SS-RSArbiter;
+      }
+
+      else {
+        $server-status = SS-RSOther;
+      }
+    }
+
+    else {
+      $server-status = SS-Standalone;
+      $is-master = ? $mdata<ismaster>;
+    }
+
+    ( $server-status, $is-master);
   }
 
   #-----------------------------------------------------------------------------
@@ -240,16 +252,6 @@ note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).per
 
     # Get a free socket entry
     my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
-
-#say "in s-select ...";
-# count total opened
-#my Int $c = 0;
-#for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
-#trace-message("total sockets open: $c of @!sockets.elems()");
-#        trace-message(
-#          "total sockets open: ",
-#          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
-#        );
 
         my MongoDB::Server::Socket $s;
 
@@ -392,10 +394,16 @@ note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).per
   # Forced cleanup
   method cleanup ( ) {
 
-    # Its possible that server moditor is not defined when a server is
+    # Its possible that server monitor is not defined when a server is
     # non existent or some other reason.
     $!server-tap.close if $!server-tap.defined;
-    $!server-monitor.stop-monitor if $!server-monitor.defined;
+
+    if $!server-monitor.defined {
+      $!server-monitor.stop-monitor;
+
+      # Wait for a proper finish
+      $!monitor-promise.result;
+    }
 
     # Clear all sockets
     $!rw-sem.writer( 's-select', {
@@ -413,45 +421,8 @@ note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).per
     $!uri-data = Nil;
     @!sockets = Nil;
     $!server-tap = Nil;
+
+    debug-message("Server destroyed");
   }
 }
 
-
-
-
-=finish
-#-------------------------------------------------------------------------------
-sub dump-callframe ( $fn-max = 10 --> Str ) {
-
-  my Str $dftxt = "\nDump call frame: \n";
-
-  my $fn = 1;
-  while my CallFrame $cf = callframe($fn) {
-#say $cf.perl;
-#say "TOP: ", $cf<TOP>:exists;
-
-    # End loop with the program that starts on line 1 and code object is
-    # a hollow shell.
-    #
-    if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
-      $cf = Nil;
-      last;
-    }
-
-    # Cannot pass sub THREAD-ENTRY either
-    #
-    if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
-      $cf = Nil;
-      last;
-    }
-
-    $dftxt ~= [~] "cf [$fn.fmt('%2d')]: ", $cf.line, ', ', $cf.code.^name,
-        ', ', ($cf.code.^can('name') ?? $cf.code.name !! '-'),
-         "\n         $cf.file()\n";
-
-    $fn++;
-    last if $fn > $fn-max;
-  }
-
-  $dftxt ~= "\n";
-}

@@ -75,8 +75,8 @@ class Server::Monitor {
   }
 
   #-----------------------------------------------------------------------------
-  # Run this on a separate thread because it lasts until this program atops.
-  #
+  # Run this on a separate thread because it lasts until this program stops
+  # or that the client is cleaned up
   method start-monitor ( --> Promise ) {
 
     # Just to prevent that more than one monitor is started.
@@ -98,151 +98,112 @@ class Server::Monitor {
 
         while $mloop {
 
-          try {
+          # Save time stamp for RTT measurement
+          $t0 = now;
 
-            # Save time stamp for RTT measurement
-            $t0 = now;
+          # Get server info
+          $doc = $!server.raw-query(
+            'admin.$cmd', $!monitor-command,
+            :number-to-skip(0), :number-to-return(1), :!authenticate
+          );
 
-            # Get server info
-            $doc = $!server.raw-query(
-              'admin.$cmd', $!monitor-command,
-              :number-to-skip(0), :number-to-return(1), :!authenticate
-            );
+          # then time response
+          $rtt = now - $t0;
 
-            # then time response
-            $rtt = now - $t0;
+          if $doc.defined {
 
-            if $doc.defined {
-
-              # Calculation of mean Return Trip Time. See also 
-              # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
-              #
-              $!weighted-mean-rtt .= new(
-                0.2 * $rtt + 0.8 * $!weighted-mean-rtt
-              );
-
-#note "\n$*THREAD.id() monitor info $!server.name(): ", $doc.perl;
-
-              debug-message(
-                "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
-              );
-              $!monitor-data-supplier.emit( {
-                  ok => True,
-                  monitor => $doc<documents>[0],
-                  weighted-mean-rtt => $!weighted-mean-rtt
-                }
-              );
-            }
-
-            else {
-              warn-message("no response from server $!server.name()");
-              $!monitor-data-supplier.emit( {
-                  ok => False,
-                  reason => 'Undefined document'
-                }
-              );
-            }
-
-            # Rest for a while
-            my Int $sleeptime = $!rw-sem.reader(
-              'm-looptime', {
-                $!monitor-looptime;
-              }
-            );
-
-            $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
-            sleep($sleeptime);
-
-            # Capture errors. When there are any, On older servers before
-            # version 3.2 the server just stops communicating when a shutdown
-            # command was given. Opening a socket will then bring us here.
-            # Send ok False to mention the fact that the server is down.
+            # Calculation of mean Return Trip Time. See also 
+            # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
             #
-            CATCH {
-#.note;
-              when .message ~~ m:s/Failed to resolve host name/ ||
-                   .message ~~ m:s/Failed to connect\: connection refused/ {
+            $!weighted-mean-rtt .= new(
+              0.2 * $rtt + 0.8 * $!weighted-mean-rtt
+            );
 
-                # Failure messages;
-                #   Failed to connect: connection refused
-                #   Failed to resolve host name
-                #
-                # 2016-04-30, perl6 bug, cannot do it directly in hash,
-                # Doesn't seem to be a bug, according to doc, $_ is one of
-                # the triggers to turn a hash into a block. Use 'hash '
-                # or '%()' explicitly!!!
-                #
-                my Str $s = .message();
-                error-message("Server $!server.name() error $s");
-                $!monitor-data-supplier.emit(
-                  hash (
-                    ok => False,
-                    reason => $s
-                  )
-                );
-
-                # Rest for a while
-                my Int $sleeptime = $!rw-sem.reader(
-                  'm-looptime', {
-                    $!monitor-looptime;
-                  }
-                );
-
-                $sleeptime = $looptime-trottle++
-                  if $looptime-trottle < $sleeptime;
-
-                sleep($sleeptime);
+            debug-message(
+              "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
+            );
+            $!monitor-data-supplier.emit( {
+                ok => True,
+                monitor => $doc<documents>[0],
+                weighted-mean-rtt => $!weighted-mean-rtt
               }
+            );
+          }
 
-              when .message ~~ m:s/No response from server/ ||
-                   .message ~~ m:s/Failed to connect\: connection refused/ ||
-                   .message ~~ m:s/Socket not available/ ||
-                   .message ~~ m:s/Out of range\: attempted to read/ ||
-                   .message ~~ m:s/Not enaugh characters left/ {
-
-                # Failure messages;
-                #   No response from server - This can happen when there is some
-                #   communication going on but the server has problems/down.
-                my Str $s = .message();
-                error-message("Server $!server.name() error $s");
-
-                $!socket.close-on-fail if $!socket.defined;
-                $!socket = Nil;
-                $!monitor-data-supplier.emit(
-                  hash (
-                    ok => False,
-                    reason => $s
-                  )
-                );
-
-                # Rest for a while
-                my Int $sleeptime = $!rw-sem.reader(
-                  'm-looptime', {
-                    $!monitor-looptime;
-                  }
-                );
-
-                $sleeptime = $looptime-trottle++
-                  if $looptime-trottle < $sleeptime;
-
-                sleep($sleeptime);
+          else {
+            warn-message("no response from server $!server.name()");
+            $!monitor-data-supplier.emit( {
+                ok => False,
+                reason => 'Undefined document'
               }
+            );
+          }
 
-              # If not one of the above errors, rethrow the error
-              default {
-                .say;
-                .rethrow;
-              }
+          # Rest for a while
+          my Int $sleeptime = $!rw-sem.reader(
+            'm-looptime', {
+              $!monitor-looptime;
             }
+          );
+
+          $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
+          sleep($sleeptime);
+
+          # Capture errors. When there are any, On older servers before
+          # version 3.2 the server just stops communicating when a shutdown
+          # command was given. Opening a socket will then bring us here.
+          # Send ok False to mention the fact that the server is down.
+          #
+          CATCH {
+
+            when .message ~~ m:s/Failed to resolve host name/ ||
+                 .message ~~ m:s/No response from server/ ||
+                 .message ~~ m:s/Failed to connect\: connection refused/ ||
+                 .message ~~ m:s/Socket not available/ ||
+                 .message ~~ m:s/Out of range\: attempted to read/ ||
+                 .message ~~ m:s/Not enaugh characters left/ {
+
+              # Failure messages;
+              #   No response from server - This can happen when there is some
+              #   communication going on but the server has problems/down.
+              my Str $s = .message();
+              error-message("Server $!server.name() error $s");
+
+              $!socket.close-on-fail if $!socket.defined;
+              $!socket = Nil;
+              $!monitor-data-supplier.emit( %( ok => False, reason => $s));
+
+              # calculate sleeping time
+              my Int $sleeptime = $!rw-sem.reader(
+                'm-looptime', {
+                  $!monitor-looptime;
+                }
+              );
+
+              # Adjust sleeptime (= $!monitor-looptime) until max is reached
+              $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
+              sleep($sleeptime);
+
+              # check if loop must be broken
+              $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
+            }
+
+            # If not one of the above errors, show and rethrow the error
+            default {
+              .note;
+              .rethrow;
+            }
+          }
+
+          LEAVE {
+            $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
           }
 
           $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
         }
 
         $!server-monitor-control.release;
-        $!socket.close;
-        $!socket = Nil;
-        info-message("Server monitoring stopped for $!server.name()");
+        debug-message("server monitoring stopped for '$!server.name()'");
         $!monitor-data-supplier.done;
       }
     );
@@ -253,7 +214,7 @@ class Server::Monitor {
   #-----------------------------------------------------------------------------
   method stop-monitor ( ) {
 
-    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
-#    $!monitor-data-supplier.done;
+    debug-message("stopping monitor for server '$!server.name()'");
+    my Bool $ml = $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
   }
 }

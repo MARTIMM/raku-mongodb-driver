@@ -24,10 +24,7 @@ class Client {
   # the server address/ip and its port number. This should be unique.
   #
   has Hash $!servers;
-
   has Array $!todo-servers;
-
-  has Str $!master-servername;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
@@ -40,7 +37,7 @@ class Client {
   has Promise $!Background-discovery;
   has Bool $!repeat-discovery-loop;
 
-  has Tap $!client-tap;
+#  has Tap $!client-tap;
 
   # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
   has MongoDB::Authenticate::Credential $.credential;
@@ -55,18 +52,14 @@ class Client {
     $!topology-type = TT-Unknown;
 
     $!servers = {};
-
-    # Start as if we must process servers so the Boolean is set to True
     $!todo-servers = [];
 
-    $!master-servername = Nil;
-
+    # Initialize mutexes
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
 
-    # Insert only when server is not defined yet. W've been here before.
     $!rw-sem.add-mutex-names(
-      <servers todo master>,
+      <servers todo topology>,
       :RWPatternType(C-RW-WRITERPRIO)
     ) unless $!rw-sem.check-mutex-names(<servers todo master>);
 
@@ -108,7 +101,7 @@ class Client {
     # Setup todo list with servers to be processed, Safety net not needed yet
     # because threads are not started.
     for @($uri-obj.server-data<servers>) -> Hash $server-data {
-      trace-message("todo: $server-data<host>:$server-data<port>");
+      debug-message("todo: $server-data<host>:$server-data<port>");
       $!todo-servers.push("$server-data<host>:$server-data<port>");
     }
 
@@ -146,20 +139,29 @@ class Client {
             # And start server monitoring
             $server.server-init;
 
-            # And process its data
-            self!process-monitor-data($server);
+#            # And process its data
+#            self!process-monitor-data($server);
+
+#TODO symplify to value instead of Hash
+            $!rw-sem.writer(
+              'servers', { $!servers{$server-name} = { server => $server, } }
+            );
+
+            self!process-topology;
           }
 
           else {
 
-            # When there is no work take a nap!
-            # This sleeping period is the moment we do not process the todo list
+            self!process-topology;
+
+            # When there is no work take a nap! This sleeping period is the
+            # moment we do not process the todo list
             sleep 1;
           }
 
           CATCH {
             default {
-               # Keep this .say in. It helps debugging when an error takes place
+               # Keep this .note in. It helps debugging when an error takes place
                # The error will not be seen before the result of Promise is read
                .note;
                .rethrow;
@@ -173,6 +175,94 @@ class Client {
     );
   }
 
+  #-----------------------------------------------------------------------------
+  method !process-topology ( ) {
+
+note "process topology";
+    $!rw-sem.writer( 'topology', {
+
+    #TODO take user topology request into account
+        # Calculate topology. Upon startup, the topology is set to
+        # TT-Unknown. Here, the real value is calculated and set. Doing
+        # it repeatedly it will be able to change dynamicaly.
+        #
+        my $topology = TT-Unknown;
+        my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
+
+        my Bool $found-standalone = False;
+        my Bool $found-sharded = False;
+        my Bool $found-replica = False;
+
+        for $servers.keys -> $server-name {
+
+          my ServerStatus $status = $servers{$server-name}<server>.get-status<status> // SS-Unknown;
+note "server status of $server-name is $status";
+
+          if $status ~~ SS-Standalone {
+            if $found-standalone or $found-sharded or $found-replica {
+
+              # cannot have more than one standalone servers
+              $topology = TT-Unknown;
+            }
+
+            else {
+
+              $found-standalone = True;
+              $topology = TT-Single;
+            }
+          }
+
+          elsif $status ~~ SS-Mongos {
+            if $found-standalone or $found-replica {
+
+              # cannot have other than shard servers
+              $topology = TT-Unknown;
+            }
+
+            else {
+              $found-sharded = True;
+              $topology = TT-Sharded;
+            }
+          }
+
+          elsif $status ~~ SS-RSPrimary {
+            if $found-standalone or $found-sharded {
+
+              # cannot have other than replica servers
+              $topology = TT-Unknown;
+            }
+
+            else {
+
+              $found-replica = True;
+              $topology = TT-ReplicaSetWithPrimary;
+            }
+          }
+
+          elsif $status ~~ any(
+            SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost
+          ) {
+            if $found-standalone or $found-sharded {
+
+              # cannot have other than replica servers
+              $topology = TT-Unknown;
+            }
+
+            else {
+
+              $found-replica = True;
+              $topology = TT-ReplicaSetNoPrimary;
+            }
+          }
+        }
+
+        debug-message("topology type set to $topology");
+        $!topology-type = $topology;
+      }
+    );
+  }
+
+#`{{
   #-----------------------------------------------------------------------------
   method !process-monitor-data ( MongoDB::Server $server ) {
 
@@ -247,22 +337,22 @@ class Client {
           # Not found by DNS or connection failure
           if $server-sts-data<status> ~~ SS-Unknown {
 
-            warn-message("Server is down: $server-sts-data<error>");
+            warn-message("Server error: $server-sts-data<error>");
           }
         }
 
-
         CATCH {
           default {
-             # Keep this .say in. It helps debugging when an error takes place
-             # The error will not be seen before the result of Promise is read
-             .note;
+            # Keep this .note in. It helps debugging when an error takes place
+            # The error will not be seen before the result of Promise is read
+            .note;
             .rethrow;
           }
         }
       }
     );
   }
+}}
 
   #-----------------------------------------------------------------------------
   # Return number of servers
@@ -276,25 +366,25 @@ class Client {
   # Called from thread above where Server object is created.
   method server-status ( Str:D $server-name --> ServerStatus ) {
 
-#note "$*THREAD.id() before check";
     self!check-discovery-process;
-#note "$*THREAD.id() after check";
-#    self!check-todo-process;
 
     my Hash $h = $!rw-sem.reader(
       'servers', {
-      my $x = $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
+      my $x = $!servers{$server-name}:exists
+              ?? $!servers{$server-name}<server>.get-status
+              !! {};
       $x;
     });
-    debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
     my ServerStatus $sts = $h<status> // SS-Unknown;
+    debug-message("server-status: '$server-name', $sts");
+    $sts
   }
 
   #-----------------------------------------------------------------------------
   method topology ( --> TopologyType ) {
 
-    $!topology-type;
+    $!rw-sem.reader( 'topology', {$!topology-type});
   }
 
   #-----------------------------------------------------------------------------
@@ -387,20 +477,25 @@ class Client {
     # When $check-cycles in not set it will be -1, therefore $check-cycles
     # will not reach 0 and loop becomes infinite.
     while $check-cycles != 0 {
-      $msname = $!rw-sem.reader( 'master', {$!master-servername;});
 
-#note "$*THREAD.id() select-server, {$msname//'-'}";
       if $msname.defined {
         $h = $!rw-sem.reader( 'servers', {$!servers{$msname};});
         last;
       }
 
       $check-cycles--;
-#prompt("type return to continue ...");
       sleep(1.5);
     }
 
     $h<server> // MongoDB::Server;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Add server to todo list.
+  method add-servers ( Array $hostspecs ) {
+
+    debug-message("push $hostspecs[*] on todo list");
+    $!rw-sem.writer( 'todo', { $!todo-servers.append: |$hostspecs; });
   }
 
   #-----------------------------------------------------------------------------
@@ -459,7 +554,7 @@ class Client {
     $!repeat-discovery-loop = False;
     $!Background-discovery.result;
 
-    $!client-tap.close;
+#    $!client-tap.close;
 
     # Remove all servers concurrently. Shouldn't be many per client.
     $!rw-sem.writer(
@@ -468,7 +563,7 @@ class Client {
         for $!servers.values -> Hash $srv-struct {
           if $srv-struct<server>.defined {
             # Stop monitoring on server
-            debug-message("cleanup server $srv-struct<server>.name()");
+            debug-message("cleanup server '$srv-struct<server>.name()'");
             $srv-struct<server>.cleanup;
             $srv-struct<server> = Nil;
           }
@@ -478,7 +573,7 @@ class Client {
 
     $!servers = Nil;
     $!todo-servers = Nil;
-    $!client-tap = Nil;
+#    $!client-tap = Nil;
 
     debug-message("Client destroyed");
   }
