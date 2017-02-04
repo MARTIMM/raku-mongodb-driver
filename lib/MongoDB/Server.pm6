@@ -40,14 +40,14 @@ class Server {
   has ServerStatus $!status;
   has Str $!error;
   has Bool $!is-master;
+  has Duration $!weighted-mean-rtt;
+  has Int $!max-wire-version;
+  has Int $!min-wire-version;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
   has Tap $!server-tap;
 
-  # May be read from Client
-  has Int $.max-wire-version;
-  has Int $.min-wire-version;
 
   #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
@@ -62,9 +62,9 @@ class Server {
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
-      <s-select s-status sock-max wire-version>,
+      <s-select s-status>,
       :RWPatternType(C-RW-WRITERPRIO)
-    ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max wire-version>);
+    ) unless $!rw-sem.check-mutex-names(<s-select s-status>);
 
     $!client = $client;
     $!uri-data = $client.uri-data;
@@ -103,17 +103,18 @@ class Server {
           my Bool $is-master = False;
           my ServerStatus $server-status = SS-Unknown;
           my Str $server-error = '';
+          my Duration $weighted-mean-rtt = Inf;
+          my Int $max-wire-version;
+          my Int $min-wire-version;
 
           if $monitor-data<ok> {
 
+            # Used to get a socket an decide on type of authentication
             my $mdata = $monitor-data<monitor>;
-            $!rw-sem.writer(
-              'wire-version', {
-                $!max-wire-version = $mdata<maxWireVersion>.Int;
-                $!min-wire-version = $mdata<minWireVersion>.Int;
-              }
-            );
 
+            $max-wire-version = $mdata<maxWireVersion>.Int;
+            $min-wire-version = $mdata<minWireVersion>.Int;
+            $weighted-mean-rtt = $monitor-data<weighted-mean-rtt>;
             ( $server-status, $is-master) = self!process-status($mdata);
           }
 
@@ -136,6 +137,9 @@ class Server {
               $!status = $server-status;
               $!error = $server-error;
               $!is-master = $is-master;
+              $!max-wire-version = $max-wire-version;
+              $!min-wire-version = $min-wire-version;
+              $!weighted-mean-rtt = $weighted-mean-rtt;
             }
           );
 
@@ -218,7 +222,11 @@ class Server {
       $count++;
 
       $server-sts-data = $!rw-sem.reader(
-        's-status', { %( :$!status, :$!is-master, :$!error ); }
+        's-status', { %(
+          :$!status, :$!is-master, :$!error
+          :$!max-wire-version, :$!min-wire-version,
+          :$!weighted-mean-rtt,
+        ); }
       );
 
       $server-status = $server-sts-data<status>;
@@ -313,9 +321,7 @@ class Server {
       my Str $auth-mechanism = $!credential.auth-mechanism;
       if not $auth-mechanism {
         my Int $max-version = $!rw-sem.reader(
-          'wire-version', {
-            $!max-wire-version
-          }
+          's-status', {$!max-wire-version}
         );
         $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
         debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
