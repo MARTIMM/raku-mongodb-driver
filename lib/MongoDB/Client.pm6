@@ -1,5 +1,7 @@
 use v6.c;
 
+#TODO readconcern does not have to be a BSON::Document. no encoding!
+
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
@@ -298,10 +300,18 @@ class Client {
 
   #-----------------------------------------------------------------------------
   # Selecting servers based on;
-  # - read/write concern, depends on server version
-  # - state of a server, e.g. to initialize a replica server or to get a slave
-  #   or arbiter
-  # - default is to get a master server
+  #
+  # - Record the server selection start time
+  # - If the topology wire version is invalid, raise an error
+  # - Find suitable servers by topology type and operation type
+  # - If there are any suitable servers, choose one at random from those within
+  #   the latency window and return it; otherwise, continue to step #5
+  # - Request an immediate topology check, then block the server selection
+  #   thread until the topology changes or until the server selection timeout
+  #   has elapsed
+  # - If more than serverSelectionTimeoutMS milliseconds have elapsed since the
+  #   selection start time, raise a server selection error
+  # - Goto Step #2
   #-----------------------------------------------------------------------------
 
 #TODO use read/write concern for selection
@@ -396,6 +406,16 @@ class Client {
       sleep(1.5);
     }
 
+    $h<server> // MongoDB::Server;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Request specific servername
+  multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
+
+    self!check-discovery-process;
+
+    my Hash $h = $!rw-sem.reader( 'servers', { $!servers{$servername} // {}; });
     $h<server> // MongoDB::Server;
   }
 
