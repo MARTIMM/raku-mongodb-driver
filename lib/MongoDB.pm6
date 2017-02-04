@@ -87,7 +87,7 @@ subset ClientType is export where .^name eq 'MongoDB::Client';
 subset DatabaseType is export where .^name eq 'MongoDB::Database';
 subset CollectionType is export where .^name eq 'MongoDB::Collection';
 subset ServerType is export where .^name eq 'MongoDB::Server';
-subset SocketType is export where .^name eq 'MongoDB::Socket';
+subset SocketType is export where .^name eq 'MongoDB::Server::Socket';
 
 #-------------------------------------------------------------------------------
 #
