@@ -85,7 +85,6 @@ class Server::Monitor {
     debug-message("Start $!server.name() monitoring");
     $!promise-monitor .= start( {
 
-        my Instant $t0;
         my Duration $rtt;
         my BSON::Document $doc;
 
@@ -98,26 +97,19 @@ class Server::Monitor {
 
         while $mloop {
 
-          # Save time stamp for RTT measurement
-          $t0 = now;
-
           # Get server info
-          $doc = $!server.raw-query(
+          ( $doc, $rtt) = $!server.raw-query(
             'admin.$cmd', $!monitor-command,
-            :number-to-skip(0), :number-to-return(1), :!authenticate
+            :number-to-skip(0), :number-to-return(1), :!authenticate,
+            :timed-query
           );
-
-          # then time response
-          $rtt = now - $t0;
 
           if $doc.defined {
 
             # Calculation of mean Return Trip Time. See also 
             # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
             #
-            $!weighted-mean-rtt .= new(
-              0.2 * $rtt + 0.8 * $!weighted-mean-rtt
-            );
+            $!weighted-mean-rtt .= new(0.2 * $rtt + 0.8 * $!weighted-mean-rtt);
 
             debug-message(
               "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"

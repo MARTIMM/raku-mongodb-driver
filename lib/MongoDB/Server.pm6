@@ -103,7 +103,7 @@ class Server {
           my Bool $is-master = False;
           my ServerStatus $server-status = SS-Unknown;
           my Str $server-error = '';
-          my Duration $weighted-mean-rtt = Inf;
+          my Duration $weighted-mean-rtt;
           my Int $max-wire-version;
           my Int $min-wire-version;
 
@@ -375,14 +375,35 @@ class Server {
   }
 
   #-----------------------------------------------------------------------------
-  method raw-query (
+  multi method raw-query (
+    Str:D $full-collection-name, BSON::Document:D $query,
+    Int :$number-to-skip = 0, Int :$number-to-return = 1,
+    Bool :$authenticate = True, Bool :$timed-query!
+    --> List
+  ) {
+
+    my BSON::Document $doc;
+    my Duration $rtt;
+
+    ( $doc, $rtt) = MongoDB::Wire.new.timed-query(
+      $full-collection-name, $query,
+      :$number-to-skip, :number-to-return,
+      :server(self), :$authenticate
+    );
+
+    ( $doc, $rtt);
+  }
+
+
+  multi method raw-query (
     Str:D $full-collection-name, BSON::Document:D $query,
     Int :$number-to-skip = 0, Int :$number-to-return = 1,
     Bool :$authenticate = True
     --> BSON::Document
   ) {
     debug-message("server directed query on collection $full-collection-name on server {self.name}");
-    return MongoDB::Wire.new.query(
+
+    MongoDB::Wire.new.query(
       $full-collection-name, $query,
       :$number-to-skip, :number-to-return,
       :server(self), :$authenticate

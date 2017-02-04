@@ -12,8 +12,22 @@ unit package MongoDB:auth<https://github.com/MARTIMM>;
 class Wire {
   state $header = MongoDB::Header.new;
 
-  has $!server;
-  has $!socket;
+  has ServerType $!server;
+  has SocketType $!socket;
+
+  #-----------------------------------------------------------------------------
+  # Value needed for round trip timing and is set to get more accurate values
+  has Duration $!round-trip-time .= new(0.0);
+  has Bool $!time-query = False;
+
+  #-----------------------------------------------------------------------------
+  method timed-query ( |c --> List ) {
+
+    $!time-query = True;
+    my BSON::Document $doc = self.query(|c);
+
+    ( $doc, $!round-trip-time);
+  }
 
   #-----------------------------------------------------------------------------
   method query (
@@ -32,6 +46,8 @@ class Wire {
 
     my BSON::Document $result;
 
+    my Instant $t0;
+
     try {
       ( my Buf $encoded-query, my Int $request-id) = $header.encode-query(
         $full-collection-name, $qdoc, $projection,
@@ -39,6 +55,10 @@ class Wire {
       );
 
       $!socket = $server.get-socket(:$authenticate);
+
+      # start timing
+      $t0 = now if $!time-query;
+
       $!socket.send($encoded-query);
 
       # Read 4 bytes for int32 response size
@@ -54,6 +74,9 @@ class Wire {
       # Receive remaining response bytes from socket. Prefix it with the
       # already read bytes and decode. Return the resulting document.
       my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
+
+      # then time response
+      $!round-trip-time = now - $t0 if $!time-query;
 
       $result = $header.decode-reply($server-reply);
 
