@@ -26,24 +26,34 @@ my MongoDB::Server $server;
 subtest {
 
   my Str $server-name = 'non-existent-server.with-unknown.domain:65535';
-  $client .= new(:uri("mongodb://$server-name"));
+  $client .= new(
+    :uri("mongodb://$server-name"),
+    :server-selection-timeout-ms(1)
+  );
   isa-ok $client, MongoDB::Client;
 
-  $server = $client.select-server(:3check-cycles);
+  $server = $client.select-server;
   nok $server.defined, 'No servers selected';
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
 
   $server-name = "localhost:65535";
-  $client .= new(:uri("mongodb://$server-name"));
-  $server = $client.select-server(:3check-cycles);
+  $client .= new(
+    :uri("mongodb://$server-name"),
+    :server-selection-timeout-ms(1)
+  );
+  $server = $client.select-server;
   nok $server.defined, 'No servers selected';
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
 
 }, 'Unknown server';
+
+done-testing();
+exit(0);
+=finish
 
 #-------------------------------------------------------------------------------
 subtest {
@@ -60,6 +70,7 @@ subtest {
   is $client.topology, TT-Single, "Topology $client.topology()";
 
 }, "Standalone server";
+
 
 #-------------------------------------------------------------------------------
 subtest {

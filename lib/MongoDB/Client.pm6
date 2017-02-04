@@ -42,6 +42,9 @@ class Client {
   # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
   has MongoDB::Authenticate::Credential $.credential;
 
+  has Int $!server-selection-timeout-ms;
+  has Int $!local-threshold-ms;
+
   #-----------------------------------------------------------------------------
   method new ( |c ) {
 
@@ -56,13 +59,19 @@ class Client {
   }
 
   #-----------------------------------------------------------------------------
+#TODO pod doc arguments
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern,
-    TopologyType :$topology-type = TT-Unknown
+    TopologyType :$topology-type = TT-Unknown,
+    Int :$server-selection-timeout-ms = 30000,
+    Int :$local-threshold-ms = 100,
   ) {
 
     $!user-request-topology = $topology-type;
     $!topology-type = TT-Unknown;
+
+    $!server-selection-timeout-ms = $server-selection-timeout-ms;
+    $!local-threshold-ms = $local-threshold-ms;
 
     $!servers = {};
     $!todo-servers = [];
@@ -76,9 +85,11 @@ class Client {
       :RWPatternType(C-RW-WRITERPRIO)
     ) unless $!rw-sem.check-mutex-names(<servers todo master>);
 
-    # Store read concern
-    $!read-concern =
-      $read-concern.defined ?? $read-concern !! BSON::Document.new;
+    # Store read concern or initialize to default
+    $!read-concern = $read-concern // BSON::Document.new: (
+      mode => RCM-Primary,
+      tag-sets => [BSON::Document.new(),]
+    );
 
     # Parse the uri and get info in $uri-obj. Fields are protocol, username,
     # password, servers, database and options.
@@ -313,18 +324,56 @@ class Client {
   # - Goto Step #2
   #-----------------------------------------------------------------------------
 
+#TODO pod doc
 #TODO use read/write concern for selection
 #TODO must break loop when nothing is found
 
   # Read/write concern selection
   multi method select-server (
-    BSON::Document:D :$read-concern!
+    BSON::Document :$read-concern is copy
     --> MongoDB::Server
   ) {
 
-    self.select-server;
+    $read-concern //= $!read-concern;
+    my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
+    my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
+    my MongoDB::Server $server;
+
+    # record the server selection start time
+    my Instant $t0 = now;
+
+    # find suitable servers by topology type and operation type
+    repeat {
+      if $topology ~~ TT-Single {
+        for $servers.keys -> $sname {
+          $server = $servers{$sname};
+          my Hash $sdata = $server.get-status;
+          last if $sdata<status> ~~ SS-Standalone;
+        }
+      }
+
+      elsif $topology ~~ TT-ReplicaSetWithPrimary {
+
+      }
+
+      elsif $topology ~~ TT-ReplicaSetNoPrimary {
+
+      }
+
+      elsif $topology ~~ TT-Sharded {
+
+      }
+
+      # else wait for status and topology updates
+      sleep 1;
+
+note "diff {(now - $t0) * 1000}";
+    } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
+
+    $server;
   }
 
+#`{{
   #-----------------------------------------------------------------------------
   # State of server selection
   multi method select-server (
@@ -407,6 +456,7 @@ class Client {
 
     $h // MongoDB::Server;
   }
+}}
 
   #-----------------------------------------------------------------------------
   # Request specific servername
