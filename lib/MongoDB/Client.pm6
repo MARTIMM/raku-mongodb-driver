@@ -149,10 +149,7 @@ class Client {
             # And start server monitoring
             $server.server-init;
 
-#TODO symplify to value instead of Hash
-            $!rw-sem.writer(
-              'servers', { $!servers{$server-name} = { server => $server, } }
-            );
+            $!rw-sem.writer( 'servers', { $!servers{$server-name} = $server; });
 
             self!process-topology;
           }
@@ -281,8 +278,8 @@ class Client {
 
     my Hash $h = $!rw-sem.reader(
       'servers', {
-      my $x = $!servers{$server-name}:exists
-              ?? $!servers{$server-name}<server>.get-status
+      my $x = $!servers{$server-name}.defined
+              ?? $!servers{$server-name}.get-status
               !! {};
       $x;
     });
@@ -323,7 +320,7 @@ class Client {
     --> MongoDB::Server
   ) {
 
-    self.select-server;
+    
   }
 
   #-----------------------------------------------------------------------------
@@ -343,11 +340,8 @@ class Client {
 
       # Take this into the loop because array can still change, might even
       # be empty when hastely called right after new()
-      my Array $server-names = $!rw-sem.reader(
-        'servers', {
-           [$!servers.keys];
-         }
-       );
+      my Array $server-names = $!rw-sem.reader( 'servers', {[$!servers.keys];});
+
 #note "$*THREAD.id() select-server {@$server-names}";
       for @$server-names -> $msname {
         my Hash $shash = $!rw-sem.reader(
@@ -488,7 +482,7 @@ class Client {
       'servers', {
 
         for $!servers.values -> Hash $srv-struct {
-          if $srv-struct<server>.defined {
+          if $srv-struct.defined {
             # Stop monitoring on server
             debug-message("cleanup server '$srv-struct<server>.name()'");
             $srv-struct<server>.cleanup;
