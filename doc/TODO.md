@@ -17,4 +17,8 @@
 * Handle read/write concerns.
 * There is an occasional 'double free' bug in perl6 which torpedes tests now and then. This is a perl6 problem.
 
-* Calculate topology from serverstatus
+* Calculate topology from serverstatus, implemented but need more tests
+* Client.select-server must be reimplemented
+* readconcern structure does not have to be a BSON::Document. no encoding, it isn't a server object!
+
+* design is changed, redraw time diagrams
