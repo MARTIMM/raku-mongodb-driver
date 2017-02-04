@@ -19,7 +19,7 @@ sub EXPORT { {
 #-------------------------------------------------------------------------------
 unit package MongoDB:ver<0.36.1>:auth<https://github.com/MARTIMM>;
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Client object topology types
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 enum TopologyType is export <
@@ -27,7 +27,7 @@ enum TopologyType is export <
   TT-Sharded TT-Unknown
 >;
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Status values of a Server.object
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 
@@ -47,7 +47,7 @@ enum ServerStatus is export <
   SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
 >;
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
 enum WireOpcode is export (
   :OP-REPLY(1),
@@ -56,7 +56,7 @@ enum WireOpcode is export (
   :OP-DELETE(2006), :OP-KILL-CURSORS(2007),
 );
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Query flags
 enum QueryFindFlags is export (
   :C-NO-FLAGS(0x00), :C-QF-RESERVED(0x01),
@@ -65,18 +65,18 @@ enum QueryFindFlags is export (
   :C-QF-EXHAUST(0x40), :C-QF-PORTAIL(0x80),
 );
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Response flags
 enum ResponseFlags is export (
   :RF-CURSORNOTFOUND(0x01), :RF-QUERYFAILURE(0x02),
   :RF-SHARDCONFIGSTALE(0x04), :RF-AWAITCAPABLE(0x08),
 );
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Socket values
 constant MAX-SOCKET-UNUSED-OPEN is export = 900; # Quarter of an hour unused
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Other types
 
 # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
@@ -89,16 +89,16 @@ subset CollectionType is export where .^name eq 'MongoDB::Collection';
 subset ServerType is export where .^name eq 'MongoDB::Server';
 subset SocketType is export where .^name eq 'MongoDB::Socket';
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #
 signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 sub mongodb-driver-version ( --> Version ) is export {
   MongoDB.^ver;
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 sub mongodb-driver-author ( --> Str ) is export {
   MongoDB.^auth;
 }
