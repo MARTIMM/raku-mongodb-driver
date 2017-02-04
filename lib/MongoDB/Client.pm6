@@ -49,6 +49,7 @@ class Client {
     if self.defined and $!servers.defined {
       warn-message('User client object still defined, will be cleaned first');
       self.cleanup;
+      sleep 0.5;
     }
 
     MongoDB::Client.bless(|c);
@@ -149,7 +150,8 @@ class Client {
             # And start server monitoring
             $server.server-init;
 
-            $!rw-sem.writer( 'servers', { $!servers{$server-name} = $server; });
+#TODO symplify to value instead of Hash
+            $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
 
             self!process-topology;
           }
@@ -196,7 +198,7 @@ class Client {
 
         for $servers.keys -> $server-name {
 
-          my ServerStatus $status = $servers{$server-name}<server>.get-status<status> // SS-Unknown;
+          my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
 
           if $status ~~ SS-Standalone {
             if $found-standalone or $found-sharded or $found-replica {
@@ -278,7 +280,7 @@ class Client {
 
     my Hash $h = $!rw-sem.reader(
       'servers', {
-      my $x = $!servers{$server-name}.defined
+      my $x = $!servers{$server-name}:exists
               ?? $!servers{$server-name}.get-status
               !! {};
       $x;
@@ -320,7 +322,7 @@ class Client {
     --> MongoDB::Server
   ) {
 
-    
+    self.select-server;
   }
 
   #-----------------------------------------------------------------------------
@@ -340,8 +342,11 @@ class Client {
 
       # Take this into the loop because array can still change, might even
       # be empty when hastely called right after new()
-      my Array $server-names = $!rw-sem.reader( 'servers', {[$!servers.keys];});
-
+      my Array $server-names = $!rw-sem.reader(
+        'servers', {
+           [$!servers.keys];
+         }
+       );
 #note "$*THREAD.id() select-server {@$server-names}";
       for @$server-names -> $msname {
         my Hash $shash = $!rw-sem.reader(
@@ -364,15 +369,15 @@ class Client {
       sleep 1;
     } while $h.defined or $check-cycles != 0;
 
-    if $h.defined and $h<server> {
-      info-message("Server $h<server>.name() selected");
+    if $h.defined {
+      info-message("Server $h.name() selected");
     }
 
     else {
       error-message('No typed server selected');
     }
 
-    $h<server> // MongoDB::Server;
+    $h // MongoDB::Server;
   }
 
   #-----------------------------------------------------------------------------
@@ -400,7 +405,7 @@ class Client {
       sleep(1.5);
     }
 
-    $h<server> // MongoDB::Server;
+    $h // MongoDB::Server;
   }
 
   #-----------------------------------------------------------------------------
@@ -410,7 +415,7 @@ class Client {
     self!check-discovery-process;
 
     my Hash $h = $!rw-sem.reader( 'servers', { $!servers{$servername} // {}; });
-    $h<server> // MongoDB::Server;
+    $h // MongoDB::Server;
   }
 
   #-----------------------------------------------------------------------------
@@ -481,12 +486,11 @@ class Client {
     $!rw-sem.writer(
       'servers', {
 
-        for $!servers.values -> Hash $srv-struct {
-          if $srv-struct.defined {
+        for $!servers.values -> MongoDB::Server $server {
+          if $server.defined {
             # Stop monitoring on server
-            debug-message("cleanup server '$srv-struct<server>.name()'");
-            $srv-struct<server>.cleanup;
-            $srv-struct<server> = Nil;
+            debug-message("cleanup server '$server.name()'");
+            $server.cleanup;
           }
         }
       }
