@@ -30,21 +30,18 @@ enum TopologyType is export <
 #-------------------------------------------------------------------------------
 # Status values of a Server.object
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
-
-# Mapping Old to new server state values
-# SS-Unknown:           UNKNOWN-SERVER NON-EXISTENT-SERVER DOWN-SERVER
-#                       RECOVERING-SERVER REJECTED-SERVER
-# SS-Standalone         MASTER-SERVER SLAVE-SERVER
-# SS-Mongos             SHARDING-SERVER
-# SS-RSPrimary          REPLICASET-PRIMARY
-# SS-RSSecondary        REPLICASET-SECONDARY
-# SS-RSArbiter          REPLICASET-ARBITER
-# SS-RSOther            REPLICA-PRE-INIT
-# SS-RSGhost            GHOST-SERVER
-
 enum ServerStatus is export <
   SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary SS-RSSecondary
   SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
+>;
+
+#-------------------------------------------------------------------------------
+# See also https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers
+# read concern mode values
+#TODO pod doc arguments
+enum ReadConcernModes is export <
+  RCM-Primary RCM-Secondary RCM-Primary-preferred
+  RCM-Secondary-preferred RCM-Nearest
 >;
 
 #-------------------------------------------------------------------------------
