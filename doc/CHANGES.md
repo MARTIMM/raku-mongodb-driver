@@ -6,6 +6,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
   * Modified server states and implemented topology types
   * Improvements on Client, Server and Monitor behaviour
   * Added Client.new with test on object definedness. When defined it will be cleaned before continueing. This will prevent some of the possible memory leakages.
+  * reimplemeted the select-server() methods.
 * 0.36.4
   * Reinstalled replica server tests 610 - 613.
 * 0.36.3

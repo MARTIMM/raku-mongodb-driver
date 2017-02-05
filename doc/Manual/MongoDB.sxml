@@ -273,8 +273,9 @@ $!d5b.article [
                 $|td [TT-Single]
                 $|td [
                   A deployment of topology type TT-Single contains only a single
-                  server of any state except SS-Unknown. This topology type
-                  signifies a direct  connection intended to receive all read
+                  server with a state SS-Standalone(this explanation differs
+                  from that of the mongodb site). This topology type
+                  signifies a direct connection intended to receive all read
                   and write operations.
                 ]
               ]

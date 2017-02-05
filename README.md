@@ -186,10 +186,9 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
   * Single server. The simplest of situations.
   * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to with the risk that the particular server (a secondary server) is not up to date.
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
-  * Independent servers. It should be possible to have a mix of all this when there are several databases with collections which cannot be merged onto one server, replica set or otherwise. A user must have a way to send the task to one or the other server/replicaset/shard.
+  * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations.
 
-  ### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
-
+### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
 
 |Tested|Test Filename|Test Purpose|
 |-|-|-|
@@ -213,7 +212,7 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
 
 There has been a lot of changes in the API.
 * All methods which had underscores ('\_') are converted to dashed ones ('-').
-* Many helper functions are removed. In the documentation must come some help to create a database/collection helper module as well as examples in the xt or doc directory. In HL (higher level) there will come some modules which can be used.
+* Many helper functions are removed. In the documentation, some information must be added to create a database/collection helper methods as well as examples in the xt or doc directory. In HL (higher level) there will come some modules which can be used.
 * Connection module is gone. The Client module has come in its place.
 
 ## Documentation
@@ -249,13 +248,13 @@ There has been a lot of changes in the API.
 
 ## INSTALLING THE MODULES
 
-Use panda or zef to install the package.
+Use zef to install the package.
 
 ## Versions of PERL, MOARVM and MongoDB
 
 This project is tested with Rakudo built on MoarVM implementing Perl v6.c.
 
-MongoDB versions are supported from 2.6 and up. Versions lower than this are not supported because of not completely implementing the wire protocol.
+MongoDB versions are supported from 2.6 and up. Versions lower than this are not supported because of not completely implementing the wire protocol. one reason of not implementing them is that these operations(update, delete etc.) are not acknowledged, so it will never be clear if the operation was successful, other than checking it by another query.
 
 At this moment rakudobrew has too many differences with the perl6 directly from github. It is therefore important to know that this version is tested against the newest github version. Also it is the intention to support above mentioned mongo versions, at the moment the distribution is tested against 3.0.5 and higher.
 
