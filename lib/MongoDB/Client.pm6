@@ -42,8 +42,15 @@ class Client {
   # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
   has MongoDB::Authenticate::Credential $.credential;
 
-  has Int $!server-selection-timeout-ms;
+  # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#mongoclient-configuration
   has Int $!local-threshold-ms;
+  has Int $!server-selection-timeout-ms;
+  has Int $!heartbeat-frequency-ms;
+  has Int $!idle-write-period-ms;
+
+  # Only for single threaded implementations
+  # has Bool $!server-selection-try-once = False;
+  # has Int $!socket-check-interval-ms = 5000;
 
   #-----------------------------------------------------------------------------
   method new ( |c ) {
@@ -63,8 +70,10 @@ class Client {
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern,
     TopologyType :$topology-type = TT-Unknown,
-    Int :$server-selection-timeout-ms = 30000,
     Int :$local-threshold-ms = 100,
+    Int :$server-selection-timeout-ms = 30000,
+    Int :$heartbeat-frequency-ms = 10000,
+    Int :$idle-write-period-ms = 10000,
   ) {
 
     $!user-request-topology = $topology-type;
@@ -72,6 +81,8 @@ class Client {
 
     $!server-selection-timeout-ms = $server-selection-timeout-ms;
     $!local-threshold-ms = $local-threshold-ms;
+    $!heartbeat-frequency-ms = $heartbeat-frequency-ms;
+    $!idle-write-period-ms = $idle-write-period-ms;
 
     $!servers = {};
     $!todo-servers = [];
@@ -88,6 +99,8 @@ class Client {
     # Store read concern or initialize to default
     $!read-concern = $read-concern // BSON::Document.new: (
       mode => RCM-Primary,
+#TODO next only when max-wire-version >= 5
+#      max-staleness-seconds => 10,
       tag-sets => [BSON::Document.new(),]
     );
 
@@ -337,27 +350,40 @@ class Client {
     $read-concern //= $!read-concern;
     my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
     my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
-    my MongoDB::Server $server;
+    my MongoDB::Server $selected-server;
+    my MongoDB::Server @selected-servers;
 
     # record the server selection start time
     my Instant $t0 = now;
 
     # find suitable servers by topology type and operation type
     repeat {
+
       if $topology ~~ TT-Single {
+
         for $servers.keys -> $sname {
-          $server = $servers{$sname};
-          my Hash $sdata = $server.get-status;
+          $selected-server = $servers{$sname};
+          my Hash $sdata = $selected-server.get-status;
           last if $sdata<status> ~~ SS-Standalone;
         }
       }
 
       elsif $topology ~~ TT-ReplicaSetWithPrimary {
 
+        for $servers.keys -> $sname {
+          $selected-server = $servers{$sname};
+          my Hash $sdata = $selected-server.get-status;
+          last if $sdata<status> ~~ SS-RSPrimary;
+        }
       }
 
       elsif $topology ~~ TT-ReplicaSetNoPrimary {
 
+        for $servers.keys -> $sname {
+          @selected-servers.push: $servers{$sname};
+#          my Hash $sdata = $selected-server.get-status;
+#          last if $sdata<status> ~~ SS-RSPrimary;
+        }
       }
 
       elsif $topology ~~ TT-Sharded {
@@ -370,7 +396,9 @@ class Client {
 note "diff {(now - $t0) * 1000}";
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
 
-    $server;
+    if ! $selected-server {
+    
+    }
   }
 
 #`{{

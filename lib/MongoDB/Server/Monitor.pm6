@@ -46,7 +46,7 @@ class Server::Monitor {
 
     $!server = $server;
 
-    $!weighted-mean-rtt .= new(0);
+    $!weighted-mean-rtt .= new(1_000_000_000_000);
 
     $!server-monitor-control .= new(1);
     $!monitor-looptime = 10;
@@ -109,10 +109,12 @@ class Server::Monitor {
             # Calculation of mean Return Trip Time. See also 
             # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
             #
-            $!weighted-mean-rtt .= new(0.2 * $rtt + 0.8 * $!weighted-mean-rtt);
+            $!weighted-mean-rtt .= new(
+              0.2 * $rtt * 1000 + 0.8 * $!weighted-mean-rtt
+            );
 
             debug-message(
-              "Weighted mean RTT: $!weighted-mean-rtt for server $!server.name()"
+              "Weighted mean RTT: $!weighted-mean-rtt (ms) for server $!server.name()"
             );
             $!monitor-data-supplier.emit( {
                 ok => True,
@@ -120,6 +122,8 @@ class Server::Monitor {
                 weighted-mean-rtt => $!weighted-mean-rtt
               }
             );
+#TODO SS-RSPrimary must do periodic no-op
+#See https://github.com/mongodb/specifications/blob/master/source/max-staleness/max-staleness.rst#primary-must-write-periodic-no-ops
           }
 
           else {
