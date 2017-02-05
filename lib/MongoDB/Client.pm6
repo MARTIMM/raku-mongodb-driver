@@ -47,6 +47,7 @@ class Client {
   has Int $!server-selection-timeout-ms;
   has Int $!heartbeat-frequency-ms;
   has Int $!idle-write-period-ms;
+  constant smallest-max-staleness-seconds = 90;
 
   # Only for single threaded implementations
   # has Bool $!server-selection-try-once = False;
@@ -76,6 +77,7 @@ class Client {
     Int :$idle-write-period-ms = 10000,
   ) {
 
+#TODO some or all are also settable in uri
     $!user-request-topology = $topology-type;
     $!topology-type = TT-Unknown;
 
@@ -96,22 +98,23 @@ class Client {
       :RWPatternType(C-RW-WRITERPRIO)
     ) unless $!rw-sem.check-mutex-names(<servers todo master>);
 
+#TODO check version: read-concern introduced in version 3.2
     # Store read concern or initialize to default
     $!read-concern = $read-concern // BSON::Document.new: (
       mode => RCM-Primary,
-#TODO next only when max-wire-version >= 5
-#      max-staleness-seconds => 10,
+#TODO  next key only when max-wire-version >= 5 ??
+#      max-staleness-seconds => 90,
+#      must be > smallest-max-staleness-seconds
+#           or > $!heartbeat-frequency-ms + $!idle-write-period-ms
       tag-sets => [BSON::Document.new(),]
     );
 
     # Parse the uri and get info in $uri-obj. Fields are protocol, username,
     # password, servers, database and options.
-    #
     $!uri = $uri;
 
     # Copy some fields into $!uri-data hash which is handed over
     # to the server object..
-    #
     my @item-list = <username password database options>;
     my MongoDB::Uri $uri-obj .= new(:$!uri);
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
@@ -351,7 +354,7 @@ class Client {
     my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
     my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
     my MongoDB::Server $selected-server;
-    my MongoDB::Server @selected-servers;
+    my MongoDB::Server @selected-servers = ();
 
     # record the server selection start time
     my Instant $t0 = now;
@@ -380,25 +383,37 @@ class Client {
       elsif $topology ~~ TT-ReplicaSetNoPrimary {
 
         for $servers.keys -> $sname {
-          @selected-servers.push: $servers{$sname};
-#          my Hash $sdata = $selected-server.get-status;
-#          last if $sdata<status> ~~ SS-RSPrimary;
+          my $s = $servers{$sname};
+          my Hash $sdata = $s.get-status;
+          @selected-servers.push: $s if $sdata<status> ~~ SS-RSSecondary;
         }
       }
 
       elsif $topology ~~ TT-Sharded {
 
+        for $servers.keys -> $sname {
+          my $s = $servers{$sname};
+          my Hash $sdata = $s.get-status;
+          @selected-servers.push: $s if $sdata<status> ~~ SS-Mongos;
+        }
       }
 
       # else wait for status and topology updates
+#TODO synchronize with monitor times
       sleep 1;
 
 note "diff {(now - $t0) * 1000}";
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
 
-    if ! $selected-server {
-    
+
+    if !$selected-server and +@selected-servers {
+
+      for @selected-servers -> $svr {
+
+      }
     }
+
+    $selected-server;
   }
 
 #`{{
