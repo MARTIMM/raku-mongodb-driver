@@ -22,7 +22,6 @@ my Int $p2 = $ts.server-control.get-port-number('s2');
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 
-#`{{}}
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -98,7 +97,6 @@ subtest {
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 info-message("Test $?FILE end");
 done-testing();
 exit(0);

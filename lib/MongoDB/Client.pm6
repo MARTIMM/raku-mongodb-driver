@@ -175,7 +175,7 @@ class Client {
             my MongoDB::Server $server .= new( :client(self), :$server-name);
 
             # And start server monitoring
-            $server.server-init;
+            $server.server-init($!heartbeat-frequency-ms);
 
 #TODO symplify to value instead of Hash
             $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
@@ -601,6 +601,9 @@ note "diff {(now - $t0) * 1000}";
   # Forced cleanup
   method cleanup ( ) {
 
+    # some timing to see if this cleanup can be improved
+    my Instant $t0 = now;
+
     # stop loop and wait for exit
     $!repeat-discovery-loop = False;
     $!Background-discovery.result;
@@ -612,8 +615,8 @@ note "diff {(now - $t0) * 1000}";
         for $!servers.values -> MongoDB::Server $server {
           if $server.defined {
             # Stop monitoring on server
-            debug-message("cleanup server '$server.name()'");
             $server.cleanup;
+            debug-message("server '$server.name()' cleaned after {now - $t0}");
           }
         }
       }
@@ -622,7 +625,7 @@ note "diff {(now - $t0) * 1000}";
     $!servers = Nil;
     $!todo-servers = Nil;
 
-    debug-message("Client destroyed");
+    debug-message("Client destroyed after {now - $t0}");
   }
 }
 

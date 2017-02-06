@@ -22,7 +22,6 @@ class Server::Monitor {
   has Semaphore $!server-monitor-control;
 
   has Bool $!monitor-loop;
-  has Int $!monitor-looptime;
   has Supplier $!monitor-data-supplier;
 
   has BSON::Document $!monitor-command;
@@ -39,17 +38,14 @@ class Server::Monitor {
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
 #TODO check before create
-    $!rw-sem.add-mutex-names(
-      <m-loop m-looptime>,
-      :RWPatternType(C-RW-WRITERPRIO)
-    ) unless $!rw-sem.check-mutex-names(<m-loop m-looptime>);
+    $!rw-sem.add-mutex-names( <m-loop>, :RWPatternType(C-RW-WRITERPRIO))
+      unless $!rw-sem.check-mutex-names(<m-loop>);
 
     $!server = $server;
 
     $!weighted-mean-rtt-ms .= new(1_000_000_000_000);
 
     $!server-monitor-control .= new(1);
-    $!monitor-looptime = 10;
     $!monitor-data-supplier .= new;
 
     $!monitor-command .= new: (isMaster => 1);
@@ -63,12 +59,6 @@ class Server::Monitor {
 #  }
 
   #-----------------------------------------------------------------------------
-  method monitor-looptime ( Int $mlt ) {
-
-    $!rw-sem.writer( 'm-looptime', {$!monitor-looptime = $mlt;});
-  }
-
-  #-----------------------------------------------------------------------------
   method get-supply ( --> Supply ) {
 
     $!monitor-data-supplier.Supply;
@@ -77,10 +67,15 @@ class Server::Monitor {
   #-----------------------------------------------------------------------------
   # Run this on a separate thread because it lasts until this program stops
   # or that the client is cleaned up
-  method start-monitor ( --> Promise ) {
+  method start-monitor ( Int:D $heartbeat-frequency-ms --> Promise ) {
 
     # Just to prevent that more than one monitor is started.
     return Promise unless $!server-monitor-control.try_acquire;
+
+    # Don't let looptime become lower than 50 ms
+    my Duration $monitor-looptime-ms .= new(
+      $heartbeat-frequency-ms > 50 ?? $heartbeat-frequency-ms !! 50
+    );
 
     debug-message("Start $!server.name() monitoring");
     $!promise-monitor .= start( {
@@ -88,14 +83,13 @@ class Server::Monitor {
         my Duration $rtt;
         my BSON::Document $doc;
 
-        # Start loops frequently and slow it down to $!monitor-looptime
-        my Int $looptime-trottle = 1;
-
         # As long as the server lives test it. Changes are possible when 
         # server conditions change.
         my Bool $mloop = $!rw-sem.writer( 'm-loop', {$!monitor-loop = True;});
 
         while $mloop {
+
+          my Duration $loop-start-time-ms .= new(now * 1000);
 
           # Get server info
           ( $doc, $rtt) = $!server.raw-query(
@@ -112,6 +106,7 @@ class Server::Monitor {
             $!weighted-mean-rtt-ms .= new(
               0.2 * $rtt * 1000 + 0.8 * $!weighted-mean-rtt-ms
             );
+#TODO Bug in weighted mean calculation!
 
             debug-message(
               "Weighted mean RTT: $!weighted-mean-rtt-ms (ms) for server $!server.name()"
@@ -135,15 +130,10 @@ class Server::Monitor {
             );
           }
 
-          # Rest for a while
-          my Int $sleeptime = $!rw-sem.reader(
-            'm-looptime', {
-              $!monitor-looptime;
-            }
-          );
-
-          $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
-          sleep($sleeptime);
+#          sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
+note "Sleep for {$monitor-looptime-ms / 1000.0} (1)";
+          sleep $monitor-looptime-ms / 1000.0;
+          $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
 
           # Capture errors. When there are any, On older servers before
           # version 3.2 the server just stops communicating when a shutdown
@@ -151,7 +141,7 @@ class Server::Monitor {
           # Send ok False to mention the fact that the server is down.
           #
           CATCH {
-
+.message.note;
             when .message ~~ m:s/Failed to resolve host name/ ||
                  .message ~~ m:s/No response from server/ ||
                  .message ~~ m:s/Failed to connect\: connection refused/ ||
@@ -169,16 +159,9 @@ class Server::Monitor {
               $!socket = Nil;
               $!monitor-data-supplier.emit( %( ok => False, reason => $s));
 
-              # calculate sleeping time
-              my Int $sleeptime = $!rw-sem.reader(
-                'm-looptime', {
-                  $!monitor-looptime;
-                }
-              );
-
-              # Adjust sleeptime (= $!monitor-looptime) until max is reached
-              $sleeptime = $looptime-trottle++ if $looptime-trottle < $sleeptime;
-              sleep($sleeptime);
+#              sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
+note "Sleep for {$monitor-looptime-ms / 1000.0} (0)";
+              sleep $monitor-looptime-ms / 1000.0;
 
               # check if loop must be broken
               $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
@@ -191,16 +174,14 @@ class Server::Monitor {
             }
           }
 
-          LEAVE {
-            $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
-          }
-
-          $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
+#          LEAVE {
+#            $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
+#          }
         }
 
         $!server-monitor-control.release;
         debug-message("server monitoring stopped for '$!server.name()'");
-        $!monitor-data-supplier.done;
+#        $!monitor-data-supplier.done;
       }
     );
 
@@ -211,6 +192,6 @@ class Server::Monitor {
   method stop-monitor ( ) {
 
     debug-message("stopping monitor for server '$!server.name()'");
-    my Bool $ml = $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
+    $!rw-sem.writer( 'm-loop', {$!monitor-loop = False;});
   }
 }

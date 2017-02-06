@@ -86,10 +86,10 @@ class Server {
 
   #-----------------------------------------------------------------------------
   # Server initialization 
-  method server-init ( ) {
+  method server-init ( Int:D $heartbeat-frequency-ms ) {
 
     # Start monitoring
-    $!monitor-promise = $!server-monitor.start-monitor;
+    $!monitor-promise = $!server-monitor.start-monitor($heartbeat-frequency-ms);
     return unless $!monitor-promise.defined;
 
     # Tap into monitor data

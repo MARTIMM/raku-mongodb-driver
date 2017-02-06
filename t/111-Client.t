@@ -22,24 +22,30 @@ my MongoDB::Test-support $ts .= new;
 subtest {
 
   my Int $p1 = $ts.server-control.get-port-number('s1');
-  my MongoDB::Client $client .= new( :uri("mongodb://:$p1"));
-  my MongoDB::Server $server = $client.select-server;
+  my MongoDB::Client $client .= new(
+    :uri("mongodb://:$p1")
+    :server-selection-timeout-ms(5000)
+    :heartbeat-frequency-ms(10000)
+  );
 
-  is $client.server-status("localhost:$p1"), MASTER-SERVER,
-     "Status of server is master";
+  my MongoDB::Server $server = $client.select-server;
+  is $client.server-status("localhost:$p1"), SS-Standalone,
+     "Status of server is SS-Standalone";
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
-  $server = $client.select-server(:needed-state(SS-Unknown));
-  is $server.get-status, SS-Unknown, "Status of server is down";
+  
+  sleep 5;
+  $server = $client.select-server;
+  nok $server.defined, "Status of server is down";
 
-  # Bring server up again to see ift Client recovers...
+  # Bring server up again to see if the Client recovers...
   ok $ts.server-control.start-mongod("s1"), "Server 1 started";
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
-  is $client.server-status("localhost:$p1"), MASTER-SERVER,
-     "Status of server is master again";
+  is $client.server-status("localhost:$p1"), SS-Standalone,
+     "Status of server is SS-Standalone again";
 
   $client.cleanup;
 }, "Shutdown and start server";
