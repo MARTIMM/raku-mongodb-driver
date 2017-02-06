@@ -40,7 +40,7 @@ class Server {
   has ServerStatus $!status;
   has Str $!error;
   has Bool $!is-master;
-  has Duration $!weighted-mean-rtt;
+  has Duration $!weighted-mean-rtt-ms;
   has Int $!max-wire-version;
   has Int $!min-wire-version;
 
@@ -103,7 +103,7 @@ class Server {
           my Bool $is-master = False;
           my ServerStatus $server-status = SS-Unknown;
           my Str $server-error = '';
-          my Duration $weighted-mean-rtt;
+          my Duration $weighted-mean-rtt-ms;
           my Int $max-wire-version;
           my Int $min-wire-version;
 
@@ -114,7 +114,7 @@ class Server {
 
             $max-wire-version = $mdata<maxWireVersion>.Int;
             $min-wire-version = $mdata<minWireVersion>.Int;
-            $weighted-mean-rtt = $monitor-data<weighted-mean-rtt>;
+            $weighted-mean-rtt-ms = $monitor-data<weighted-mean-rtt-ms>;
             ( $server-status, $is-master) = self!process-status($mdata);
           }
 
@@ -139,7 +139,7 @@ class Server {
               $!is-master = $is-master;
               $!max-wire-version = $max-wire-version;
               $!min-wire-version = $min-wire-version;
-              $!weighted-mean-rtt = $weighted-mean-rtt;
+              $!weighted-mean-rtt-ms = $weighted-mean-rtt-ms;
             }
           );
 
@@ -225,7 +225,7 @@ class Server {
         's-status', { %(
           :$!status, :$!is-master, :$!error
           :$!max-wire-version, :$!min-wire-version,
-          :$!weighted-mean-rtt,
+          :$!weighted-mean-rtt-ms,
         ); }
       );
 

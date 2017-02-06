@@ -15,7 +15,7 @@ class Server::Monitor {
   has MongoDB::ServerType $!server;
   has MongoDB::Server::Socket $!socket;
 
-  has Duration $!weighted-mean-rtt;
+  has Duration $!weighted-mean-rtt-ms;
 
   # Variables to control infinite monitoring actions
   has Promise $!promise-monitor;
@@ -46,7 +46,7 @@ class Server::Monitor {
 
     $!server = $server;
 
-    $!weighted-mean-rtt .= new(1_000_000_000_000);
+    $!weighted-mean-rtt-ms .= new(1_000_000_000_000);
 
     $!server-monitor-control .= new(1);
     $!monitor-looptime = 10;
@@ -109,17 +109,17 @@ class Server::Monitor {
             # Calculation of mean Return Trip Time. See also 
             # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
             #
-            $!weighted-mean-rtt .= new(
-              0.2 * $rtt * 1000 + 0.8 * $!weighted-mean-rtt
+            $!weighted-mean-rtt-ms .= new(
+              0.2 * $rtt * 1000 + 0.8 * $!weighted-mean-rtt-ms
             );
 
             debug-message(
-              "Weighted mean RTT: $!weighted-mean-rtt (ms) for server $!server.name()"
+              "Weighted mean RTT: $!weighted-mean-rtt-ms (ms) for server $!server.name()"
             );
             $!monitor-data-supplier.emit( {
                 ok => True,
                 monitor => $doc<documents>[0],
-                weighted-mean-rtt => $!weighted-mean-rtt
+                weighted-mean-rtt-ms => $!weighted-mean-rtt-ms
               }
             );
 #TODO SS-RSPrimary must do periodic no-op
