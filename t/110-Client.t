@@ -22,6 +22,7 @@ my Int $p2 = $ts.server-control.get-port-number('s2');
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 
+#`{{}}
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -29,6 +30,7 @@ subtest {
   $client .= new(
     :uri("mongodb://$server-name"),
     :server-selection-timeout-ms(1)
+    :heartbeat-frequency-ms(1)
   );
   isa-ok $client, MongoDB::Client;
 
@@ -42,6 +44,7 @@ subtest {
   $client .= new(
     :uri("mongodb://$server-name"),
     :server-selection-timeout-ms(1)
+    :heartbeat-frequency-ms(1)
   );
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
@@ -51,10 +54,6 @@ subtest {
 
 }, 'Unknown server';
 
-done-testing();
-exit(0);
-=finish
-
 #-------------------------------------------------------------------------------
 subtest {
 
@@ -63,10 +62,11 @@ subtest {
   $client .= new(:uri("mongodb://$server-name"));
   sleep(2);
 
-  nok $server.defined, 'No servers selected';
   is $client.server-status($server-name), SS-Standalone,
      "Status of server is $client.server-status($server-name)";
 
+  $server = $client.select-server;
+  ok $server.defined, 'Server selected';
   is $client.topology, TT-Single, "Topology $client.topology()";
 
 }, "Standalone server";
@@ -77,10 +77,15 @@ subtest {
 
   my Str $server-name1 = "localhost:$p1";
   my Str $server-name2 = "localhost:$p2";
-  $client .= new(:uri("mongodb://$server-name1,$server-name2"));
-  sleep(2);
+  $client .= new(
+    :uri("mongodb://$server-name1,$server-name2")
+    :server-selection-timeout-ms(5000)
+    :heartbeat-frequency-ms(5000)
+  );
 
+  $server = $client.select-server;
   nok $server.defined, 'No servers selected';
+
   is $client.server-status($server-name1), SS-Standalone,
      "Server $server-name1 is $client.server-status($server-name1)";
 

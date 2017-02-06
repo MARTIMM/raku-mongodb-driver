@@ -12,8 +12,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+#drop-send-to('screen');
+modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -43,6 +43,10 @@ subtest {
 
   $client.cleanup;
 }, "Shutdown and start server";
+
+done-testing();
+exit(0);
+=finish
 
 #-------------------------------------------------------------------------------
 subtest {
