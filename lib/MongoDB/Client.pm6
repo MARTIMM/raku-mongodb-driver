@@ -315,7 +315,7 @@ class Client {
 
     my ServerStatus $sts = $h<status> // SS-Unknown;
     debug-message("server-status: '$server-name', $sts");
-    $sts
+    $sts;
   }
 
   #-----------------------------------------------------------------------------
@@ -398,21 +398,51 @@ class Client {
         }
       }
 
+      # if no server selected but there are some in the array
+      if !$selected-server and +@selected-servers {
+
+        # if only one server in array, take that one
+        if @selected-servers.elems == 1 {
+          $selected-server = @selected-servers.pop;
+        }
+
+        # now w're getting complex because we need to select from a number
+        # of suitable servers.
+        else {
+
+          my Array $slctd-svrs = [];
+          my Duration $min-rtt-ms .= new(1_000_000_000);
+
+          # get minimum rtt from server measurements
+          for @selected-servers -> MongoDB::Server $svr {
+            my Hash $svr-sts = $svr.get-status;
+            $min-rtt-ms = $svr-sts<weighted-mean-rtt-ms>
+              if $min-rtt-ms > $svr-sts<weighted-mean-rtt-ms>;
+          }
+
+          # select those servers falling in the window defined by the
+          # minimum round trip time and minimum rtt plus a treshold
+          for @selected-servers -> $svr {
+            my Hash $svr-sts = $svr.get-status;
+            $slctd-svrs.push: $svr if $svr-sts<weighted-mean-rtt-ms>
+                                      <= ($min-rtt-ms + $!local-threshold-ms);
+          }
+
+          $selected-server = $slctd-svrs.pick;
+        }
+      }
+
+      # done when a suitable server is found
+      last if $selected-server.defined;
+
       # else wait for status and topology updates
 #TODO synchronize with monitor times
-      sleep 1;
+      sleep $!heartbeat-frequency-ms/1000.0;
 
 note "diff {(now - $t0) * 1000}";
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
 
-
-    if !$selected-server and +@selected-servers {
-
-      for @selected-servers -> $svr {
-
-      }
-    }
-
+    error-message("No suitable server selected") unless ?$selected-server;
     $selected-server;
   }
 
