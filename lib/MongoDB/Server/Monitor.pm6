@@ -43,7 +43,7 @@ class Server::Monitor {
 
     $!server = $server;
 
-    $!weighted-mean-rtt-ms .= new(1_000_000_000_000);
+    $!weighted-mean-rtt-ms .= new(0);
 
     $!server-monitor-control .= new(1);
     $!monitor-data-supplier .= new;
@@ -106,7 +106,6 @@ class Server::Monitor {
             $!weighted-mean-rtt-ms .= new(
               0.2 * $rtt * 1000 + 0.8 * $!weighted-mean-rtt-ms
             );
-#TODO Bug in weighted mean calculation!
 
             debug-message(
               "Weighted mean RTT: $!weighted-mean-rtt-ms (ms) for server $!server.name()"
