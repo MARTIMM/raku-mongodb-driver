@@ -34,7 +34,9 @@ $!d5b.article [
       The purpose of this document is to show how to work with the perl6
       mongodb driver and also to show you the inner workings of this driver in
       the light of the MongoDB developer documents. 
-      
+    ]
+
+    $|para [
       However, this document will not tell you how to design your database among
       other things. There are plenty of good books and documents out there, not
       to mention, the mongodb website.
@@ -92,8 +94,12 @@ $!d5b.article [
               $|emphasis[MongoDB::Client]. This module is the starting point of all
               applications which need access to a mongodb database server.
 
-
-#              cleanup!
+# round trip time
+# read concern
+# write concern
+# selection process
+# named attributes to control selecting and monitoring
+# cleanup!
             ]
 
             $|listitem [
