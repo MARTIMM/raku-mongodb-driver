@@ -32,10 +32,12 @@ $!d5b.article [
     $|title [Introduction]
     $|para [
       The purpose of this document is to show how to work with the perl6
-      mongodb driver and not about how to design your database among other
-      things. There are plenty of good books and documents out there, not to
-      mention, the mongodb website. A few things need to be repeated in this
-      document however.
+      mongodb driver and also to show you the inner workings of this driver in
+      the light of the MongoDB developer documents. 
+      
+      However, this document will not tell you how to design your database among
+      other things. There are plenty of good books and documents out there, not
+      to mention, the mongodb website.
     ]
 
     $|para [
@@ -273,10 +275,13 @@ $!d5b.article [
                 $|td [TT-Single]
                 $|td [
                   A deployment of topology type TT-Single contains only a single
-                  server with a state SS-Standalone(this explanation differs
-                  from that of the mongodb site). This topology type
-                  signifies a direct connection intended to receive all read
-                  and write operations.
+                  server with a state SS-Standalone. This topology type
+                  signifies a direct connection intended to receive all read and
+                  write operations. The explanation here differs from that of
+                  the mongodb site because of the way it tests for the server
+                  states. In the end, when servers are selected and only one
+                  suitable server is found, no further selection processing is
+                  needed which is intended by the definition of mongodb.
                 ]
               ]
             ]
