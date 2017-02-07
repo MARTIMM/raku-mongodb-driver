@@ -72,9 +72,9 @@ class Client {
     Str:D :$uri, BSON::Document :$read-concern,
     TopologyType :$topology-type = TT-Unknown,
     Int :$local-threshold-ms = 100,
-    Int :$server-selection-timeout-ms = 30000,
-    Int :$heartbeat-frequency-ms = 10000,
-    Int :$idle-write-period-ms = 10000,
+    Int :$server-selection-timeout-ms = 30_000,
+    Int :$heartbeat-frequency-ms = 10_000,
+    Int :$idle-write-period-ms = 10_000,
   ) {
 
 #TODO some or all are also settable in uri
@@ -351,8 +351,6 @@ class Client {
   ) {
 
     $read-concern //= $!read-concern;
-    my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
-    my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
     my MongoDB::Server $selected-server;
     my MongoDB::Server @selected-servers = ();
 
@@ -361,6 +359,9 @@ class Client {
 
     # find suitable servers by topology type and operation type
     repeat {
+
+      my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
+      my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
 
       if $topology ~~ TT-Single {
 
