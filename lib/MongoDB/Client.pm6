@@ -145,11 +145,18 @@ class Client {
       $!todo-servers.push("$server-data<host>:$server-data<port>");
     }
 
+    # counter to check if there are new servers added. if so, the counter
+    # is set to 0. if less then 5 the sleeptime is 1 sec. Above it becomes
+    # the heartbeat frequency
+    my Int $changes-count = 0;
+
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
 
         $!repeat-discovery-loop = True;
         repeat {
+
+          $changes-count++;
 
           # Start processing when something is found in todo hash
           my Str $server-name = $!rw-sem.writer(
@@ -159,6 +166,8 @@ class Client {
           );
 
           if $server-name.defined {
+
+            $changes-count = 0;
 
             trace-message("Processing server $server-name");
             my Bool $server-processed = $!rw-sem.reader(
@@ -190,7 +199,8 @@ class Client {
 
             # When there is no work take a nap! This sleeping period is the
             # moment we do not process the todo list
-            sleep 1;
+#TODO value to sleep
+            sleep $changes-count < 5 ?? 2.0 !! $heartbeat-frequency-ms / 1000.0;
           }
 
           CATCH {
@@ -289,6 +299,7 @@ class Client {
         }
 
         debug-message("topology type set to $topology");
+#        $!rw-sem.writer( 'topology', {$!topology-type = $topology;});
         $!topology-type = $topology;
       }
     );
@@ -447,7 +458,7 @@ class Client {
 #TODO synchronize with monitor times
       sleep $!heartbeat-frequency-ms / 1000.0;
 
-#note "diff {(now - $t0) * 1000}";
+note "diff {(now - $t0) * 1000}";
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
 
     if ?$selected-server {
