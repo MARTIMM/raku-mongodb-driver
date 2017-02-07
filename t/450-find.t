@@ -10,9 +10,9 @@ use BSON::ObjectId;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -70,7 +70,7 @@ while $cursor.fetch -> BSON::Document $document {
 #say "Time after reading all docs: ", now - $t0;
 
 #------------------------------------------------------------------------------
-subtest {
+subtest "Find tests", {
   check-document(
     ( code => 'd1', test_record => 'tr3'),
     ( _id => 1, code => 1, name => 1, 'some-name' => 0)
@@ -87,10 +87,10 @@ subtest {
     ( _id => 0, code => 0, name => 1, address => 1, city => 1),
     ( _id => 0, code => 0)
   );
-}, "Find tests";
+}
 
 #------------------------------------------------------------------------------
-subtest {
+subtest "Count tests", {
   $req .= new: ( count => $collection.name);
 #  $cursor = $collection.find();
 #  ok $cursor.count == 50.0, 'Counting fifty documents';
@@ -118,10 +118,10 @@ subtest {
   $req<skip> = 198;
   $doc = $database.run-command($req);
   is $doc<n>, 2, '2 records using skip and limit';
-}, "Count tests";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Testing explain and performance using cursor", {
   # The server needs to scan through all documents to see if the query matches
   # when there is no index set.
   #
@@ -158,10 +158,10 @@ subtest {
   $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found';
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great searching';
-}, "Testing explain and performance using cursor";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Testing explain and performance using hint", {
 
   # Give a bad hint and get explaination(another possibility from above
   # explain using find in stead of run-command)
@@ -195,12 +195,18 @@ subtest {
   $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found, explain via a good hint';
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
-}, "Testing explain and performance using hint";
+}
 
+#-------------------------------------------------------------------------------
+subtest "Error testing", {
+  $cursor.kill;
+  my $error-doc = $database.run-command: (get-last-error => 1);
+  ok $error-doc<ok>.Bool, 'No error after kill cursor';
 
-
-
-
+  # Is this ok (No fifty because of test with explain on cursor????
+  $cursor.count;
+  is $cursor.count, 1, 'Still counting 1 document';
+}
 
 info-message("Test $?FILE stop");
 #sleep .2;
@@ -213,18 +219,7 @@ exit(0);
 
 
 #-------------------------------------------------------------------------------
-subtest {
-  $cursor.kill;
-  my $error-doc = $collection.database.get-last-error;
-  ok $error-doc<ok>.Bool, 'No error after kill cursor';
-
-  # Is this ok (No fifty because of test with explain on cursor????
-  $cursor.count;
-  is $cursor.count, 1, 'Still counting 1 document';
-}, "Error testing";
-
-#-------------------------------------------------------------------------------
-subtest {
+subtest 'Faulty insert tests', {
   my Hash $d2;
   try {
     $d2 = { '$abc' => 'pqr'};
@@ -272,11 +267,11 @@ subtest {
       }
     }
   }
-}, 'Faulty insert tests';
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
-#
+
 #$collection.database.drop;
 
 $client.cleanup;
