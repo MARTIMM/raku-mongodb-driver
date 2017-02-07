@@ -143,6 +143,11 @@ class Server {
             }
           );
 
+#          # Let the client find the topology using all found servers
+#          # in the same rhythm as the heartbeat loop of the monitor
+#          # (of each server)
+#          $!client.process-topology;
+
           CATCH {
             default {
               .note;
