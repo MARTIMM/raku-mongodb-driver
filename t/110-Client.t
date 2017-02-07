@@ -23,13 +23,13 @@ my MongoDB::Client $client;
 my MongoDB::Server $server;
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'Unknown server', {
 
   my Str $server-name = 'non-existent-server.with-unknown.domain:65535';
   $client .= new(
     :uri("mongodb://$server-name"),
-    :server-selection-timeout-ms(1)
-    :heartbeat-frequency-ms(1)
+    :server-selection-timeout-ms(100)
+    :heartbeat-frequency-ms(300)
   );
   isa-ok $client, MongoDB::Client;
 
@@ -42,44 +42,42 @@ subtest {
   $server-name = "localhost:65535";
   $client .= new(
     :uri("mongodb://$server-name"),
-    :server-selection-timeout-ms(1)
-    :heartbeat-frequency-ms(1)
+    :server-selection-timeout-ms(100)
+    :heartbeat-frequency-ms(300)
   );
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
-
-}, 'Unknown server';
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Standalone server", {
 
   my Str $server-name = "localhost:$p1";
 
   $client .= new(:uri("mongodb://$server-name"));
-  sleep(2);
+
+  # do select server before server status test because selection waits
+  $server = $client.select-server;
+  ok $server.defined, 'Server selected';
 
   is $client.server-status($server-name), SS-Standalone,
      "Status of server is $client.server-status($server-name)";
 
-  $server = $client.select-server;
-  ok $server.defined, 'Server selected';
   is $client.topology, TT-Single, "Topology $client.topology()";
-
-}, "Standalone server";
-
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Two equal standalone servers", {
 
   my Str $server-name1 = "localhost:$p1";
   my Str $server-name2 = "localhost:$p2";
   $client .= new(
     :uri("mongodb://$server-name1,$server-name2")
-    :server-selection-timeout-ms(5000)
-    :heartbeat-frequency-ms(5000)
+    :server-selection-timeout-ms(5_000)
+    :heartbeat-frequency-ms(5_000)
   );
 
   $server = $client.select-server;
@@ -93,7 +91,7 @@ subtest {
 
   is $client.topology, TT-Unknown, "Topology $client.topology()";
   $client.cleanup;
-}, "Two equal standalone servers";
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup

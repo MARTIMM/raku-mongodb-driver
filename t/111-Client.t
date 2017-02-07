@@ -12,20 +12,20 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Shutdown and start server", {
 
   my Int $p1 = $ts.server-control.get-port-number('s1');
   my MongoDB::Client $client .= new(
     :uri("mongodb://:$p1")
-    :server-selection-timeout-ms(5000)
-    :heartbeat-frequency-ms(10000)
+    :server-selection-timeout-ms(5_000)
+    :heartbeat-frequency-ms(500)
   );
 
   my MongoDB::Server $server = $client.select-server;
@@ -34,13 +34,14 @@ subtest {
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
-  
-  sleep 5;
+  sleep 1.0;
+
   $server = $client.select-server;
-  nok $server.defined, "Status of server is down";
+  nok $server.defined, "Server is down";
 
   # Bring server up again to see if the Client recovers...
   ok $ts.server-control.start-mongod("s1"), "Server 1 started";
+  sleep 0.8;
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
@@ -48,27 +49,27 @@ subtest {
      "Status of server is SS-Standalone again";
 
   $client.cleanup;
-}, "Shutdown and start server";
-
-done-testing();
-exit(0);
-=finish
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Shutdown/restart server 3 while inserting records", {
 
   my Int $p3 = $ts.server-control.get-port-number('s3');
-  my MongoDB::Client $client .= new( :uri("mongodb://:$p3"));
+  my MongoDB::Client $client .= new(
+    :uri("mongodb://:$p3"),
+    :server-selection-timeout-ms(5_000)
+    :heartbeat-frequency-ms(500)
+  );
+
   my MongoDB::Server $server = $client.select-server;
-  is $client.server-status("localhost:$p3"), MASTER-SERVER,
-     "Server is master";
+  is $client.server-status("localhost:$p3"), SS-Standalone, "Standalone server";
 
   # Drop database test
   my MongoDB::Database $database = $client.database('test');
   my $doc = $database.run-command: (dropDatabase => 1,);
   ok $doc<ok>, "Database test dropped";
 
-  # Write untill it goes wrong because we'll shutdown the server
+  # Write until it goes wrong because we'll shutdown the server
   my Promise $p .= start( {
 
       info-message('save several records');
@@ -111,23 +112,24 @@ subtest {
   # Bring server down to see what Client does...
   info-message('shutdown server');
   ok $ts.server-control.stop-mongod('s3'), "Server 3 is stopped";
+  sleep 1.0;
 
-  $server = $client.select-server(:needed-state(SS-Unknown));
-  is $server.get-status, SS-Unknown, "Server is down";
+  $server = $client.select-server;
+  nok $server.defined, "Server is down";
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');
   ok $ts.server-control.start-mongod("s3"), "Server 1 started";
+  sleep 0.8;
 
   # Wait for inserts to finish
   $p.result;
 
   $client.cleanup;
-}, "Shutdown/restart server 3 while inserting records";
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 info-message("Test $?FILE end");
 done-testing();
 exit(0);
