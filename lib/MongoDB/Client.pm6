@@ -185,6 +185,9 @@ class Client {
 
           else {
 
+            # When a server changes, the topology might change too! recalculate!
+            self!process-topology;
+
             # When there is no work take a nap! This sleeping period is the
             # moment we do not process the todo list
             sleep 1;
@@ -352,7 +355,6 @@ class Client {
 
     $read-concern //= $!read-concern;
     my MongoDB::Server $selected-server;
-    my MongoDB::Server @selected-servers = ();
 
     # record the server selection start time
     my Instant $t0 = now;
@@ -360,42 +362,47 @@ class Client {
     # find suitable servers by topology type and operation type
     repeat {
 
+      my MongoDB::Server @selected-servers = ();
       my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
       my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
 
-      if $topology ~~ TT-Single {
+      given $topology {
+        when TT-Single {
 
-        for $servers.keys -> $sname {
-          $selected-server = $servers{$sname};
-          my Hash $sdata = $selected-server.get-status;
-          last if $sdata<status> ~~ SS-Standalone;
+          for $servers.keys -> $sname {
+            $selected-server = $servers{$sname};
+            my Hash $sdata = $selected-server.get-status;
+            last if $sdata<status> ~~ SS-Standalone;
+          }
         }
-      }
 
-      elsif $topology ~~ TT-ReplicaSetWithPrimary {
+        when TT-ReplicaSetWithPrimary {
 
-        for $servers.keys -> $sname {
-          $selected-server = $servers{$sname};
-          my Hash $sdata = $selected-server.get-status;
-          last if $sdata<status> ~~ SS-RSPrimary;
+#TODO read concern
+          for $servers.keys -> $sname {
+            $selected-server = $servers{$sname};
+            my Hash $sdata = $selected-server.get-status;
+            last if $sdata<status> ~~ SS-RSPrimary;
+          }
         }
-      }
 
-      elsif $topology ~~ TT-ReplicaSetNoPrimary {
+        when TT-ReplicaSetNoPrimary {
 
-        for $servers.keys -> $sname {
-          my $s = $servers{$sname};
-          my Hash $sdata = $s.get-status;
-          @selected-servers.push: $s if $sdata<status> ~~ SS-RSSecondary;
+#TODO read concern
+          for $servers.keys -> $sname {
+            my $s = $servers{$sname};
+            my Hash $sdata = $s.get-status;
+            @selected-servers.push: $s if $sdata<status> ~~ SS-RSSecondary;
+          }
         }
-      }
 
-      elsif $topology ~~ TT-Sharded {
+        when TT-Sharded {
 
-        for $servers.keys -> $sname {
-          my $s = $servers{$sname};
-          my Hash $sdata = $s.get-status;
-          @selected-servers.push: $s if $sdata<status> ~~ SS-Mongos;
+          for $servers.keys -> $sname {
+            my $s = $servers{$sname};
+            my Hash $sdata = $s.get-status;
+            @selected-servers.push: $s if $sdata<status> ~~ SS-Mongos;
+          }
         }
       }
 
@@ -438,12 +445,21 @@ class Client {
 
       # else wait for status and topology updates
 #TODO synchronize with monitor times
-      sleep $!heartbeat-frequency-ms/1000.0;
+      sleep $!heartbeat-frequency-ms / 1000.0;
 
-note "diff {(now - $t0) * 1000}";
+#note "diff {(now - $t0) * 1000}";
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
 
-    error-message("No suitable server selected") unless ?$selected-server;
+    if ?$selected-server {
+      debug-message("Server selected after trying for {now - $t0} sec");
+    }
+
+    else {
+      error-message(
+        "No suitable server selected after trying for {now - $t0} sec"
+      );
+    }
+
     $selected-server;
   }
 
