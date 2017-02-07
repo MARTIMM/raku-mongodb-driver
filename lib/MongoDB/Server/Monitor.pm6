@@ -130,7 +130,7 @@ class Server::Monitor {
           }
 
 #          sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
-note "Sleep for {$monitor-looptime-ms / 1000.0} (1)";
+#note "Sleep for {$monitor-looptime-ms / 1000.0} (1)";
           sleep $monitor-looptime-ms / 1000.0;
           $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
 
@@ -140,7 +140,7 @@ note "Sleep for {$monitor-looptime-ms / 1000.0} (1)";
           # Send ok False to mention the fact that the server is down.
           #
           CATCH {
-.message.note;
+#.message.note;
             when .message ~~ m:s/Failed to resolve host name/ ||
                  .message ~~ m:s/No response from server/ ||
                  .message ~~ m:s/Failed to connect\: connection refused/ ||
@@ -159,7 +159,7 @@ note "Sleep for {$monitor-looptime-ms / 1000.0} (1)";
               $!monitor-data-supplier.emit( %( ok => False, reason => $s));
 
 #              sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
-note "Sleep for {$monitor-looptime-ms / 1000.0} (0)";
+#note "Sleep for {$monitor-looptime-ms / 1000.0} (0)";
               sleep $monitor-looptime-ms / 1000.0;
 
               # check if loop must be broken
