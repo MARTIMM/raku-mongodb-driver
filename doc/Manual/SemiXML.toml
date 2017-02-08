@@ -7,6 +7,8 @@
 [ option.doctype.entities ]
   mongodb       = 'MongoDB driver'
   nbsp          = ' '
+#  infin           = '&#8734;'
+  infin           = '&#x221E;'
 
 [output]
   fileext       = 'xml'

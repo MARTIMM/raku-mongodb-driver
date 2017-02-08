@@ -13,13 +13,13 @@ $!d5b.article [
       mongodb server.
     ]
 
-    $|para [ To work with data on the server from within a program a driver is
-      needed. There are drivers for many program languages. This document
-      describes a driver for the Perl6 language. In the perl6 ecosystem,
-      which might grow into a cpan like system later, there are two packages
-      needed to work with the driver. These are $**glossterm linkend=mongodb
-      [MongoDB] and BSON. BSON is automatically installed with other necessary
-      modules.
+    $|para [
+      To work with data on the server from within a program a driver is needed.
+      There are drivers for many program languages. This document describes a
+      driver for the Perl6 language. In the perl6 ecosystem, which might grow
+      into a cpan like system later, there are two packages needed to work with
+      the driver. These are $**glossterm linkend=mongodb [MongoDB] and BSON.
+      BSON is automatically installed with other necessary modules.
     ]
 
     $|para [
@@ -27,13 +27,12 @@ $!d5b.article [
     ]
   ]
 
-
   $|sect1 [
     $|title [Introduction]
     $|para [
-      The purpose of this document is to show how to work with the perl6
-      mongodb driver and also to show you the inner workings of this driver in
-      the light of the MongoDB developer documents. 
+      The purpose of this document is to show how things are accomplished in
+      this driver in the light of the MongoDB developer documents and how to
+      work with the perl6 mongodb driver.
     ]
 
     $|para [
@@ -77,12 +76,23 @@ $!d5b.article [
 
           $|itemizedlist spacing=compact [
             $|listitem [
-              $|emphasis[BSON::Document]. This is the basic vehicle to insert,
-              update retrieve and send commands to the database server. In this
-              section there is an explanation of the supported types as well as
-              different ways to make requests. Some detailed perl6 is necessary
-              to understand mistakes often made when creating the data
-              structures.
+              $|emphasis[Server states].
+            ]
+
+            $|listitem [
+              $|emphasis[Topology].
+            ]
+
+            $|listitem [
+              $|emphasis[Round trip time].
+            ]
+
+            $|listitem [
+              $|emphasis[Read concern].
+            ]
+
+            $|listitem [
+              $|emphasis[Write concern].
             ]
 
             $|listitem [
@@ -91,15 +101,25 @@ $!d5b.article [
             ]
 
             $|listitem [
+              $|emphasis[Server selection process].
+            ]
+
+            $|listitem [
               $|emphasis[MongoDB::Client]. This module is the starting point of all
               applications which need access to a mongodb database server.
 
-# round trip time
-# read concern
-# write concern
-# selection process
 # named attributes to control selecting and monitoring
 # cleanup!
+            ]
+
+
+            $|listitem [
+              $|emphasis[BSON::Document]. This is the basic vehicle to insert,
+              update retrieve and send commands to the database server. In this
+              section there is an explanation of the supported types as well as
+              different ways to make requests. Some detailed perl6 is necessary
+              to understand mistakes often made when creating the data
+              structures.
             ]
 
             $|listitem [
@@ -144,9 +164,190 @@ $!d5b.article [
     ]
 
     $|sect2 [
-      $|title [BSON::Document]
+      $|title [Server states]
       $|para [
 
+        $|table rules=all [
+          $|title [Server states depending on isMaster outcome]
+          $|thead [
+            $|tr [
+              $|th [Server state]
+              $|th [isMaster command result]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-Unknown]
+              $|td [
+                Initial, or after a network error or failed ismaster call, or
+                "ok: 1" not in ismaster response.
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-Standalone]
+              $|td [
+                No "msg: isdbgrid", no setName, and no "isreplicaset: true".
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-Mongos]
+              $|td ["msg: isdbgrid"]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-PossiblePrimary]
+              $|td [
+                Not yet checked, but another member thinks it is the primary.
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-RSPrimary]
+              $|td ["ismaster: true", "setName" in response.]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-RSSecondary]
+              $|td ["secondary: true", "setName" in response.]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-RSArbiter]
+              $|td ["arbiterOnly: true", "setName" in response.]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-RSOther]
+              $|td [
+                "setName" in response, "hidden: true" or not primary,
+                secondary, nor arbiter. E.g. starting up or recovering.
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [SS-RSGhost]
+              $|td [
+                "isreplicaset: true" in response. E.g.  briefly during server
+                startup, in an uninitialized replica set, or when the server
+                is shunned (removed from the replica set config).
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+
+    $|sect2 [
+      $|title [Topology]
+      $|para [
+        $|table rules=all [
+          $|title [Topology controlled by server states]
+          $|thead [
+            $|tr [
+              $|th [Topology type]
+              $|th [Server states]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [TT-Unknown]
+              $|td [
+                When a deployment has this topology type, no servers are
+                suitable for read or write operations. These are servers which
+                did not respond on initial connection or threw an exception
+                because of e.g. a DNS lookup failure. All server states of
+                these servers herded by the Client object is SS-Unknown.
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [TT-Single]
+              $|td [
+                A deployment of topology type TT-Single contains only a single
+                server with a state SS-Standalone. This topology type
+                signifies a direct connection intended to receive all read and
+                write operations. The explanation here differs from that of
+                the mongodb site because of the way it tests for the server
+                states. In the end, when servers are selected and only one
+                suitable server is found, no further selection processing is
+                needed which is intended by the definition of mongodb.
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [TT-Sharded]
+              $|td [
+                A deployment of topology type TT-Sharded contains one or more
+                servers of type SS-Mongos or SS-Unknown of at least one is
+                SS-Mongos.
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [TT-ReplicaSetNoPrimary]
+              $|td [
+                A deployment with this topology type can have a mix of server
+                types: SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost,
+                SS-Unknown or SS-PossiblePrimary.
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [TT-ReplicaSetWithPrimary]
+              $|td [
+                A deployment with this topology type can have a mix of server
+                types: SS-RSPrimary, SS-RSSecondary, SS-RSArbiter, SS-RSOther,
+                SS-RSGhost, SS-Unknown or SS-PossiblePrimary.
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+
+    $|sect2 [
+      $|title [Round Trip Time]
+      $|para [
+      ]
+    ]
+
+    $|sect2 [
+      $|title [Read concern]
+      $|para [
+      ]
+    ]
+
+    $|sect2 [
+      $|title [Write concern]
+      $|para [
       ]
     ]
 
@@ -154,185 +355,50 @@ $!d5b.article [
       $|title [URI]
       $|para [
 
+
+        $|table rules=all [
+          $|title [Implemented uri connection options]
+          $|thead [
+            $|tr [
+              $|th [Option]
+              $|th [Description]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [replicaSet]
+              $|td [
+                Specifies the name of the replica set, if the mongod is a member
+                of a replica set. When connecting to a replica set it is
+                important to give a seed list of at least two mongod instances.
+                If you only provide the connection point of a single mongod
+                instance, and omit the replicaSet, the client will create a
+                standalone connection.
+              ]
+            ]
+          ]
+
+        ]
       ]
     ]
+  ]
 
+  $|sect1 [
+    $|title [Classes in the driver]
     $|sect2 [
       $|title [MongoDB::Client]
       $|para [
 
       ]
 
-      $|sect3 [
-        $|title [Server states and topology]
-        $|para [
-
-          $|table rules=all [
-            $|title [Server states depending on isMaster outcome]
-            $|thead [
-              $|tr [
-                $|th [Server state]
-                $|th [isMaster command result]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-Unknown]
-                $|td [
-                  Initial, or after a network error or failed ismaster call, or
-                  "ok: 1" not in ismaster response.
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-Standalone]
-                $|td [
-                  No "msg: isdbgrid", no setName, and no "isreplicaset: true".
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-Mongos]
-                $|td ["msg: isdbgrid"]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-PossiblePrimary]
-                $|td [
-                  Not yet checked, but another member thinks it is the primary.
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-RSPrimary]
-                $|td ["ismaster: true", "setName" in response.]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-RSSecondary]
-                $|td ["secondary: true", "setName" in response.]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-RSArbiter]
-                $|td ["arbiterOnly: true", "setName" in response.]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-RSOther]
-                $|td [
-                  "setName" in response, "hidden: true" or not primary,
-                  secondary, nor arbiter. E.g. starting up or recovering.
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [SS-RSGhost]
-                $|td [
-                  "isreplicaset: true" in response. E.g.  briefly during server
-                  startup, in an uninitialized replica set, or when the server
-                  is shunned (removed from the replica set config).
-                ]
-              ]
-            ]
-          ]
-
-          $|table rules=all [
-            $|title [Topology controlled by server states]
-            $|thead [
-              $|tr [
-                $|th [Topology type]
-                $|th [Server states]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [TT-Unknown]
-                $|td [
-                  When a deployment has this topology type, no servers are
-                  suitable for read or write operations. These are servers which
-                  did not respond on initial connection or threw an exception
-                  because of e.g. a DNS lookup failure. All server states of
-                  these servers herded by the Client object is SS-Unknown.
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [TT-Single]
-                $|td [
-                  A deployment of topology type TT-Single contains only a single
-                  server with a state SS-Standalone. This topology type
-                  signifies a direct connection intended to receive all read and
-                  write operations. The explanation here differs from that of
-                  the mongodb site because of the way it tests for the server
-                  states. In the end, when servers are selected and only one
-                  suitable server is found, no further selection processing is
-                  needed which is intended by the definition of mongodb.
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [TT-Sharded]
-                $|td [
-                  A deployment of topology type TT-Sharded contains one or more
-                  servers of type SS-Mongos or SS-Unknown of at least one is
-                  SS-Mongos.
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [TT-ReplicaSetNoPrimary]
-                $|td [
-                  A deployment with this topology type can have a mix of server
-                  types: SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost,
-                  SS-Unknown or SS-PossiblePrimary.
-                ]
-              ]
-            ]
-
-            $|tbody [
-              $|tr [
-                $|td [TT-ReplicaSetWithPrimary]
-                $|td [
-                  A deployment with this topology type can have a mix of server
-                  types: SS-RSPrimary, SS-RSSecondary, SS-RSArbiter, SS-RSOther,
-                  SS-RSGhost, SS-Unknown or SS-PossiblePrimary.
-                ]
-              ]
-            ]
-          ]
-        ]
-      ]
 
       $|sect3 [
         $|title [Making a connection]
         $|para [
         ]
       ]
+
 
       $|sect3 [
         $|title [Server selection]
@@ -368,6 +434,13 @@ $!d5b.article [
           ]
 
         ]
+      ]
+    ]
+
+    $|sect2 [
+      $|title [BSON::Document]
+      $|para [
+
       ]
     ]
 
@@ -436,23 +509,47 @@ $!d5b.article [
   ]
 
   $|sect1 [
-    $|title [Dependencies]
+    $|title [BSON]
+    $|para [
+      $|sect2 [
+        $|title [Supported types]
+        $|para [
+
+          $|table rules=all [
+            $|title [Supported types of the BSON package]
+            $|thead [
+              $|tr [
+                $|th [BSON]
+                $|th [Perl6]
+                $|th [Description]
+              ]
+            ]
+
+            $|tbody [
+              $|tr [
+                $|td [Double]
+                $|td [Num]
+                $|td [!
+                  An eight byte floating point number. The perl6 type choosen
+                  is a 'Num' which stores a floating-point number.  On most
+                  platforms, it's an IEEE 754 64-bit floating point number, aka
+                  "double precision".
+ 
+                  The 'Rat' is not choosen because it can not be converted back
+                  the way it was thereby loosing accuracy.
+                !]
+              ]
+            ]
+          ]
+        ]
+      ]
+    ]
+  ]
+
+  $|sect2 [
+    $|title [MongoDB servers]
     $|para [
 
-    ]
-
-    $|sect2 [
-      $|title [BSON]
-      $|para [
-
-      ]
-    ]
-
-    $|sect2 [
-      $|title [MongoDB server ]
-      $|para [
-
-      ]
     ]
   ]
 
