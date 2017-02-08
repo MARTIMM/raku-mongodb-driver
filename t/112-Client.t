@@ -110,7 +110,7 @@ subtest "mongodb url with username and password SCRAM-SHA-1", {
   ok $doc<errmsg> ~~ m:s/not authorized on otherdb to execute command/,
      $doc<errmsg>;
 
-  $client.cleanup;
+#  $client.cleanup;
 }
 
 #-------------------------------------------------------------------------------

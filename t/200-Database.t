@@ -125,7 +125,6 @@ subtest 'Drop a database', {
 #-------------------------------------------------------------------------------
 # Cleanup
 
-$client1.cleanup;
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);

@@ -125,7 +125,7 @@ subtest "Shutdown/restart server 3 while inserting records", {
   # Wait for inserts to finish
   $p.result;
 
-  $client.cleanup;
+#  $client.cleanup;
 }
 
 #-------------------------------------------------------------------------------
