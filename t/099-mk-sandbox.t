@@ -8,8 +8,8 @@ use MongoDB::Server::Control;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -22,7 +22,6 @@ for $ts.server-range -> $server-number {
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
-#
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
