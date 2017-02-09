@@ -99,15 +99,3 @@ info-message("Test $?FILE end");
 done-testing();
 exit(0);
 =finish
-
-
-
-
-  my BSON::Document $result = $server.raw-query(
-    'admin.$cmd', BSON::Document.new((isMaster => 1)), :!authentication
-  );
-
-  is $result<starting-from>, 0, 'start from beginning';
-  is $result<number-returned>, 1, 'one document returned';
-  ok $result<documents>[0]<ismaster>, 'isMaster returned master = true';
-#  note $result.perl;
