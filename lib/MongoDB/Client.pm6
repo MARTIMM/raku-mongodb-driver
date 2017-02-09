@@ -240,60 +240,60 @@ class Client {
 
           my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
 
-          if $status ~~ SS-Standalone {
-            if $found-standalone or $found-sharded or $found-replica {
+          given $status {
+            when SS-Standalone {
+              if $found-standalone or $found-sharded or $found-replica {
 
-              # cannot have more than one standalone servers
-              $topology = TT-Unknown;
+                # cannot have more than one standalone servers
+                $topology = TT-Unknown;
+              }
+
+              else {
+
+                $found-standalone = True;
+                $topology = TT-Single;
+              }
             }
 
-            else {
+            when SS-Mongos {
+              if $found-standalone or $found-replica {
 
-              $found-standalone = True;
-              $topology = TT-Single;
-            }
-          }
+                # cannot have other than shard servers
+                $topology = TT-Unknown;
+              }
 
-          elsif $status ~~ SS-Mongos {
-            if $found-standalone or $found-replica {
-
-              # cannot have other than shard servers
-              $topology = TT-Unknown;
-            }
-
-            else {
-              $found-sharded = True;
-              $topology = TT-Sharded;
-            }
-          }
-
-          elsif $status ~~ SS-RSPrimary {
-            if $found-standalone or $found-sharded {
-
-              # cannot have other than replica servers
-              $topology = TT-Unknown;
+              else {
+                $found-sharded = True;
+                $topology = TT-Sharded;
+              }
             }
 
-            else {
+            when SS-RSPrimary {
+              if $found-standalone or $found-sharded {
 
-              $found-replica = True;
-              $topology = TT-ReplicaSetWithPrimary;
-            }
-          }
+                # cannot have other than replica servers
+                $topology = TT-Unknown;
+              }
 
-          elsif $status ~~ any(
-            SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost
-          ) {
-            if $found-standalone or $found-sharded {
+              else {
 
-              # cannot have other than replica servers
-              $topology = TT-Unknown;
+                $found-replica = True;
+                $topology = TT-ReplicaSetWithPrimary;
+              }
             }
 
-            else {
+            when any( SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost ) {
+              if $found-standalone or $found-sharded {
 
-              $found-replica = True;
-              $topology = TT-ReplicaSetNoPrimary;
+                # cannot have other than replica servers
+                $topology = TT-Unknown;
+              }
+
+              else {
+
+                $found-replica = True;
+                $topology = TT-ReplicaSetNoPrimary;
+              }
             }
           }
         }
@@ -354,10 +354,31 @@ class Client {
   # - Goto Step #2
   #-----------------------------------------------------------------------------
 
+  #-----------------------------------------------------------------------------
+  # Request specific servername
+  multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
+
+    self!check-discovery-process;
+note "Servers: $!servers.keys()";
+
+    my MongoDB::Server $server;
+    $server = $!rw-sem.reader( 'servers', {$!servers{$servername}});
+    if ?$server {
+      debug-message("Server selected");
+    }
+
+    else {
+      error-message("No suitable server selected");
+    }
+
+    $server;
+  }
+
 #TODO pod doc
 #TODO use read/write concern for selection
 #TODO must break loop when nothing is found
 
+  #-----------------------------------------------------------------------------
   # Read/write concern selection
   multi method select-server (
     BSON::Document :$read-concern is copy
@@ -472,101 +493,6 @@ note "diff {(now - $t0) * 1000}";
     }
 
     $selected-server;
-  }
-
-#`{{
-  #-----------------------------------------------------------------------------
-  # State of server selection
-  multi method select-server (
-    ServerStatus:D :$needed-state!,
-    Int :$check-cycles is copy = -1
-    --> MongoDB::Server
-  ) {
-
-#note "$*THREAD.id() select-server";
-    self!check-discovery-process;
-#note "$*THREAD.id() select-server check done";
-
-    my Hash $h;
-    repeat {
-
-      # Take this into the loop because array can still change, might even
-      # be empty when hastely called right after new()
-      my Array $server-names = $!rw-sem.reader(
-        'servers', {
-           [$!servers.keys];
-         }
-       );
-#note "$*THREAD.id() select-server {@$server-names}";
-      for @$server-names -> $msname {
-        my Hash $shash = $!rw-sem.reader(
-          'servers', {
-#note "$*THREAD.id() select-server :needed-state, {$msname//'-'}";
-            my Hash $h;
-            if $!servers{$msname}.defined {
-#note "$*THREAD.id() select-server :needed-state, $!servers{$msname}<status>";
-              $h = $!servers{$msname};
-            }
-
-            $h;
-          }
-        );
-
-        $h = $shash if $shash<status> == $needed-state;
-      }
-
-      $check-cycles--;
-      sleep 1;
-    } while $h.defined or $check-cycles != 0;
-
-    if $h.defined {
-      info-message("Server $h.name() selected");
-    }
-
-    else {
-      error-message('No typed server selected');
-    }
-
-    $h // MongoDB::Server;
-  }
-
-  #-----------------------------------------------------------------------------
-  # Default master server selection
-  multi method select-server (
-    Int :$check-cycles is copy = -1
-    --> MongoDB::Server
-  ) {
-
-    self!check-discovery-process;
-
-    my Hash $h;
-    my Str $msname;
-
-    # When $check-cycles in not set it will be -1, therefore $check-cycles
-    # will not reach 0 and loop becomes infinite.
-    while $check-cycles != 0 {
-
-      if $msname.defined {
-        $h = $!rw-sem.reader( 'servers', {$!servers{$msname};});
-        last;
-      }
-
-      $check-cycles--;
-      sleep(1.5);
-    }
-
-    $h // MongoDB::Server;
-  }
-}}
-
-  #-----------------------------------------------------------------------------
-  # Request specific servername
-  multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
-
-    self!check-discovery-process;
-
-    my Hash $h = $!rw-sem.reader( 'servers', { $!servers{$servername} // {}; });
-    $h // MongoDB::Server;
   }
 
   #-----------------------------------------------------------------------------
