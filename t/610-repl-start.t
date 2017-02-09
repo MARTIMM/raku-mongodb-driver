@@ -23,7 +23,7 @@ my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Replica server pre-init rejected", {
 
   my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
@@ -33,17 +33,25 @@ subtest {
      "Start server 2 in replica set '$rs1-s2'";
 
   # Should not find a server, need replicaSet option
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p2"));
-  my MongoDB::Server $server = $client.select-server(
-    :needed-state(REJECTED-SERVER)
+  my MongoDB::Client $client .= new(
+    :uri("mongodb://:$p2"),
+    :server-selection-timeout-ms(1_000),
+    :heartbeat-frequency-ms(5_000),
   );
-  is $server.get-status, REJECTED-SERVER, "Server 2 is rejected";
+
+  sleep 2.0;
+  my MongoDB::Server $server =
+     $client.select-server(:servername("localhost:$p2"));
+  is $server.get-status<status>, SS-RSGhost, "Server 2 is a ghost";
+
+  $server = $client.select-server;
+  nok $server.defined, "Server cannot be normally selected";
 
   $client.cleanup;
-}, "Replica server pre-init rejected";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Replica server pre-init", {
 
   my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
@@ -77,11 +85,15 @@ subtest {
   like $doc<$err>, /:s not master/, $doc<$err>,;
   is $doc<code>, 13435, 'error code 13435';
 
-  $client.cleanup;
-}, "Replica server pre-init";
+#  $client.cleanup;
+}
+
+done-testing();
+exit(0);
+=finish
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Replica server initialization and modification", {
 
   my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
@@ -135,11 +147,10 @@ subtest {
   is $doc<setVersion>, 1, 'Repl set version 1';
   ok $doc<ismaster>, 'Server is master';
   nok $doc<secondary>, 'And not secondary';
-
-}, "Replica server initialization and modification";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Replica servers update replica data", {
 
   my Int $p2 = $ts.server-control.get-port-number('s2');
   my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
@@ -181,21 +192,16 @@ subtest {
     )
   );
 
-  $doc = $server.raw-query(
-    'test.$cmd',
-    BSON::Document.new((isMaster => 1,))
-  );
+  $doc = $server.raw-query( 'test.$cmd', BSON::Document.new((isMaster => 1,)));
 #note "IM: ", $doc.perl;
   $doc = $doc<documents>[0];
   is $doc<setVersion>, 2, 'Repl set version 2';
   is-deeply $doc<hosts>, ["localhost:$p2",],
             "servers in replica: {$doc<hosts>}";
-
-}, "Replica servers update replica data";
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
