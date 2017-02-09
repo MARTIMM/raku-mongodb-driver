@@ -96,13 +96,20 @@ $!d5b.article [
             ]
 
             $|listitem [
-              $|emphasis[URI]. The URI tells the software how to connect to a server
-              and select the proper server.
+              $|emphasis[URI]. The URI tells the software how to connect and
+              select the proper server.
             ]
 
             $|listitem [
               $|emphasis[Server selection process].
             ]
+          ]
+        ]
+
+        $|listitem [
+          $|emphasis[Modules and classes].
+
+          $|itemizedlist spacing=compact [
 
             $|listitem [
               $|emphasis[MongoDB::Client]. This module is the starting point of all
@@ -144,10 +151,18 @@ $!d5b.article [
           ]
         ]
 
+#        $|listitem [
+#          $|emphasis[Dependensies]. There are some dependencies which are
+#          explained a bit here. These are e.g. the server and its version,
+#          modules like BSON, PKCS5, Auth::SCRAM etcetera.
+#        ]
+
         $|listitem [
-          $|emphasis[Dependensies]. There are some dependencies which are
-          explained a bit here. These are e.g. the server and its version,
-          modules like BSON, PKCS5, Auth::SCRAM etcetera.
+          $|emphasis[BSON].
+        ]
+
+        $|listitem [
+          $|emphasis[MongoDB Servers].
         ]
 
         $|listitem [
@@ -286,13 +301,9 @@ $!d5b.article [
               $|td [TT-Single]
               $|td [
                 A deployment of topology type TT-Single contains only a single
-                server with a state SS-Standalone. This topology type
-                signifies a direct connection intended to receive all read and
-                write operations. The explanation here differs from that of
-                the mongodb site because of the way it tests for the server
-                states. In the end, when servers are selected and only one
-                suitable server is found, no further selection processing is
-                needed which is intended by the definition of mongodb.
+                server which can have any state except SS-Unknown. This topology
+                type signifies a direct connection intended to receive all read
+                and write operations.
               ]
             ]
           ]
@@ -378,64 +389,70 @@ $!d5b.article [
               ]
             ]
           ]
-
         ]
+      ]
+    ]
+
+    $|sect2 [
+      $|title [Server selection]
+      $|para [
+
+        $|itemizedlist spacing=compact [
+          $|listitem [
+            Record the server selection start time
+          ]
+          $|listitem [
+            If the topology wire version is invalid, raise an error
+          ]
+          $|listitem [
+            Find suitable servers by topology type and operation type
+          ]
+          $|listitem [
+            If there are any suitable servers, choose one at random from those
+            within the latency window and return it; otherwise, continue to
+            step #5
+          ]
+          $|listitem [
+            Request an immediate topology check, then block the server
+            selection thread until the topology changes or until the server
+            selection timeout has elapsed
+          ]
+          $|listitem [
+            If more than serverSelectionTimeoutMS milliseconds have elapsed
+            since the selection start time, raise a server selection error
+          ]
+          $|listitem [
+            Goto Step #2
+          ]
+        ]
+
       ]
     ]
   ]
 
   $|sect1 [
-    $|title [Classes in the driver]
+    $|title [Modules and classes]
+
+    $|sect2 [
+      $|title [MongoDB]
+      $|para [
+
+      ]
+    ]
+
     $|sect2 [
       $|title [MongoDB::Client]
       $|para [
 
       ]
 
-
       $|sect3 [
         $|title [Making a connection]
         $|para [
         ]
       ]
-
-
-      $|sect3 [
-        $|title [Server selection]
-        $|para [
-
-          $|itemizedlist spacing=compact [
-            $|listitem [
-              Record the server selection start time
-            ]
-            $|listitem [
-              If the topology wire version is invalid, raise an error
-            ]
-            $|listitem [
-              Find suitable servers by topology type and operation type
-            ]
-            $|listitem [
-              If there are any suitable servers, choose one at random from those
-              within the latency window and return it; otherwise, continue to
-              step #5
-            ]
-            $|listitem [
-              Request an immediate topology check, then block the server
-              selection thread until the topology changes or until the server
-              selection timeout has elapsed
-            ]
-            $|listitem [
-              If more than serverSelectionTimeoutMS milliseconds have elapsed
-              since the selection start time, raise a server selection error
-            ]
-            $|listitem [
-              Goto Step #2
-            ]
-          ]
-
-        ]
-      ]
     ]
+
 
     $|sect2 [
       $|title [BSON::Document]
@@ -510,35 +527,33 @@ $!d5b.article [
 
   $|sect1 [
     $|title [BSON]
-    $|para [
-      $|sect2 [
-        $|title [Supported types]
-        $|para [
+    $|sect2 [
+      $|title [Supported types]
+      $|para [
 
-          $|table rules=all [
-            $|title [Supported types of the BSON package]
-            $|thead [
-              $|tr [
-                $|th [BSON]
-                $|th [Perl6]
-                $|th [Description]
-              ]
+        $|table rules=all [
+          $|title [Supported types of the BSON package]
+          $|thead [
+            $|tr [
+              $|th [BSON]
+              $|th [Perl6]
+              $|th [Description]
             ]
+          ]
 
-            $|tbody [
-              $|tr [
-                $|td [Double]
-                $|td [Num]
-                $|td [!
-                  An eight byte floating point number. The perl6 type choosen
-                  is a 'Num' which stores a floating-point number.  On most
-                  platforms, it's an IEEE 754 64-bit floating point number, aka
-                  "double precision".
- 
-                  The 'Rat' is not choosen because it can not be converted back
-                  the way it was thereby loosing accuracy.
-                !]
-              ]
+          $|tbody [
+            $|tr [
+              $|td [Double]
+              $|td [Num]
+              $|td [!
+                An eight byte floating point number. The perl6 type choosen
+                is a 'Num' which stores a floating-point number.  On most
+                platforms, it's an IEEE 754 64-bit floating point number, aka
+                "double precision".
+
+                The 'Rat' is not choosen because it can not be converted back
+                the way it was thereby loosing accuracy.
+              !]
             ]
           ]
         ]
@@ -546,10 +561,31 @@ $!d5b.article [
     ]
   ]
 
-  $|sect2 [
+  $|sect1 [
     $|title [MongoDB servers]
     $|para [
 
+    ]
+    
+    $|sect2 [
+      $|title [Supported versions]
+      $|para [
+      
+      ]
+    ]
+    
+    $|sect2 [
+      $|title [mongod]
+      $|para [
+      
+      ]
+    ]
+    
+    $|sect2 [
+      $|title [mongos]
+      $|para [
+      
+      ]
     ]
   ]
 
@@ -619,6 +655,13 @@ $!d5b.article [
 
         ]
       ]
+    ]
+
+    $|sect2 [
+      $|title [Develop your own set of helper functions]
+      $|para [
+      ]
+
     ]
   ]
 

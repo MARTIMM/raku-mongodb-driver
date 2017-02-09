@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE stylesheet [
+<!ENTITY infin "&#x221E;">
 <!ENTITY nbsp " ">
 <!ENTITY mongodb "MongoDB driver">
 ]>
@@ -20,7 +21,6 @@
   <xsl:param name="admon.graphics" select="1"/>
   <xsl:param name="admon.graphics.path" select="'/home/marcel/Graphics/IconsArchive/Icons/32x32/Docbook/'"/>
   <xsl:param name="admon.graphics.extension" select="'.png'"/>
-  <xsl:param name="bibliography.collection">file:///home/Data/Boeken/Bibliotheek/bibliotheek-referenties.xml</xsl:param>
   <xsl:attribute-set name="xref.properties">
     <xsl:attribute name="color">
       <xsl:choose>
