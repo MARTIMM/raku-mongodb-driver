@@ -452,8 +452,6 @@ class Server {
     $!uri-data = Nil;
     @!sockets = Nil;
     $!server-tap = Nil;
-
-    debug-message("Server destroyed");
   }
 }
 

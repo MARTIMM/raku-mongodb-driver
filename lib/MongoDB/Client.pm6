@@ -53,14 +53,20 @@ class Client {
   # has Bool $!server-selection-try-once = False;
   # has Int $!socket-check-interval-ms = 5000;
 
+  # Cleaning up is done concurrently so the test on a variable like $!servers
+  # to be undefined, will not work. Instead check if the below variable is True
+  # to see if destroying the client is started.
+  has Bool $!cleanup-started = False;
+
   #-----------------------------------------------------------------------------
   method new ( |c ) {
 
     # In case of an assignement like $c .= new(...) $c should be cleaned first
-    if self.defined and $!servers.defined {
+    if self.defined and not $!cleanup-started {
+
       warn-message('User client object still defined, will be cleaned first');
       self.cleanup;
-      sleep 0.5;
+#      sleep 0.5;
     }
 
     MongoDB::Client.bless(|c);
@@ -564,31 +570,38 @@ note "diff {(now - $t0) * 1000}";
   # Forced cleanup
   method cleanup ( ) {
 
-    # some timing to see if this cleanup can be improved
-    my Instant $t0 = now;
+    $!cleanup-started = True;
+    my Promise $p .= start( {
 
-    # stop loop and wait for exit
-    $!repeat-discovery-loop = False;
-    $!Background-discovery.result;
+        # some timing to see if this cleanup can be improved
+        my Instant $t0 = now;
 
-    # Remove all servers concurrently. Shouldn't be many per client.
-    $!rw-sem.writer(
-      'servers', {
+        # stop loop and wait for exit
+        $!repeat-discovery-loop = False;
+        $!Background-discovery.result;
 
-        for $!servers.values -> MongoDB::Server $server {
-          if $server.defined {
-            # Stop monitoring on server
-            $server.cleanup;
-            debug-message("server '$server.name()' cleaned after {now - $t0}");
+        # Remove all servers concurrently. Shouldn't be many per client.
+        $!rw-sem.writer(
+          'servers', {
+
+            for $!servers.values -> MongoDB::Server $server {
+              if $server.defined {
+                # Stop monitoring on server
+                $server.cleanup;
+                debug-message(
+                  "server '$server.name()' destroyed after {(now - $t0) * 1000.0} ms"
+                );
+              }
+            }
           }
-        }
+        );
+
+        $!servers = Nil;
+        $!todo-servers = Nil;
+
+        debug-message("Client destroyed after {(now - $t0) * 1000.0} ms");
       }
     );
-
-    $!servers = Nil;
-    $!todo-servers = Nil;
-
-    debug-message("Client destroyed after {now - $t0}");
   }
 }
 
