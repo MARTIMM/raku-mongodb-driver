@@ -229,8 +229,9 @@ class Client {
         # TT-Unknown. Here, the real value is calculated and set. Doing
         # it repeatedly it will be able to change dynamicaly.
         #
-        my $topology = TT-Unknown;
+        my TopologyType $topology = TT-Unknown;
         my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
+        my Int $servers-count = 0;
 
         my Bool $found-standalone = False;
         my Bool $found-sharded = False;
@@ -242,6 +243,7 @@ class Client {
 
           given $status {
             when SS-Standalone {
+              $servers-count++;
               if $found-standalone or $found-sharded or $found-replica {
 
                 # cannot have more than one standalone servers
@@ -256,6 +258,7 @@ class Client {
             }
 
             when SS-Mongos {
+              $servers-count++;
               if $found-standalone or $found-replica {
 
                 # cannot have other than shard servers
@@ -269,6 +272,7 @@ class Client {
             }
 
             when SS-RSPrimary {
+              $servers-count++;
               if $found-standalone or $found-sharded {
 
                 # cannot have other than replica servers
@@ -283,6 +287,7 @@ class Client {
             }
 
             when any( SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost ) {
+              $servers-count++;
               if $found-standalone or $found-sharded {
 
                 # cannot have other than replica servers
@@ -296,6 +301,10 @@ class Client {
               }
             }
           }
+        }
+
+        if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
+          $topology = TT-Single;
         }
 
         debug-message("topology type set to $topology");
