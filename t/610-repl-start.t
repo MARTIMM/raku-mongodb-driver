@@ -13,8 +13,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -22,54 +22,45 @@ my MongoDB::Test-support $ts .= new;
 my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
-#-------------------------------------------------------------------------------
-subtest "Replica server pre-init rejected", {
+my Int $p2 = $ts.server-control.get-port-number('s2');
+my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
 
-  my Int $p2 = $ts.server-control.get-port-number('s2');
-  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+my MongoDB::Client $client;
+my MongoDB::Server $server;
+my BSON::Document $doc;
+
+#-------------------------------------------------------------------------------
+subtest "Replica server pre initialization no option in uri", {
 
   ok $ts.server-control.stop-mongod("s2"), "Server 2 stopped";
   ok $ts.server-control.start-mongod( 's2', 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
-  # Should not find a server, need replicaSet option
-  my MongoDB::Client $client .= new(
+  # Should find a server but not the proper one, need replicaSet option
+  $client .= new(
     :uri("mongodb://:$p2"),
     :server-selection-timeout-ms(1_000),
     :heartbeat-frequency-ms(5_000),
   );
 
   sleep 2.0;
-  my MongoDB::Server $server =
-     $client.select-server(:servername("localhost:$p2"));
-  is $server.get-status<status>, SS-RSGhost, "Server 2 is a ghost";
-
   $server = $client.select-server;
-  nok $server.defined, "Server cannot be normally selected";
+  is $server.get-status<status>, SS-RSGhost,
+     "Server 2 is a ghost replica server, needs initialization";
 
+  is $client.topology, TT-Single, "Topology $client.topology()";
   $client.cleanup;
 }
 
 #-------------------------------------------------------------------------------
-subtest "Replica server pre-init", {
+subtest "Replica server pre initialization with option in uri", {
 
-  my Int $p2 = $ts.server-control.get-port-number('s2');
-  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+  $client .= new(:uri("mongodb://$host:$p2/?replicaSet=$rs1-s2"));
+  sleep 1.0;
+  $server = $client.select-server(:servername("$host:$p2"));
+  ok $server.defined, 'server is defined';
 
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
-  my MongoDB::Server $server = $client.select-server(:2check-cycles);
-  nok $server.defined, 'No master server found';
-  is $client.server-status('localhost:' ~ $p2), REPLICA-PRE-INIT,
-     "Server is in replica initialization state";
-
-  $server = $client.select-server: :needed-state(REPLICA-PRE-INIT);
-  is $server.get-status, REPLICA-PRE-INIT,
-     "Selected server is in replica initialization state";
-
-  # Must use $server's raw query because otherwise a master would be
-  # searched for which is not available
-  #
-  my BSON::Document $doc = $server.raw-query(
+  $doc = $server.raw-query(
     'test.mycl1',
     BSON::Document.new( (
         insert => 'mycl1',
@@ -84,30 +75,16 @@ subtest "Replica server pre-init", {
   $doc = $doc<documents>[0];
   like $doc<$err>, /:s not master/, $doc<$err>,;
   is $doc<code>, 13435, 'error code 13435';
-
-#  $client.cleanup;
 }
-
-done-testing();
-exit(0);
-=finish
 
 #-------------------------------------------------------------------------------
 subtest "Replica server initialization and modification", {
 
-  my Int $p2 = $ts.server-control.get-port-number('s2');
-  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
-
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
-  my MongoDB::Server $server = $client.select-server(
-    :needed-state(REPLICA-PRE-INIT)
-  );
-
+  $server = $client.select-server(:servername("$host:$p2"));
   my BSON::Document $doc = $server.raw-query(
     'test.$cmd',
     BSON::Document.new((isMaster => 1,))
   );
-#note "IM: ", $doc.perl;
 
   $doc = $doc<documents>[0];
   ok $doc<isreplicaset>, 'Is a pre-init replica set server';
@@ -131,7 +108,6 @@ subtest "Replica server initialization and modification", {
       )
     )
   );
-#note "SI: ", $doc.perl;
 
   sleep 10;
 
@@ -139,7 +115,6 @@ subtest "Replica server initialization and modification", {
     'test.$cmd',
     BSON::Document.new((isMaster => 1,))
   );
-#note "IM: ", $doc.perl;
 
   $doc = $doc<documents>[0];
   ok $doc<setName>:exists, 'Name now set';
@@ -152,20 +127,18 @@ subtest "Replica server initialization and modification", {
 #-------------------------------------------------------------------------------
 subtest "Replica servers update replica data", {
 
-  my Int $p2 = $ts.server-control.get-port-number('s2');
-  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
-
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
-  is $client.server-status("localhost:$p2"), REPLICASET-PRIMARY,
+  is $server.get-status<status>, SS-RSPrimary,
      "Server is replica server primary";
+  is $client.topology, TT-ReplicaSetWithPrimary,
+     "Topology replicaset with primary";
 
   # Get server info, can now be done without server spec. Get the repl version
   my BSON::Document $doc = $server.raw-query(
     'test.$cmd',
     BSON::Document.new((isMaster => 1,))
   );
-#note "IM: ", $doc.perl;
+
   $doc = $doc<documents>[0];
   is $doc<setVersion>, 1, 'version is 1';
 
@@ -193,7 +166,6 @@ subtest "Replica servers update replica data", {
   );
 
   $doc = $server.raw-query( 'test.$cmd', BSON::Document.new((isMaster => 1,)));
-#note "IM: ", $doc.perl;
   $doc = $doc<documents>[0];
   is $doc<setVersion>, 2, 'Repl set version 2';
   is-deeply $doc<hosts>, ["localhost:$p2",],

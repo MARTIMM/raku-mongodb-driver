@@ -426,6 +426,7 @@ note "Servers: $!servers.keys()";
         when TT-ReplicaSetWithPrimary {
 
 #TODO read concern
+#TODO check replica set option in uri
           for $servers.keys -> $sname {
             $selected-server = $servers{$sname};
             my Hash $sdata = $selected-server.get-status;
@@ -436,6 +437,7 @@ note "Servers: $!servers.keys()";
         when TT-ReplicaSetNoPrimary {
 
 #TODO read concern
+#TODO check replica set option in uri if SS-RSSecondary
           for $servers.keys -> $sname {
             my $s = $servers{$sname};
             my Hash $sdata = $s.get-status;
