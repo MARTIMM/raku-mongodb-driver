@@ -556,6 +556,133 @@ $!d5b.article [
               !]
             ]
           ]
+
+          $|tbody [
+            $|tr [
+              $|td [String]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Document]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Array]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Binary]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [ObjectId]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Boolean]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Date]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Null]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Javascript]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Javascript with scope]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [32bit int]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Timestamp]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [64bit int]
+              $|td []
+              $|td [
+              ]
+            ]
+          ]
+
+          $|tbody [
+            $|tr [
+              $|td [Decimal128]
+              $|td []
+              $|td [
+                Not yet supported
+              ]
+            ]
+          ]
         ]
       ]
     ]
