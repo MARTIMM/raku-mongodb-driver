@@ -545,23 +545,24 @@ $!d5b.article [
             $|tr [
               $|td [Double]
               $|td [Num]
-              $|td [!
+              $|td [
                 An eight byte floating point number. The perl6 type choosen
                 is a 'Num' which stores a floating-point number.  On most
                 platforms, it's an IEEE 754 64-bit floating point number, aka
-                "double precision".
+                "double precision" (From perl 6 doc).
 
                 The 'Rat' is not choosen because it can not be converted back
                 the way it was thereby loosing accuracy.
-              !]
+              ]
             ]
           ]
 
           $|tbody [
             $|tr [
               $|td [String]
-              $|td []
+              $|td [Str]
               $|td [
+                A normal string type.
               ]
             ]
           ]
@@ -569,8 +570,14 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Document]
-              $|td []
+              $|td [BSON::Document]
               $|td [
+                As the document itself a subdocument is also a BSON::Document.
+                Hashes are refused because the keys are not necessary kept in
+                the same order as is stored by the user. This is important when
+                searches are done. The seach query is also encoded using the
+                BSON::Document and on the server not decoded. So the query
+                is matched against binary data which is ofcourse faster.
               ]
             ]
           ]
@@ -578,7 +585,7 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Array]
-              $|td []
+              $|td [Array]
               $|td [
               ]
             ]
@@ -587,8 +594,14 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Binary]
-              $|td []
+              $|td [Buf]
               $|td [
+                The perl6 Buf type is used to express the BSON binary type.
+                However, the BSON specification also covers for types such as
+                Function, UUID and MD5. Furthermore user defined types can also
+                be be specified. Ideas for this are the perl6 types Rat, Set,
+                IntStr, Hash, List etc. Also very large or small Int values
+                could encoded this way.
               ]
             ]
           ]
@@ -596,8 +609,11 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [ObjectId]
-              $|td []
+              $|td [BSON::ObjectId]
               $|td [
+                This object is generated on the server by default. However, it
+                can be used to refer to other objects or to create the document
+                $**emphasis[_id] themselves.
               ]
             ]
           ]
@@ -605,7 +621,7 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Boolean]
-              $|td []
+              $|td [Bool]
               $|td [
               ]
             ]
@@ -614,7 +630,7 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Date]
-              $|td []
+              $|td [DateTime]
               $|td [
               ]
             ]
@@ -623,8 +639,11 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Null]
-              $|td []
+              $|td [Any]
               $|td [
+                Any undefined variable or Type object is used to express the
+                Null BSON type. It will also convert to Any only. So any other
+                used Type object is lost when decoding the document.
               ]
             ]
           ]
@@ -632,7 +651,7 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Javascript]
-              $|td []
+              $|td [BSON::Javascript]
               $|td [
               ]
             ]
@@ -641,7 +660,7 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Javascript with scope]
-              $|td []
+              $|td [BSON::Javascript]
               $|td [
               ]
             ]
@@ -649,9 +668,14 @@ $!d5b.article [
 
           $|tbody [
             $|tr [
-              $|td [32bit int]
-              $|td []
+              $|td [32 bit int]
+              $|td [Int]
               $|td [
+                The perl6 Int type can represent integers from -&infin; to
+                +&infin;. The software will test the Int number when it falls in
+                the 4 byte range. When outside that range, it tests for the 8
+                byte range and converts to the BSON 64 bit type. When even
+                smaller/larger, an exception is thrown.
               ]
             ]
           ]
@@ -659,17 +683,19 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Timestamp]
-              $|td []
+              $|td [-]
               $|td [
+                Not yet supported because it is for internal MongoDB use.
               ]
             ]
           ]
 
           $|tbody [
             $|tr [
-              $|td [64bit int]
-              $|td []
+              $|td [64 bit int]
+              $|td [Int]
               $|td [
+                See 32 bit Int.
               ]
             ]
           ]
@@ -677,9 +703,9 @@ $!d5b.article [
           $|tbody [
             $|tr [
               $|td [Decimal128]
-              $|td []
+              $|td [-]
               $|td [
-                Not yet supported
+                Not yet supported.
               ]
             ]
           ]
