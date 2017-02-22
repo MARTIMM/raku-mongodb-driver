@@ -187,12 +187,12 @@ class Server {
       $is-master = ? $mdata<ismaster>;
       if $is-master {
         $server-status = SS-RSPrimary;
-        $!client.add-servers($mdata<hosts>);
+        $!client.add-servers([|@($mdata<hosts>),]);
       }
 
       elsif ? $mdata<secondary> {
         $server-status = SS-RSSecondary;
-        $!client.add-servers($mdata<primary>);
+        $!client.add-servers([$mdata<primary>,]);
       }
 
       elsif ? $mdata<arbiterOnly> {
