@@ -10,8 +10,8 @@ use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -43,39 +43,18 @@ subtest "Client behaviour with a replicaserver and standalone mix", {
 }
 
 #-------------------------------------------------------------------------------
-subtest "Client behaviour with a replicaserver and standalone mix", {
+subtest "Client behaviour with one replicaserver", {
 
   diag "mongodb://$host:$p2";
   $client .= new(:uri("mongodb://$host:$p2"));
   $server = $client.select-server;
-  is $server.get-status<status>, SS-Standalone, "Standalone server";
+  is $server.get-status<status>, SS-RSPrimary, "Replicaset primary server";
   is $client.topology, TT-Single, 'Single topology';
-}
-
-done-testing();
-=finish
-
-  diag "mongodb://:$p1,:$p2/?replicaSet=unknownRS";
-  $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=unknownRS"));
-  $server = $client.select-server(:2check-cycles);
-  is $client.server-status('localhost:' ~ $p1), REJECTED-SERVER,
-     "Server localhost:$p1 rejected";
-  is $client.server-status('localhost:' ~ $p2), REJECTED-SERVER,
-     "Server localhost:$p2 rejected";
-
-  diag "mongodb://:$p1,:$p2/?replicaSet=$rs1-s2";
-  $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=$rs1-s2"));
-  $server = $client.select-server;
-  is $server.name, "localhost:$p2", "Server localhost:$p2 returned";
-  is $client.server-status('localhost:' ~ $p1), REJECTED-SERVER,
-     "Server localhost:$p1 rejected";
-  is $client.server-status('localhost:' ~ $p2), REPLICASET-PRIMARY,
-     "Server localhost:$p2 replicaset primary";
 }
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
 info-message("Test $?FILE stop");
-done-testing();
+done-testing;
 exit(0);
