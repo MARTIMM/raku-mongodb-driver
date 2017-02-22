@@ -303,7 +303,8 @@ class Client {
               else {
 
                 $found-replica = True;
-                $topology = TT-ReplicaSetNoPrimary;
+                $topology = TT-ReplicaSetNoPrimary
+                  unless $topology ~~ TT-ReplicaSetWithPrimary;
               }
             }
           }
