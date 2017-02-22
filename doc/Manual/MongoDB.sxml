@@ -672,7 +672,7 @@ $!d5b.article [
               $|td [Int]
               $|td [
                 The perl6 Int type can represent integers from -&infin; to
-                +&infin;. The software will test the Int number when it falls in
+                +&infin;. The software tests the Int number if it falls in
                 the 4 byte range. When outside that range, it tests for the 8
                 byte range and converts to the BSON 64 bit type. When even
                 smaller/larger, an exception is thrown.
