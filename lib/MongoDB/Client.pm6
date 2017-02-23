@@ -375,10 +375,23 @@ class Client {
   multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
 
     self!check-discovery-process;
-note "Servers: $!servers.keys()";
 
     my MongoDB::Server $server;
-    $server = $!rw-sem.reader( 'servers', {$!servers{$servername}});
+
+    loop ( my Int $count = 0; $count < 20; $count++) {
+      sleep 2 if $count;
+
+      $server = $!rw-sem.reader( 'servers', {
+#note "Servers: ", $!servers.keys;
+#note "Request: $servername";
+        $!servers{$servername}:exists 
+                ?? $!servers{$servername}
+                !! MongoDB::Server;
+      });
+
+      last if ? $server;
+    }
+
     if ?$server {
       debug-message("Server selected");
     }

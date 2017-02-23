@@ -13,7 +13,7 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
+#drop-send-to('screen');
 #modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
@@ -45,10 +45,11 @@ subtest {
      "Server 3 started in replica set '$rs1-s3'";
 
   diag "Connect to server replica primary from of $rs1-s2";
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Client $client .=
+        new(:uri("mongodb://$host:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, "Server $server.name() selected";
-  is $server.get-status<status>, SS-RSPrimary, 'Server 2 is primary';
+  is $server.get-status<status>, SS-RSPrimary, 'Server $host:$p2 is primary';
 
   diag "Get server info. Get the repl version and update version";
   my BSON::Document $doc = $server.raw-query(
@@ -85,7 +86,6 @@ subtest {
   $doc = $doc<documents>[0];
   ok ?$doc<ok>, 'Servers are added';
 
-  sleep 2;
   $doc = $server.raw-query( 'test.$cmd', BSON::Document.new((isMaster => 1,)));
 
   $doc = $doc<documents>[0];
@@ -93,9 +93,8 @@ subtest {
             ( "$host:$p1", "$host:$p2", "$host:$p3"),
             "servers in replica: {$doc<hosts>}";
 
-  sleep 4;
   $server = $client.select-server(:servername("$host:$p3"));
-  is $server.get-status<status>, SS-RSSecondary, 'Server 3 is secondary';
+  is $server.get-status<status>, SS-RSSecondary, "Server $host:$p3 is secondary";
 
   is $client.topology, TT-ReplicaSetWithPrimary,
      'Replicaset with primary topology';
