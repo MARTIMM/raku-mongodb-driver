@@ -168,9 +168,8 @@ Base module to hold constants, enums and subs
 =head3 TopologyType
 
   enum TopologyType is export <
-    SINGLE-TPLGY
-    REPLSET-WITH-PRIMARY-TPLGY REPLSET-NO-PRIMARY-TPLGY
-    SHARDED-TPLGY UNKNOWN-TPLGY
+    TT-Single TT-ReplicaSetNoPrimary TT-ReplicaSetWithPrimary
+    TT-Sharded TT-Unknown
   >;
 
 Used to describe the state of the Client object. See also C<MongoDB::Client>.
@@ -179,13 +178,9 @@ Used to describe the state of the Client object. See also C<MongoDB::Client>.
 =head3 ServerStatus
 
   enum ServerStatus is export <
-    UNKNOWN-SERVER NON-EXISTENT-SERVER DOWN-SERVER RECOVERING-SERVER
-    REJECTED-SERVER GHOST-SERVER
 
-    REPLICA-PRE-INIT REPLICASET-PRIMARY REPLICASET-SECONDARY
-    REPLICASET-ARBITER
-
-    SHARDING-SERVER MASTER-SERVER SLAVE-SERVER
+    SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary RSSecondary
+    SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
   >;
 
 Used to describe the status of a Server object. See also C<MongoDB::Client>.

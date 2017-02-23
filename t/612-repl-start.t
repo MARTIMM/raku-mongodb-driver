@@ -13,8 +13,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+#drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -25,33 +25,35 @@ subtest {
   my Str $host = 'localhost';
   my Hash $config = MongoDB::MDBConfig.instance.config;
 
-  my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
-  diag "\nStart server 1 in pre-init mode in replicaset $rs1-s1";
   my Int $p1 = $ts.server-control.get-port-number('s1');
+  my Str $rs1-s1 = $config<mongod><s1><replicate1><replSet>;
+
+  my Int $p2 = $ts.server-control.get-port-number('s2');
+  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+
+  my Int $p3 = $ts.server-control.get-port-number('s3');
+  my Str $rs1-s3 = $config<mongod><s3><replicate1><replSet>;
+
+  diag "\nStart server 1 in pre-init mode in replicaset $rs1-s1";
   ok $ts.server-control.stop-mongod("s1"), "Server 1 stopped";
   ok $ts.server-control.start-mongod( "s1", 'replicate1'),
      "Server 1 started in replica set '$rs1-s1'";
 
-  my Str $rs1-s3 = $config<mongod><s3><replicate1><replSet>;
   diag "Start server 2 pre-init in replicaset $rs1-s3";
-  my Int $p3 = $ts.server-control.get-port-number('s3');
   ok $ts.server-control.stop-mongod("s3"), "Server 3 stopped";
   ok $ts.server-control.start-mongod( "s3", 'replicate1'),
      "Server 3 started in replica set '$rs1-s3'";
 
-
-  my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
   diag "Connect to server replica primary from of $rs1-s2";
-  my Int $p2 = $ts.server-control.get-port-number('s2');
-  my MongoDB::Client $client .= new(:uri("mongodb://:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Client $client .=
+        new(:uri("mongodb://$host:$p2/?replicaSet=$rs1-s2"));
   my MongoDB::Server $server = $client.select-server;
-  ok $server.defined, "Server $server.name() seleced";
-  is $server.get-status, REPLICASET-PRIMARY, 'Server 2 is primary';
+  ok $server.defined, "Server $server.name() selected";
+  is $server.get-status<status>, SS-RSPrimary, 'Server $host:$p2 is primary';
 
   diag "Get server info. Get the repl version and update version";
   my BSON::Document $doc = $server.raw-query(
-    'test.$cmd',
-    BSON::Document.new((isMaster => 1,))
+    'test.$cmd', BSON::Document.new((isMaster => 1,))
   );
   $doc = $doc<documents>[0];
   my Int $new-version = $doc<setVersion> + 1;
@@ -80,26 +82,27 @@ subtest {
       )
     )
   );
-#note "RSC: ", $doc.perl;
 
   $doc = $doc<documents>[0];
   ok ?$doc<ok>, 'Servers are added';
 
-  sleep 2;
-  $doc = $server.raw-query(
-    'test.$cmd',
-    BSON::Document.new((isMaster => 1,))
-  );
+  $doc = $server.raw-query( 'test.$cmd', BSON::Document.new((isMaster => 1,)));
+
   $doc = $doc<documents>[0];
   is-deeply $doc<hosts>.sort,
-            ( "localhost:$p1", "localhost:$p2", "localhost:$p3"),
+            ( "$host:$p1", "$host:$p2", "$host:$p3"),
             "servers in replica: {$doc<hosts>}";
+
+  $server = $client.select-server(:servername("$host:$p3"));
+  is $server.get-status<status>, SS-RSSecondary, "Server $host:$p3 is secondary";
+
+  is $client.topology, TT-ReplicaSetWithPrimary,
+     'Replicaset with primary topology';
 
 }, "Adding replica servers";
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 info-message("Test $?FILE stop");
-done-testing();
+done-testing;
 exit(0);

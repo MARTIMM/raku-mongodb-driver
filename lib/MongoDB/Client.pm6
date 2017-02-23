@@ -1,5 +1,7 @@
 use v6.c;
 
+#TODO readconcern does not have to be a BSON::Document. no encoding!
+
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
@@ -18,15 +20,13 @@ use Semaphore::ReadersWriters;
 class Client {
 
   has TopologyType $!topology-type;
+  has TopologyType $!user-request-topology;
 
   # Store all found servers here. key is the name of the server which is
   # the server address/ip and its port number. This should be unique.
   #
   has Hash $!servers;
-
   has Array $!todo-servers;
-
-  has Str $!master-servername;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
@@ -39,62 +39,88 @@ class Client {
   has Promise $!Background-discovery;
   has Bool $!repeat-discovery-loop;
 
-  has Tap $!client-tap;
-
   # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
   has MongoDB::Authenticate::Credential $.credential;
 
+  # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#mongoclient-configuration
+  has Int $!local-threshold-ms;
+  has Int $!server-selection-timeout-ms;
+  has Int $!heartbeat-frequency-ms;
+  has Int $!idle-write-period-ms;
+  constant smallest-max-staleness-seconds = 90;
 
-#`{{
+  # Only for single threaded implementations
+  # has Bool $!server-selection-try-once = False;
+  # has Int $!socket-check-interval-ms = 5000;
+
+  # Cleaning up is done concurrently so the test on a variable like $!servers
+  # to be undefined, will not work. Instead check if the below variable is True
+  # to see if destroying the client is started.
+  has Bool $!cleanup-started = False;
+
   #-----------------------------------------------------------------------------
-  # Explicitly create an object using the undefined class name to prevent
-  # changes in the existing class when used as an invocant.
-  #
-  method new ( Str:D :$uri, BSON::Document :$read-concern ) {
+  method new ( |c ) {
 
-say 'new client 0';
-    my $x = MongoDB::Client.bless( :$uri, :$read-concern);
-say 'new client 1';
-    $x;
+    # In case of an assignement like $c .= new(...) $c should be cleaned first
+    if self.defined and not $!cleanup-started {
+
+      warn-message('User client object still defined, will be cleaned first');
+      self.cleanup;
+#      sleep 0.5;
+    }
+
+    MongoDB::Client.bless(|c);
   }
-}}
+
   #-----------------------------------------------------------------------------
+#TODO pod doc arguments
   submethod BUILD (
-    Str:D :$uri, BSON::Document :$read-concern, Int :$loop-time = 10,
-    TopologyType :$topology-type = UNKNOWN-TPLGY
+    Str:D :$uri, BSON::Document :$read-concern,
+    TopologyType :$topology-type = TT-Unknown,
+    Int :$local-threshold-ms = 100,
+    Int :$server-selection-timeout-ms = 30_000,
+    Int :$heartbeat-frequency-ms = 10_000,
+    Int :$idle-write-period-ms = 10_000,
   ) {
 
-#TODO write letter about usefulness of setting topology type
-    $!topology-type = $topology-type;
+#TODO some or all are also settable in uri
+    $!user-request-topology = $topology-type;
+    $!topology-type = TT-Unknown;
+
+    $!server-selection-timeout-ms = $server-selection-timeout-ms;
+    $!local-threshold-ms = $local-threshold-ms;
+    $!heartbeat-frequency-ms = $heartbeat-frequency-ms;
+    $!idle-write-period-ms = $idle-write-period-ms;
 
     $!servers = {};
-
-    # Start as if we must process servers so the Boolean is set to True
     $!todo-servers = [];
 
-    $!master-servername = Nil;
-
+    # Initialize mutexes
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
-#TODO check before create
-    # Insert only when server is not defined yet. W've been here before.
+
     $!rw-sem.add-mutex-names(
-      <servers todo master>,
+      <servers todo topology>,
       :RWPatternType(C-RW-WRITERPRIO)
     ) unless $!rw-sem.check-mutex-names(<servers todo master>);
 
-    # Store read concern
-    $!read-concern =
-      $read-concern.defined ?? $read-concern !! BSON::Document.new;
+#TODO check version: read-concern introduced in version 3.2
+    # Store read concern or initialize to default
+    $!read-concern = $read-concern // BSON::Document.new: (
+      mode => RCM-Primary,
+#TODO  next key only when max-wire-version >= 5 ??
+#      max-staleness-seconds => 90,
+#      must be > smallest-max-staleness-seconds
+#           or > $!heartbeat-frequency-ms + $!idle-write-period-ms
+      tag-sets => [BSON::Document.new(),]
+    );
 
     # Parse the uri and get info in $uri-obj. Fields are protocol, username,
     # password, servers, database and options.
-    #
     $!uri = $uri;
 
     # Copy some fields into $!uri-data hash which is handed over
     # to the server object..
-    #
     my @item-list = <username password database options>;
     my MongoDB::Uri $uri-obj .= new(:$!uri);
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
@@ -109,11 +135,11 @@ say 'new client 1';
       }
     };
 
-    $set( 'username', 'username');
-    $set( 'password', 'password');
-    $set( 'auth-source', 'database', 'authSource', 'admin');
-    $set( 'auth-mechanism', 'authMechanism');
-    $set( 'auth-mechanism-properties', 'authMechanismProperties');
+    $set( 'username',                   'username');
+    $set( 'password',                   'password');
+    $set( 'auth-source',                'database', 'authSource', 'admin');
+    $set( 'auth-mechanism',             'authMechanism');
+    $set( 'auth-mechanism-properties',  'authMechanismProperties');
     $!credential .= new(|%cred-data);
 
     debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
@@ -121,36 +147,37 @@ say 'new client 1';
     # Setup todo list with servers to be processed, Safety net not needed yet
     # because threads are not started.
     for @($uri-obj.server-data<servers>) -> Hash $server-data {
+      debug-message("todo: $server-data<host>:$server-data<port>");
       $!todo-servers.push("$server-data<host>:$server-data<port>");
     }
+
+    # counter to check if there are new servers added. if so, the counter
+    # is set to 0. if less then 5 the sleeptime is 1 sec. Above it becomes
+    # the heartbeat frequency
+    my Int $changes-count = 0;
 
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
 
         $!repeat-discovery-loop = True;
-        loop {
+        repeat {
 
-#          sleep 1;
+          $changes-count++;
 
           # Start processing when something is found in todo hash
           my Str $server-name = $!rw-sem.writer(
             'todo', {
-              my Str $s;
-              if $!todo-servers.elems {
-                $s = $!todo-servers.shift;
-              }
-
-              $s;
+              ($!todo-servers.shift if $!todo-servers.elems) // Str;
             }
           );
 
           if $server-name.defined {
 
-            trace-message("Processing server $server-name");
+            $changes-count = 0;
 
+            trace-message("Processing server $server-name");
             my Bool $server-processed = $!rw-sem.reader(
-              'servers',
-              { $!servers{$server-name}:exists; }
+              'servers', { $!servers{$server-name}:exists; }
             );
 
             # Check if server was managed before
@@ -159,230 +186,138 @@ say 'new client 1';
               next;
             }
 
-#say "$*THREAD.id() New server object: $server-name";
-            my MongoDB::Server $server .= new(
-              :client(self), :$server-name, :$loop-time
-            );
+            # Create Server object
+            my MongoDB::Server $server .= new( :client(self), :$server-name);
 
-            # Start server monitoring process its data
-#say "$*THREAD.id() Init server object and start monitoring: $server-name";
-            $server.server-init;
-#say "$*THREAD.id() Tap from monitor: $server-name";
-            self!process-monitor-data($server);
+            # And start server monitoring
+            $server.server-init($!heartbeat-frequency-ms);
+
+#TODO symplify to value instead of Hash
+            $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
+
+            self!process-topology;
           }
 
           else {
 
-            # When there is no work take a nap!
-            # This sleeping period is the moment we do not process the todo list
-            sleep 1;
+            # When a server changes, the topology might change too! recalculate!
+            self!process-topology;
+
+            # When there is no work take a nap! This sleeping period is the
+            # moment we do not process the todo list
+#TODO value to sleep
+            sleep $changes-count < 5 ?? 2.0 !! $heartbeat-frequency-ms / 1000.0;
           }
 
           CATCH {
             default {
-               # Keep this .say in. It helps debugging when an error takes place
+               # Keep this .note in. It helps debugging when an error takes place
                # The error will not be seen before the result of Promise is read
-               .say;
+               .note;
                .rethrow;
             }
           }
 
-          last unless $!repeat-discovery-loop;
-        }
+        } while $!repeat-discovery-loop;
 
-        debug-message("Stop discovery loop");
+        debug-message("server discovery loop stopped");
       }
     );
   }
 
   #-----------------------------------------------------------------------------
-  method !process-monitor-data ( MongoDB::Server $server ) {
+  method !process-topology ( ) {
 
-    my Str $server-name = $server.name;
+    $!rw-sem.writer( 'topology', {
 
-    # Tap into the stream of monitor data
-    $!client-tap = $server.tap-monitor( -> Hash $monitor-data {
-#say "\n$*THREAD.id() In client, data from Monitor: ", ($monitor-data // {}).perl;
+#TODO take user topology request into account
+        # Calculate topology. Upon startup, the topology is set to
+        # TT-Unknown. Here, the real value is calculated and set. Doing
+        # it repeatedly it will be able to change dynamicaly.
+        #
+        my TopologyType $topology = TT-Unknown;
+        my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
+        my Int $servers-count = 0;
 
-#        if $monitor-data.defined and $monitor-data<ok>:exists {
-#          my Bool $found-new-servers = False;
-#say "Monitor $server-name: ", $monitor-data.perl if $monitor-data.defined;
+        my Bool $found-standalone = False;
+        my Bool $found-sharded = False;
+        my Bool $found-replica = False;
 
-          # Make the processing of the monitor data atomic
+        for $servers.keys -> $server-name {
 
-#say "$*THREAD.id() get prev server data";
-          my Hash $prev-server = $!rw-sem.reader(
-            'servers', {
-#say "$*THREAD.id() Reader code $server-name";
-            $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
-          });
-#say "$*THREAD.id() prev server data retrieved";
+          my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
 
-          my $msname = $!rw-sem.reader( 'master', {$!master-servername;});
-#say "$*THREAD.id() get master {$msname//'-'}";
+          given $status {
+            when SS-Standalone {
+              $servers-count++;
+              if $found-standalone or $found-sharded or $found-replica {
 
-
-          # Store partial result as soon as possible
-          my $server-status = $server.get-status;
-          $!rw-sem.writer(
-            'servers', {
-            debug-message("saved status of $server-name is $server-status");
-            $!servers{$server-name} = {
-              server => $server,
-              status => $server-status,
-              timestamp => now,
-              server-data => $monitor-data
-            };
-          });
-#say "$*THREAD.id() Saved monitor data for $server-name = ", $!servers{$server-name}.perl;
-
-          # Only when data is ok
-          if not $monitor-data.defined {
-
-            error-message("No monitor data received");
-          }
-
-          # There are errors while monitoring
-          elsif not $monitor-data<ok> {
-
-            my ServerStatus $status =
-               $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>});
-
-            # Not found by DNS so big chance that it doesn't exist
-            if $status ~~ NON-EXISTENT-SERVER {
-
-#              $!client-tap.done;
-              $!servers{$server-name}<server>.cleanup;
-              error-message("Stopping monitor: $monitor-data<reason>");
-            }
-
-            # Connection failure
-            elsif $status ~~ DOWN-SERVER {
-
-              # Check if the master server went down
-              if $msname.defined and ($msname eq $server-name) {
-
-#say "$*THREAD.id() reset master";
-                $!rw-sem.writer( 'master', {$!master-servername = Nil;});
-                $msname = Nil;
+                # cannot have more than one standalone servers
+                $topology = TT-Unknown;
               }
 
-              warn-message("Server is down: $monitor-data<reason>");
-            }
-          }
-
-
-          # Monitoring data is ok
-          else {
-
-#say "$*THREAD.id() Master server name: ", $msname // '-';
-#say "$*THREAD.id() Master prev stat: ", $prev-server<status>:exists 
-#                  ?? $prev-server<status>
-#                  !! '-';
-
-#say "$*THREAD.id() PMD: $server-name, $!servers{$server-name}<status>, ", $msname // '-';
-            # Don't ever modify a rejected server
-            if $prev-server<status>:exists
-               and $prev-server<status> ~~ REJECTED-SERVER {
-
-              $!rw-sem.writer(
-                'servers', {
-                debug-message("set server $server-name status to " ~ REJECTED-SERVER);
-                $!servers{$server-name}<status> = REJECTED-SERVER;
-              });
-            }
-
-            # Check for double master servers
-            elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-              ~~ any(
-              MASTER-SERVER |
-              REPLICASET-PRIMARY
-            ) {
-              # Is defined, be the second and rejected master server
-              if $msname.defined {
-                if $msname ne $server-name {
-                  $!rw-sem.writer(
-                    'servers', {
-                    $!servers{$server-name}<status> = REJECTED-SERVER;
-                  });
-                  error-message("Server $server-name rejected, second master");
-                }
-              }
-
-              # Not defined, be the first master server. No need to save status
-              # because its done already
               else {
 
-                $msname = $!rw-sem.writer(
-                  'master', {
-                    debug-message("save master servername $server-name");
-                    $!master-servername = $server-name;
-                  }
-                );
+                $found-standalone = True;
+                $topology = TT-Single;
               }
             }
 
-            else {
+            when SS-Mongos {
+              $servers-count++;
+              if $found-standalone or $found-replica {
 
-#say "$*THREAD.id() H4: $!servers{$server-name}<status>, ", $msname // '-', ', ', $server-name;
-            }
+                # cannot have other than shard servers
+                $topology = TT-Unknown;
+              }
 
-            # When primary, find all servers and add to todo list
-            if $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-               ~~ REPLICASET-PRIMARY {
-
-              my Array $hosts = $!rw-sem.reader(
-                'servers', {
-                $!servers{$server-name}<server-data><monitor><hosts>;
-              });
-
-              for @$hosts -> $hostspec {
-                # If not push onto todo list
-                next unless $hostspec ne $server-name;
-
-                debug-message("Push $hostspec from primary list on todo list");
-                $!rw-sem.writer( 'todo', {$!todo-servers.push($hostspec);});
-#say "$*THREAD.id() Add $hostspec, $!todo-servers.elems()";
+              else {
+                $found-sharded = True;
+                $topology = TT-Sharded;
               }
             }
 
-            # When secondary get its primary and add to todo list
-            elsif $!rw-sem.reader( 'servers', {$!servers{$server-name}<status>})
-                  ~~ REPLICASET-SECONDARY {
+#TODO test same set of replicasets -> otherwise also TT-Unknown
+            when SS-RSPrimary {
+              $servers-count++;
+              if $found-standalone or $found-sharded {
 
-              # Error when current master is not same as primary
-              my $primary = $!rw-sem.reader(
-                'servers', {
-                $!servers{$server-name}<server-data><monitor><primary>;
-              });
-
-              if $msname.defined and $msname ne $primary {
-                error-message(
-                  "Server $primary found but != current master $msname"
-                );
+                # cannot have other than replica servers
+                $topology = TT-Unknown;
               }
 
-              # When defined w've already processed it, if not, go for it
-              elsif not $msname.defined {
+              else {
 
-                trace-message("Push primary $primary on todo list");
-                $!rw-sem.writer( 'todo', {$!todo-servers.push($primary);});
-#say "$*THREAD.id() Add primary $primary, $!todo-servers.elems()";
+                $found-replica = True;
+                $topology = TT-ReplicaSetWithPrimary;
               }
             }
 
-#TODO $!master-servername must be able to change when server roles are changed
-#TODO Define client topology
-          }
+            when any( SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost ) {
+              $servers-count++;
+              if $found-standalone or $found-sharded {
 
-          CATCH {
-            default {
-               # Keep this .say in. It helps debugging when an error takes place
-               # The error will not be seen before the result of Promise is read
-               .say;
-              .rethrow;
+                # cannot have other than replica servers
+                $topology = TT-Unknown;
+              }
+
+              else {
+
+                $found-replica = True;
+                $topology = TT-ReplicaSetNoPrimary
+                  unless $topology ~~ TT-ReplicaSetWithPrimary;
+              }
             }
           }
+        }
+
+        if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
+          $topology = TT-Single;
+        }
+
+        debug-message("topology type set to $topology");
+#        $!rw-sem.writer( 'topology', {$!topology-type = $topology;});
+        $!topology-type = $topology;
       }
     );
   }
@@ -399,140 +334,205 @@ say 'new client 1';
   # Called from thread above where Server object is created.
   method server-status ( Str:D $server-name --> ServerStatus ) {
 
-#say "$*THREAD.id() before check";
     self!check-discovery-process;
-#say "$*THREAD.id() after check";
-#    self!check-todo-process;
 
     my Hash $h = $!rw-sem.reader(
       'servers', {
-      my $x = $!servers{$server-name}:exists ?? $!servers{$server-name} !! {};
+      my $x = $!servers{$server-name}:exists
+              ?? $!servers{$server-name}.get-status
+              !! {};
       $x;
     });
-    debug-message("server-status: $server-name, " ~ ($h<status> // '-'));
 
-    my ServerStatus $sts = $h<status> // UNKNOWN-SERVER;
+    my ServerStatus $sts = $h<status> // SS-Unknown;
+    debug-message("server-status: '$server-name', $sts");
+    $sts;
   }
 
   #-----------------------------------------------------------------------------
-  method client-topology ( --> TopologyType ) {
+  method topology ( --> TopologyType ) {
 
-    $!topology-type;
+    $!rw-sem.reader( 'topology', {$!topology-type});
   }
 
   #-----------------------------------------------------------------------------
   # Selecting servers based on;
-  # - read/write concern, depends on server version
-  # - state of a server, e.g. to initialize a replica server or to get a slave
-  #   or arbiter
-  # - default is to get a master server
+  #
+  # - Record the server selection start time
+  # - If the topology wire version is invalid, raise an error
+  # - Find suitable servers by topology type and operation type
+  # - If there are any suitable servers, choose one at random from those within
+  #   the latency window and return it; otherwise, continue to step #5
+  # - Request an immediate topology check, then block the server selection
+  #   thread until the topology changes or until the server selection timeout
+  #   has elapsed
+  # - If more than serverSelectionTimeoutMS milliseconds have elapsed since the
+  #   selection start time, raise a server selection error
+  # - Goto Step #2
   #-----------------------------------------------------------------------------
 
-#TODO use read/write concern for selection
-#TODO must break loop when nothing is found
-
-  # Read/write concern selection
-  multi method select-server (
-    BSON::Document:D :$read-concern!
-    --> MongoDB::Server
-  ) {
-
-    self.select-server;
-  }
-
   #-----------------------------------------------------------------------------
-  # State of server selection
-  multi method select-server (
-    ServerStatus:D :$needed-state!,
-    Int :$check-cycles is copy = -1
-    --> MongoDB::Server
-  ) {
+  # Request specific servername
+  multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
 
-#say "$*THREAD.id() select-server";
     self!check-discovery-process;
-#say "$*THREAD.id() select-server check done";
 
-    my Hash $h;
+    my MongoDB::Server $server;
 
-    WHILELOOP:
-    while $check-cycles != 0 {
+    loop ( my Int $count = 0; $count < 20; $count++) {
+      sleep 2 if $count;
 
-      # Take this into the loop because array can still change, might even
-      # be empty when hastely called right after new()
-      my Array $server-names = $!rw-sem.reader(
-        'servers', {
-           [$!servers.keys];
-         }
-       );
-#say "$*THREAD.id() select-server {@$server-names}";
-      for @$server-names -> $msname {
-        my Hash $shash = $!rw-sem.reader(
-          'servers', {
-#say "$*THREAD.id() select-server :needed-state, {$msname//'-'}";
-            my Hash $h;
-            if $!servers{$msname}.defined {
-#say "$*THREAD.id() select-server :needed-state, $!servers{$msname}<status>";
-              $h = $!servers{$msname};
-            }
+      $server = $!rw-sem.reader( 'servers', {
+#note "Servers: ", $!servers.keys;
+#note "Request: $servername";
+        $!servers{$servername}:exists 
+                ?? $!servers{$servername}
+                !! MongoDB::Server;
+      });
 
-            else {
-              $h = {};
-            }
-
-            $h;
-          }
-        );
-
-        if $shash<status> == $needed-state {
-          $h = $shash;
-          last WHILELOOP;
-        }
-      }
-
-      $check-cycles--;
-      sleep 1;
+      last if ? $server;
     }
 
-    if $h.defined and $h<server> {
-      info-message("Server $h<server>.name() selected");
+    if ?$server {
+      debug-message("Server selected");
     }
 
     else {
-      error-message('No typed server selected');
+      error-message("No suitable server selected");
     }
 
-    $h<server> // MongoDB::Server;
+    $server;
   }
 
+#TODO pod doc
+#TODO use read/write concern for selection
+#TODO must break loop when nothing is found
+
   #-----------------------------------------------------------------------------
-  # Default master server selection
+  # Read/write concern selection
   multi method select-server (
-    Int :$check-cycles is copy = -1
+    BSON::Document :$read-concern is copy
     --> MongoDB::Server
   ) {
 
-    self!check-discovery-process;
+    $read-concern //= $!read-concern;
+    my MongoDB::Server $selected-server;
 
-    my Hash $h;
-    my Str $msname;
+    # record the server selection start time
+    my Instant $t0 = now;
 
-    # When $check-cycles in not set it will be -1, therefore $check-cycles
-    # will not reach 0 and loop becomes infinite.
-    while $check-cycles != 0 {
-      $msname = $!rw-sem.reader( 'master', {$!master-servername;});
+    # find suitable servers by topology type and operation type
+    repeat {
 
-#say "$*THREAD.id() select-server, {$msname//'-'}";
-      if $msname.defined {
-        $h = $!rw-sem.reader( 'servers', {$!servers{$msname};});
-        last;
+      my MongoDB::Server @selected-servers = ();
+      my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
+      my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
+
+      given $topology {
+        when TT-Single {
+
+          for $servers.keys -> $sname {
+            $selected-server = $servers{$sname};
+            my Hash $sdata = $selected-server.get-status;
+            last if $sdata<status> ~~ SS-Standalone;
+          }
+        }
+
+        when TT-ReplicaSetWithPrimary {
+
+#TODO read concern
+#TODO check replica set option in uri
+          for $servers.keys -> $sname {
+            $selected-server = $servers{$sname};
+            my Hash $sdata = $selected-server.get-status;
+            last if $sdata<status> ~~ SS-RSPrimary;
+          }
+        }
+
+        when TT-ReplicaSetNoPrimary {
+
+#TODO read concern
+#TODO check replica set option in uri if SS-RSSecondary
+          for $servers.keys -> $sname {
+            my $s = $servers{$sname};
+            my Hash $sdata = $s.get-status;
+            @selected-servers.push: $s if $sdata<status> ~~ SS-RSSecondary;
+          }
+        }
+
+        when TT-Sharded {
+
+          for $servers.keys -> $sname {
+            my $s = $servers{$sname};
+            my Hash $sdata = $s.get-status;
+            @selected-servers.push: $s if $sdata<status> ~~ SS-Mongos;
+          }
+        }
       }
 
-      $check-cycles--;
-#prompt("type return to continue ...");
-      sleep(1.5);
+      # if no server selected but there are some in the array
+      if !$selected-server and +@selected-servers {
+
+        # if only one server in array, take that one
+        if @selected-servers.elems == 1 {
+          $selected-server = @selected-servers.pop;
+        }
+
+        # now w're getting complex because we need to select from a number
+        # of suitable servers.
+        else {
+
+          my Array $slctd-svrs = [];
+          my Duration $min-rtt-ms .= new(1_000_000_000);
+
+          # get minimum rtt from server measurements
+          for @selected-servers -> MongoDB::Server $svr {
+            my Hash $svr-sts = $svr.get-status;
+            $min-rtt-ms = $svr-sts<weighted-mean-rtt-ms>
+              if $min-rtt-ms > $svr-sts<weighted-mean-rtt-ms>;
+          }
+
+          # select those servers falling in the window defined by the
+          # minimum round trip time and minimum rtt plus a treshold
+          for @selected-servers -> $svr {
+            my Hash $svr-sts = $svr.get-status;
+            $slctd-svrs.push: $svr if $svr-sts<weighted-mean-rtt-ms>
+                                      <= ($min-rtt-ms + $!local-threshold-ms);
+          }
+
+          $selected-server = $slctd-svrs.pick;
+        }
+      }
+
+      # done when a suitable server is found
+      last if $selected-server.defined;
+
+      # else wait for status and topology updates
+#TODO synchronize with monitor times
+      sleep $!heartbeat-frequency-ms / 1000.0;
+
+#note "diff {(now - $t0) * 1000}";
+    } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
+
+    if ?$selected-server {
+      debug-message("Server selected after trying for {now - $t0} sec");
     }
 
-    $h<server> // MongoDB::Server;
+    else {
+      error-message(
+        "No suitable server selected after trying for {now - $t0} sec"
+      );
+    }
+
+    $selected-server;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Add server to todo list.
+  method add-servers ( Array $hostspecs ) {
+
+    debug-message("push $hostspecs[*] on todo list");
+    $!rw-sem.writer( 'todo', { $!todo-servers.append: |$hostspecs; });
   }
 
   #-----------------------------------------------------------------------------
@@ -587,30 +587,38 @@ say 'new client 1';
   # Forced cleanup
   method cleanup ( ) {
 
-    # stop loop and wait for exit
-    $!repeat-discovery-loop = False;
-    $!Background-discovery.result;
+    $!cleanup-started = True;
+    my Promise $p .= start( {
 
-    # Remove all servers concurrently. Shouldn't be many per client.
-    $!rw-sem.writer(
-      'servers', {
+        # some timing to see if this cleanup can be improved
+        my Instant $t0 = now;
 
-        for $!servers.values -> Hash $srv-struct {
-          if $srv-struct<server>.defined {
-            # Stop monitoring on server
-            debug-message("cleanup server $srv-struct<server>.name()");
-            $srv-struct<server>.cleanup;
-            $srv-struct<server> = Nil;
+        # stop loop and wait for exit
+        $!repeat-discovery-loop = False;
+        $!Background-discovery.result;
+
+        # Remove all servers concurrently. Shouldn't be many per client.
+        $!rw-sem.writer(
+          'servers', {
+
+            for $!servers.values -> MongoDB::Server $server {
+              if $server.defined {
+                # Stop monitoring on server
+                $server.cleanup;
+                debug-message(
+                  "server '$server.name()' destroyed after {(now - $t0) * 1000.0} ms"
+                );
+              }
+            }
           }
-        }
+        );
+
+        $!servers = Nil;
+        $!todo-servers = Nil;
+
+        debug-message("Client destroyed after {(now - $t0) * 1000.0} ms");
       }
     );
-
-    $!servers = Nil;
-    $!todo-servers = Nil;
-    $!client-tap = Nil;
-
-    debug-message("Client destroyed");
   }
 }
 

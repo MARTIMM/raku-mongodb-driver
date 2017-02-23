@@ -76,7 +76,7 @@ class Uri {
         }
       }
 
-      $!host-ports.push: %( host => $h, port => $p) unless $found-hp;
+      $!host-ports.push: %( host => $h.lc, port => $p) unless $found-hp;
     }
 
     method database (Match $m) {

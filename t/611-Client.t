@@ -17,6 +17,8 @@ info-message("Test $?FILE start");
 my MongoDB::Test-support $ts .= new;
 
 my MongoDB::Client $client;
+my MongoDB::Server $server;
+#my BSON::Document $doc;
 
 my Hash $config = MongoDB::MDBConfig.instance.config;
 
@@ -26,43 +28,33 @@ my Int $p1 = $ts.server-control.get-port-number('s1');
 my Int $p2 = $ts.server-control.get-port-number('s2');
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Client behaviour with a replicaserver and standalone mix", {
 
-  diag "\nmongodb://:$p2,:$p1";
-  $client .= new(:uri("mongodb://:$p2,:$p1"));
-  my $server = $client.select-server;
-  is $server.name, "localhost:$p1", "Server localhost:$p1 accepted";
-  is $client.server-status('localhost:' ~ $p2), REJECTED-SERVER,
-     "Server localhost:$p2 rejected";
+  diag "\nmongodb://$host:$p2,$host:$p1";
+  $client .= new(
+    :uri("mongodb://$host:$p2,$host:$p1")
+    :server-selection-timeout-ms(1_000),
+    :heartbeat-frequency-ms(5_000),
+  );
 
-  diag "mongodb://:$p2";
-  $client .= new(:uri("mongodb://:$p2"));
-  $server = $client.select-server(:2check-cycles);
-  is $client.server-status('localhost:' ~ $p2), REJECTED-SERVER,
-     "Server localhost:$p2 rejected";
-
-  diag "mongodb://:$p1,:$p2/?replicaSet=unknownRS";
-  $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=unknownRS"));
-  $server = $client.select-server(:2check-cycles);
-  is $client.server-status('localhost:' ~ $p1), REJECTED-SERVER,
-     "Server localhost:$p1 rejected";
-  is $client.server-status('localhost:' ~ $p2), REJECTED-SERVER,
-     "Server localhost:$p2 rejected";
-
-  diag "mongodb://:$p1,:$p2/?replicaSet=$rs1-s2";
-  $client .= new(:uri("mongodb://:$p1,:$p2/?replicaSet=$rs1-s2"));
   $server = $client.select-server;
-  is $server.name, "localhost:$p2", "Server localhost:$p2 returned";
-  is $client.server-status('localhost:' ~ $p1), REJECTED-SERVER,
-     "Server localhost:$p1 rejected";
-  is $client.server-status('localhost:' ~ $p2), REPLICASET-PRIMARY,
-     "Server localhost:$p2 replicaset primary";
+  nok $server.defined, 'Cannot select a server';
+  is $client.topology, TT-Unknown, 'Unknown topology';
+}
 
-}, "Client behaviour with a replicaserver";
+#-------------------------------------------------------------------------------
+subtest "Client behaviour with one replicaserver", {
+
+  diag "mongodb://$host:$p2";
+  $client .= new(:uri("mongodb://$host:$p2"));
+  $server = $client.select-server;
+  is $server.get-status<status>, SS-RSPrimary, "Replicaset primary server";
+  is $client.topology, TT-Single, 'Single topology';
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup
 #
 info-message("Test $?FILE stop");
-done-testing();
+done-testing;
 exit(0);

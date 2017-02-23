@@ -10,9 +10,24 @@ unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Wire {
+  state $header = MongoDB::Header.new;
 
-  has $!server;
-  has $!socket;
+  has ServerType $!server;
+  has SocketType $!socket;
+
+  #-----------------------------------------------------------------------------
+  # Value needed for round trip timing and is set to get more accurate values
+  has Duration $!round-trip-time .= new(0.0);
+  has Bool $!time-query = False;
+
+  #-----------------------------------------------------------------------------
+  method timed-query ( |c --> List ) {
+
+    $!time-query = True;
+    my BSON::Document $doc = self.query(|c);
+
+    ( $doc, $!round-trip-time);
+  }
 
   #-----------------------------------------------------------------------------
   method query (
@@ -29,20 +44,21 @@ class Wire {
     # OR all flag values to get the integer flag, be sure it is at least 0x00.
     my Int $flags = [+|] @flags>>.value;
 
-    # Must clone the document otherwise the MongoDB::Header will be added
-    # to the $qdoc even when the copy trait is used.
-    #
-    my BSON::Document $d = $qdoc.clone;
-    $d does MongoDB::Header;
     my BSON::Document $result;
 
+    my Instant $t0;
+
     try {
-      ( my Buf $encoded-query, my Int $request-id) = $d.encode-query(
-        $full-collection-name, $projection,
+      ( my Buf $encoded-query, my Int $request-id) = $header.encode-query(
+        $full-collection-name, $qdoc, $projection,
         :$flags, :$number-to-skip, :$number-to-return
       );
 
       $!socket = $server.get-socket(:$authenticate);
+
+      # start timing
+      $t0 = now if $!time-query;
+
       $!socket.send($encoded-query);
 
       # Read 4 bytes for int32 response size
@@ -59,7 +75,10 @@ class Wire {
       # already read bytes and decode. Return the resulting document.
       my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
 
-      $result = $d.decode-reply($server-reply);
+      # then time response
+      $!round-trip-time = now - $t0 if $!time-query;
+
+      $result = $header.decode-reply($server-reply);
 
       # Assert that the request-id and response-to are the same
       fatal-message("Id in request is not the same as in the response")
@@ -101,7 +120,6 @@ class Wire {
   }
 
   #-----------------------------------------------------------------------------
-  #
   method get-more (
     $cursor, Int :$number-to-return, 
     ServerType:D :$server where .^name eq 'MongoDB::Server'
@@ -109,15 +127,11 @@ class Wire {
   ) {
 
     $!server = $server;
-
-    my BSON::Document $d .= new;
-    $d does MongoDB::Header;
-#    my $client;
     my BSON::Document $result;
 
     try {
 
-      ( my Buf $encoded-get-more, my Int $request-id) = $d.encode-get-more(
+      ( my Buf $encoded-get-more, my Int $request-id) = $header.encode-get-more(
         $cursor.full-collection-name, $cursor.id, :$number-to-return
       );
 
@@ -125,7 +139,6 @@ class Wire {
       $!socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
-      #
       my Buf $size-bytes = self!get-bytes(4);
       my Int $response-size = decode-int32( $size-bytes, 0) - 4;
 
@@ -133,18 +146,16 @@ class Wire {
       # read bytes and decode. Return the resulting document.
       #
       my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
-      $result = $d.decode-reply($server-reply);
+      $result = $header.decode-reply($server-reply);
 
 # TODO check if cursorID matches (if present)
 
       # Assert that the request-id and response-to are the same
-      #
       fatal-message("Id in request is not the same as in the response")
         unless $request-id == $result<message-header><response-to>;
 
 
       # Catch all thrown exceptions and take out the server if needed
-      #
       CATCH {
 #.note;
         $!socket.close-on-fail if $!socket.defined;
@@ -178,26 +189,17 @@ class Wire {
   }
 
   #-----------------------------------------------------------------------------
-  #
   method kill-cursors ( @cursors where .elems > 0, ServerType:D :$server! ) {
 
     $!server = $server;
 
-    my BSON::Document $d .= new;
-    $d does MongoDB::Header;
-#    my $client;
-
     # Gather the ids only when they are non-zero.i.e. still active.
-    #
     my Buf @cursor-ids;
     for @cursors -> $cursor {
       @cursor-ids.push($cursor.id) if [+] $cursor.id.list;
     }
 
     # Kill the cursors if found any
-    #
-#    $client = @cursors[0].client;
-
     try {
       fatal-message("No server available") unless $server.defined;
       $!socket = $server.get-socket;
@@ -205,14 +207,12 @@ class Wire {
       if +@cursor-ids {
         ( my Buf $encoded-kill-cursors,
           my Int $request-id
-        ) = $d.encode-kill-cursors(@cursor-ids);
+        ) = $header.encode-kill-cursors(@cursor-ids);
 
         $!socket.send($encoded-kill-cursors);
       }
 
-
       # Catch all thrown exceptions and take out the server if needed
-      #
       CATCH {
 #.note;
         $!socket.close-on-fail if $!socket.defined;
@@ -249,7 +249,6 @@ class Wire {
   #
   method !get-bytes ( int $n --> Buf ) {
 
-#say "$*THREAD.id() get-bytes $!socket";
     my Buf $bytes = $!socket.receive($n);
     if $bytes.elems == 0 {
 

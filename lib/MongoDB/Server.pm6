@@ -37,15 +37,17 @@ class Server {
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
   # Set status to its default starting status
-  has ServerStatus $!server-status;
+  has ServerStatus $!status;
+  has Str $!error;
+  has Bool $!is-master;
+  has Duration $!weighted-mean-rtt-ms;
+  has Int $!max-wire-version;
+  has Int $!min-wire-version;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
   has Tap $!server-tap;
 
-  # May be read from Client
-  has Int $.max-wire-version;
-  has Int $.min-wire-version;
 
   #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
@@ -55,15 +57,14 @@ class Server {
     ClientType:D :$client,
     Str:D :$server-name,
     Hash :$uri-data = %(),
-    Int :$loop-time = 10
   ) {
 
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
-      <s-select s-status sock-max wire-version>,
+      <s-select s-status>,
       :RWPatternType(C-RW-WRITERPRIO)
-    ) unless $!rw-sem.check-mutex-names(<s-select s-status sock-max wire-version>);
+    ) unless $!rw-sem.check-mutex-names(<s-select s-status>);
 
     $!client = $client;
     $!uri-data = $client.uri-data;
@@ -76,95 +77,45 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
+    $!server-monitor .= new(:server(self));
 
-    $!server-monitor .= new( :server(self), :$loop-time);
-    $!server-status = UNKNOWN-SERVER;
+    $!status = SS-Unknown;
+    $!error = '';
+    $!is-master = False;
   }
 
   #-----------------------------------------------------------------------------
   # Server initialization 
-  method server-init ( ) {
+  method server-init ( Int:D $heartbeat-frequency-ms ) {
 
     # Start monitoring
-    $!monitor-promise = $!server-monitor.start-monitor;
+    $!monitor-promise = $!server-monitor.start-monitor($heartbeat-frequency-ms);
     return unless $!monitor-promise.defined;
 
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
+
+#note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+
+        # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#parsing-an-ismaster-response
         try {
 
-#say "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+          my Bool $is-master = False;
+          my ServerStatus $server-status = SS-Unknown;
+          my Str $server-error = '';
+          my Duration $weighted-mean-rtt-ms;
+          my Int $max-wire-version;
+          my Int $min-wire-version;
 
-          my ServerStatus $server-status = UNKNOWN-SERVER;
           if $monitor-data<ok> {
 
+            # Used to get a socket an decide on type of authentication
             my $mdata = $monitor-data<monitor>;
-            $!rw-sem.writer(
-              'wire-version', {
-                $!max-wire-version = $mdata<maxWireVersion>.Int;
-                $!min-wire-version = $mdata<minWireVersion>.Int;
-              }
-            );
 
-            # Does the caller want to have a replicaset
-            if $!uri-data<options><replicaSet> {
-
-              # Server is in a replicaset and initialized
-              if $mdata<isreplicaset>:!exists and $mdata<setName> {
-
-                # Is the server in the replicaset matching the callers request
-                if $mdata<setName> eq $!uri-data<options><replicaSet> {
-
-                  if $mdata<ismaster> {
-                    $server-status = REPLICASET-PRIMARY;
-                  }
-
-                  elsif $mdata<secondary> {
-                    $server-status = REPLICASET-SECONDARY;
-                  }
-
-#TODO ... Arbiter etc
-                }
-
-                # Replicaset name does not match
-                else {
-                  $server-status = REJECTED-SERVER;
-                }
-              }
-
-              # Server is in a replicaset but not initialized.
-              elsif $mdata<isreplicaset> and $mdata<setName>:!exists {
-                $server-status = REPLICA-PRE-INIT
-              }
-
-              # Shouldn't happen
-              else {
-                $server-status = REJECTED-SERVER;
-              }
-            }
-
-            # Need one standalone server
-            else {
-
-              # Must not be any type of replicaset server
-              if $mdata<isreplicaset>:exists
-                 or $mdata<setName>:exists
-                 or $mdata<primary>:exists {
-                $server-status = REJECTED-SERVER;
-              }
-
-              else {
-                # Must be master
-                if $mdata<ismaster> {
-                  $server-status = MASTER-SERVER;
-                }
-
-                # Shouldn't happen
-                else {
-                  $server-status = REJECTED-SERVER;
-                }
-              }
-            }
+            $max-wire-version = $mdata<maxWireVersion>.Int;
+            $min-wire-version = $mdata<minWireVersion>.Int;
+            $weighted-mean-rtt-ms = $monitor-data<weighted-mean-rtt-ms>;
+            ( $server-status, $is-master) = self!process-status($mdata);
           }
 
           # Server did not respond
@@ -172,25 +123,43 @@ class Server {
 
             if $monitor-data<reason>:exists
                and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
-              $server-status = NON-EXISTENT-SERVER;
+              $server-error = $monitor-data<reason>;
             }
 
             else {
-              $server-status = DOWN-SERVER;
+              $server-error = 'Server did not respond';
             }
           }
 
           # Set the status with the new value
           $!rw-sem.writer( 's-status', {
               debug-message("set status of {self.name()} $server-status");
-              $!server-status = $server-status;
+              $!status = $server-status;
+              $!error = $server-error;
+              $!is-master = $is-master;
+              $!max-wire-version = $max-wire-version;
+              $!min-wire-version = $min-wire-version;
+              $!weighted-mean-rtt-ms = $weighted-mean-rtt-ms;
             }
           );
 
+#          # Let the client find the topology using all found servers
+#          # in the same rhythm as the heartbeat loop of the monitor
+#          # (of each server)
+#          $!client.process-topology;
+
           CATCH {
             default {
-              .say;
-              .rethrow;
+              .note;
+
+              # Set the status with the  value
+              $!rw-sem.writer( 's-status', {
+                  error-message("{.message}, {self.name()} {SS-Unknown}");
+                  $!status = SS-Unknown;
+                  $!error = .message;
+                  $!is-master = False;
+                }
+              );
             }
           }
         }
@@ -199,20 +168,77 @@ class Server {
   }
 
   #-----------------------------------------------------------------------------
-  method get-status ( --> ServerStatus ) {
+  method !process-status ( BSON::Document $mdata --> List ) {
 
-    my int $count = 0;
-    my ServerStatus $server-status = UNKNOWN-SERVER;
+    my Bool $is-master = False;
+    my ServerStatus $server-status = SS-Unknown;
 
-    # Wait until changed, After 4 sec it must be known or stays unknown forever
-    while $count < 4 and $server-status ~~ UNKNOWN-SERVER {
-      $server-status = $!rw-sem.reader( 's-status', {$!server-status;});
-
-      sleep 1;
-      $count++;
+    # Shard server
+    if $mdata<msg>:exists and $mdata<msg> eq 'isdbgrid' {
+      $server-status = SS-Mongos;
     }
 
-    $server-status;
+    # Replica server in preinitialization state
+    elsif ? $mdata<isreplicaset> {
+      $server-status = SS-RSGhost;
+    }
+
+    elsif ? $mdata<setName> {
+      $is-master = ? $mdata<ismaster>;
+      if $is-master {
+        $server-status = SS-RSPrimary;
+        $!client.add-servers([|@($mdata<hosts>),]);
+      }
+
+      elsif ? $mdata<secondary> {
+        $server-status = SS-RSSecondary;
+        $!client.add-servers([$mdata<primary>,]);
+      }
+
+      elsif ? $mdata<arbiterOnly> {
+        $server-status = SS-RSArbiter;
+      }
+
+      else {
+        $server-status = SS-RSOther;
+      }
+    }
+
+    else {
+      $server-status = SS-Standalone;
+      $is-master = ? $mdata<ismaster>;
+    }
+
+    ( $server-status, $is-master);
+  }
+
+  #-----------------------------------------------------------------------------
+  method get-status ( --> Hash ) {
+
+    my int $count = 0;
+    my ServerStatus $server-status = SS-Unknown;
+    my Hash $server-sts-data = {};
+
+    # Wait until changed, After 4 sec it should be known
+    repeat {
+
+      # Don't sleep on the first round
+      sleep 1 if $count;
+      $count++;
+
+      $server-sts-data = $!rw-sem.reader(
+        's-status', { %(
+          :$!status, :$!is-master, :$!error
+          :$!max-wire-version, :$!min-wire-version,
+          :$!weighted-mean-rtt-ms,
+        ); }
+      );
+
+      $server-status = $server-sts-data<status>;
+
+    } while $server-status ~~ SS-Unknown and $count < 4;
+
+    $server-sts-data;
   }
 
   #-----------------------------------------------------------------------------
@@ -221,9 +247,10 @@ class Server {
   #
   method tap-monitor ( |c --> Tap ) {
 
-    my Supply $supply = $!server-monitor.get-supply;
+    $!server-monitor.get-supply.tap(|c);
+#    my Supply $supply = $!server-monitor.get-supply;
 #    $supply.act(|c);
-    $supply.tap(|c);
+#    $supply.tap(|c);
   }
 
   #-----------------------------------------------------------------------------
@@ -233,20 +260,10 @@ class Server {
   # optional.
   method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
-#say "$*THREAD.id() Get sock, authenticate = $authenticate";
+#note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
     # Get a free socket entry
     my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
-
-#say "in s-select ...";
-# count total opened
-#my Int $c = 0;
-#for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }
-#trace-message("total sockets open: $c of @!sockets.elems()");
-#        trace-message(
-#          "total sockets open: ",
-#          "{do {my $c = 0; for ^(@!sockets.elems) -> $si { $c++ if @!sockets[$si].is-open; }; $c}}"
-#        );
 
         my MongoDB::Server::Socket $s;
 
@@ -309,9 +326,7 @@ class Server {
       my Str $auth-mechanism = $!credential.auth-mechanism;
       if not $auth-mechanism {
         my Int $max-version = $!rw-sem.reader(
-          'wire-version', {
-            $!max-wire-version
-          }
+          's-status', {$!max-wire-version}
         );
         $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
         debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
@@ -365,14 +380,35 @@ class Server {
   }
 
   #-----------------------------------------------------------------------------
-  method raw-query (
+  multi method raw-query (
+    Str:D $full-collection-name, BSON::Document:D $query,
+    Int :$number-to-skip = 0, Int :$number-to-return = 1,
+    Bool :$authenticate = True, Bool :$timed-query!
+    --> List
+  ) {
+
+    my BSON::Document $doc;
+    my Duration $rtt;
+
+    ( $doc, $rtt) = MongoDB::Wire.new.timed-query(
+      $full-collection-name, $query,
+      :$number-to-skip, :number-to-return,
+      :server(self), :$authenticate
+    );
+
+    ( $doc, $rtt);
+  }
+
+
+  multi method raw-query (
     Str:D $full-collection-name, BSON::Document:D $query,
     Int :$number-to-skip = 0, Int :$number-to-return = 1,
     Bool :$authenticate = True
     --> BSON::Document
   ) {
     debug-message("server directed query on collection $full-collection-name on server {self.name}");
-    return MongoDB::Wire.new.query(
+
+    MongoDB::Wire.new.query(
       $full-collection-name, $query,
       :$number-to-skip, :number-to-return,
       :server(self), :$authenticate
@@ -389,12 +425,18 @@ class Server {
   # Forced cleanup
   method cleanup ( ) {
 
-    # Its possible that server moditor is not defined when a server is
+    # Its possible that server monitor is not defined when a server is
     # non existent or some other reason.
-    $!server-monitor.stop-monitor if $!server-monitor.defined;
+    $!server-tap.close if $!server-tap.defined;
+
+    if $!server-monitor.defined {
+      $!server-monitor.stop-monitor;
+
+      # Wait for a proper finish
+      $!monitor-promise.result;
+    }
 
     # Clear all sockets
-
     $!rw-sem.writer( 's-select', {
         for ^(@!sockets.elems) -> $si {
           next unless @!sockets[$si].defined;
@@ -413,42 +455,3 @@ class Server {
   }
 }
 
-
-
-
-=finish
-#-------------------------------------------------------------------------------
-sub dump-callframe ( $fn-max = 10 --> Str ) {
-
-  my Str $dftxt = "\nDump call frame: \n";
-
-  my $fn = 1;
-  while my CallFrame $cf = callframe($fn) {
-#say $cf.perl;
-#say "TOP: ", $cf<TOP>:exists;
-
-    # End loop with the program that starts on line 1 and code object is
-    # a hollow shell.
-    #
-    if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
-      $cf = Nil;
-      last;
-    }
-
-    # Cannot pass sub THREAD-ENTRY either
-    #
-    if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
-      $cf = Nil;
-      last;
-    }
-
-    $dftxt ~= [~] "cf [$fn.fmt('%2d')]: ", $cf.line, ', ', $cf.code.^name,
-        ', ', ($cf.code.^can('name') ?? $cf.code.name !! '-'),
-         "\n         $cf.file()\n";
-
-    $fn++;
-    last if $fn > $fn-max;
-  }
-
-  $dftxt ~= "\n";
-}

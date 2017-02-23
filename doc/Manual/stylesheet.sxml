@@ -2,55 +2,57 @@ $|xsl:stylesheet xmlns:xsl=http://www.w3.org/1999/XSL/Transform version=1.0 [
 
   # Get the docbook formatting objects stylesheet
   #
-  $|xsl:import href=/usr/share/sgml/docbook/xsl-ns-stylesheets/fo/docbook.xsl []
+  $|xsl:import href=/usr/share/sgml/docbook/xsl-ns-stylesheets/fo/docbook.xsl
 
   # Set paper size to european A4 format
   #
-  $|xsl:param name=paper.type select="'A4'" []
+  $|xsl:param name=paper.type select="'A4'"
 
   # Numbering chapters, appendixes and sections
   #
-  $|xsl:param name=chapter.autolabel select=1 []
-  $|xsl:param name=appendix.autolabel select="'A'" []
-  $|xsl:param name=section.autolabel select=1 []
+  $|xsl:param name=chapter.autolabel select=1
+  $|xsl:param name=appendix.autolabel select="'A'"
+  $|xsl:param name=section.autolabel select=1
 
   # Keep chapter number in front of sectionnumbers
   #
-  $|xsl:param name=section.label.includes.component.label select=1 []
+  $|xsl:param name=section.label.includes.component.label select=1
 
   # Maximum depth of section numbering
   #
-  $|xsl:param name=section.autolabel.max.depth select=3 []
+  $|xsl:param name=section.autolabel.max.depth select=3
 
-  $|xsl:param name=insert.xref.page.number select="'yes'" []
+  $|xsl:param name=insert.xref.page.number select="'yes'"
 
   # Callout graphics
   #
-#   $|xsl:param name=callout.graphics select=0 []
-  $|xsl:param name=callout.graphics select=1 []
+#   $|xsl:param name=callout.graphics select=0
+  $|xsl:param name=callout.graphics select=1
   $|xsl:param name=callout.graphics.path
-    select="'/home/marcel/Graphics/IconsArchive/Icons/Scalable/Docbook/Svg/'" []
+    select="'/home/marcel/Graphics/IconsArchive/Icons/Scalable/Docbook/Svg/'"
 
-  $|xsl:param name=callout.graphics.extension select="'.svg'" []
-  $|xsl:param name=callout.graphics.number.limit select=20 []
-  $|xsl:param name=callout.icon.size select=14 []
+  $|xsl:param name=callout.graphics.extension select="'.svg'"
+  $|xsl:param name=callout.graphics.number.limit select=20
+  $|xsl:param name=callout.icon.size select=14
 
   # Admonition graphics
   #
-  $|xsl:param name=admon.graphics select=1 []
+  $|xsl:param name=admon.graphics select=1
   $|xsl:param name=admon.graphics.path
-    select="'/home/marcel/Graphics/IconsArchive/Icons/32x32/Docbook/'" []
-  $|xsl:param name=admon.graphics.extension select="'.png'" []
+    select="'/home/marcel/Graphics/IconsArchive/Icons/32x32/Docbook/'"
+  $|xsl:param name=admon.graphics.extension select="'.png'"
 
-#   $|xsl:param name=body.font.family select="'Courier'" []
-#   $|xsl:param name=body.font.size select=12 []
-#   $|xsl:param name=title.font.size select=20 []
+#   $|xsl:param name=body.font.family select="'Courier'"
+#   $|xsl:param name=body.font.size select=12
+#   $|xsl:param name=title.font.size select=20
 
-#   $|xsl:param name=fop.extensions select=1 []
+#   $|xsl:param name=fop.extensions select=1
 
-#   $|xsl:param name=column.count.body select=2 []
+#   $|xsl:param name=column.count.body select=2
 
-  $|xsl:param name=bibliography.collection [ file:///home/Data/Boeken/Bibliotheek/bibliotheek-referenties.xml ]
+#  $|xsl:param name=bibliography.collection [
+#    file:///home/Data/Boeken/Bibliotheek/bibliotheek-referenties.xml
+#  ]
 
   $|xsl:attribute-set name=xref.properties [
     $|xsl:attribute name=color [

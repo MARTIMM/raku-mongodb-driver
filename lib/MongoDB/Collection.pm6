@@ -45,8 +45,6 @@ class Collection {
     --> MongoDB::Cursor
   ) {
 
-    my MongoDB::Wire $wire .= new;
-
     my BSON::Document $rc =
        $read-concern.defined ?? BSON::Document.new: $read-concern
                              !! $!read-concern;
@@ -60,7 +58,7 @@ class Collection {
 
     my BSON::Document $cr .= new: $criteria;
     my BSON::Document $pr .= new: $projection;
-    my BSON::Document $server-reply = $wire.query(
+    my BSON::Document $server-reply = MongoDB::Wire.new.query(
       $!full-collection-name, $cr, $pr, :@flags, :$number-to-skip,
       :$number-to-return, :$server
     );
@@ -87,8 +85,6 @@ class Collection {
     --> MongoDB::Cursor
   ) {
 
-    my MongoDB::Wire $wire .= new;
-
     my BSON::Document $rc =
       $read-concern.defined ?? $read-concern !! $!read-concern;
 
@@ -99,7 +95,7 @@ class Collection {
       return MongoDB::Cursor;
     }
 
-    my BSON::Document $server-reply = $wire.query(
+    my BSON::Document $server-reply = MongoDB::Wire.new.query(
       $!full-collection-name, $criteria, $projection, :@flags,
       :$number-to-skip, :$number-to-return, :$server
     );

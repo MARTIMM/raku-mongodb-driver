@@ -25,6 +25,7 @@ my MongoDB::Client $cl .= new(:uri("mongodb://localhost:$p1"));
 my MongoDB::Database $db = $cl.database('test');
 $db.run-command: (dropDatabase => 1,);
 $db.run-command: (dropAllUsersFromDatabase => 1,);
+$cl.cleanup;
 
 #---------------------------------------------------------------------------------
 sub restart-to-authenticate( ) {
@@ -32,6 +33,7 @@ sub restart-to-authenticate( ) {
   ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
   ok $ts.server-control.start-mongod( 's1', 'authenticate'),
      "Server 1 in authenticate mode";
+  sleep 1.0;
 };
 
 #---------------------------------------------------------------------------------
@@ -39,16 +41,17 @@ sub restart-to-normal( ) {
 
   ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
   ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
+  sleep 1.0;
 }
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "User account preparation", {
   my MongoDB::Client $client .= new(:uri("mongodb://localhost:$p1"));
   my MongoDB::Database $database = $client.database('test');
   my MongoDB::HL::Users $users .= new(:$database);
 
   $users.set-pw-security(
-    :min-un-length(10), 
+    :min-un-length(10),
     :min-pw-length(8),
     :pw_attribs(C-PW-OTHER-CHARS)
   );
@@ -64,12 +67,11 @@ subtest {
 
   ok $doc<ok>, 'User Dondersteen created';
   $client.cleanup;
-
-}, "User account preparation";
+}
 
 #-------------------------------------------------------------------------------
 restart-to-authenticate;
-subtest {
+subtest "mongodb url with username and password SCRAM-SHA-1", {
 
   diag "Try login user 'Dondersteen'";
   my MongoDB::Client $client;
@@ -108,16 +110,13 @@ subtest {
   ok $doc<errmsg> ~~ m:s/not authorized on otherdb to execute command/,
      $doc<errmsg>;
 
-  $client.cleanup;
-
-}, "mongodb url with username and password SCRAM-SHA-1";
+#  $client.cleanup;
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 restart-to-normal;
+
 info-message("Test $?FILE end");
-sleep .2;
-drop-all-send-to();
 done-testing();
 exit(0);

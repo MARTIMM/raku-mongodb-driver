@@ -9,9 +9,9 @@ use MongoDB::Database;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -23,11 +23,10 @@ my BSON::Document $req;
 my BSON::Document $doc;
 
 # Drop database first, not checked for success.
-#
 $database.run-command(BSON::Document.new: (dropDatabase => 1));
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Query and Write Operation Commands", {
 
   $req .= new: (
     insert => 'famous_people',
@@ -58,12 +57,9 @@ subtest {
     update => ('$set' => surname => 'Wall'),
   );
 
-#say "\nDoc: ", $doc.perl, "\n";
-
   is $doc<ok>, 1, "Result is ok";
   is $doc<value><surname>, 'Walll', "Old data returned";
   is $doc<lastErrorObject><updatedExisting>, True, "Existing document updated";
-
 
   $req .= new: (
     insert => 'names',
@@ -85,19 +81,16 @@ subtest {
       ),
     ]
   );
-#say "RP:\n", $req.perl;
 
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 5, "Inserted 5 documents";
-
-}, "Query and Write Operation Commands";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Diagnostic Commands", {
 
   # List databases
-  #
   $doc = $db-admin.run-command(BSON::Document.new: (listDatabases => 1));
   is $doc<ok>, 1, 'List databases response ok';
   ok $doc<databases>[0]<name>:exists, "name field in doc[0] ok";
@@ -107,7 +100,6 @@ subtest {
   # Get the database name from the statistics and save the index into the array
   # with that name. Use the zip operator to pair the array entries %doc with
   # their index number $idx.
-  #
   my Array $db-docs = $doc<databases>;
   my %db-names;
   for $db-docs.kv -> $idx, $doc {
@@ -118,7 +110,6 @@ subtest {
   ok !$db-docs[%db-names<test>]<empty>, 'Database test is not empty';
 
   #-------------------------------------------------------------------------------
-  #
   $doc = $database.run-command: (
     insert => 'cl1',
     documents => [(code => 10)]
@@ -131,7 +122,7 @@ subtest {
 
   $doc = $database.run-command: (listCollections => 1,);
   is $doc<ok>, 1, 'list collections request ok';
-#say "LC: ", $doc.perl;
+
   my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
   my Bool $f-cl1 = False;
   my Bool $f-cl2 = False;
@@ -144,7 +135,6 @@ subtest {
   ok $f-cl2, 'Collection cl2 listed';
 
   # Second attempt using iteratable role
-  #
   $f-cl1 = False;
   $f-cl2 = False;
   $doc = $database.run-command: (listCollections => 1,);
@@ -155,46 +145,27 @@ subtest {
 
   ok $f-cl1, 'Collection cl1 listed';
   ok $f-cl2, 'Collection cl2 listed';
-
-}, "Diagnostic Commands";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Instance Administration Commands", {
 
   # Drop database
-  #
   $req .= new: (dropDatabase => 1,);
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "Drop database test ok";
-
-}, "Instance Administration Commands";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Error tests", {
 
   $doc = $database.run-command: (unknownDbCommand => 'unknownCollection',);
   is $doc<ok>, 0, 'unknown request';
-# Messages are different from version to version
-#  ok $doc<errmsg> ~~ m:s/no such command\: unknownDbCommand/,
-#     'Err: no such command';
   is $doc<code>, 59, 'Code 59';
-say "\nDoc: ", $doc.perl, "\n";
-}, "Error tests";
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
-$client.cleanup;
 info-message("Test $?FILE stop");
-sleep .2;
-drop-all-send-to();
 done-testing();
 exit(0);
-
-
-=finish
-
-#-------------------------------------------------------------------------------
-subtest {
-  
-}, '';

@@ -7,8 +7,9 @@ use MongoDB::HL::Collection;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::HL::Collection $table = collection-object(

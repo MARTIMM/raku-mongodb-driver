@@ -9,9 +9,9 @@ use MongoDB::Database;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -29,7 +29,7 @@ $req .= new: ( dropDatabase => 1 );
 $database1.run-command($req);
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Database, create collection, drop", {
   isa-ok $database1, 'MongoDB::Database';
   is $database1.name, 'test', 'Check database name';
 
@@ -46,11 +46,10 @@ subtest {
   is $doc<errmsg>, 'collection already exists', $doc<errmsg>;
 #  is $doc<code>, 48, 'mongo error code 48';
 #say $doc.perl;
-
-}, "Database, create collection, drop";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Error checking", {
   $doc = $database1.run-command: (getLastError => 1,);
   is $doc<ok>, 1, 'No last errors';
 
@@ -59,10 +58,10 @@ subtest {
 
   $doc = $database1.run-command: (resetError => 1,);
   is $doc<ok>, 1, 'Rest errors ok';
-}, "Error checking";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'Database admin tests', {
   is $db-admin1.name, 'admin', 'Name admin database ok';
   try {
     $db-admin1.collection('my-collection');
@@ -76,10 +75,10 @@ subtest {
       }
     }
   }
-}, 'Database admin tests';
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'Database statistics server 1', {
 
   $doc = $db-admin1.run-command: (listDatabases => 1,);
 #say $doc.perl;
@@ -96,39 +95,36 @@ subtest {
   ok %db-names<test>:exists, 'test found';
 
   ok !@($doc<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
-}, 'Database statistics server 1';
+}
 
 #-------------------------------------------------------------------------------
-subtest {
-try {
-  $doc = $database1.run-command: (dropDatabase => 1,);
-  is $doc<ok>, 1, 'Drop command went well';
+subtest 'Drop a database', {
 
-  $doc = $db-admin1.run-command: (listDatabases => 1,);
-  my %db-names = %();
-  my $idx = 0;
-  my Array $db-docs = $doc<databases>;
-  for $db-docs[*] -> $d {
-    %db-names{$d<name>} = $idx++;
-  }
+  try {
+    $doc = $database1.run-command: (dropDatabase => 1,);
+    is $doc<ok>, 1, 'Drop command went well';
 
-  nok %db-names<test>:exists, 'test not found';
+    $doc = $db-admin1.run-command: (listDatabases => 1,);
+    my %db-names = %();
+    my $idx = 0;
+    my Array $db-docs = $doc<databases>;
+    for $db-docs[*] -> $d {
+      %db-names{$d<name>} = $idx++;
+    }
 
-  CATCH {
-    default {
-      .say;
+    nok %db-names<test>:exists, 'test not found';
+
+    CATCH {
+      default {
+        .say;
+      }
     }
   }
 }
 
-}, 'Drop a database';
-
 #-------------------------------------------------------------------------------
 # Cleanup
-#
-$client1.cleanup;
+
 info-message("Test $?FILE stop");
-sleep .2;
-drop-all-send-to();
 done-testing();
 exit(0);

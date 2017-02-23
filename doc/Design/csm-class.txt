@@ -1,0 +1,19 @@
+@startuml
+
+title Client, Server and Monitor class
+
+package MongoDB {
+  class MC as "Client"
+  class MS as "Server"
+  class MM as "Monitor"
+}
+
+MM <--* MS
+MS "0..*" <--* MC
+MC "0..*" <-right-* Application
+
+Supplier <-right-* MM 
+Tap      <-right-* MS 
+Tap      <--* MC 
+
+@enduml

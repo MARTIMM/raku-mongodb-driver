@@ -8,9 +8,9 @@ use MongoDB::Client;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -25,7 +25,7 @@ my BSON::Document $doc;
 $database.run-command(BSON::Document.new: (dropDatabase => 1));
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Insert documents", {
 
   $req .= new: (
     insert => 'famous_people',
@@ -73,16 +73,14 @@ subtest {
       ),
     ]
   );
-#say "RP:\n", $req.perl;
 
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "insert request ok";
   is $doc<n>, 6, "inserted 6 documents";
-
-}, "Insert";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'Delete documents', {
 
   $req .= new: (
     delete => 'names',
@@ -96,12 +94,10 @@ subtest {
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "delete request ok";
   is $doc<n>, 1, "deleted 1 doc";
-
-}, 'delete';
-
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'Update documents', {
 
   $req .= new: (
     update => 'names',
@@ -118,11 +114,10 @@ subtest {
   is $doc<ok>, 1, "update request ok";
   is $doc<n>, 2, "selected 2 docs";
   is $doc<nModified>, 2, "modified 2 docs using multi";
-
-}, 'update';
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Find and modify documents", {
 
   $doc = $database.run-command: (
     findAndModify => 'famous_people',
@@ -142,34 +137,30 @@ subtest {
 
   is $doc<ok>, 1, "findAndModify request ok";
   is $doc<value>, Any, 'record not found';
-
-}, "findAndModify";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Get last error", {
 
   $doc = $database.run-command: (getLastError => 1,);
   is $doc<ok>, 1, 'getLastError request ok';
   is $doc<err>, Any, 'no errors';
   is $doc<errmsg>, Any, 'No message';
-
-}, "getLastError";
+}
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Parallel collection scan", {
 
   $doc = $database.run-command: (
     parallelCollectionScan => 'names',
     numCursors => 1
   );
+
   is $doc<ok>, 1, 'parallelCollectionScan request ok';
   ok $doc<cursors> ~~ Array, 'found array of cursors';
   is $doc<cursors>.elems, 1, "returned {$doc<cursors>.elems} cursor";
-#say "\nDoc: ", $doc.perl, "\n";
-
 
   for $doc<cursors>.list -> $cdoc {
-#say 'C doc: ', $cdoc.perl;
 
     is $cdoc<ok>, True, 'returned cursor ok';
     if $cdoc<ok> {
@@ -178,38 +169,14 @@ subtest {
       is $d<name>, 'Larry', "First name $d<name>";
       is $d<surname>, 'Wall', "Last name $d<surname>";
       is $d<type>, "men with 'y' in name", $d<type>;
-#say 'D doc: ', $d.perl;
 
       $c.kill;
     }
   }
-
-}, "parallelCollectionScan";
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
-# Number of stored objects can be one when Server object monitors
-# the mongod server
-#
-$client.cleanup;
 info-message("Test $?FILE stop");
-
-sleep .2;
-drop-all-send-to();
 done-testing();
 exit(0);
-
-
-
-
-=finish
-
-#-------------------------------------------------------------------------------
-subtest {
-
-}, '';
-
-say "\nReq: ", $req.perl, "\n";
-say "\nDoc: ", $doc.perl, "\n";
-

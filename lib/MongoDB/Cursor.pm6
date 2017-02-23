@@ -1,6 +1,7 @@
 use v6.c;
 use BSON::Document;
 use MongoDB;
+use MongoDB::Header;
 use MongoDB::Wire;
 
 #-------------------------------------------------------------------------------
@@ -8,6 +9,7 @@ unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Cursor does Iterable {
+  state $header = MongoDB::Header.new;
 
   has $.client;
   has $.full-collection-name;
@@ -67,10 +69,7 @@ class Cursor does Iterable {
     # batches left on the server to retrieve. Documents may be present in
     # this reply.
     #
-    my BSON::Document $d .= new; 
-    $d does MongoDB::Header;
-
-    $!id = $d.encode-cursor-id($cursor-doc<id>);
+    $!id = $header.encode-cursor-id($cursor-doc<id>);
     if [+] @$!id {
       $!server = $!client.select-server(:$read-concern);
     }

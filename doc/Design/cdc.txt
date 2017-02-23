@@ -1,0 +1,32 @@
+@startuml
+
+title Classes in this project
+
+'set namespaceSeparator ::
+
+'hide circle
+'hide application members
+
+package MongoDB {
+  class MC as "Client"
+  class MD as "Database"
+  class ML as "Collection"
+  class MR as "Cursor"
+  class MW as "Wire"
+  class MH as "Header"
+}
+
+class App as "Application"
+
+MC "0..*" <--* App
+MD "0..*" <--* App
+ML "0..*" <--* App
+MR "0..*" <--* App
+
+MC <--o MD
+MD <--o ML
+MW <--* ML
+MW <--* MR
+MH <--* MR
+
+@enduml
