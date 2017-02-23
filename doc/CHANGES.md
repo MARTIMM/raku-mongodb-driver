@@ -2,13 +2,15 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.36.6
+  * Calculate server status according to developer documents on the MongoDB website
+  * Calculate topology from server status, implemented but need more tests
+  * Reimplemented the select-server() methods.
 * 0.36.5
-  * Modified server states and implemented topology types
   * Improvements on Client, Server and Monitor behaviour
   * Added Client.new with test on object definedness. When defined it will be cleaned before continueing. This will prevent some of the possible memory leakages.
-  * reimplemeted the select-server() methods.
 * 0.36.4
-  * Reinstalled replica server tests 610 - 613.
+  * Reinstalled replica server tests 610 - 612.
 * 0.36.3
   * Simplified Monitor module.
   * Added raw-query to Server module
