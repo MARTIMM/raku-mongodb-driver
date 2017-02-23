@@ -230,7 +230,7 @@ class Client {
 
     $!rw-sem.writer( 'topology', {
 
-    #TODO take user topology request into account
+#TODO take user topology request into account
         # Calculate topology. Upon startup, the topology is set to
         # TT-Unknown. Here, the real value is calculated and set. Doing
         # it repeatedly it will be able to change dynamicaly.
@@ -277,6 +277,7 @@ class Client {
               }
             }
 
+#TODO test same set of replicasets -> otherwise also TT-Unknown
             when SS-RSPrimary {
               $servers-count++;
               if $found-standalone or $found-sharded {
@@ -510,7 +511,7 @@ class Client {
 #TODO synchronize with monitor times
       sleep $!heartbeat-frequency-ms / 1000.0;
 
-note "diff {(now - $t0) * 1000}";
+#note "diff {(now - $t0) * 1000}";
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
 
     if ?$selected-server {
