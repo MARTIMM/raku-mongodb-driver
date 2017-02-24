@@ -26,10 +26,10 @@ my MongoDB::Server $server;
 subtest 'Unknown server', {
 
   my Str $server-name = 'non-existent-server.with-unknown.domain:65535';
+  my @options = <serverSelectionTimeoutMS=100 heartbeatFrequencyMS=300>;
+
   $client .= new(
-    :uri("mongodb://$server-name"),
-    :server-selection-timeout-ms(100)
-    :heartbeat-frequency-ms(300)
+    :uri("mongodb://$server-name/?" ~ @options.join('&')),
   );
   isa-ok $client, MongoDB::Client;
 
@@ -41,9 +41,7 @@ subtest 'Unknown server', {
 
   $server-name = "localhost:65535";
   $client .= new(
-    :uri("mongodb://$server-name"),
-    :server-selection-timeout-ms(100)
-    :heartbeat-frequency-ms(300)
+    :uri("mongodb://$server-name/?" ~ @options.join('&')),
   );
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
@@ -74,10 +72,10 @@ subtest "Two equal standalone servers", {
 
   my Str $server-name1 = "localhost:$p1";
   my Str $server-name2 = "localhost:$p2";
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=5000>;
+
   $client .= new(
-    :uri("mongodb://$server-name1,$server-name2")
-    :server-selection-timeout-ms(5_000)
-    :heartbeat-frequency-ms(5_000)
+    :uri("mongodb://$server-name1,$server-name2/?" ~  ~ @options.join('&'))
   );
 
   $server = $client.select-server;
