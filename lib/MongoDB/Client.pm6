@@ -80,8 +80,6 @@ class Client {
 #    Int :$!idle-write-period-ms = 10_000,
   ) {
 
-my Instant $t0 = now;
-
     $!user-request-topology = $topology-type;
     $!topology-type = TT-Unknown;
 
@@ -111,7 +109,6 @@ my Instant $t0 = now;
     # Parse the uri and get info in $uri-obj. Fields are protocol, username,
     # password, servers, database and options.
     $!uri = $uri;
-note "Uri: $!uri";
 
     # Copy some fields into $!uri-data hash which is handed over
     # to the server object..
@@ -125,7 +122,6 @@ note "Uri: $!uri";
          ($!uri-data<options><serverSelectionTimeoutMS> // 30_000).Int;
     $!heartbeat-frequency-ms =
          ($!uri-data<options><heartbeatFrequencyMS> // 10_000).Int;
-note "3I: $!local-threshold-ms $!server-selection-timeout-ms $!heartbeat-frequency-ms";
 
     my %cred-data = %();
     my $set = sub ( *@k ) {
@@ -161,6 +157,9 @@ note "3I: $!local-threshold-ms $!server-selection-timeout-ms $!heartbeat-frequen
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
 
+        # Used in debug message
+        my Instant $t0 = now;
+
         $!repeat-discovery-loop = True;
         repeat {
 
@@ -175,6 +174,11 @@ note "3I: $!local-threshold-ms $!server-selection-timeout-ms $!heartbeat-frequen
 
           if $server-name.defined {
 
+            trace-message("Processing server $server-name");
+            my Bool $server-processed = $!rw-sem.reader(
+              'servers', { $!servers{$server-name}:exists; }
+            );
+
             # Check if server was managed before
             if $server-processed {
               trace-message("Server $server-name already managed");
@@ -184,11 +188,6 @@ note "3I: $!local-threshold-ms $!server-selection-timeout-ms $!heartbeat-frequen
             }
 
             $changes-count = 0;
-
-            trace-message("Processing server $server-name");
-            my Bool $server-processed = $!rw-sem.reader(
-              'servers', { $!servers{$server-name}:exists; }
-            );
 
             # Create Server object
             my MongoDB::Server $server .= new( :client(self), :$server-name);
@@ -223,7 +222,7 @@ note "3I: $!local-threshold-ms $!server-selection-timeout-ms $!heartbeat-frequen
             }
           }
 
-note "One client processing cycle done after {(now - $t0) * 1000} ms";
+          debug-message("One client processing cycle done after {(now - $t0) * 1000} ms");
         } while $!repeat-discovery-loop;
 
         debug-message("server discovery loop stopped");
@@ -321,9 +320,9 @@ note "One client processing cycle done after {(now - $t0) * 1000} ms";
           $topology = TT-Single;
         }
 
-        debug-message("topology type set to $topology");
 #        $!rw-sem.writer( 'topology', {$!topology-type = $topology;});
         $!topology-type = $topology;
+        debug-message("topology type set to $topology");
       }
     );
   }
@@ -381,12 +380,12 @@ note "One client processing cycle done after {(now - $t0) * 1000} ms";
   # Request specific servername
   multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
 
+    # record the server selection start time. used also in debug message
+    my Instant $t0 = now;
+
     self!check-discovery-process;
 
     my MongoDB::Server $selected-server;
-
-    # record the server selection start time
-    my Instant $t0 = now;
 
     # find suitable servers by topology type and operation type
     repeat {
@@ -403,6 +402,8 @@ note "One client processing cycle done after {(now - $t0) * 1000} ms";
       last if ? $selected-server;
       sleep $!heartbeat-frequency-ms / 1000.0;
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
+
+    debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
       debug-message("Server selected");
@@ -430,7 +431,7 @@ note "One client processing cycle done after {(now - $t0) * 1000} ms";
     $read-concern //= $!read-concern;
     my MongoDB::Server $selected-server;
 
-    # record the server selection start time
+    # record the server selection start time. used also in debug message
     my Instant $t0 = now;
 
     # find suitable servers by topology type and operation type
@@ -524,7 +525,8 @@ note "One client processing cycle done after {(now - $t0) * 1000} ms";
       sleep $!heartbeat-frequency-ms / 1000.0;
 
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
-note "Searched for {(now - $t0) * 1000} ms";
+
+    debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
       debug-message("Server selected after trying for {now - $t0} sec");
