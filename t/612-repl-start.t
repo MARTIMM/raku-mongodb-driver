@@ -45,8 +45,9 @@ subtest {
      "Server 3 started in replica set '$rs1-s3'";
 
   diag "Connect to server replica primary from of $rs1-s2";
-  my MongoDB::Client $client .=
-        new(:uri("mongodb://$host:$p2/?replicaSet=$rs1-s2"));
+  my MongoDB::Client $client .= new(
+    :uri("mongodb://$host:$p2/?replicaSet=$rs1-s2")
+  );
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, "Server $server.name() selected";
   is $server.get-status<status>, SS-RSPrimary, 'Server $host:$p2 is primary';

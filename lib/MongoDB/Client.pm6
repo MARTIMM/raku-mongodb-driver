@@ -46,7 +46,7 @@ class Client {
   has Int $!local-threshold-ms;
   has Int $!server-selection-timeout-ms;
   has Int $!heartbeat-frequency-ms;
-  has Int $!idle-write-period-ms;
+#  has Int $!idle-write-period-ms;
   constant smallest-max-staleness-seconds = 90;
 
   # Only for single threaded implementations
@@ -77,20 +77,11 @@ class Client {
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern,
     TopologyType :$topology-type = TT-Unknown,
-    Int :$local-threshold-ms = 100,
-    Int :$server-selection-timeout-ms = 30_000,
-    Int :$heartbeat-frequency-ms = 10_000,
-    Int :$idle-write-period-ms = 10_000,
+#    Int :$!idle-write-period-ms = 10_000,
   ) {
 
-#TODO some or all are also settable in uri
     $!user-request-topology = $topology-type;
     $!topology-type = TT-Unknown;
-
-    $!server-selection-timeout-ms = $server-selection-timeout-ms;
-    $!local-threshold-ms = $local-threshold-ms;
-    $!heartbeat-frequency-ms = $heartbeat-frequency-ms;
-    $!idle-write-period-ms = $idle-write-period-ms;
 
     $!servers = {};
     $!todo-servers = [];
@@ -124,6 +115,13 @@ class Client {
     my @item-list = <username password database options>;
     my MongoDB::Uri $uri-obj .= new(:$!uri);
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
+
+    # Get some connection options from the uri
+    $!local-threshold-ms = ($!uri-data<options><localThresholdMS> // 15).Int;
+    $!server-selection-timeout-ms =
+         ($!uri-data<options><serverSelectionTimeoutMS> // 30_000).Int;
+    $!heartbeat-frequency-ms =
+         ($!uri-data<options><heartbeatFrequencyMS> // 10_000).Int;
 
     my %cred-data = %();
     my $set = sub ( *@k ) {
@@ -159,6 +157,9 @@ class Client {
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
 
+        # Used in debug message
+        my Instant $t0 = now;
+
         $!repeat-discovery-loop = True;
         repeat {
 
@@ -173,8 +174,6 @@ class Client {
 
           if $server-name.defined {
 
-            $changes-count = 0;
-
             trace-message("Processing server $server-name");
             my Bool $server-processed = $!rw-sem.reader(
               'servers', { $!servers{$server-name}:exists; }
@@ -183,8 +182,12 @@ class Client {
             # Check if server was managed before
             if $server-processed {
               trace-message("Server $server-name already managed");
+
+              # Skip as soon as possible
               next;
             }
+
+            $changes-count = 0;
 
             # Create Server object
             my MongoDB::Server $server .= new( :client(self), :$server-name);
@@ -192,7 +195,6 @@ class Client {
             # And start server monitoring
             $server.server-init($!heartbeat-frequency-ms);
 
-#TODO symplify to value instead of Hash
             $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
 
             self!process-topology;
@@ -204,9 +206,11 @@ class Client {
             self!process-topology;
 
             # When there is no work take a nap! This sleeping period is the
-            # moment we do not process the todo list
-#TODO value to sleep
-            sleep $changes-count < 5 ?? 2.0 !! $heartbeat-frequency-ms / 1000.0;
+            # moment we do not process the todo list. Start taking a nap for 2
+            # sec and after that take $!heartbeat-frequency-ms. Resets to 2 sec
+            # when a new server is found
+            #
+            sleep $changes-count < 5 ?? 2.0 !! $!heartbeat-frequency-ms / 1000.0;
           }
 
           CATCH {
@@ -218,6 +222,7 @@ class Client {
             }
           }
 
+          debug-message("One client processing cycle done after {(now - $t0) * 1000} ms");
         } while $!repeat-discovery-loop;
 
         debug-message("server discovery loop stopped");
@@ -315,9 +320,9 @@ class Client {
           $topology = TT-Single;
         }
 
-        debug-message("topology type set to $topology");
 #        $!rw-sem.writer( 'topology', {$!topology-type = $topology;});
         $!topology-type = $topology;
+        debug-message("topology type set to $topology");
       }
     );
   }
@@ -375,25 +380,32 @@ class Client {
   # Request specific servername
   multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
 
+    # record the server selection start time. used also in debug message
+    my Instant $t0 = now;
+
     self!check-discovery-process;
 
-    my MongoDB::Server $server;
+    my MongoDB::Server $selected-server;
 
-    loop ( my Int $count = 0; $count < 20; $count++) {
-      sleep 2 if $count;
+    # find suitable servers by topology type and operation type
+    repeat {
 
-      $server = $!rw-sem.reader( 'servers', {
+      $selected-server = $!rw-sem.reader( 'servers', {
 #note "Servers: ", $!servers.keys;
-#note "Request: $servername";
-        $!servers{$servername}:exists 
-                ?? $!servers{$servername}
-                !! MongoDB::Server;
-      });
+#note "Request: $selected-servername";
+          $!servers{$servername}:exists 
+                  ?? $!servers{$servername}
+                  !! MongoDB::Server;
+        }
+      );
 
-      last if ? $server;
-    }
+      last if ? $selected-server;
+      sleep $!heartbeat-frequency-ms / 1000.0;
+    } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
 
-    if ?$server {
+    debug-message("Searched for {(now - $t0) * 1000} ms");
+
+    if ?$selected-server {
       debug-message("Server selected");
     }
 
@@ -401,8 +413,9 @@ class Client {
       error-message("No suitable server selected");
     }
 
-    $server;
+    $selected-server;
   }
+
 
 #TODO pod doc
 #TODO use read/write concern for selection
@@ -418,7 +431,7 @@ class Client {
     $read-concern //= $!read-concern;
     my MongoDB::Server $selected-server;
 
-    # record the server selection start time
+    # record the server selection start time. used also in debug message
     my Instant $t0 = now;
 
     # find suitable servers by topology type and operation type
@@ -511,8 +524,9 @@ class Client {
 #TODO synchronize with monitor times
       sleep $!heartbeat-frequency-ms / 1000.0;
 
-#note "diff {(now - $t0) * 1000}";
     } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
+
+    debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
       debug-message("Server selected after trying for {now - $t0} sec");

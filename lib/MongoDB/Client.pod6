@@ -35,19 +35,15 @@ to which server the operations are directed to. Default is an empty structure.
 The structure will be explained elsewhere.
 
 
-=head2 found-master
-
-  has Bool $.found-master = False;
-
-While the client is processing the given uri it will set this flag when a master
-server is detected.
-
-
 =head1 Methods
 
 =head2 new
 
-  submethod BUILD ( Str:D :$uri, BSON::Document :$read-concern, Int )
+  submethod BUILD (
+    Str:D :$uri, BSON::Document :$read-concern,
+  )
+=comment    TopologyType :$topology-type = TT-Unknown,
+=comment    Int :$!idle-write-period-ms = 10_000,
 
 Create a C<MongoDB::Client> object.
 
@@ -146,99 +142,142 @@ for more details.
 =begin table
 
   
-  Section                 Impl  Use
+  Section                       Impl    Use
   =========================================================================
   Replica set options
   -------------------------------------------------------------------------
-  replicaSet              done  Specifies the name of the replica set, if the
-                                mongod is a member of a replica set.
+  replicaSet                    done    Specifies the name of the replica set,
+                                        if the mongod is a member of a replica
+                                        set.
   -------------------------------------------------------------------------
   Connection options
   -------------------------------------------------------------------------
-  ssl                           0 or 1. 1 Initiate the connection with TLS/SSL.
-                                The default value is false.
+  ssl                                   0 or 1. 1 Initiate the connection with
+                                        TLS/SSL. The default value is false.
   ------------------------------------------------------------------------
-  connectTimeoutMS              The time in milliseconds to attempt a
-                                connection before timing out. 
+  connectTimeoutMS                      The time in milliseconds to attempt a
+                                        connection before timing out. 
   ------------------------------------------------------------------------
-  socketTimeoutMS               The time in milliseconds to attempt a send or
-                                receive on a socket before the attempt times
-                                out.
+  socketTimeoutMS                       The time in milliseconds to attempt a
+                                        send or receive on a socket before the
+                                        attempt times out.
   -------------------------------------------------------------------------
-  Connect pool options
+  Connect pool
+  options
   -------------------------------------------------------------------------
-  maxPoolSize                   The maximum number of connections in the 
-                                connection pool. The default value is 100.
+  maxPoolSize                           The maximum number of connections in
+                                        the  connection pool. The default value
+                                        is 100.
   -------------------------------------------------------------------------
-  minPoolSize                   The minimum number of connections in the
-                                connection pool. The default value is 0.
+  minPoolSize                           The minimum number of connections in the
+                                        connection pool. The default value is 0.
   -------------------------------------------------------------------------
-  maxIdleTimeMS                 The maximum number of milliseconds that a
-                                connection can remain idle in the pool before
-                                being removed and closed.
+  maxIdleTimeMS                         The maximum number of milliseconds that
+                                        a connection can remain idle in the pool
+                                        before being removed and closed.
   -------------------------------------------------------------------------
-  waitQueueMultiple             A number that the driver multiples the
-                                maxPoolSize value to, to provide the maximum
-                                number of threads allowed to wait for a
-                                connection to become available from the pool.
+  waitQueueMultiple                     A number that the driver multiples the
+                                        maxPoolSize value to, to provide the
+                                        maximum number of threads allowed to
+                                        wait for a connection to become
+                                        available from the pool.
   -------------------------------------------------------------------------
-  waitQueueTimeoutMS            The maximum time in milliseconds that a thread
-                                can wait for a connection to become available.
-                                For default values, see the MongoDB Drivers and
-                                Client Libraries documentation.
+  waitQueueTimeoutMS                    The maximum time in milliseconds that a
+                                        thread can wait for a connection to
+                                        become available. For default values,
+                                        see the MongoDB Drivers and Client
+                                        Libraries documentation.
   -------------------------------------------------------------------------
-  Write concern options
+  Write concern
+  options
   -------------------------------------------------------------------------
-  w                             Corresponds to the write concern w Option. The w
-                                option requests acknowledgement that the write
-                                operation has propagated to a specified number
-                                of mongod instances or to mongod instances with
-                                specified tags. You can specify a number, the
-                                string majority, or a tag set.
+  w                                     Corresponds to the write concern w
+                                        Option. The w option requests
+                                        acknowledgement that the write operation
+                                        has propagated to a specified number of
+                                        mongod instances or to mongod instances
+                                        with specified tags. You can specify a
+                                        number, the string majority, or a tag
+                                        set.
   -------------------------------------------------------------------------
-  wtimeoutMS                    Corresponds to the write concern wtimeout.
-                                wtimeoutMS specifies a time limit, in
-                                milliseconds, for the write concern. When
-                                wtimeoutMS is 0, write operations will never
-                                time out. 
+  wtimeoutMS                            Corresponds to the write concern
+                                        wtimeout. wtimeoutMS specifies a time
+                                        limit, in milliseconds, for the write
+                                        concern. When wtimeoutMS is 0, write
+                                        operations will never time out. 
   -------------------------------------------------------------------------
-  journal                       Corresponds to the write concern j Option
-                                option. The journal option requests
-                                acknowledgement from MongoDB that the write
-                                operation has been written to the journal
+  journal                               Corresponds to the write concern j
+                                        Option option. The journal option
+                                        requests acknowledgement from MongoDB
+                                        that the write operation has been
+                                        written to the journal
   -------------------------------------------------------------------------
   Read concern options
   -------------------------------------------------------------------------
-  readConcernLevel              The level of isolation. Accepts either "local"
-                                or "majority".
+  readConcernLevel                      The level of isolation. Accepts either
+                                        "local" or "majority".
   -------------------------------------------------------------------------
-  Read preference option
+  Read preference
+  options
   -------------------------------------------------------------------------
-  readPreference                Specifies the replica set read preference for
-                                this connection. The read preference values are
-                                the following: primary, primaryPreferred,
-                                secondary, secondaryPreferred, nearest
+  readPreference                        Specifies the replica set read
+                                        preference for this connection. The read
+                                        preference values are the following:
+                                        primary, primaryPreferred, secondary,
+                                        secondaryPreferred, nearest
   -------------------------------------------------------------------------
-  readPreferenceTags            Specifies a tag set as a comma-separated list
-                                of colon-separated key-value pairs
+  readPreferenceTags                    Specifies a tag set as a comma-separated
+                                        list of colon-separated key-value pairs
   -------------------------------------------------------------------------
-  Authentication options
+  Authentication
+  options
   -------------------------------------------------------------------------
-  authSource              part  Specify the database name associated with the
-                                user credentials, if the users collection do not
-                                exist in the database where the client is
-                                connecting. authSource defaults to the database
-                                specified in the connection string.
+  authSource                    part    Specify the database name associated
+                                        with the user credentials, if the users
+                                        collection do not exist in the database
+                                        where the client is connecting.
+                                        authSource defaults to the database
+                                        specified in the connection string.
   -------------------------------------------------------------------------
-  authMechanism                 Specify the authentication mechanism that
-                                MongoDB will use to authenticate the connection.
-                                Possible values include: SCRAM-SHA-1,
-                                MONGODB-CR, MONGODB-X509, GSSAPI (Kerberos),
-                                PLAIN (LDAP SASL)
+  authMechanism                         Specify the authentication mechanism
+                                        that MongoDB will use to authenticate
+                                        the connection. Possible values include:
+                                        SCRAM-SHA-1, MONGODB-CR, MONGODB-X509,
+                                        GSSAPI (Kerberos), PLAIN (LDAP SASL)
   -------------------------------------------------------------------------
-  gssapiServiceName             Set the Kerberos service name when connecting to
-                                Kerberized MongoDB instances. This value must
-                                match the service name set on MongoDB instances.
+  gssapiServiceName                     Set the Kerberos service name when
+                                        connecting to Kerberized MongoDB
+                                        instances. This value must match the
+                                        service name set on MongoDB instances.
+  -------------------------------------------------------------------------
+  Server selection and
+  discovery options
+  -------------------------------------------------------------------------
+  localThresholdMS              done    The size (in milliseconds) of the
+                                        latency window for selecting among
+                                        multiple suitable MongoDB instances. 
+                                        Default: 15 milliseconds. All drivers
+                                        use localThresholdMS. Use the
+                                        localThreshold alias when specifying the
+                                        latency window size to mongos.
+  -------------------------------------------------------------------------
+  serverSelectionTimeoutMS      done    Specifies how long (in milliseconds) to
+                                        block for server selection before
+                                        throwing an exception. Default: 30,000
+                                        milliseconds.
+  -------------------------------------------------------------------------
+  serverSelectionTryOnce        x       This option is not supported in this
+                                        driver
+  -------------------------------------------------------------------------
+  heartbeatFrequencyMS          done    heartbeatFrequencyMS controls when the
+                                        driver checks the state of the MongoDB
+                                        deployment. Specify the interval (in
+                                        milliseconds) between checks, counted
+                                        from the end of the previous check until
+                                        the beginning of the next one.
+                                        Default is 10_000. mongos does not
+                                        support changing the frequency of the
+                                        heartbeat checks.
 
 =end table
 

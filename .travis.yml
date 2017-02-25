@@ -7,60 +7,20 @@ language: perl6
 perl6:
   - latest
 
-# Install mongodb server at ./Travis-ci/MongoDB
-#before_install:
-#  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
-#before_install:
-#  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
-#  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
-
-#env:
-#  - PATH=.:$TRAVIS_BUILD_DIR/Travis-ci/MongoDB:$PATH
-#  - TCI=${TRAVIS_BUILD_DIR}/Travis-ci
-#  - MDB=${TCI}/MongoDB
-#  - P6=${TCI}/P6Software/rakudo/install
-#  - PATH=${P6}/bin:${P6}/share/perl6/site/bin:$PATH
-#  - PERL6LIB=lib
-#env: CACHE_NAME=JOB1
-
-#install: true
 install:
-#  - $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.0.5
-#  - $TRAVIS_BUILD_DIR/Travis-ci/install-perl6.sh
-
-
-#  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
-#  - rakudobrew build-panda
-#  - panda installdeps .
-#  - panda update
-#  - panda install BSON Digest::MD5
-
-#  - rakudobrew build
-
-  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
-
-#  - git clone https://github.com/tadzik/rakudobrew ~/.rakudobrew
-#  - export PATH=~/.rakudobrew/bin:$PATH
-#  - rakudobrew init
-
-#  - echo $HOME
-  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-zef.sh
+  - rakudobrew build-zef ${TRAVIS_PERL6_VERSION#latest}
   - zef --depsonly install .
-
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #services:
 #  - mongodb
 
-#script:
-#  - $TRAVIS_BUILD_DIR/Travis-ci/test-script.sh
-
 git:
   depth: 5
 
 cache:
-  timeout: 1200
+#  timeout: 1200
   directories:
-#    - $HOME/Travis-ci/P6Software
     - $HOME/Travis-ci
     - $HOME/.rakudobrew

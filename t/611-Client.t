@@ -31,11 +31,10 @@ my Int $p2 = $ts.server-control.get-port-number('s2');
 subtest "Client behaviour with a replicaserver and standalone mix", {
 
   diag "\nmongodb://$host:$p2,$host:$p1";
-  $client .= new(
-    :uri("mongodb://$host:$p2,$host:$p1")
-    :server-selection-timeout-ms(1_000),
-    :heartbeat-frequency-ms(5_000),
-  );
+
+  # Wait long enough to settle in proper end state
+  my @options = <serverSelectionTimeoutMS=5000>;
+  $client .= new(:uri("mongodb://$host:$p2,$host:$p1/?" ~ @options.join('&')));
 
   $server = $client.select-server;
   nok $server.defined, 'Cannot select a server';
@@ -46,7 +45,8 @@ subtest "Client behaviour with a replicaserver and standalone mix", {
 subtest "Client behaviour with one replicaserver", {
 
   diag "mongodb://$host:$p2";
-  $client .= new(:uri("mongodb://$host:$p2"));
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
+  $client .= new(:uri("mongodb://$host:$p2/?" ~ @options.join('&')));
   $server = $client.select-server;
   is $server.get-status<status>, SS-RSPrimary, "Replicaset primary server";
   is $client.topology, TT-Single, 'Single topology';

@@ -22,10 +22,10 @@ my MongoDB::Test-support $ts .= new;
 subtest "Shutdown and start server", {
 
   my Int $p1 = $ts.server-control.get-port-number('s1');
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
+
   my MongoDB::Client $client .= new(
-    :uri("mongodb://:$p1")
-    :server-selection-timeout-ms(5_000)
-    :heartbeat-frequency-ms(500)
+    :uri("mongodb://:$p1/?" ~ @options.join('&'))
   );
 
   my MongoDB::Server $server = $client.select-server;
@@ -55,10 +55,10 @@ subtest "Shutdown and start server", {
 subtest "Shutdown/restart server 3 while inserting records", {
 
   my Int $p3 = $ts.server-control.get-port-number('s3');
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
+
   my MongoDB::Client $client .= new(
-    :uri("mongodb://:$p3"),
-    :server-selection-timeout-ms(5_000)
-    :heartbeat-frequency-ms(500)
+    :uri("mongodb://:$p3/?" ~ @options.join('&')),
   );
 
   my MongoDB::Server $server = $client.select-server;

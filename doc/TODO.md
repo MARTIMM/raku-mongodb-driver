@@ -14,11 +14,10 @@
 * I am now more satisfied with logging because of the use of Log::Async module. A few additions might be;
   * Use macros to get info at the calling point before sending to the \*-message() subs. This will make the search through the stack unnecessary.
 * Must check for max BSON document size
-* Handle read/write concerns.
 * There is an occasional 'double free' bug in perl6 which torpedes tests now and then. This is a perl6 problem.
 
-* Calculate topology from serverstatus, implemented but need more tests
-* Client.select-server must be reimplemented
-* readconcern structure does not have to be a BSON::Document. no encoding, it isn't a server object!
+* Handle read/write concerns.
+* readconcern structure does not have to be a BSON::Document. no encoding, it isn't a server object! unless it sent to a mongos server!
+* some tests in calculating the topology and server states needs some refinement.
 
 * design is changed, redraw time diagrams

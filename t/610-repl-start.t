@@ -36,11 +36,11 @@ subtest "Replica server pre initialization no option in uri", {
   ok $ts.server-control.start-mongod( 's2', 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
+
   # Should find a server but not the proper one, need replicaSet option
   $client .= new(
-    :uri("mongodb://:$p2"),
-    :server-selection-timeout-ms(1_000),
-    :heartbeat-frequency-ms(5_000),
+    :uri("mongodb://:$p2/?" ~ @options.join('&')),
   );
 
   sleep 2.0;
@@ -55,8 +55,13 @@ subtest "Replica server pre initialization no option in uri", {
 #-------------------------------------------------------------------------------
 subtest "Replica server pre initialization with option in uri", {
 
-  $client .= new(:uri("mongodb://$host:$p2/?replicaSet=$rs1-s2"));
-  sleep 1.0;
+  my @options = |<serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>,
+                "replicaSet=$rs1-s2";
+
+  $client .= new(
+    :uri("mongodb://$host:$p2/?" ~ @options.join('&'))
+  );
+
   $server = $client.select-server(:servername("$host:$p2"));
   ok $server.defined, 'server is defined';
 
