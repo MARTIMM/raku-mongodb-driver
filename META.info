@@ -16,7 +16,7 @@
     "Terminal::ANSIColor"
   ],
   "description": "MongoDB driver",
-  "license": "The Artistic License 2.0",
+  "license": "Artistic-2.0",
   "name": "MongoDB",
   "perl": "6.c",
   "provides": {
