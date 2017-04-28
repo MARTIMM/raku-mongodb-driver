@@ -1,9 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE stylesheet [
-<!ENTITY infin "&#x221E;">
-<!ENTITY nbsp " ">
-<!ENTITY mongodb "MongoDB driver">
-]>
+<?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:import href="/usr/share/sgml/docbook/xsl-ns-stylesheets/fo/docbook.xsl"/>
   <xsl:param name="paper.type" select="'A4'"/>

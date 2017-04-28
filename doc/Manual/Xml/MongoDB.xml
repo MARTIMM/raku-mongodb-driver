@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article [
+<!ENTITY infin "&#x221E;">
+<!ENTITY nbsp " ">
+<!ENTITY mongodb "MongoDB driver">
+]>
+<article xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://docbook.org/ns/docbook" xml:lang="en" version="5.0">
+  <title>Perl 6 MongoDB driver</title>
+  <info>
+    <author>
+      <personname>
+        <firstname>Marcel</firstname>
+        <surname>Timmerman</surname>
+      </personname>
+      <email>mt1957@gmail.com</email>
+    </author>
+    <address>
+      <city>Haarlem</city>
+      <country>Netherlands</country>
+    </address>
+    <copyright>
+      <year>2015, 2016 ... Inf</year>
+      <holder>Marcel Timmerman</holder>
+    </copyright>
+    <date>2017-04-28</date>
+    <abstract>
+      <para>MongoDB is a <glossterm linkend="nosql">Non SQL</glossterm> database which uses  <glossterm linkend="bson">Binary JSON (BSON)</glossterm> to store and load information in a database. With the mongodb package a shell program called mongo is available to give instructions to a mongodb server. </para>
+      <para>To work with data on the server from within a program a driver is needed. There are drivers for many program languages. This document describes a driver for the Perl6 language. In the perl6 ecosystem, which might grow into a cpan like system later, there are two packages needed to work with the driver. These are <glossterm linkend="mongodb">MongoDB</glossterm> and BSON. BSON is automatically installed with other necessary modules. </para>
+      <para>The latest version of this document is generated on date 2017-04-28</para>
+    </abstract>
+  </info>
+  <sect1>
+    <title>Introduction</title>
+    <para>The purpose of this document is to show how things are accomplished in this driver in the light of the MongoDB developer documents and how to work with the perl6 mongodb driver. </para>
+    <para>However, this document will not tell you how to design your database among other things. There are plenty of good books and documents out there, not to mention, the mongodb website. </para>
+    <para>There are quite a few modules written to perform the tasks at hand but not all modules will be explained here because many of them are modules defining classes to be used in the background and are not used by applications directly. </para>
+    <para>Furthermore, this document is not a reference. There are other documents for that, written to document the attributes, (sub)methods and subs in a class. There will be a list of references at the end of the document. </para>
+    <para>This document assumes that the reader is aware of at least the basics of the mongodb database and what one can do with it. Also some perl 6 knowledge will be necessary. </para>
+    <para>As a last remark, the driver is still in development. Although many parts are accomplished, some parts still need to be implemented like authentication agains kerberos or LDAP. Furthermore, there are some improvements needed to speedup the operations. </para>
+    <para>The following sections will be explained: <itemizedlist spacing="compact"><listitem><emphasis>Implementation</emphasis>. <itemizedlist spacing="compact"><listitem><emphasis>Server states</emphasis>. </listitem><listitem><emphasis>Topology</emphasis>. </listitem><listitem><emphasis>Round trip time</emphasis>. </listitem><listitem><emphasis>Read concern</emphasis>. </listitem><listitem><emphasis>Write concern</emphasis>. </listitem><listitem><emphasis>URI</emphasis>. The URI tells the software how to connect and select the proper server. </listitem><listitem><emphasis>Server selection process</emphasis>. </listitem></itemizedlist></listitem><listitem><emphasis>Modules and classes</emphasis>. <itemizedlist spacing="compact"><listitem><emphasis>MongoDB::Client</emphasis>. This module is the starting point of all applications which need access to a mongodb database server. </listitem><listitem><emphasis>BSON::Document</emphasis>. This is the basic vehicle to insert, update retrieve and send commands to the database server. In this section there is an explanation of the supported types as well as different ways to make requests. Some detailed perl6 is necessary to understand mistakes often made when creating the data structures. </listitem><listitem><emphasis>MongoDB::Database</emphasis>. </listitem><listitem><emphasis>MongoDB::Collection</emphasis>. </listitem><listitem><emphasis>MongoDB::Cursor</emphasis>. </listitem><listitem><emphasis>MongoDB::Server</emphasis>. </listitem><listitem><emphasis>MongoDB::Server::Control</emphasis>. </listitem></itemizedlist></listitem><listitem><emphasis>BSON</emphasis>. </listitem><listitem><emphasis>MongoDB Servers</emphasis>. </listitem><listitem><emphasis>Examples</emphasis>. Of course, a document whithout examples is a bit like an empty box as a present. </listitem></itemizedlist></para>
+  </sect1>
+  <sect1>
+    <title>Implementation</title>
+    <para/>
+    <sect2>
+      <title>Server states</title>
+      <para>
+        <table rules="all">
+          <title>Server states depending on isMaster outcome</title>
+          <thead>
+            <tr>
+              <th>Server state</th>
+              <th>isMaster command result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SS-Unknown</td>
+              <td>Initial, or after a network error or failed ismaster call, or "ok: 1" not in ismaster response. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-Standalone</td>
+              <td>No "msg: isdbgrid", no setName, and no "isreplicaset: true". </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-Mongos</td>
+              <td>"msg: isdbgrid"</td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-PossiblePrimary</td>
+              <td>Not yet checked, but another member thinks it is the primary. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-RSPrimary</td>
+              <td>"ismaster: true", "setName" in response.</td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-RSSecondary</td>
+              <td>"secondary: true", "setName" in response.</td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-RSArbiter</td>
+              <td>"arbiterOnly: true", "setName" in response.</td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-RSOther</td>
+              <td>"setName" in response, "hidden: true" or not primary, secondary, nor arbiter. E.g. starting up or recovering. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>SS-RSGhost</td>
+              <td>"isreplicaset: true" in response. E.g. briefly during server startup, in an uninitialized replica set, or when the server is shunned (removed from the replica set config). </td>
+            </tr>
+          </tbody>
+        </table>
+      </para>
+    </sect2>
+    <sect2>
+      <title>Topology</title>
+      <para>
+        <table rules="all">
+          <title>Topology controlled by server states</title>
+          <thead>
+            <tr>
+              <th>Topology type</th>
+              <th>Server states</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>TT-Unknown</td>
+              <td>When a deployment has this topology type, no servers are suitable for read or write operations. These are servers which did not respond on initial connection or threw an exception because of e.g. a DNS lookup failure. All server states of these servers herded by the Client object is SS-Unknown. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>TT-Single</td>
+              <td>A deployment of topology type TT-Single contains only a single server which can have any state except SS-Unknown. This topology type signifies a direct connection intended to receive all read and write operations. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>TT-Sharded</td>
+              <td>A deployment of topology type TT-Sharded contains one or more servers of type SS-Mongos or SS-Unknown of at least one is SS-Mongos. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>TT-ReplicaSetNoPrimary</td>
+              <td>A deployment with this topology type can have a mix of server types: SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost, SS-Unknown or SS-PossiblePrimary. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>TT-ReplicaSetWithPrimary</td>
+              <td>A deployment with this topology type can have a mix of server types: SS-RSPrimary, SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost, SS-Unknown or SS-PossiblePrimary. </td>
+            </tr>
+          </tbody>
+        </table>
+      </para>
+    </sect2>
+    <sect2>
+      <title>Round Trip Time</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>Read concern</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>Write concern</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>URI</title>
+      <para>
+        <table rules="all">
+          <title>Implemented uri connection options</title>
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>replicaSet</td>
+              <td>Specifies the name of the replica set, if the mongod is a member of a replica set. When connecting to a replica set it is important to give a seed list of at least two mongod instances. If you only provide the connection point of a single mongod instance, and omit the replicaSet, the client will create a standalone connection. </td>
+            </tr>
+          </tbody>
+        </table>
+      </para>
+    </sect2>
+    <sect2>
+      <title>Server selection</title>
+      <para>
+        <itemizedlist spacing="compact">
+          <listitem>Record the server selection start time </listitem>
+          <listitem>If the topology wire version is invalid, raise an error </listitem>
+          <listitem>Find suitable servers by topology type and operation type </listitem>
+          <listitem>If there are any suitable servers, choose one at random from those within the latency window and return it; otherwise, continue to step</listitem>
+          <listitem>Request an immediate topology check, then block the server selection thread until the topology changes or until the server selection timeout has elapsed </listitem>
+          <listitem>If more than serverSelectionTimeoutMS milliseconds have elapsed since the selection start time, raise a server selection error </listitem>
+          <listitem>Goto Step</listitem>
+        </itemizedlist>
+      </para>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Modules and classes</title>
+    <sect2>
+      <title>MongoDB</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>MongoDB::Client</title>
+      <para/>
+      <sect3>
+        <title>Making a connection</title>
+        <para/>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>BSON::Document</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>MongoDB::Database</title>
+      <para/>
+      <sect3>
+        <title>run-command()</title>
+        <para/>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>MongoDB::Collection</title>
+      <para/>
+      <sect3>
+        <title>find()</title>
+        <para/>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>MongoDB::Cursor</title>
+      <para/>
+      <sect3>
+        <title>fetch()</title>
+        <para/>
+      </sect3>
+      <sect3>
+        <title>iterating over documents</title>
+        <para/>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>MongoDB::Server</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>MongoDB::Server::Control</title>
+      <para/>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>BSON</title>
+    <sect2>
+      <title>Supported types</title>
+      <para>
+        <table rules="all">
+          <title>Supported types of the BSON package</title>
+          <thead>
+            <tr>
+              <th>BSON</th>
+              <th>Perl6</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Double</td>
+              <td>Num</td>
+              <td>An eight byte floating point number. The perl6 type choosen is a 'Num' which stores a floating-point number. On most platforms, it's an IEEE 754 64-bit floating point number, aka "double precision" (From perl 6 doc). The 'Rat' is not choosen because it can not be converted back the way it was thereby loosing accuracy. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>String</td>
+              <td>Str</td>
+              <td>A normal string type. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Document</td>
+              <td>BSON::Document</td>
+              <td>As the document itself a subdocument is also a BSON::Document. Hashes are refused because the keys are not necessary kept in the same order as is stored by the user. This is important when searches are done. The seach query is also encoded using the BSON::Document and on the server not decoded. So the query is matched against binary data which is ofcourse faster. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Array</td>
+              <td>Array</td>
+              <td/>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Binary</td>
+              <td>Buf</td>
+              <td>The perl6 Buf type is used to express the BSON binary type. However, the BSON specification also covers for types such as Function, UUID and MD5. Furthermore user defined types can also be be specified. Ideas for this are the perl6 types Rat, Set, IntStr, Hash, List etc. Also very large or small Int values could encoded this way. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>ObjectId</td>
+              <td>BSON::ObjectId</td>
+              <td>This object is generated on the server by default. However, it can be used to refer to other objects or to create the document  <emphasis>_id</emphasis> themselves. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Boolean</td>
+              <td>Bool</td>
+              <td/>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Date</td>
+              <td>DateTime</td>
+              <td/>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Null</td>
+              <td>Any</td>
+              <td>Any undefined variable or Type object is used to express the Null BSON type. It will also convert to Any only. So any other used Type object is lost when decoding the document. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Javascript</td>
+              <td>BSON::Javascript</td>
+              <td/>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Javascript with scope</td>
+              <td>BSON::Javascript</td>
+              <td/>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>32 bit int</td>
+              <td>Int</td>
+              <td>The perl6 Int type can represent integers from -&infin; to +&infin;. The software tests the Int number if it falls in the 4 byte range. When outside that range, it tests for the 8 byte range and converts to the BSON 64 bit type. When even smaller/larger, an exception is thrown. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Timestamp</td>
+              <td>-</td>
+              <td>Not yet supported because it is for internal MongoDB use. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>64 bit int</td>
+              <td>Int</td>
+              <td>See 32 bit Int. </td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr>
+              <td>Decimal128</td>
+              <td>-</td>
+              <td>Not yet supported. </td>
+            </tr>
+          </tbody>
+        </table>
+      </para>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>MongoDB servers</title>
+    <para/>
+    <sect2>
+      <title>Supported versions</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>mongod</title>
+      <para/>
+    </sect2>
+    <sect2>
+      <title>mongos</title>
+      <para/>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>Examples</title>
+    <para/>
+    <sect2>
+      <title>Starting and stopping a server using the configuration</title>
+      <para>This method, using a configuration file, is also used to test the modules to help starting and stopping a locally installed server. There are several steps in order to configure it properly. <itemizedlist spacing="compact"><listitem><emphasis>Configuration file</emphasis>. </listitem><listitem><emphasis>Server selection</emphasis>. </listitem><listitem><emphasis>Starting and stopping</emphasis>. </listitem></itemizedlist></para>
+      <sect3>
+        <title>Configuration file</title>
+        <para/>
+      </sect3>
+      <sect3>
+        <title>Server selection</title>
+        <para/>
+      </sect3>
+      <sect3>
+        <title>Starting and stopping</title>
+        <para/>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>Making a replica server</title>
+      <para/>
+      <sect3>
+        <title>Preparing</title>
+        <para/>
+      </sect3>
+      <sect3>
+        <title>Initializing</title>
+        <para/>
+      </sect3>
+    </sect2>
+    <sect2>
+      <title>Develop your own set of helper functions</title>
+      <para/>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>References to books, websites, articles and pod-documents</title>
+    <sect2>
+      <title>Web Pages</title>
+      <sect3>
+        <para>MongoDB Manual covering all aspects of what is possible. Source is from MongoDB, Inc. <link xlink:href="http://docs.mongodb.com/master/MongoDB-manual.epub">EPub edition </link></para>
+      </sect3>
+    </sect2>
+  </sect1>
+  <glossary>
+    <title>MongoDB Driver Glossary and References</title>
+    <glossdiv>
+      <title>B</title>
+      <glossentry xml:id="bson">
+        <glossterm>Binary JSON</glossterm>
+        <acronim>JSON</acronim>
+        <glossdef>
+          <para>BSON is a computer data interchange format used mainly as a data storage and network transfer format in the MongoDB database. See also on  <link xlink:href="https://nl.wikipedia.org/wiki/BSON">WikipediA </link>. </para>
+        </glossdef>
+      </glossentry>
+    </glossdiv>
+    <glossdiv>
+      <title>J</title>
+      <glossentry xml:id="json">
+        <glossterm>JavaScript Object Notation</glossterm>
+        <acronim>JSON</acronim>
+        <glossdef>
+          <para>JavaScript Object Notation) is an open-standard format that uses human-readable text to transmit data objects consisting of attribute-value pairs. See also on  <link xlink:href="https://nl.wikipedia.org/wiki/JSON">WikipediA </link>. </para>
+        </glossdef>
+      </glossentry>
+    </glossdiv>
+    <glossdiv>
+      <title>M</title>
+      <glossentry xml:id="mongodb">
+        <glossterm>MongoDB</glossterm>
+        <acronim>MongoDB</acronim>
+        <glossdef>
+          <para>MongoDB (from humongous) is a free and open-source cross-platform document-oriented database program. </para>
+        </glossdef>
+      </glossentry>
+    </glossdiv>
+    <glossdiv>
+      <title>N</title>
+      <glossentry xml:id="nosql">
+        <glossterm>Non SQL</glossterm>
+        <acronim>NoSql</acronim>
+        <glossdef>
+          <para>A NoSQL (originally referring to "non <glossterm linkend="sql">Structured Query Language</glossterm> ", "non relational" or "not only SQL" database provides a mechanism for storage and retrieval of data which is modeled in means other than the tabular relations used in relational databases. </para>
+        </glossdef>
+      </glossentry>
+    </glossdiv>
+    <glossdiv>
+      <title>S</title>
+      <glossentry xml:id="sql">
+        <glossterm>Structured Query Language</glossterm>
+        <acronim>Sql</acronim>
+        <glossdef>
+          <para>SQL or Structured Query Language is a special-purpose domain-specific language used in programming and designed for managing data held in a relational database management system (RDBMS) </para>
+        </glossdef>
+      </glossentry>
+    </glossdiv>
+  </glossary>
+  <index/>
+</article>
