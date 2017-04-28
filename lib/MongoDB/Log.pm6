@@ -1,13 +1,12 @@
 use v6.c;
 
 use Log::Async;
+use Terminal::ANSIColor;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+package MongoDB:auth<https://github.com/MARTIMM> {
 
 enum Loglevels <<:Trace(1) Debug Info Warn Error Fatal>>;
-
-use Terminal::ANSIColor;
 
 #-------------------------------------------------------------------------------
 class Log is Log::Async {
@@ -92,7 +91,7 @@ class Log is Log::Async {
           :level($!send-to-setup{$k}[1])
         ;
       }
-      
+
       else {
         logger.send-to: $!send-to-setup{$k}[0], :level($!send-to-setup{$k}[1]);
       }
@@ -118,7 +117,7 @@ class Log is Log::Async {
     if ? $code {
       $m = $code( :$msg, :$level, :$when);
     }
-    
+
     else {
       $m = { :$msg, :$level, :$when };
     }
@@ -136,10 +135,10 @@ class Log is Log::Async {
 
 set-logger(MongoDB::Log.new);
 logger.close-taps;
-
+}
 
 #-------------------------------------------------------------------------------
-class Message is Exception {
+class X::MongoDB::Message is Exception {
   has Str $.message;            # Error text and error code are data mostly
   has Str $.method;             # Method or routine name
   has Int $.line;               # Line number where Message is called
@@ -191,7 +190,7 @@ sub search-callframe ( $type --> CallFrame ) {
 
 # log code with stack frames
 my Code $log-code-cf = sub (
-  Str:D :$msg, Loglevels:D :$level,
+  Str:D :$msg, Any:D :$level,
   DateTime :$when = DateTime.now.utc
   --> Hash
 ) {
@@ -221,7 +220,7 @@ my Code $log-code-cf = sub (
 
 # log code without stack frames
 my Code $log-code = sub (
-  Str:D :$msg, Loglevels:D :$level,
+  Str:D :$msg, Any:D :$level,
   DateTime :$when = DateTime.now.utc
   --> Hash
 ) {
@@ -237,29 +236,29 @@ my Code $log-code = sub (
 }
 
 sub trace-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(Trace), :code($log-code));
+  logger.log( :$msg, :level(MongoDB::Trace), :code($log-code));
 }
 
 sub debug-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(Debug), :code($log-code));
+  logger.log( :$msg, :level(MongoDB::Debug), :code($log-code));
 }
 
 sub info-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(Info), :code($log-code));
+  logger.log( :$msg, :level(MongoDB::Info), :code($log-code));
 }
 
 sub warn-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(Warn), :code($log-code-cf));
+  logger.log( :$msg, :level(MongoDB::Warn), :code($log-code-cf));
 }
 
 sub error-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(Error), :code($log-code-cf));
+  logger.log( :$msg, :level(MongoDB::Error), :code($log-code-cf));
 }
 
 sub fatal-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(Fatal), :code($log-code-cf));
+  logger.log( :$msg, :level(MongoDB::Fatal), :code($log-code-cf));
   sleep 0.5;
-  die MongoDB::Message.new( :message($msg));
+  die X::MongoDB::Message.new( :message($msg));
 }
 
 #-------------------------------------------------------------------------------
@@ -311,8 +310,5 @@ sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 #-------------------------------------------------------------------------------
 # Activate some channels. Display messages only on error and fatal to the screen
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
-add-send-to( 'screen', :to($*ERR), :level(* >= Error));
-add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :level(* >= Info));
-
-
-
+add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Error));
+add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :level(* >= MongoDB::Info));

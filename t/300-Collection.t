@@ -98,7 +98,7 @@ is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 try {
   $doc = $database.run-command($req);
   CATCH {
-    when MongoDB::Message {
+    when X::MongoDB::Message {
       ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
     }
   }
@@ -122,7 +122,7 @@ exit(0);
 try {
   $database.create-collection('abc-def and a space');
   CATCH {
-    when MongoDB::Message {
+    when X::MongoDB::Message {
       ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
     }
   }

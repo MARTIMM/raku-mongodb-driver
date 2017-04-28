@@ -20,7 +20,7 @@ for $ts.server-range -> $server-number {
     ok $ts.server-control.start-mongod("s$server-number"),
        "Server $server-number started";
     CATCH {
-      when MongoDB::Message {
+      when X::MongoDB::Message {
         like .message, /:s exited unsuccessfully /,
              "Server 's$server-number' already started";
       }
@@ -29,7 +29,7 @@ for $ts.server-range -> $server-number {
 }
 
 throws-like { $ts.server-control.start-mongod('s1') },
-            MongoDB::Message, :message(/:s exited unsuccessfully/);
+            X::MongoDB::Message, :message(/:s exited unsuccessfully/);
 
 #-------------------------------------------------------------------------------
 # Cleanup and close

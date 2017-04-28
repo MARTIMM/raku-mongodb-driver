@@ -34,7 +34,7 @@ class Wire {
     Str:D $full-collection-name,
     BSON::Document:D $qdoc, BSON::Document $projection?,
     QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
-    Int :$number-to-return, ServerType :$server, Bool :$authenticate = True 
+    Int :$number-to-return, ServerType :$server, Bool :$authenticate = True
 
     --> BSON::Document
   ) {
@@ -91,7 +91,7 @@ class Wire {
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
-        when MongoDB::Message {
+        when X::MongoDB::Message {
           # Already logged
         }
 
@@ -121,7 +121,7 @@ class Wire {
 
   #-----------------------------------------------------------------------------
   method get-more (
-    $cursor, Int :$number-to-return, 
+    $cursor, Int :$number-to-return,
     ServerType:D :$server where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
@@ -161,7 +161,7 @@ class Wire {
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
-        when MongoDB::Message {
+        when X::MongoDB::Message {
           # Already logged
         }
 
@@ -218,7 +218,7 @@ class Wire {
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
-        when MongoDB::Message {
+        when X::MongoDB::Message {
           # Already logged
         }
 
