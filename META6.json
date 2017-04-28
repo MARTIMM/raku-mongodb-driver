@@ -18,7 +18,7 @@
   "description": "MongoDB driver",
   "license": "Artistic-2.0",
   "name": "MongoDB",
-  "perl": "6.c",
+  "perl": "6",
   "provides": {
     "MongoDB::Authenticate::Credential": "lib/MongoDB/Authenticate/Credential.pm6",
     "MongoDB::Authenticate::Scram":     "lib/MongoDB/Authenticate/Scram.pm6",
@@ -40,5 +40,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.37.0"
+  "version": "0.37.1.1"
 }
