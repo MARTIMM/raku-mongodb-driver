@@ -1,0 +1,150 @@
+$!report.summary title='Test Summary Report' [
+
+  $h1 [Test Summary Report]
+
+  $p [
+    This doc is following steps from
+    $*|a href=http://www.softwaretestinghelp.com/test-summary-report-template-download-sample/ [
+      A Simple 12 Steps Guide to Write an Effective Test Summary Report
+    ]
+  ]
+
+  $h2 [Purpose of tests]
+  $p [ $**i [Short description about the objective of preparing the document]]
+
+  $h2 [Application overview]
+  $p [ $**i [Brief description about the application tested]]
+
+  $h2 [Testing Scope]
+  $p [ $**i [
+      This section explains about the functions or modules in scope & out of
+      scope for testing; Any items which are not tested due to any constraints,
+      dependencies or restrictions.
+    ]
+  ]
+
+  $h3 [In scope]
+  $p [ $i [List of functionalities tested]]
+
+  $h3 [Out of scope]
+  $p [ $i [E.g. performance tests are not executed]]
+
+  $h3 [Items not tested]
+  $p [ $i [E.g. not tested caused by technical limitations]]
+
+  $h2 [Metrics]
+  $p [
+    $ul [
+      $li [$i[saved metrics about systems on which tests are run]]
+      $li [$i[test results of test modules]]
+      $li [$i[code coverage]]
+      $li [$i[untested issues]]
+    ]
+  ]
+
+  $!report.metrics metric-dir='xt/Sxml'
+
+  $h2 [Types of tests]
+  $p [ $i [
+      Describe the various types of Testing performed for the Project. This will
+      make sure the application is being tested properly through testing types
+      agreed as per Test Strategy.
+
+      Note: If several rounds of Testing were done, the details can also be
+      included here.
+    ]
+  ]
+
+  $h3 [Smoke test]
+  $p [ $i [
+    This testing was done whenever a Build is received (deployed into Test
+    environment) for Testing to make sure the major functionality are working
+    fine, Build can be accepted and Testing can start.
+  ]]
+
+  $h3 [System integration tests]
+  $p [
+    $ul [
+      $li [ $i [
+        This is the Testing performed on the Application under test, to verify
+        the entire application works as per the requirements.
+      ]]
+      $li [ $i [
+        Critical Business scenarios were tested to make sure important
+        functionality in the application works as intended without any  errors.
+      ]]
+    ]
+  ]
+
+  $h3 [Regression tests]
+  $p [
+    $ul [
+      $li [ $i [
+        Regression testing was performed each time a new build is deployed for
+        testing which contains defect fixes and new enhancements, if any.
+      ]]
+      $li [ $i [
+        Regression Testing is being done on the entire application and not just
+        the new functionality and Defect fixes.
+      ]]
+      $li [ $i [
+        This testing ensures that existing functionality works fine after defect
+        fix and new enhancements are added to the existing application.
+      ]]
+      $li [ $i [
+        Test cases for new functionality are added to the existing test cases
+        and executed.
+      ]]
+    ]
+  ]
+
+  $h2 [Test Environment and tools]
+  $p [ $i [
+    Provide details on Test Environment in which the Testing is carried out.
+    Server, Database, Application URL etc. If any Tools were used like Quality
+    Center (now HP ALM) for logging defects
+  ]]
+
+  $h2 [Lessons learned]
+  $p [ $i [
+    This section is used to describe the critical issues faced and their
+    solutions (how they were solved during the Testing). Lessons learnt will
+    help to make proactive decisions during the next Testing engagement, by
+    avoiding these mistakes or finding a suitable workaround
+  ]]
+
+  $h2 [Recommendations]
+  $p [ $i [ Any workaround or suggestions can be mentioned here ]]
+
+  $h2 [Best practices]
+  $p [ $i [
+    There will be lot of activities done by the Testing team during the project.
+    Some of them could have saved time, some proved to be a good & efficient way
+    to work, etc. These can be documented as a 'Value Add' to show
+    case to the Stakeholders
+  ]]
+
+  $h2 [Exit criteria]
+  $p [ $i [
+    Exit Criteria is defined as a Completion of Testing by fulfilling certain
+    conditions like a) All planned test cases are executed; b) All Critical
+    defects are Closed etc.
+  ]]
+
+  $h2 [Conclusion or Sign off]
+  $p [ $i [
+    This section will mention whether the Testing team agrees and gives a Green
+    signal for the application to 'Go Live' or not, after the Exit Criteria was
+    met. If the application does not meet the Exit Criteria, then it can be
+    mentioned as - The application is not suggested to 'Go Live'. It will be
+    left with the decision of Senior Management and Client and other
+    Stakeholders involved to take the call on whether the application can 'Go
+    Live' or not.
+  ]]
+
+  $h2 [Definitions, Acronyms, and Abbreviations]
+  $p [ $i [
+    This section mentions the meanings of Abbreviated terms used in this
+    document and any other new definitions
+  ]]
+]

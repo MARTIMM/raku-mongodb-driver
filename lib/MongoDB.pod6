@@ -367,7 +367,7 @@ The severity in the exception is equal to or higher then the severity processing
 level. This is by default set to C<Info>. So a C<Trace> exception is not logged
 and a C<Warn> is. See also L<set-exception-process-level|#set-exception-process-level>.
 
-Examples of use are shown below when defining the C<MongoDB::Message> Exception.
+Examples of use are shown below when defining the C<X::MongoDB::Message> Exception.
 
 Furthermore the severity is also tested against the exception trow level and and the
 exception is thrown when level is Fatal. Checking occurs on the following conditions:
@@ -474,7 +474,7 @@ The first six methods are called for each specific sverity value. The last one
 is shown when exception is thrown and not caught.
 
 
-=head1 class MongoDB::Message
+=head1 class X::MongoDB::Message
 
   package MongoDB { class MongoDB { ... } }
 

@@ -109,7 +109,7 @@ subtest {
     $uri .= new(:uri<mongo://>);
 
     CATCH {
-      when MongoDB::Message {
+      when X::MongoDB::Message {
         ok .message ~~ m:s/Parsing error in url \'mongo\:\/\/\'/,
            "Parse error 'mongo://'";
       }
@@ -121,7 +121,7 @@ subtest {
 
     CATCH {
 #say .message;
-      when MongoDB::Message {
+      when X::MongoDB::Message {
         ok .message.index("Parsing error in url 'mongodb://?a=b'"),
            "Parse error 'mongodb://?a=b'";
       }
@@ -149,4 +149,3 @@ subtest {
 
 say "\nReq: ", $req.perl, "\n";
 say "\nDoc: ", $doc.perl, "\n";
-

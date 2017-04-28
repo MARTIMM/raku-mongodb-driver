@@ -14,12 +14,22 @@ info-message("Test $?FILE start");
 my MongoDB::Test-support $ts .= new;
 
 #-----------------------------------------------------------------------------
-#
 for $ts.server-range -> $server-number {
 
-  ok $ts.server-control.stop-mongod('s' ~ $server-number),
-     "Server $server-number is stopped";
+  try {
+    ok $ts.server-control.stop-mongod('s' ~ $server-number),
+       "Server $server-number is stopped";
+    CATCH {
+      when X::MongoDB::Message {
+        like .message, /:s exited unsuccessfully/,
+             "Server 's$server-number' already down";
+      }
+    }
+  }
 }
+
+throws-like { $ts.server-control.stop-mongod('s1') },
+            X::MongoDB::Message, :message(/:s exited unsuccessfully/);
 
 $ts.cleanup-sandbox();
 

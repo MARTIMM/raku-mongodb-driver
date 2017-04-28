@@ -1,11 +1,13 @@
+#!/usr/bin/env sxml2xml.pl6 --run=pdf
+
 $!d5b.article [
-  $|title [ Perl 6 MongoDB driver ]
+  $title [ Perl 6 MongoDB driver ]
 
   $!d5b.info firstname=Marcel surname=Timmerman email=mt1957@gmail.com
              city=Haarlem country=Netherlands
              copy-year='2015, 2016 ... Inf' copy-holder='Marcel Timmerman' [
 
-    $|para [
+    $para [
       MongoDB is a $**glossterm linkend=nosql [Non SQL] database which uses
       $**glossterm linkend=bson [Binary JSON (BSON)] to 
       store and load information in a database. With the mongodb package a
@@ -13,7 +15,7 @@ $!d5b.article [
       mongodb server.
     ]
 
-    $|para [
+    $para [
       To work with data on the server from within a program a driver is needed.
       There are drivers for many program languages. This document describes a
       driver for the Perl6 language. In the perl6 ecosystem, which might grow
@@ -22,97 +24,97 @@ $!d5b.article [
       BSON is automatically installed with other necessary modules.
     ]
 
-    $|para [
+    $para [
       The latest version of this document is generated on date $!SxmlCore.date
     ]
   ]
 
-  $|sect1 [
-    $|title [Introduction]
-    $|para [
+  $sect1 [
+    $title [Introduction]
+    $para [
       The purpose of this document is to show how things are accomplished in
       this driver in the light of the MongoDB developer documents and how to
       work with the perl6 mongodb driver.
     ]
 
-    $|para [
+    $para [
       However, this document will not tell you how to design your database among
       other things. There are plenty of good books and documents out there, not
       to mention, the mongodb website.
     ]
 
-    $|para [
+    $para [
       There are quite a few modules written to perform the tasks at hand but not
       all modules will be explained here because many of them are modules
       defining classes to be used in the background and are not used by
       applications directly.
     ]
 
-    $|para [
+    $para [
       Furthermore, this document is not a reference. There are other documents
       for that, written to document the attributes, (sub)methods and subs in a
       class. There will be a list of references at the end of the document.
     ]
 
-    $|para [
+    $para [
       This document assumes that the reader is aware of at least the basics of
       the mongodb database and what one can do with it. Also some perl 6
       knowledge will be necessary.
     ]
 
-    $|para [
+    $para [
       As a last remark, the driver is still in development. Although many parts
       are accomplished, some parts still need to be implemented like
       authentication agains kerberos or LDAP. Furthermore, there are some
       improvements needed to speedup the operations.
     ]
 
-    $|para [
+    $para [
       The following sections will be explained:
 
-      $|itemizedlist spacing=compact [
-        $|listitem [
-          $|emphasis[Implementation].
+      $itemizedlist spacing=compact [
+        $listitem [
+          $emphasis[Implementation].
 
-          $|itemizedlist spacing=compact [
-            $|listitem [
-              $|emphasis[Server states].
+          $itemizedlist spacing=compact [
+            $listitem [
+              $emphasis[Server states].
             ]
 
-            $|listitem [
-              $|emphasis[Topology].
+            $listitem [
+              $emphasis[Topology].
             ]
 
-            $|listitem [
-              $|emphasis[Round trip time].
+            $listitem [
+              $emphasis[Round trip time].
             ]
 
-            $|listitem [
-              $|emphasis[Read concern].
+            $listitem [
+              $emphasis[Read concern].
             ]
 
-            $|listitem [
-              $|emphasis[Write concern].
+            $listitem [
+              $emphasis[Write concern].
             ]
 
-            $|listitem [
-              $|emphasis[URI]. The URI tells the software how to connect and
+            $listitem [
+              $emphasis[URI]. The URI tells the software how to connect and
               select the proper server.
             ]
 
-            $|listitem [
-              $|emphasis[Server selection process].
+            $listitem [
+              $emphasis[Server selection process].
             ]
           ]
         ]
 
-        $|listitem [
-          $|emphasis[Modules and classes].
+        $listitem [
+          $emphasis[Modules and classes].
 
-          $|itemizedlist spacing=compact [
+          $itemizedlist spacing=compact [
 
-            $|listitem [
-              $|emphasis[MongoDB::Client]. This module is the starting point of all
+            $listitem [
+              $emphasis[MongoDB::Client]. This module is the starting point of all
               applications which need access to a mongodb database server.
 
 # named attributes to control selecting and monitoring
@@ -120,8 +122,8 @@ $!d5b.article [
             ]
 
 
-            $|listitem [
-              $|emphasis[BSON::Document]. This is the basic vehicle to insert,
+            $listitem [
+              $emphasis[BSON::Document]. This is the basic vehicle to insert,
               update retrieve and send commands to the database server. In this
               section there is an explanation of the supported types as well as
               different ways to make requests. Some detailed perl6 is necessary
@@ -129,138 +131,138 @@ $!d5b.article [
               structures.
             ]
 
-            $|listitem [
-              $|emphasis[MongoDB::Database].
+            $listitem [
+              $emphasis[MongoDB::Database].
             ]
 
-            $|listitem [
-              $|emphasis[MongoDB::Collection].
+            $listitem [
+              $emphasis[MongoDB::Collection].
             ]
 
-            $|listitem [
-              $|emphasis[MongoDB::Cursor].
+            $listitem [
+              $emphasis[MongoDB::Cursor].
             ]
 
-            $|listitem [
-              $|emphasis[MongoDB::Server].
+            $listitem [
+              $emphasis[MongoDB::Server].
             ]
 
-            $|listitem [
-              $|emphasis[MongoDB::Server::Control].
+            $listitem [
+              $emphasis[MongoDB::Server::Control].
             ]
           ]
         ]
 
-#        $|listitem [
-#          $|emphasis[Dependensies]. There are some dependencies which are
+#        $listitem [
+#          $emphasis[Dependensies]. There are some dependencies which are
 #          explained a bit here. These are e.g. the server and its version,
 #          modules like BSON, PKCS5, Auth::SCRAM etcetera.
 #        ]
 
-        $|listitem [
-          $|emphasis[BSON].
+        $listitem [
+          $emphasis[BSON].
         ]
 
-        $|listitem [
-          $|emphasis[MongoDB Servers].
+        $listitem [
+          $emphasis[MongoDB Servers].
         ]
 
-        $|listitem [
-          $|emphasis[Examples]. Of course, a document whithout examples is a
+        $listitem [
+          $emphasis[Examples]. Of course, a document whithout examples is a
           bit like an empty box as a present.
         ]
       ]
     ]
   ]
 
-  $|sect1 [
-    $|title [Implementation]
-    $|para [
+  $sect1 [
+    $title [Implementation]
+    $para [
     ]
 
-    $|sect2 [
-      $|title [Server states]
-      $|para [
+    $sect2 [
+      $title [Server states]
+      $para [
 
-        $|table rules=all [
-          $|title [Server states depending on isMaster outcome]
-          $|thead [
-            $|tr [
-              $|th [Server state]
-              $|th [isMaster command result]
+        $table rules=all [
+          $title [Server states depending on isMaster outcome]
+          $thead [
+            $tr [
+              $th [Server state]
+              $th [isMaster command result]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-Unknown]
-              $|td [
+          $tbody [
+            $tr [
+              $td [SS-Unknown]
+              $td [
                 Initial, or after a network error or failed ismaster call, or
                 "ok: 1" not in ismaster response.
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-Standalone]
-              $|td [
+          $tbody [
+            $tr [
+              $td [SS-Standalone]
+              $td [
                 No "msg: isdbgrid", no setName, and no "isreplicaset: true".
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-Mongos]
-              $|td ["msg: isdbgrid"]
+          $tbody [
+            $tr [
+              $td [SS-Mongos]
+              $td ["msg: isdbgrid"]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-PossiblePrimary]
-              $|td [
+          $tbody [
+            $tr [
+              $td [SS-PossiblePrimary]
+              $td [
                 Not yet checked, but another member thinks it is the primary.
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-RSPrimary]
-              $|td ["ismaster: true", "setName" in response.]
+          $tbody [
+            $tr [
+              $td [SS-RSPrimary]
+              $td ["ismaster: true", "setName" in response.]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-RSSecondary]
-              $|td ["secondary: true", "setName" in response.]
+          $tbody [
+            $tr [
+              $td [SS-RSSecondary]
+              $td ["secondary: true", "setName" in response.]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-RSArbiter]
-              $|td ["arbiterOnly: true", "setName" in response.]
+          $tbody [
+            $tr [
+              $td [SS-RSArbiter]
+              $td ["arbiterOnly: true", "setName" in response.]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-RSOther]
-              $|td [
+          $tbody [
+            $tr [
+              $td [SS-RSOther]
+              $td [
                 "setName" in response, "hidden: true" or not primary,
                 secondary, nor arbiter. E.g. starting up or recovering.
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [SS-RSGhost]
-              $|td [
+          $tbody [
+            $tr [
+              $td [SS-RSGhost]
+              $td [
                 "isreplicaset: true" in response. E.g.  briefly during server
                 startup, in an uninitialized replica set, or when the server
                 is shunned (removed from the replica set config).
@@ -271,22 +273,22 @@ $!d5b.article [
       ]
     ]
 
-    $|sect2 [
-      $|title [Topology]
-      $|para [
-        $|table rules=all [
-          $|title [Topology controlled by server states]
-          $|thead [
-            $|tr [
-              $|th [Topology type]
-              $|th [Server states]
+    $sect2 [
+      $title [Topology]
+      $para [
+        $table rules=all [
+          $title [Topology controlled by server states]
+          $thead [
+            $tr [
+              $th [Topology type]
+              $th [Server states]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [TT-Unknown]
-              $|td [
+          $tbody [
+            $tr [
+              $td [TT-Unknown]
+              $td [
                 When a deployment has this topology type, no servers are
                 suitable for read or write operations. These are servers which
                 did not respond on initial connection or threw an exception
@@ -296,10 +298,10 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [TT-Single]
-              $|td [
+          $tbody [
+            $tr [
+              $td [TT-Single]
+              $td [
                 A deployment of topology type TT-Single contains only a single
                 server which can have any state except SS-Unknown. This topology
                 type signifies a direct connection intended to receive all read
@@ -308,10 +310,10 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [TT-Sharded]
-              $|td [
+          $tbody [
+            $tr [
+              $td [TT-Sharded]
+              $td [
                 A deployment of topology type TT-Sharded contains one or more
                 servers of type SS-Mongos or SS-Unknown of at least one is
                 SS-Mongos.
@@ -319,10 +321,10 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [TT-ReplicaSetNoPrimary]
-              $|td [
+          $tbody [
+            $tr [
+              $td [TT-ReplicaSetNoPrimary]
+              $td [
                 A deployment with this topology type can have a mix of server
                 types: SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost,
                 SS-Unknown or SS-PossiblePrimary.
@@ -330,10 +332,10 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [TT-ReplicaSetWithPrimary]
-              $|td [
+          $tbody [
+            $tr [
+              $td [TT-ReplicaSetWithPrimary]
+              $td [
                 A deployment with this topology type can have a mix of server
                 types: SS-RSPrimary, SS-RSSecondary, SS-RSArbiter, SS-RSOther,
                 SS-RSGhost, SS-Unknown or SS-PossiblePrimary.
@@ -344,42 +346,42 @@ $!d5b.article [
       ]
     ]
 
-    $|sect2 [
-      $|title [Round Trip Time]
-      $|para [
+    $sect2 [
+      $title [Round Trip Time]
+      $para [
       ]
     ]
 
-    $|sect2 [
-      $|title [Read concern]
-      $|para [
+    $sect2 [
+      $title [Read concern]
+      $para [
       ]
     ]
 
-    $|sect2 [
-      $|title [Write concern]
-      $|para [
+    $sect2 [
+      $title [Write concern]
+      $para [
       ]
     ]
 
-    $|sect2 [
-      $|title [URI]
-      $|para [
+    $sect2 [
+      $title [URI]
+      $para [
 
 
-        $|table rules=all [
-          $|title [Implemented uri connection options]
-          $|thead [
-            $|tr [
-              $|th [Option]
-              $|th [Description]
+        $table rules=all [
+          $title [Implemented uri connection options]
+          $thead [
+            $tr [
+              $th [Option]
+              $th [Description]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [replicaSet]
-              $|td [
+          $tbody [
+            $tr [
+              $td [replicaSet]
+              $td [
                 Specifies the name of the replica set, if the mongod is a member
                 of a replica set. When connecting to a replica set it is
                 important to give a seed list of at least two mongod instances.
@@ -393,35 +395,35 @@ $!d5b.article [
       ]
     ]
 
-    $|sect2 [
-      $|title [Server selection]
-      $|para [
+    $sect2 [
+      $title [Server selection]
+      $para [
 
-        $|itemizedlist spacing=compact [
-          $|listitem [
+        $itemizedlist spacing=compact [
+          $listitem [
             Record the server selection start time
           ]
-          $|listitem [
+          $listitem [
             If the topology wire version is invalid, raise an error
           ]
-          $|listitem [
+          $listitem [
             Find suitable servers by topology type and operation type
           ]
-          $|listitem [
+          $listitem [
             If there are any suitable servers, choose one at random from those
             within the latency window and return it; otherwise, continue to
             step #5
           ]
-          $|listitem [
+          $listitem [
             Request an immediate topology check, then block the server
             selection thread until the topology changes or until the server
             selection timeout has elapsed
           ]
-          $|listitem [
+          $listitem [
             If more than serverSelectionTimeoutMS milliseconds have elapsed
             since the selection start time, raise a server selection error
           ]
-          $|listitem [
+          $listitem [
             Goto Step #2
           ]
         ]
@@ -430,122 +432,122 @@ $!d5b.article [
     ]
   ]
 
-  $|sect1 [
-    $|title [Modules and classes]
+  $sect1 [
+    $title [Modules and classes]
 
-    $|sect2 [
-      $|title [MongoDB]
-      $|para [
+    $sect2 [
+      $title [MongoDB]
+      $para [
 
       ]
     ]
 
-    $|sect2 [
-      $|title [MongoDB::Client]
-      $|para [
+    $sect2 [
+      $title [MongoDB::Client]
+      $para [
 
       ]
 
-      $|sect3 [
-        $|title [Making a connection]
-        $|para [
+      $sect3 [
+        $title [Making a connection]
+        $para [
         ]
       ]
     ]
 
 
-    $|sect2 [
-      $|title [BSON::Document]
-      $|para [
+    $sect2 [
+      $title [BSON::Document]
+      $para [
 
       ]
     ]
 
-    $|sect2 [
-      $|title [MongoDB::Database]
-      $|para [
+    $sect2 [
+      $title [MongoDB::Database]
+      $para [
 
       ]
 
-      $|sect3 [
-        $|title [run-command()]
-        $|para [
+      $sect3 [
+        $title [run-command()]
+        $para [
 
         ]
       ]
     ]
 
-    $|sect2 [
-      $|title [MongoDB::Collection]
-      $|para [
+    $sect2 [
+      $title [MongoDB::Collection]
+      $para [
 
       ]
 
-      $|sect3 [
-        $|title [find()]
-        $|para [
+      $sect3 [
+        $title [find()]
+        $para [
 
         ]
       ]
     ]
 
-    $|sect2 [
-      $|title [MongoDB::Cursor]
-      $|para [
+    $sect2 [
+      $title [MongoDB::Cursor]
+      $para [
 
       ]
 
-      $|sect3 [
-        $|title [fetch()]
-        $|para [
+      $sect3 [
+        $title [fetch()]
+        $para [
 
         ]
       ]
 
-      $|sect3 [
-        $|title [iterating over documents]
-        $|para [
+      $sect3 [
+        $title [iterating over documents]
+        $para [
 
         ]
       ]
     ]
 
-    $|sect2 [
-      $|title [MongoDB::Server]
-      $|para [
+    $sect2 [
+      $title [MongoDB::Server]
+      $para [
 
       ]
     ]
 
-    $|sect2 [
-      $|title [MongoDB::Server::Control]
-      $|para [
+    $sect2 [
+      $title [MongoDB::Server::Control]
+      $para [
 
       ]
     ]
   ]
 
-  $|sect1 [
-    $|title [BSON]
-    $|sect2 [
-      $|title [Supported types]
-      $|para [
+  $sect1 [
+    $title [BSON]
+    $sect2 [
+      $title [Supported types]
+      $para [
 
-        $|table rules=all [
-          $|title [Supported types of the BSON package]
-          $|thead [
-            $|tr [
-              $|th [BSON]
-              $|th [Perl6]
-              $|th [Description]
+        $table rules=all [
+          $title [Supported types of the BSON package]
+          $thead [
+            $tr [
+              $th [BSON]
+              $th [Perl6]
+              $th [Description]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Double]
-              $|td [Num]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Double]
+              $td [Num]
+              $td [
                 An eight byte floating point number. The perl6 type choosen
                 is a 'Num' which stores a floating-point number.  On most
                 platforms, it's an IEEE 754 64-bit floating point number, aka
@@ -557,21 +559,21 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [String]
-              $|td [Str]
-              $|td [
+          $tbody [
+            $tr [
+              $td [String]
+              $td [Str]
+              $td [
                 A normal string type.
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Document]
-              $|td [BSON::Document]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Document]
+              $td [BSON::Document]
+              $td [
                 As the document itself a subdocument is also a BSON::Document.
                 Hashes are refused because the keys are not necessary kept in
                 the same order as is stored by the user. This is important when
@@ -582,20 +584,20 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Array]
-              $|td [Array]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Array]
+              $td [Array]
+              $td [
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Binary]
-              $|td [Buf]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Binary]
+              $td [Buf]
+              $td [
                 The perl6 Buf type is used to express the BSON binary type.
                 However, the BSON specification also covers for types such as
                 Function, UUID and MD5. Furthermore user defined types can also
@@ -606,11 +608,11 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [ObjectId]
-              $|td [BSON::ObjectId]
-              $|td [
+          $tbody [
+            $tr [
+              $td [ObjectId]
+              $td [BSON::ObjectId]
+              $td [
                 This object is generated on the server by default. However, it
                 can be used to refer to other objects or to create the document
                 $**emphasis[_id] themselves.
@@ -618,29 +620,29 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Boolean]
-              $|td [Bool]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Boolean]
+              $td [Bool]
+              $td [
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Date]
-              $|td [DateTime]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Date]
+              $td [DateTime]
+              $td [
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Null]
-              $|td [Any]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Null]
+              $td [Any]
+              $td [
                 Any undefined variable or Type object is used to express the
                 Null BSON type. It will also convert to Any only. So any other
                 used Type object is lost when decoding the document.
@@ -648,29 +650,29 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Javascript]
-              $|td [BSON::Javascript]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Javascript]
+              $td [BSON::Javascript]
+              $td [
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Javascript with scope]
-              $|td [BSON::Javascript]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Javascript with scope]
+              $td [BSON::Javascript]
+              $td [
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [32 bit int]
-              $|td [Int]
-              $|td [
+          $tbody [
+            $tr [
+              $td [32 bit int]
+              $td [Int]
+              $td [
                 The perl6 Int type can represent integers from -&infin; to
                 +&infin;. The software tests the Int number if it falls in
                 the 4 byte range. When outside that range, it tests for the 8
@@ -680,31 +682,31 @@ $!d5b.article [
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Timestamp]
-              $|td [-]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Timestamp]
+              $td [-]
+              $td [
                 Not yet supported because it is for internal MongoDB use.
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [64 bit int]
-              $|td [Int]
-              $|td [
+          $tbody [
+            $tr [
+              $td [64 bit int]
+              $td [Int]
+              $td [
                 See 32 bit Int.
               ]
             ]
           ]
 
-          $|tbody [
-            $|tr [
-              $|td [Decimal128]
-              $|td [-]
-              $|td [
+          $tbody [
+            $tr [
+              $td [Decimal128]
+              $td [-]
+              $td [
                 Not yet supported.
               ]
             ]
@@ -714,105 +716,105 @@ $!d5b.article [
     ]
   ]
 
-  $|sect1 [
-    $|title [MongoDB servers]
-    $|para [
+  $sect1 [
+    $title [MongoDB servers]
+    $para [
 
     ]
     
-    $|sect2 [
-      $|title [Supported versions]
-      $|para [
+    $sect2 [
+      $title [Supported versions]
+      $para [
       
       ]
     ]
     
-    $|sect2 [
-      $|title [mongod]
-      $|para [
+    $sect2 [
+      $title [mongod]
+      $para [
       
       ]
     ]
     
-    $|sect2 [
-      $|title [mongos]
-      $|para [
+    $sect2 [
+      $title [mongos]
+      $para [
       
       ]
     ]
   ]
 
-  $|sect1 [
-    $|title [Examples]
-    $|para [
+  $sect1 [
+    $title [Examples]
+    $para [
     ]
-    $|sect2 [
-      $|title [Starting and stopping a server using the configuration]
-      $|para [
+    $sect2 [
+      $title [Starting and stopping a server using the configuration]
+      $para [
         This method, using a configuration file, is also used to test
         the modules to help starting and stopping a locally installed server.
         There are several steps in order to configure it properly.
 
-        $|itemizedlist spacing=compact [
-          $|listitem [
-            $|emphasis[Configuration file].
+        $itemizedlist spacing=compact [
+          $listitem [
+            $emphasis[Configuration file].
           ]
 
-          $|listitem [
-            $|emphasis[Server selection].
+          $listitem [
+            $emphasis[Server selection].
           ]
 
-          $|listitem [
-            $|emphasis[Starting and stopping].
+          $listitem [
+            $emphasis[Starting and stopping].
           ]
         ]
       ]
 
-      $|sect3 [
-        $|title [Configuration file]
-        $|para [
+      $sect3 [
+        $title [Configuration file]
+        $para [
 
         ]
       ]
 
-      $|sect3 [
-        $|title [Server selection]
-        $|para [
+      $sect3 [
+        $title [Server selection]
+        $para [
 
         ]
       ]
 
-      $|sect3 [
-        $|title [Starting and stopping]
-        $|para [
+      $sect3 [
+        $title [Starting and stopping]
+        $para [
 
         ]
       ]
     ]
 
-    $|sect2 [
-      $|title [Making a replica server]
-      $|para [
+    $sect2 [
+      $title [Making a replica server]
+      $para [
       ]
 
-      $|sect3 [
-        $|title [Preparing]
-        $|para [
+      $sect3 [
+        $title [Preparing]
+        $para [
 
         ]
       ]
 
-      $|sect3 [
-        $|title [Initializing]
-        $|para [
+      $sect3 [
+        $title [Initializing]
+        $para [
 
         ]
       ]
     ]
 
-    $|sect2 [
-      $|title [Develop your own set of helper functions]
-      $|para [
+    $sect2 [
+      $title [Develop your own set of helper functions]
+      $para [
       ]
 
     ]
@@ -820,17 +822,17 @@ $!d5b.article [
 
   #-----------------------------------------------------------------------------
   # References to books, websites
-  $|sect1 [
-    $|title [References to books, websites, articles and pod-documents]
+  $sect1 [
+    $title [References to books, websites, articles and pod-documents]
 
-    $|sect2 [
-      $|title [Web Pages]
+    $sect2 [
+      $title [Web Pages]
 
-      $|sect3 [
-        $|para [
+      $sect3 [
+        $para [
           MongoDB Manual covering all aspects of what is possible.
           Source is from MongoDB, Inc.
-          $|link xlink:href=http://docs.mongodb.com/master/MongoDB-manual.epub [
+          $link xlink:href=http://docs.mongodb.com/master/MongoDB-manual.epub [
             EPub edition
           ]
         ]
@@ -840,17 +842,17 @@ $!d5b.article [
 
   #-----------------------------------------------------------------------------
   # Glossary of things
-  $|glossary [
-    $|title [MongoDB Driver Glossary and References]
+  $glossary [
+    $title [MongoDB Driver Glossary and References]
 
-    $|glossdiv [
-      $|title [B]
+    $glossdiv [
+      $title [B]
 
-      $|glossentry xml:id=bson [
-        $|glossterm [Binary JSON]
-        $|acronim [JSON]
-        $|glossdef [
-          $|para [
+      $glossentry xml:id=bson [
+        $glossterm [Binary JSON]
+        $acronim [JSON]
+        $glossdef [
+          $para [
             BSON is a computer data interchange format used mainly as a data
             storage and network transfer format in the MongoDB database.
             See also on
@@ -863,14 +865,14 @@ $!d5b.article [
     ]
 
 
-    $|glossdiv [
-      $|title [J]
+    $glossdiv [
+      $title [J]
 
-      $|glossentry xml:id=json [
-        $|glossterm [JavaScript Object Notation]
-        $|acronim [JSON]
-        $|glossdef [
-          $|para [
+      $glossentry xml:id=json [
+        $glossterm [JavaScript Object Notation]
+        $acronim [JSON]
+        $glossdef [
+          $para [
             JavaScript Object Notation) is an open-standard format that uses
             human-readable text to transmit data objects consisting of
             attribute-value pairs.
@@ -884,14 +886,14 @@ $!d5b.article [
     ]
 
 
-    $|glossdiv [
-      $|title [M]
+    $glossdiv [
+      $title [M]
 
-      $|glossentry xml:id=mongodb [
-        $|glossterm [MongoDB]
-        $|acronim [MongoDB]
-        $|glossdef [
-          $|para [
+      $glossentry xml:id=mongodb [
+        $glossterm [MongoDB]
+        $acronim [MongoDB]
+        $glossdef [
+          $para [
             MongoDB (from humongous) is a free and open-source cross-platform
             document-oriented database program.
           ]
@@ -900,14 +902,14 @@ $!d5b.article [
     ]
 
 
-    $|glossdiv [
-      $|title [N]
+    $glossdiv [
+      $title [N]
 
-      $|glossentry xml:id=nosql [
-        $|glossterm [Non SQL]
-        $|acronim [NoSql]
-        $|glossdef [
-          $|para [
+      $glossentry xml:id=nosql [
+        $glossterm [Non SQL]
+        $acronim [NoSql]
+        $glossdef [
+          $para [
             A NoSQL (originally referring to "non $**glossterm linkend=sql
             [Structured Query Language]", "non relational" or "not only SQL"
             database provides a mechanism for storage and retrieval of data
@@ -919,14 +921,14 @@ $!d5b.article [
     ]
 
 
-    $|glossdiv [
-      $|title [S]
+    $glossdiv [
+      $title [S]
 
-      $|glossentry xml:id=sql [
-        $|glossterm [Structured Query Language]
-        $|acronim [Sql]
-        $|glossdef [
-          $|para [
+      $glossentry xml:id=sql [
+        $glossterm [Structured Query Language]
+        $acronim [Sql]
+        $glossdef [
+          $para [
             SQL or Structured Query Language is a special-purpose
             domain-specific language used in programming and designed for
             managing data held in a relational database management system
@@ -937,5 +939,5 @@ $!d5b.article [
     ]
   ]
 
-  $|index
+  $index
 ]

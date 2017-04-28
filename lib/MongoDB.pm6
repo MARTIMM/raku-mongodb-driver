@@ -13,6 +13,8 @@ sub EXPORT { {
     '&warn-message'                     => &warn-message,
     '&error-message'                    => &error-message,
     '&fatal-message'                    => &fatal-message,
+
+    'X::MongoDB::Message'               => X::MongoDB::Message,
   }
 };
 

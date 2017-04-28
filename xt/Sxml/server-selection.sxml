@@ -2,51 +2,51 @@ $!report.run
   title='Server Selection' class=MongoDB::Client
   distribution=MongoDB [
 
-  $|h2 [ Testing client behaviour ]
-  $|p [
+  $h2 [ Testing client behaviour ]
+  $p [
     The client must be tested to follow a set of specifications in order to have
     the same behaviour compared to other drivers. Depending on the language this
     behaviour can result in events or return values. This report is following
     a specification from $**a href='https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst' [Mongodb] website and is shown below.
   ]
 
-  $|h2 [ Scope and general requirements ]
-  $|p [
+  $h2 [ Scope and general requirements ]
+  $p [
     This specification describes how MongoDB drivers and mongos select a server for
     read and write operations, including commands, OP_QUERY, OP_INSERT, OP_UPDATE,
     and OP_DELETE. For read operations, it describes how drivers and mongos shall
     interpret a read preference document.
   ]
 
-  $|p [
+  $p [
     This specification does not apply to OP_GET_MORE or OP_KILL_CURSORS operations
     on cursors, which need to go to the same server that received an OP_QUERY and
     returned a cursor ID.
   ]
 
-  $|p [
+  $p [
     Drivers and mongos MUST conform to the semantics of this document, but SHOULD
     use language-appropriate data models or variable names.
   ]
 
-  $|p [
+  $p [
     This specification does not apply to commands issued for server monitoring or
     authentication.
   ]
 
 
 
-  $|h2 [ MongoClient Configuration ]
-  $|p [
+  $h2 [ MongoClient Configuration ]
+  $p [
     Selecting a server requires the following client-level configuration
     options:
   ]
   
-  $|ul [
-    $|li [
-      $|b[ localThresholdMS ]
+  $ul [
+    $li [
+      $b[ localThresholdMS ]
 
-      $|p [
+      $p [
         This defines the size of the latency window for selecting among multiple
         suitable servers. The default is 15 (milliseconds). It MUST be
         configurable at the client level. It MUST NOT be configurable at the
@@ -56,57 +56,57 @@ $!report.run
     ]
   ]
 
-  $|p [
+  $p [
     In the prior read preference specification, localThresholdMS was called
     secondaryAcceptableLatencyMS by drivers. Drivers MUST support the new name
     for consistency, but MAY continue to support the legacy name to avoid a
     backward-breaking change.
   ]
 
-  $|p [
+  $p [
     mongos currently uses localThreshold and MAY continue to do so.
     serverSelectionTimeoutMS
   ]
 
-  $|p [
+  $p [
     This defines how long to block for server selection before throwing an
     exception. The default is 30,000 (milliseconds). It MUST be configurable at
     the client level. It MUST NOT be configurable at the level of a database
     object, collection object, or at the level of an individual query.
   ]
 
-  $|p [
+  $p [
     This default value was chosen to be sufficient for a typical server primary
     election to complete. As the server improves the speed of elections, this
     number may be revised downward.
   ]
 
-  $|p [
+  $p [
     Users that can tolerate long delays for server selection when the topology
     is in flux can set this higher. Users that want to "fail fast" when the
     topology is in flux can set this to a small number.
   ]
 
-  $|p [
+  $p [
     A serverSelectionTimeoutMS of zero MAY have special meaning in some drivers;
     zero's meaning is not defined in this spec, but all drivers SHOULD document
     the meaning of zero. serverSelectionTryOnce
   ]
 
-  $|p [
+  $p [
     Single-threaded drivers MUST provide a "serverSelectionTryOnce" mode, in
     which the driver scans the topology exactly once after server selection
     fails, then either selects a server or raises an error.
   ]
 
-  $|p [
+  $p [
     The serverSelectionTryOnce option MUST be true by default. If it is set
     false, then the driver repeatedly searches for an appropriate server for up
     to serverSelectionTimeoutMS milliseconds (pausing minHeartbeatFrequencyMS
     between attempts, as required by the Server Discovery and Monitoring spec).
   ]
 
-  $|p [
+  $p [
     Users of single-threaded drivers MUST be able to control this mode in one or
     both of these ways:
 
@@ -116,28 +116,28 @@ $!report.run
         in the URI. The URI option is spelled the same for all drivers.
   ]
 
-  $|p [
+  $p [
     Conflicting usages of the URI option and the symbol is an error.
   ]
 
-  $|p [
+  $p [
     Multi-threaded drivers MUST NOT provide this mode. (See single-threaded
     server selection implementation and the rationale for a "try once" mode.)
     heartbeatFrequencyMS
   ]
 
-  $|p [
+  $p [
     This controls when topology updates are scheduled. See heartbeatFrequencyMS
     in the Server Discovery and Monitoring spec for details. idleWritePeriodMS
   ]
 
-  $|p [
+  $p [
     A constant, how often an idle primary writes a no-op to the oplog. See
     idleWritePeriodMS in the Max Staleness spec for details.
     smallestMaxStalenessSeconds
   ]
 
-  $|p [
+  $p [
     A constant, 90 seconds. See "Smallest allowed value for maxStalenessSeconds"
     in the Max Staleness Spec.
   ]

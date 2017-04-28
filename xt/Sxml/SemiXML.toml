@@ -5,8 +5,8 @@
   fileext       = 'html'
 
 [output.program]
-  pdf           = 'wkhtmltopdf - %of.pdf'
-  fmt           = 'xmllint --format - > %of.%oe'
+  pdf           = 'wkhtmltopdf - %op/%of.pdf'
+  fmt           = 'xmllint --format - > %op/%of.%oe'
 
 [module]
   report        = 'SxmlLib::Testing::Report'

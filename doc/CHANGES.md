@@ -2,6 +2,10 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.37.1
+  * In module MongoDB::Server::Control the processing of exceptions is changed due to changes in Proc.
+  * To test MongoDB exceptions thrown by fatal-message() the MongoDB::Message
+  * MongoDB::Message changed into X::MongoDB::Message.
 * 0.37.0
   * Made heartbeatFrequencyMS, serverSelectionTimeoutMS and localThresholdMS available as options in uri
 * 0.36.6
