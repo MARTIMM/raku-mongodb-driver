@@ -14,9 +14,9 @@
   fileext       = 'xml'
 
 [ output.program ]
-  pdf           = 'xsltproc --encoding utf-8 --xinclude %op/stylesheet.xsl - | xep -fo - -pdf %of.pdf'
-  xsl           = 'xmllint --format - > %of.xsl'
-  xml           = 'xmllint --format - > %of.%oe'
+  pdf           = 'xsltproc --encoding utf-8 --xinclude %op/stylesheet.xsl - | xep -fo - -pdf %op/%of.pdf'
+  xsl           = 'xmllint --format - > %op/%of.xsl'
+  xml           = 'xmllint --format - > %op/%of.%oe'
   chk           = 'xmllint --format - | tee MongoDB.xml | rnv /usr/share/xml/docbook5/schema/rng/5.0/docbook.rnc'
 
 [ module ]

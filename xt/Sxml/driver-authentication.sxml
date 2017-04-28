@@ -3,14 +3,14 @@ $!report.run
   highlight-lang=lang-perl6 highlight-skin=default linenumbers=1
   distribution=MongoDB [
 
-  $|h2 [ Abstract ]
-  $|p [
+  $h2 [ Abstract ]
+  $p [
     MongoDB supports various authentication strategies across various versions.
     When authentication is turned on in the database, a driver must authenticate
     before it is allowed to communicate with the server. This spec defines when
     and how a driver performs authentication with a MongoDB server.
   ]
-  $|p [
+  $p [
     This report is following
     a specification from the $**a href='https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst' [
       Mongodb
@@ -18,8 +18,8 @@ $!report.run
   ]
 
   #-----------------------------------------------------------------------------
-  $|h2 [ Mongo credential ]
-  $|p [
+  $h2 [ Mongo credential ]
+  $p [
     Drivers should contain a type called MongoCredential. In this driver it is
     called $*|code[ MongoDB::Authenticate::Credential ].
   ]
@@ -58,7 +58,7 @@ $!report.run
   ]
 
   #-----------------------------------------------------------------------------
-  $|p1 [ Some combinations of credential parameters should fail ]
+  $p1 [ Some combinations of credential parameters should fail ]
 
   $!code.add [=
 
@@ -82,7 +82,7 @@ $!report.run
   ]
 
   #-----------------------------------------------------------------------------
-  $|p1 [
+  $p1 [
     Credential parameters are taken from the information in the uri. The
     authentication mechanism can also be guessed from the max wire version from
     the info returned by the $**code[isMaster] command. This, however can only
@@ -91,7 +91,7 @@ $!report.run
     will keep connected to the server even after undefining.
   ]
 
-  $|p1 [
+  $p1 [
     The driver will not show much if no user or password is given. So, in order
     to test that a user must be created. All of this can only be done when the
     server is not yet in authentication mode or, it is, and one can login using
@@ -114,7 +114,7 @@ $!report.run
     $!test.add t='ok $doc<ok>' [User $**code[user] created]
   ]
 
-  $|p [
+  $p [
     Now we can try to login using the credentials
   ]
 

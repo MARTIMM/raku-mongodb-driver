@@ -1,0 +1,17 @@
+Title:Server Discovery
+Package:-
+Module:-
+Class:MongoDB::Client
+Distribution:MongoDB
+Label:-
+Date (zulu):2017-02-27T19:00:56.172028Z
+OS-Kernel:linux:4.9.7.101.fc.24.x.86._.64
+OS-Distro:fedora:24.Workstation.Edition:24:False
+Perl:Perl 6:6.c
+Compiler:rakudo:2017.02.56.g.9.f.10434
+VM:moar:2017.02.7.g.3.d.85900
+Total: 1
+T:1.00 0.00 1.00
+B:0.00 0.00 0.00
+D:0.00 0.00 0.00
+S:0.00 0.00 0.00
