@@ -32,17 +32,23 @@ class Server::Control {
     my Bool $started = False;
 
     info-message($cmdstr);
-    my Proc $proc = shell($cmdstr);
-    if $proc.exitcode != 0 {
 
-      fatal-message('Failed to execute command');
+    try {
+      my Proc $proc = shell $cmdstr, :err, :out;
+
+      # when closing the channels, exceptions are thrown by Proc when there
+      # were any problems
+      $proc.err.close;
+      $proc.out.close;
+      CATCH {
+        default {
+          fatal-message(.message);
+        }
+      }
     }
 
-    else {
-
-      $started = True;
-      debug-message('Command executed ok');
-    }
+    $started = True;
+    debug-message('Command executed ok');
 
     $started;
   }
@@ -60,17 +66,21 @@ class Server::Control {
 
     my Bool $stopped = False;
     info-message($cmdstr);
-    my Proc $proc = shell($cmdstr);
-    if $proc.exitcode != 0 {
 
-      fatal-message('Failed to execute command');
+    try {
+      # inconsequent server error messaging. when starting it says ERROR on stdout
+      my Proc $proc = shell $cmdstr, :err, :out;
+      $proc.err.close;
+      $proc.out.close;
+      CATCH {
+        default {
+          fatal-message(.message);
+        }
+      }
     }
 
-    else {
-
-      debug-message('Command executed ok');
-      $stopped = True;
-    }
+    debug-message('Command executed ok');
+    $stopped = True;
 
     $stopped;
   }
@@ -101,7 +111,7 @@ class Server::Control {
 
     # Can be configured in config file
     if $config<Binaries>:exists
-       and $config<Binaries>{$binary}:exists 
+       and $config<Binaries>{$binary}:exists
        and $config<Binaries>{$binary}.IO ~~ :x {
 
       $mongodb-server-path = $config<Binaries>{$binary};
@@ -142,4 +152,3 @@ class Server::Control {
     $mongodb-server-path;
   }
 }
-
