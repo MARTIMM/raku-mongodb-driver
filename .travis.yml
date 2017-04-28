@@ -19,8 +19,8 @@ install:
 git:
   depth: 5
 
-cache:
+#cache:
 #  timeout: 1200
-  directories:
-    - $HOME/Travis-ci
-    - $HOME/.rakudobrew
+#  directories:
+#    - $HOME/Travis-ci
+#    - $HOME/.rakudobrew
