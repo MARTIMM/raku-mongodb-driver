@@ -85,8 +85,7 @@ class Collection {
     --> MongoDB::Cursor
   ) {
 
-    my BSON::Document $rc =
-      $read-concern.defined ?? $read-concern !! $!read-concern;
+    my BSON::Document $rc = $read-concern // $!read-concern;
 
     my ServerType $server = $!database.client.select-server(:read-concern($rc));
 
