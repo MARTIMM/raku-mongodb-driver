@@ -393,7 +393,7 @@ class Client {
       $selected-server = $!rw-sem.reader( 'servers', {
 #note "Servers: ", $!servers.keys;
 #note "Request: $selected-servername";
-          $!servers{$servername}:exists 
+          $!servers{$servername}:exists
                   ?? $!servers{$servername}
                   !! MongoDB::Server;
         }
@@ -406,7 +406,7 @@ class Client {
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
-      debug-message("Server selected");
+      debug-message("Server '$selected-server.name()' selected");
     }
 
     else {
@@ -529,7 +529,9 @@ class Client {
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
-      debug-message("Server selected after trying for {now - $t0} sec");
+      debug-message(
+        "Server '$selected-server.name()' selected after trying for {now - $t0} sec"
+      );
     }
 
     else {
@@ -635,4 +637,3 @@ class Client {
     );
   }
 }
-
