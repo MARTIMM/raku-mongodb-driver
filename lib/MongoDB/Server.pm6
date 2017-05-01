@@ -72,7 +72,7 @@ class Server {
 
     @!sockets = ();
 
-    # Save name andd port of the server
+    # Save name and port of the server
     ( my $host, my $port) = split( ':', $server-name);
     $!server-name = $host;
     $!server-port = $port.Int;
@@ -85,7 +85,7 @@ class Server {
   }
 
   #-----------------------------------------------------------------------------
-  # Server initialization 
+  # Server initialization
   method server-init ( Int:D $heartbeat-frequency-ms ) {
 
     # Start monitoring
@@ -454,4 +454,3 @@ class Server {
     $!server-tap = Nil;
   }
 }
-
