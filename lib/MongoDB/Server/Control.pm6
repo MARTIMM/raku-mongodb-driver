@@ -1,7 +1,7 @@
-use v6.c;
+use v6;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<github:MARTIMM>;
 
 use Config::DataLang::Refine;
 use MongoDB;

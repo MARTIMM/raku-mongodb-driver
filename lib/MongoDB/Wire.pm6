@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use BSON;
 use BSON::Document;
@@ -6,7 +6,7 @@ use MongoDB;
 use MongoDB::Header;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Wire {

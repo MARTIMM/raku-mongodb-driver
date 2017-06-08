@@ -1,7 +1,7 @@
-use v6.c;
+use v6;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 use MongoDB;
 use MongoDB::Collection;
@@ -102,6 +102,8 @@ class Database {
     }
 
     my $doc = $cursor.fetch;
+    debug-message("command done {$command.find-key(0)}");
+    trace-message("command result {($doc // '-').perl}");
     return $doc.defined ?? $doc !! BSON::Document.new;
   }
 
@@ -136,5 +138,3 @@ class Database {
     $!name = $name;
   }
 }
-
-

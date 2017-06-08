@@ -1,11 +1,11 @@
-use v6.c;
+use v6;
 
 use BSON;
 use BSON::Document;
 use MongoDB;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Header {
@@ -144,7 +144,7 @@ class Header {
     }
 
     # encode message header and get used request id
-    ( my Buf $message-header, my Int $u-request-id) = 
+    ( my Buf $message-header, my Int $u-request-id) =
       self!encode-message-header( $query-buffer.elems, OP-QUERY);
 
     # return total encoded buffer with request id
@@ -188,7 +188,7 @@ class Header {
     ;
 
     # encode message header and get used request id
-    ( my Buf $message-header, my Int $u-request-id) = 
+    ( my Buf $message-header, my Int $u-request-id) =
       self!encode-message-header( $get-more-buffer.elems, OP-GET-MORE);
 
     # return total encoded buffer with request id
@@ -221,7 +221,7 @@ class Header {
     # MsgHeader header
     # standard message header
     #
-    ( my Buf $encoded-kill-cursors, my Int $u-request-id) = 
+    ( my Buf $encoded-kill-cursors, my Int $u-request-id) =
       self!encode-message-header( $kill-cursors-buffer.elems, OP-KILL-CURSORS);
 
     return ( $encoded-kill-cursors ~ $kill-cursors-buffer, $u-request-id);

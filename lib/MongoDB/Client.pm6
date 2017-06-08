@@ -1,9 +1,9 @@
-use v6.c;
+use v6;
 
 #TODO readconcern does not have to be a BSON::Document. no encoding!
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 use MongoDB;
 use MongoDB::Uri;

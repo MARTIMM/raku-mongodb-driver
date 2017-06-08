@@ -1,9 +1,9 @@
-use v6.c;
+use v6;
 
 use MongoDB;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 #TODO Sockets must initiate a handshake procedure when socket is opened. Perhaps
@@ -146,4 +146,3 @@ class Server::Socket {
     }
   }
 }
-

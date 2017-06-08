@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 use Digest::MD5;
 use MongoDB;
 use MongoDB::Database;
@@ -8,8 +8,7 @@ use BSON::Document;
 #use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
-#
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<hgithub:MARTIMM>;
 
 constant C-PW-LOWERCASE is export = 0;
 constant C-PW-UPPERCASE is export = 1;

@@ -1,10 +1,10 @@
-use v6.c;
+use v6;
 
 use MongoDB;
 
 #-------------------------------------------------------------------------------
 # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Authenticate::Credential {
@@ -113,4 +113,3 @@ class Authenticate::Credential {
     }
   }
 }
-

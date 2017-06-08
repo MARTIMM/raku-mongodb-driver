@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 =begin pod
 
@@ -141,7 +141,7 @@ for more details.
 
 =begin table
 
-  
+
   Section                       Impl    Use
   =========================================================================
   Replica set options
@@ -156,7 +156,7 @@ for more details.
                                         TLS/SSL. The default value is false.
   ------------------------------------------------------------------------
   connectTimeoutMS                      The time in milliseconds to attempt a
-                                        connection before timing out. 
+                                        connection before timing out.
   ------------------------------------------------------------------------
   socketTimeoutMS                       The time in milliseconds to attempt a
                                         send or receive on a socket before the
@@ -204,7 +204,7 @@ for more details.
                                         wtimeout. wtimeoutMS specifies a time
                                         limit, in milliseconds, for the write
                                         concern. When wtimeoutMS is 0, write
-                                        operations will never time out. 
+                                        operations will never time out.
   -------------------------------------------------------------------------
   journal                               Corresponds to the write concern j
                                         Option option. The journal option
@@ -255,7 +255,7 @@ for more details.
   -------------------------------------------------------------------------
   localThresholdMS              done    The size (in milliseconds) of the
                                         latency window for selecting among
-                                        multiple suitable MongoDB instances. 
+                                        multiple suitable MongoDB instances.
                                         Default: 15 milliseconds. All drivers
                                         use localThresholdMS. Use the
                                         localThreshold alias when specifying the
@@ -395,7 +395,7 @@ When C<read-concern> is not defined, the data is taken from this Clients
 read-concern. B<Note>, this method is used internally and most of the time of no
 concern to the user.
 
-=begin comment 
+=begin comment
 add-servers() is used internally to add new servers to the todo list. This
 is done on the server when other servers found in the replica ismaster results.
 =end comment

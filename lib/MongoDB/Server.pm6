@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use MongoDB;
 use MongoDB::Wire;
@@ -12,7 +12,7 @@ use Semaphore::ReadersWriters;
 use Auth::SCRAM;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Server {

@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use BSON::Document;
 
@@ -9,7 +9,7 @@ use MongoDB::Collection;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 
 # Array index and error codes
@@ -127,7 +127,7 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method insert ( 
+  method insert (
     Array:D :$inserts
 
     --> BSON::Document
@@ -136,7 +136,7 @@ role HL::CollectionRole {
     my Array $mod-inserts = [];
     for @$inserts {
       my Hash $ins = %$_;
-      
+
       my BSON::Document $record .= new;
 
       if $ins.defined {
@@ -213,7 +213,7 @@ role HL::CollectionRole {
       if $us<u>:exists and $us<u>.defined {
         $query-spec<u> = $us<u>;
       }
-      
+
       else {
         fatal-message("No update specification found");
       }
@@ -315,7 +315,7 @@ role HL::CollectionRole {
 
     # clear all data and set defaults
     self.reset;
-    
+
     $doc;
   }
 
@@ -524,7 +524,7 @@ role HL::CollectionRole {
       }
 
       elsif $field-spec[1] ~~ C-TYPE {
-        $error-doc<fields>{$field-spec[0]} = 
+        $error-doc<fields>{$field-spec[0]} =
           [~] 'type failure, is ', $field-spec[2].WHAT.perl, " but must be ",
           $field-spec[3].WHAT.perl;
       }

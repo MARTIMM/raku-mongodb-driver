@@ -1,8 +1,8 @@
-use v6.c;
+use v6;
 use MongoDB;
 use URI::Escape;
 
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 #-----------------------------------------------------------------------------
 class Uri {
 

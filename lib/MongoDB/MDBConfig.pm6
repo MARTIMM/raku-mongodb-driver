@@ -1,10 +1,10 @@
-use v6.c;
+use v6;
 
 use MongoDB;
 use Config::DataLang::Refine;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 # Singleton class used to maintain config for whole of mongodb

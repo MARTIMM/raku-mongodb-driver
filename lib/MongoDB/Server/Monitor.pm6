@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use MongoDB;
 use MongoDB::Server::Socket;
@@ -7,7 +7,7 @@ use BSON::Document;
 use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Server::Monitor {
@@ -31,7 +31,7 @@ class Server::Monitor {
 
   #-----------------------------------------------------------------------------
   # Call before monitor-server to set the $!server object!
-  # Inheriting from Supplier prevents use of proper BUILD 
+  # Inheriting from Supplier prevents use of proper BUILD
   #
   submethod BUILD ( MongoDB::ServerType:D :$server ) {
 
@@ -83,7 +83,7 @@ class Server::Monitor {
         my Duration $rtt;
         my BSON::Document $doc;
 
-        # As long as the server lives test it. Changes are possible when 
+        # As long as the server lives test it. Changes are possible when
         # server conditions change.
         my Bool $mloop = $!rw-sem.writer( 'm-loop', {$!monitor-loop = True;});
 
@@ -100,7 +100,7 @@ class Server::Monitor {
 
           if $doc.defined {
 
-            # Calculation of mean Return Trip Time. See also 
+            # Calculation of mean Return Trip Time. See also
             # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
             #
             $!weighted-mean-rtt-ms .= new(
