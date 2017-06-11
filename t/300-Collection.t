@@ -11,7 +11,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 #drop-send-to('mongodb');
 #drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -98,7 +98,7 @@ is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 try {
   $doc = $database.run-command($req);
   CATCH {
-    when X::MongoDB::Message {
+    when X::MongoDB {
       ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
     }
   }
@@ -122,7 +122,7 @@ exit(0);
 try {
   $database.create-collection('abc-def and a space');
   CATCH {
-    when X::MongoDB::Message {
+    when X::MongoDB {
       ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
     }
   }

@@ -13,7 +13,7 @@ use MongoDB::Client;
 #-------------------------------------------------------------------------------
 #drop-send-to('mongodb');
 #drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::MdbLoglevels::Trace));
 
 #-------------------------------------------------------------------------------
 class Test-support {
