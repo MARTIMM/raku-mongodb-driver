@@ -15,6 +15,9 @@
     "Log::Async",
     "Terminal::ANSIColor"
   ],
+  "test-depends" : [ "Test::META"],
+  "build-depends" : [ ],
+  "tags" : [ "NoSQL", "Database", "mongodb"],
   "description": "MongoDB driver",
   "license": "Artistic-2.0",
   "name": "MongoDB",
@@ -40,5 +43,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.37.1.2"
+  "version": "0.37.1.5"
 }
