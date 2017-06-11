@@ -16,7 +16,7 @@ sub EXPORT { {
     '&error-message'                    => &error-message,
     '&fatal-message'                    => &fatal-message,
 
-    'X::MongoDB::Message'               => X::MongoDB::Message,
+    'X::MongoDB'               => X::MongoDB,
   }
 };
 

@@ -4,8 +4,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
 * 0.37.1
   * In module MongoDB::Server::Control the processing of exceptions is changed due to changes in Proc.
-  * To test MongoDB exceptions thrown by fatal-message() the MongoDB::Message
-  * MongoDB::Message changed into X::MongoDB::Message.
+  * MongoDB::Message is changed into X::MongoDB.
 * 0.37.0
   * Made heartbeatFrequencyMS, serverSelectionTimeoutMS and localThresholdMS available as options in uri
 * 0.36.6
