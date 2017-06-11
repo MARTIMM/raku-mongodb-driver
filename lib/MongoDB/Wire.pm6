@@ -86,21 +86,21 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#note .WHAT;
+#note "What: ", .WHAT;
 #note "$*THREAD.id() Error wire query: ", $_;
+#note "Msg: ", .message;
         $!socket.close-on-fail if $!socket.defined;
 
-        # Fatal messages from the program
-        when X::MongoDB::Message {
+        # Fatal messages from the program elsewhere
+        when X::MongoDB {
           # Already logged
         }
 
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
-             .message ~~ m:s/Failed to connect\: connection refused/ {
+             .message ~~ m:s/Could not connect socket\: Connection refused/ {
 
-#          error-message(.message);
-          .rethrow;
+          warn-message(.message);
         }
 
         # From BSON::Document
@@ -161,7 +161,7 @@ class Wire {
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
-        when X::MongoDB::Message {
+        when X::MongoDB {
           # Already logged
         }
 
@@ -218,7 +218,7 @@ class Wire {
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
-        when X::MongoDB::Message {
+        when X::MongoDB {
           # Already logged
         }
 
