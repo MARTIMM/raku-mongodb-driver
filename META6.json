@@ -12,7 +12,6 @@
     "OpenSSL",
     "URI::Escape",
     "Unicode::PRECIS",
-    "Log::Async",
     "Terminal::ANSIColor"
   ],
   "test-depends" : [ "Test::META"],
