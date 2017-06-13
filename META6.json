@@ -12,10 +12,9 @@
     "OpenSSL",
     "URI::Escape",
     "Unicode::PRECIS",
-    "Terminal::ANSIColor"
+    "Terminal::ANSIColor",
+    "Test::META"
   ],
-  "test-depends": [ "Test::META"],
-  "build-depends": [ ],
   "tags": [ "NoSQL", "Database", "mongodb"],
   "description": "MongoDB driver",
   "license": "Artistic-2.0",
