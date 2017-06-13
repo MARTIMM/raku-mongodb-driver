@@ -322,7 +322,7 @@ class Client {
 
 #        $!rw-sem.writer( 'topology', {$!topology-type = $topology;});
         $!topology-type = $topology;
-        debug-message("topology type set to $topology");
+        info-message("Client topology type set to $topology");
       }
     );
   }
@@ -406,11 +406,11 @@ class Client {
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
-      debug-message("Server '$selected-server.name()' selected");
+      info-message("Server '$selected-server.name()' selected");
     }
 
     else {
-      error-message("No suitable server selected");
+      warn-message("No suitable server selected");
     }
 
     $selected-server;
@@ -529,15 +529,11 @@ class Client {
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
-      debug-message(
-        "Server '$selected-server.name()' selected after trying for {now - $t0} sec"
-      );
+      info-message("Server '$selected-server.name()' selected");
     }
 
     else {
-      error-message(
-        "No suitable server selected after trying for {now - $t0} sec"
-      );
+      warn-message("No suitable server selected");
     }
 
     $selected-server;
