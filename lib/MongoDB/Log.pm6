@@ -107,16 +107,16 @@ package MongoDB:auth<github:MARTIMM> {
     #-----------------------------------------------------------------------------
     # add channel
     method add-send-to (
-      Str:D $key, :$level = Info, Code :$code,
-      Any :$to is copy = $*ERR, Str :$pipe
+      Str:D $key, MdbLoglevels :$min-level = Info, Code :$code,
+      Any :$to is copy = $*ERR, Str :$pipe = ''
     ) {
-  #say "$key, $to, $level, {$code//'-'}";
-      if $pipe {
-        my Proc $p = shell( $pipe, :in) or die "error opening pipe to $pipe";
+      if ? $pipe {
+        my Proc $p = shell $pipe, :in;
         $to = $p.in;
+        die "error opening pipe to '$pipe'" if $p.exitcode > 0;
       }
 
-      $!send-to-setup{$key} = [ $to, $level, $code];
+      $!send-to-setup{$key} = [ $to, * >= $min-level, $code];
       self!start-send-to;
     }
 
@@ -399,5 +399,5 @@ sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 #-------------------------------------------------------------------------------
 # Activate some channels. Display messages only on error and fatal to the screen
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
-add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Error));
-add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :level(* >= MongoDB::Info));
+add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::Error));
+add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :min-level(MongoDB::Info));
