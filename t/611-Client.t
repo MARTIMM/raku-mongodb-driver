@@ -10,8 +10,8 @@ use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::MdbLoglevels::Debug));
+#drop-send-to('screen');
+modify-send-to( 'screen', :level(* >= MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -30,11 +30,15 @@ my Int $p2 = $ts.server-control.get-port-number('s2');
 #-------------------------------------------------------------------------------
 subtest "Client behaviour with a replicaserver and standalone mix", {
 
-  diag "\nmongodb://$host:$p2,$host:$p1";
-
   # Wait long enough to settle in proper end state
   my @options = <serverSelectionTimeoutMS=5000>;
-  $client .= new(:uri("mongodb://$host:$p2,$host:$p1/?" ~ @options.join('&')));
+  my Str $uri = "mongodb://$host:$p2,$host:$p1/?" ~ @options.join('&');
+
+  diag $uri;
+  $client .= new(:$uri);
+
+  # make sure that topology is settled
+  sleep 1;
 
   $server = $client.select-server;
   nok $server.defined, 'Cannot select a server';
