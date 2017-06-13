@@ -7,12 +7,14 @@ language: perl6
 perl6:
   - latest
 
-install:
+before_install:
   - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
+
+install:
   - rakudobrew build-zef ${TRAVIS_PERL6_VERSION#latest}
-  - zef --/test install Crane
-  - zef --/test install Config::TOML
-  - zef --depsonly install .
+#  - zef --/test install Crane
+#  - zef --/test install Config::TOML
+  - zef --/test --depsonly install .
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #services:
