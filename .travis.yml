@@ -15,7 +15,7 @@ install:
   - rakudobrew build zef
 #  - zef --debug --/test install Crane
 #  - zef --debug --/test install Config::TOML
-  - zef --depsonly install .
+  - zef --/test --depsonly install .
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #services:
