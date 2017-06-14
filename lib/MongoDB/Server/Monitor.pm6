@@ -130,7 +130,7 @@ class Server::Monitor {
           }
 
 #          sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
-#note "Sleep for {$monitor-looptime-ms / 1000.0} (1)";
+#note "Sleep for {$monitor-looptime-ms / 1000.0} sec";
           sleep $monitor-looptime-ms / 1000.0;
           $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
 
