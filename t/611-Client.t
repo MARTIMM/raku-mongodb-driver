@@ -33,12 +33,8 @@ subtest "Client behaviour with a replicaserver and standalone mix", {
   # Wait long enough to settle in proper end state
   my @options = <serverSelectionTimeoutMS=5000>;
   my Str $uri = "mongodb://$host:$p2,$host:$p1/?" ~ @options.join('&');
-
   diag $uri;
   $client .= new(:$uri);
-
-  # make sure that topology is settled
-  sleep 1;
 
   $server = $client.select-server;
   nok $server.defined, 'Cannot select a server';
@@ -48,9 +44,11 @@ subtest "Client behaviour with a replicaserver and standalone mix", {
 #-------------------------------------------------------------------------------
 subtest "Client behaviour with one replicaserver", {
 
-  diag "mongodb://$host:$p2";
   my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
-  $client .= new(:uri("mongodb://$host:$p2/?" ~ @options.join('&')));
+  my Str $uri = "mongodb://$host:$p2/?" ~ @options.join('&');
+  diag $uri;
+  $client .= new(:$uri);
+
   $server = $client.select-server;
   is $server.get-status<status>, SS-RSPrimary, "Replicaset primary server";
   is $client.topology, TT-Single, 'Single topology';
