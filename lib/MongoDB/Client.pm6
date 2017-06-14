@@ -19,12 +19,14 @@ use Semaphore::ReadersWriters;
 #-------------------------------------------------------------------------------
 class Client {
 
+  # topology-set is used to block the server-select() process when topology still
+  # needs to be calculated.
   has TopologyType $!topology-type;
   has TopologyType $!user-request-topology;
+  has Bool $!topology-set;
 
   # Store all found servers here. key is the name of the server which is
   # the server address/ip and its port number. This should be unique.
-  #
   has Hash $!servers;
   has Array $!todo-servers;
 
@@ -82,6 +84,7 @@ class Client {
 
     $!user-request-topology = $topology-type;
     $!topology-type = TT-Unknown;
+    $!topology-set = False;
 
     $!servers = {};
     $!todo-servers = [];
@@ -150,8 +153,10 @@ class Client {
     }
 
     # counter to check if there are new servers added. if so, the counter
-    # is set to 0. if less then 5 the sleeptime is 1 sec. Above it becomes
-    # the heartbeat frequency
+    # is set to 0. if less then 5 the sleeptime is about a second. Above it
+    # becomes the heartbeat frequency which is 10 sec by default. This is
+    # done to process the servers at Client instantiation faster and to set
+    # the topology result quicker.
     my Int $changes-count = 0;
 
     # Background proces to handle server monitoring data
@@ -187,6 +192,10 @@ class Client {
               next;
             }
 
+            # New server, re-examin the topology outcome, so block select-server
+            # until after topology is calculated.
+            $!topology-set = False;
+
             $changes-count = 0;
 
             # Create Server object
@@ -204,13 +213,14 @@ class Client {
 
             # When a server changes, the topology might change too! recalculate!
             self!process-topology;
+            $!topology-set = True;
 
             # When there is no work take a nap! This sleeping period is the
-            # moment we do not process the todo list. Start taking a nap for 2
-            # sec and after that take $!heartbeat-frequency-ms. Resets to 2 sec
+            # moment we do not process the todo list. Start taking a nap for 1.1
+            # sec and after that take $!heartbeat-frequency-ms. Resets to 1.1 sec
             # when a new server is found
             #
-            sleep $changes-count < 5 ?? 2.0 !! $!heartbeat-frequency-ms / 1000.0;
+            sleep $changes-count < 5 ?? 1.1 !! $!heartbeat-frequency-ms / 1000.0;
           }
 
           CATCH {
@@ -387,6 +397,11 @@ class Client {
 
     my MongoDB::Server $selected-server;
 
+    #! Wait until topology is set
+    until $!topology-set {
+      sleep 0.5;
+    }
+
     # find suitable servers by topology type and operation type
     repeat {
 
@@ -433,6 +448,11 @@ class Client {
 
     # record the server selection start time. used also in debug message
     my Instant $t0 = now;
+
+    #! Wait until topology is set
+    until $!topology-set {
+      sleep 0.5;
+    }
 
     # find suitable servers by topology type and operation type
     repeat {
@@ -543,7 +563,7 @@ class Client {
   # Add server to todo list.
   method add-servers ( Array $hostspecs ) {
 
-    debug-message("push $hostspecs[*] on todo list");
+    trace-message("push $hostspecs[*] on todo list");
     $!rw-sem.writer( 'todo', { $!todo-servers.append: |$hostspecs; });
   }
 
