@@ -35,7 +35,6 @@ class Collection {
   # Find record in a collection. One of the few left to use the wire protocol.
   #
   # Method using Pair.
-  #
   multi method find (
     List :$criteria where all(@$criteria) ~~ Pair = (),
     List :$projection where all(@$projection) ~~ Pair = (),
@@ -75,7 +74,6 @@ class Collection {
   }
 
   # Find record in a collection using a BSON::Document
-  #
   multi method find (
     BSON::Document :$criteria = BSON::Document.new,
     BSON::Document :$projection?,
@@ -114,11 +112,9 @@ class Collection {
   # Set the name of the collection. Used by command collection to set
   # collection name to '$cmd'. There are several other names starting with
   # 'system.'.
-  #
   method !set-name ( Str:D $name ) {
 
     # Check for the CommandCll because of $name is $cmd
-    #
 #      unless self.^name eq 'MongoDB::CommandCll' {
 
       # This should be possible: 'admin.$cmd' which is used by run-command
@@ -136,7 +132,6 @@ class Collection {
   #-----------------------------------------------------------------------------
   # Helper to set full collection name in cases that the name of the database
   # isn't available at BUILD time
-  #
   method !set-full-collection-name ( ) {
 
     return unless !?$!full-collection-name and ?$!database.name and ?$!name;
@@ -156,7 +151,6 @@ class Collection {
   # Some methods also created in Cursor.pm
   #---------------------------------------------------------------------------
   # Get explanation about given search criteria
-  #
   method explain ( Hash $criteria = {} --> Hash ) {
     my Pair @req = '$query' => $criteria, '$explain' => 1;
     my MongoDB::Cursor $cursor = self.find( @req, :number-to-return(1));
@@ -167,7 +161,6 @@ class Collection {
   #---------------------------------------------------------------------------
   # Aggregate methods
   #---------------------------------------------------------------------------
-  #
   multi method group ( Str $reduce-js-func, Str :$key = '',
                        :%initial = {}, Str :$key_js_func = '',
                        :%condition = {}, Str :$finalize = ''
@@ -220,7 +213,6 @@ class Collection {
   }
 
   #---------------------------------------------------------------------------
-  #
   multi method map-reduce ( Str:D $map-js-func, Str:D $reduce-js-func,
                             Hash :$out, Str :$finalize, Hash :$criteria,
                             Hash :$sort, Hash :$scope, Int :$limit,
@@ -267,7 +259,6 @@ class Collection {
     my Hash $doc = $!database.run-command(@req);
 
     # Check error and throw X::MongoDB if there is one
-    #
     if $doc<ok>.Bool == False {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
@@ -297,7 +288,6 @@ class Collection {
   method ensure-index ( %key-spec!, %options = {} ) {
 
     # Generate name of index if not given in options
-    #
     if %options<name>:!exists {
       my Str $name = '';
 
@@ -313,17 +303,14 @@ class Collection {
 
 
     # Check if index exists
-    #
     my $system-indexes = $!database.collection('system.indexes');
     my $doc = $system-indexes.find-one(%(key => %key-spec));
 
     # If found do nothing for the moment
-    #
     if +$doc {
     }
 
     # Insert index if not exists
-    #
     else {
       my %doc = %( ns => ([~] $!database.name, '.', $!name),
                    key => %key-spec,
@@ -333,7 +320,6 @@ class Collection {
       $system-indexes.insert(%doc);
 
       # Check error and throw X::MongoDB if there is one
-      #
       my $error-doc = $!database.get-last-error;
       if $error-doc<err> {
         die X::MongoDB.new(
@@ -349,7 +335,6 @@ class Collection {
 
   #-----------------------------------------------------------------------------
   # Drop an index
-  #
   method drop-index ( $key-spec! --> Hash ) {
     my Pair @req = deleteIndexes => $!name,
                    index => $key-spec,
@@ -373,14 +358,12 @@ class Collection {
 
   #-----------------------------------------------------------------------------
   # Drop all indexes
-  #
   method drop-indexes ( --> Hash ) {
     return self.drop-index('*');
   }
 
   #-----------------------------------------------------------------------------
   # Get indexes for the current collection
-  #
   method get-indexes ( --> MongoDB::Cursor ) {
     my $system-indexes = $!database.collection('system.indexes');
     return $system-indexes.find(%(ns => [~] $!database.name, '.', $!name));
@@ -390,7 +373,6 @@ class Collection {
   # Collection statistics
   #-----------------------------------------------------------------------------
   # Get collections statistics
-  #
   method stats ( Int :$scale = 1, Bool :index-details($indexDetails) = False,
                  Hash :index-details-field($indexDetailsField),
                  Str :index-details-name($indexDetailsName)
@@ -421,14 +403,13 @@ class Collection {
 
   #-----------------------------------------------------------------------------
   # Return size of collection in bytes
-  #
   method data-size ( --> Int ) {
     my Hash $doc = self.stats();
     return $doc<size>;
   }
 
   #---------------------------------------------------------------------------
-  #
+  # Find and modify the found data
   method find-and-modify (
     Hash $criteria = { }, Hash $projection = { },
     Hash :$update = { }, Hash :$sort = { },
@@ -463,7 +444,6 @@ class Collection {
   #---------------------------------------------------------------------------
   # Check keys in documents for insert operations
   # See http://docs.mongodb.org/meta-driver/latest/legacy/bson/
-  #
   method !check-doc-keys ( @docs! ) {
     for @docs -> $d {
       die X::MongoDB.new(
@@ -515,7 +495,6 @@ class Collection {
   }
 
   #---------------------------------------------------------------------------
-  #
   method !cdk ( $sub-doc! ) {
     for $sub-doc.keys -> $k {
       if $k ~~ m/ (^ '$' | '.') / {
@@ -538,7 +517,6 @@ class Collection {
   }
 
   #---------------------------------------------------------------------------
-  #
   method find-one ( %criteria = { }, %projection = { } --> Hash ) {
     my MongoDB::Cursor $cursor = self.find( %criteria, %projection,
                                             :number-to-return(1)
@@ -549,7 +527,6 @@ class Collection {
 
   #---------------------------------------------------------------------------
   # Drop collection
-  #
   method drop ( --> Hash ) {
     my Pair @req = drop => $!name;
     my $doc = $!database.run-command(@req);
@@ -567,16 +544,13 @@ class Collection {
 
   #---------------------------------------------------------------------------
   # Get count of documents depending on criteria
-  #
   method count ( Hash $criteria = {} --> Int ) {
 
     # fields is seen with wireshark
-    #
     my Pair @req = count => $!name, query => $criteria, fields => %();
     my $doc = $!database.run-command(@req);
 
     # Check error and throw X::MongoDB if there is one
-    #
     if $doc<ok>.Bool == False {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
@@ -593,7 +567,6 @@ class Collection {
   #
   #---------------------------------------------------------------------------
   # Find distinct values of a field depending on criteria
-  #
   method distinct( Str:D $field-name, %criteria = {} --> Array ) {
     my Pair @req = distinct => $!name,
                    key => $field-name,
@@ -603,7 +576,6 @@ class Collection {
     my $doc = $!database.run-command(@req);
 
     # Check error and throw X::MongoDB if there is one
-    #
     if $doc<ok>.Bool == False {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
@@ -614,7 +586,6 @@ class Collection {
     }
 
     # What do we do with $doc<stats> ?
-    #
     return $doc<values>.list;
   }
 
