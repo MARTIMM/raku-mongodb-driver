@@ -10,7 +10,6 @@ unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Wire {
-  state $header = MongoDB::Header.new;
 
   has ServerType $!server;
   has SocketType $!socket;
@@ -40,6 +39,7 @@ class Wire {
   ) {
 
     $!server = $server;
+    my MongoDB::Header $header .= new;
 
     # OR all flag values to get the integer flag, be sure it is at least 0x00.
     my Int $flags = [+|] @flags>>.value;
@@ -86,9 +86,7 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#note "What: ", .WHAT;
-#note "$*THREAD.id() Error wire query: ", $_;
-#note "Msg: ", .message;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program elsewhere
@@ -127,6 +125,7 @@ class Wire {
   ) {
 
     $!server = $server;
+    my MongoDB::Header $header .= new;
     my BSON::Document $result;
 
     try {
@@ -157,7 +156,7 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#.note;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
@@ -192,6 +191,7 @@ class Wire {
   method kill-cursors ( @cursors where .elems > 0, ServerType:D :$server! ) {
 
     $!server = $server;
+    my MongoDB::Header $header .= new;
 
     # Gather the ids only when they are non-zero.i.e. still active.
     my Buf @cursor-ids;
@@ -214,7 +214,7 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#.note;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
@@ -253,7 +253,6 @@ class Wire {
     if $bytes.elems == 0 {
 
       # No data, try again
-      #
       $bytes = $!socket.receive($n);
       fatal-message("No response from server") if $bytes.elems == 0;
     }
@@ -261,7 +260,6 @@ class Wire {
     if 0 < $bytes.elems < $n {
 
       # Not 0 but too little, try to get the rest of it
-      #
       $bytes.push($!socket.receive($n - $bytes.elems));
       fatal-message("Response corrupted") if $bytes.elems < $n;
     }
