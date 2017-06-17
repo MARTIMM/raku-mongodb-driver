@@ -3,9 +3,12 @@ use v6;
 use Terminal::ANSIColor;
 
 # Code taken from Log::Async module of Brian Duggan. At 2017-06 there is a
-# serious failure with new perl6 version;
+# serious failure with new perl6 version; In the mean time the proble is fixed
+# but I think I like the slimmed down version of it
+
 #use Log::Async;
 #`{{}}
+
 enum Loglevels <<:TRACE(1) DEBUG INFO WARNING ERROR FATAL>>;
 
 class Log::Async {
@@ -15,6 +18,7 @@ class Log::Async {
   has $.contextualizer is rw;
 
   my Log::Async $instance;
+
   method instance ( --> Log::Async ) {
     unless ?$instance {
       $instance = self.bless;
@@ -27,7 +31,7 @@ class Log::Async {
     .close for @.taps;
   }
 
-  method add-tap(Code $c, :$level, :$msg --> Tap ) {
+  method add-tap ( Code $c, :$level, :$msg --> Tap ) {
     $!messages //= self.source.Supply;
     my $supply = $!messages;
     $supply = $supply.grep( { $^m<level> ~~ $level }) with $level;
@@ -38,7 +42,7 @@ class Log::Async {
     $tap;
   }
 
-  method remove-tap(Tap $t) {
+  method remove-tap ( Tap $t ) {
     my ($i) = @.taps.grep( { $_ eq $t }, :k );
     $t.close;
     @.taps.splice($i,1,());
@@ -54,16 +58,17 @@ class Log::Async {
   }
 }}
 
-  multi method send-to(Str $path, Code :$formatter, |args --> Tap) {
+  multi method send-to ( Str $path, Code :$formatter, |args --> Tap ) {
     my $fh = open($path,:a) or die "error opening $path";
     self.send-to($fh, :$formatter, |args);
   }
 
-  multi method send-to(IO::Path $path, Code :$formatter,  |args --> Tap) {
+  multi method send-to ( IO::Path $path, Code :$formatter,  |args --> Tap ) {
     my $fh = $path.open(:a) or die "error opening $path";
-    self.send-to($fh, :$formatter, |args);
+    self.send-to( $fh, :$formatter, |args);
   }
 
+#`{{
   method log(
     Str :$msg,
     Loglevels:D :$level,
@@ -72,11 +77,14 @@ class Log::Async {
   ) {
     say $msg;
   }
+}}
 
-  method done() {
+#`{{
+  method done ( ) {
     start { sleep 0.1; $.source.done };
     $.source.Supply.wait;
   }
+}}
 }
 
 #sub set-logger( $new ) is export { Log::Async.set-instance($new); }
@@ -105,23 +113,40 @@ package MongoDB:auth<github:MARTIMM> {
     }
 
     #-----------------------------------------------------------------------------
-    # add channel
+    # add or overwrite a channel
     method add-send-to (
-      Str:D $key, MdbLoglevels :$min-level = Info, Code :$code,
-      Any :$to is copy = $*ERR, Str :$pipe = ''
+      Str:D $key, MdbLoglevels :$min-level = Info, Code :$code, :$to, Str :$pipe
     ) {
+
+      my $output = $*ERR;
       if ? $pipe {
         my Proc $p = shell $pipe, :in;
-        $to = $p.in;
-        die "error opening pipe to '$pipe'" if $p.exitcode > 0;
+        $output = $p.in;
+#note "Ex code: $p.exitcode()";
+#        if $p.exitcode > 0 {
+#          $p.in.close;
+#          die "error opening pipe to '$pipe'" if $p.exitcode > 0;
+#        }
       }
 
-      $!send-to-setup{$key} = [ $to, * >= $min-level, $code];
+      else {
+        $output = $to // $*ERR;
+      }
+
+      # check if I/O channel is other than stdout or stderr. If so, close them.
+      if $!send-to-setup{$key}:exists
+         and !($!send-to-setup{$key}[0] === $*OUT)
+         and !($!send-to-setup{$key}[0] === $*ERR) {
+
+        $!send-to-setup{$key}[0].close;
+      }
+
+      $!send-to-setup{$key} = [ $output, (* >= $min-level), $code];
       self!start-send-to;
     }
 
     #-----------------------------------------------------------------------------
-    # modify channel
+    # modify a channel
     method modify-send-to (
       Str $key, :$level, Code :$code,
       Any :$to is copy, Str :$pipe
@@ -133,12 +158,20 @@ package MongoDB:auth<github:MARTIMM> {
         return;
       }
 
-      if $pipe {
-        my Proc $p = shell( $pipe, :in) or die "error opening pipe to $pipe";
+      if ? $pipe {
+        my Proc $p = shell $pipe, :in;
         $to = $p.in;
+#        die "error opening pipe to $pipe" if $p.exitcode > 0;
       }
 
-      my Array $psto = $!send-to-setup{$key};
+      # prepare array to replace for new values
+      my Array $psto = $!send-to-setup{$key} // [];
+
+      # check if I/O channel is other than stdout or stderr. If so, close them.
+      if ?$psto[0] and !($psto[0] === $*OUT) and !($psto[0] === $*ERR) {
+        $psto[0].close;
+      }
+
       $psto[0] = $to if ? $to;
       $psto[1] = $level if ? $level;
       $psto[2] = $code if ? $code;
@@ -222,6 +255,10 @@ package MongoDB:auth<github:MARTIMM> {
   #set-logger(MongoDB::Log.new);
   #logger.close-taps;
 }
+
+#-------------------------------------------------------------------------------
+my MongoDB::Log $mdb-logger .= instance;
+sub logger is export {$mdb-logger}
 
 #-------------------------------------------------------------------------------
 class X::MongoDB is Exception {
@@ -387,10 +424,6 @@ my Code $code = -> $m {
 };
 
 #-------------------------------------------------------------------------------
-my MongoDB::Log $mdb-logger .= instance;
-sub logger is export {$mdb-logger}
-
-#-------------------------------------------------------------------------------
 sub add-send-to ( |c ) is export { logger.add-send-to( |c, :$code); }
 sub modify-send-to ( |c ) is export { logger.modify-send-to( |c, :$code); }
 sub drop-send-to ( |c ) is export { logger.drop-send-to(|c); }
@@ -401,3 +434,4 @@ sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
 add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::Error));
 add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :min-level(MongoDB::Info));
+=finish
