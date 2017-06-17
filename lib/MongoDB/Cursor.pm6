@@ -9,7 +9,6 @@ unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Cursor does Iterable {
-  state $header = MongoDB::Header.new;
 
   has $.client;
   has $.full-collection-name;
@@ -64,6 +63,7 @@ class Cursor does Iterable {
 
     $!client = $client;
     $!full-collection-name = $cursor-doc<ns>;
+    my MongoDB::Header $header .= new;
 
     my BSON::Document $rc = $read-concern // $client.read-concern;
 
