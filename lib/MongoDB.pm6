@@ -1,6 +1,6 @@
 use v6;
 
-use MongoDB::Log :ALL;
+use MongoDB::Log;
 
 sub EXPORT { {
     '&add-send-to'                      => &add-send-to,

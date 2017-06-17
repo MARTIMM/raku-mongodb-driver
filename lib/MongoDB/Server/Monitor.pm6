@@ -138,7 +138,6 @@ class Server::Monitor {
           # version 3.2 the server just stops communicating when a shutdown
           # command was given. Opening a socket will then bring us here.
           # Send ok False to mention the fact that the server is down.
-          #
           CATCH {
 #.message.note;
             when .message ~~ m:s/Failed to resolve host name/ ||
