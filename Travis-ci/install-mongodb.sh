@@ -15,6 +15,11 @@ fi
 
 echo Installing MongoDB version $1
 
+if [ "${TRAVIS_BUILD_DIR}x" == "x" ]
+then
+  TRAVIS_BUILD_DIR='.'
+fi
+
 cd ${TRAVIS_BUILD_DIR}/Travis-ci
 #/bin/ls -l
 
