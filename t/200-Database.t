@@ -24,28 +24,28 @@ my MongoDB::Database $database1 = $client1.database('test');
 my MongoDB::Database $db-admin1 = $client1.database('admin');
 
 # Drop database first then create new databases
-#
 $req .= new: ( dropDatabase => 1 );
 $database1.run-command($req);
 
 #-------------------------------------------------------------------------------
 subtest "Database, create collection, drop", {
+
   isa-ok $database1, 'MongoDB::Database';
   is $database1.name, 'test', 'Check database name';
 
   # Create a collection explicitly. Try for a second time
-  #
   $req .= new: (create => 'cl1');
   $doc = $database1.run-command($req);
   is $doc<ok>, 1, 'Created collection cl1';
 
   # Second try gets an error
-  #
   $doc = $database1.run-command($req);
   is $doc<ok>, 0, 'Second collection cl1 not created';
-  is $doc<errmsg>, 'collection already exists', $doc<errmsg>;
-#  is $doc<code>, 48, 'mongo error code 48';
-#say $doc.perl;
+  diag $doc.perl;
+  like $doc<errmsg>, /:s already exists/, $doc<errmsg>;
+#TODO get all codes and test on code instead of messages to prevent changes
+# in mongod in future
+  is $doc<code>, 48, 'error code 48';
 }
 
 #-------------------------------------------------------------------------------
@@ -70,8 +70,7 @@ subtest 'Database admin tests', {
       default {
         my $m = .message;
         $m ~~ s:g/\n+//;
-        ok .message ~~ m:s/Cannot set collection name on virtual admin database/,
-           'Cannot set collection name on virtual admin database';
+        like .message, /:s Cannot set collection name/, .message;
       }
     }
   }
@@ -93,7 +92,6 @@ subtest 'Database statistics server 1', {
   }
 
   ok %db-names<test>:exists, 'test found';
-
   ok !@($doc<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
 }
 
