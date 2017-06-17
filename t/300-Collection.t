@@ -9,8 +9,8 @@ use MongoDB::Client;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
+drop-send-to('mongodb');
+drop-send-to('screen');
 #add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
