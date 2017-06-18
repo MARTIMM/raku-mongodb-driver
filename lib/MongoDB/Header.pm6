@@ -249,6 +249,7 @@ class Header {
     my BSON::Document $message-header = self.decode-message-header(
       $b, $index
     );
+#note "$*THREAD.id() header decoded, $message-header.perl()";
 
     # int32 responseFlags
     # bit vector
@@ -280,8 +281,8 @@ class Header {
     my BSON::Document $reply-document .= new: (
       :$message-header, :$response-flags, :$cursor-id,
       :$starting-from, :$number-returned,
-      documents => []
     );
+#note "$*THREAD.id() reply doc, $reply-document.perl()";
 
 #say "MH length: ", $reply-document<message-header><message-length>;
 #say "MH rid: ", $reply-document<message-header><request-id>;
@@ -289,21 +290,25 @@ class Header {
 #say "MH nret: ", $reply-document<number-returned>;
 #say "MH cid: ", $reply-document<cursor-id>;
 
-#say "Buf: ", $b;
-#say "Subbuf: ", $b.subbuf( $index, 30);
+#note "$*THREAD.id() Buf: ", $b;
+#note "$*THREAD.id() Subbuf: ", $b.subbuf( $index, 30);
 
-#say "Buf length: ", $b.elems;
-#say "Subbuf at $index";
+#note "$*THREAD.id() Buf length: ", $b.elems;
+#note "$*THREAD.id() Subbuf at $index";
 
     # Extract documents from message.
+    my Array $documents = [];
     for ^$reply-document<number-returned> {
       my $doc-size = decode-int32( $b, $index);
-#say "I: $index, $doc-size";
+#note "$*THREAD.id() I: $index, $doc-size";
       my BSON::Document $document .= new($b.subbuf( $index, $doc-size));
+#note "$*THREAD.id() doc $document.perl()";
 #        $index += BSON::C-INT32-SIZE;
       $index += $doc-size;
-      $reply-document<documents>.push($document);
+      $documents.push($document);
     }
+
+    $reply-document<documents> = $documents;
 
     $index += 3 * BSON::C-INT32-SIZE + 8;
 #say "B: $index, ", $b.elems;
