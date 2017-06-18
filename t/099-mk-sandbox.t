@@ -8,8 +8,8 @@ use MongoDB;
 use MongoDB::Server::Control;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
+drop-send-to('mongodb');
+drop-send-to('screen');
 #modify-send-to( 'screen', :level(* >= MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
