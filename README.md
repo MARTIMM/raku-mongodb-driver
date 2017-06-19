@@ -6,17 +6,21 @@
 ## Synopsis
 
 ```
+use v6;
 use Test;
 use BSON::Document;
 use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
 
+# Set uri to find mongod server and set database to 'myPetProject'
 my MongoDB::Client $client .= new(:uri('mongodb://'));
 my MongoDB::Database $database = $client.database('myPetProject');
 
-# Inserting data
-#
+# Drop database before start to get proper values for this test
+$database.run-command(BSON::Document.new: (dropDatabase => 1));
+
+# Inserting data in collection 'famous-people'
 my BSON::Document $req .= new: (
   insert => 'famous-people',
   documents => [
@@ -38,10 +42,9 @@ my BSON::Document $req .= new: (
 
 my BSON::Document $doc = $database.run-command($req);
 is $doc<ok>, 1, "insert request ok";
-is $doc<n>, 1, "inserted 1 document";
+is $doc<n>, 1, "inserted 1 document in famous-people";
 
-# Inserting more data
-#
+# Inserting more data in another collection 'names'
 $req .= new: (
   insert => 'names',
   documents => [ (
@@ -68,10 +71,9 @@ $req .= new: (
 
 $doc = $database.run-command($req);
 is $doc<ok>, 1, "insert request ok";
-is $doc<n>, 6, "inserted 6 documents";
+is $doc<n>, 6, "inserted 6 documents in names";
 
 # Remove a record from the names collection
-#
 $req .= new: (
   delete => 'names',
   deletes => [ (
@@ -83,11 +85,10 @@ $req .= new: (
 
 $doc = $database.run-command($req);
 is $doc<ok>, 1, "delete request ok";
-is $doc<n>, 1, "deleted 1 doc";
+is $doc<n>, 1, "deleted 1 doc from names";
 
 # Modifying all records where the name has the character 'y' in their name.
 # Add a new field to the document
-#
 $req .= new: (
   update => 'names',
   updates => [ (
@@ -101,41 +102,39 @@ $req .= new: (
 
 $doc = $database.run-command($req);
 is $doc<ok>, 1, "update request ok";
-is $doc<n>, 2, "selected 2 docs";
-is $doc<nModified>, 2, "modified 2 docs";
+is $doc<n>, 2, "selected 2 docs in names";
+is $doc<nModified>, 2, "modified 2 docs in names";
 
 # And repairing a terrible mistake in the name of Larry Wall
-#
 $doc = $database.run-command: (
-  findAndModify => 'famous_people',
+  findAndModify => 'famous-people',
   query => (surname => 'Walll'),
   update => ('$set' => surname => 'Wall'),
 );
 
 is $doc<ok>, 1, "findAndModify request ok";
 is $doc<value><surname>, 'Walll', "old data returned";
-is $doc<lastErrorObject><updatedExisting>, True, "existing document updated";
+is $doc<lastErrorObject><updatedExisting>, True, "existing document in famous-people updated";
 
 # Trying it again will show that the record is updated.
-#
 $doc = $database.run-command: (
   findAndModify => 'famous_people',
   query => (surname => 'Walll'),
   update => ('$set' => surname => 'Wall'),
 );
 
-is $doc<ok>, 1, "findAndModify request ok";
+is $doc<ok>, 1, "findAndModify retry request ok";
 is $doc<value>, Any, 'record not found';
+is $doc<lastErrorObject><updatedExisting>, False, "updatedExisting returned False";
 
 # Finding things
-#
 my MongoDB::Collection $collection = $database.collection('names');
-my MongoDB::Cursor $cursor = $collection.find: ( ), (
-  _id => 0, name => 1, surname => 1, type => 1
+my MongoDB::Cursor $cursor = $collection.find: :projection(
+  ( _id => 0, name => 1, surname => 1, type => 1)
 );
 
 while $cursor.fetch -> BSON::Document $d {
-  say "Name and surname: ", $d<name>, ' ', $d<surname>
+  say "Name and surname: ", $d<name>, ' ', $d<surname>,
       ($d<type> ?? ", $d<type>" !! '');
 
   if $d<name> eq 'Moritz' {
@@ -144,11 +143,30 @@ while $cursor.fetch -> BSON::Document $d {
     last;
   }
 }
-# Output is;
-# Larry Wall, men with 'y' in name
-# Damian Conway
-# Jonathan Worthington
-# Moritz Lenz
+
+done-testing;
+```
+```
+# Output should be
+ok 1 - insert request ok
+ok 2 - inserted 1 document in famous-people
+ok 3 - insert request ok
+ok 4 - inserted 6 documents in names
+ok 5 - delete request ok
+ok 6 - deleted 1 doc from names
+ok 7 - update request ok
+ok 8 - selected 2 docs in names
+ok 9 - modified 2 docs in names
+ok 10 - findAndModify request ok
+ok 11 - old data returned
+ok 12 - existing document in famous-people updated
+ok 13 - findAndModify retry request ok
+ok 14 - record not found
+ok 15 - updatedExisting returned False
+# Name and surname: Larry Wall, men with 'y' in name
+# Name and surname: Damian Conway
+# Name and surname: Jonathan Worthington
+# Name and surname: Moritz Lenz
 ```
 
 ## Note
