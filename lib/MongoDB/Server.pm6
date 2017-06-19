@@ -107,22 +107,27 @@ class Server {
           my Int $max-wire-version;
           my Int $min-wire-version;
 
+          # test monitor defined boolean field ok
           if $monitor-data<ok> {
 
             # Used to get a socket an decide on type of authentication
             my $mdata = $monitor-data<monitor>;
 
-            $max-wire-version = $mdata<maxWireVersion>.Int;
-            $min-wire-version = $mdata<minWireVersion>.Int;
-            $weighted-mean-rtt-ms = $monitor-data<weighted-mean-rtt-ms>;
-            ( $server-status, $is-master) = self!process-status($mdata);
+            # test mongod server defined field ok for state of returned document
+            # this is since newer servers return info about servers going down
+            if $mdata<ok> == 1e0 {
+#note "MData: $monitor-data.perl()";
+              $max-wire-version = $mdata<maxWireVersion>.Int;
+              $min-wire-version = $mdata<minWireVersion>.Int;
+              $weighted-mean-rtt-ms = $monitor-data<weighted-mean-rtt-ms>;
+              ( $server-status, $is-master) = self!process-status($mdata);
+            }
           }
 
-          # Server did not respond
+          # Server did not respond or returned an error
           else {
 
-            if $monitor-data<reason>:exists
-               and $monitor-data<reason> ~~ m:s/Failed to resolve host name/ {
+            if $monitor-data<reason>:exists {
               $server-error = $monitor-data<reason>;
             }
 
