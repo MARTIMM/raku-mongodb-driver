@@ -99,10 +99,8 @@ class Server::Monitor {
           );
 
           if $doc.defined {
-
             # Calculation of mean Return Trip Time. See also
             # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
-            #
             $!weighted-mean-rtt-ms .= new(
               0.2 * $rtt * 1000 + 0.8 * $!weighted-mean-rtt-ms
             );
@@ -110,6 +108,7 @@ class Server::Monitor {
             debug-message(
               "Weighted mean RTT: $!weighted-mean-rtt-ms (ms) for server $!server.name()"
             );
+
             $!monitor-data-supplier.emit( {
                 ok => True,
                 monitor => $doc<documents>[0],
