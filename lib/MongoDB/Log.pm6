@@ -173,7 +173,7 @@ package MongoDB:auth<github:MARTIMM> {
       }
 
       $psto[0] = $to if ? $to;
-      $psto[1] = $level if ? $level;
+      $psto[1] = (* >= $level) if ? $level;
       $psto[2] = $code if ? $code;
       $!send-to-setup{$key} = $psto;
 

@@ -11,8 +11,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(* >= MongoDB::MdbLoglevels::Fatal));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Fatal));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
