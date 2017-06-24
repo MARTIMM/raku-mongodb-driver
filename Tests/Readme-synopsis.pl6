@@ -136,6 +136,4 @@ while $cursor.fetch -> BSON::Document $d {
   }
 }
 
-
-
 done-testing;
