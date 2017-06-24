@@ -169,11 +169,15 @@ ok 15 - updatedExisting returned False
 # Name and surname: Moritz Lenz
 ```
 
-## Note
+## Notes
 
-As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup.
+* As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup.
 
-Because all helper functions are torn out of the modules the support is now increased to 2.6 and above (see below). When using run-command() the documentation of MongoDB will tell for which version it applies to. 2.4 is not supported because not all of the wire protocol is supported anymore. Since version 2.6 it is possible to do insert, update and delete by using run-command() and therefore those parts of the wire protocol are not needed anymore.
+* Because all helper functions are torn out of the modules the support is now increased to 2.6 and above (see below). When using run-command() the documentation of MongoDB will tell for which version it applies to. 2.4 is not supported because not all of the wire protocol is supported anymore(when time comes, this might be added again depending on the outcome of discussions). Since version 2.6 it is possible to do insert, update and delete using the run-command() method and therefore those parts of the wire protocol are not needed anymore.
+
+* Tests are done only on newest mongod servers of versions 3.\*. 2.6 is never tested but needs to be done.
+
+* BSON has some issues which might interfere. this must be solved for bigger documents will hang in the decoding process.
 
 ## Implementation track
 
