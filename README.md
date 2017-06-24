@@ -214,7 +214,7 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
 
 |Tested|Test Filename|Test Purpose|
 |-|-|-|
-|x|110-Client|Unknown server, fails DNS lookup|
+|x|110-Client|Unknown server, fails DNS lookup, topology and server state|
 |x||Down server, no connection|
 |x||Standalone server, not in replicaset|
 |x||Two standalone servers, one gets rejected|
