@@ -351,6 +351,11 @@ class Client {
 
     self!check-discovery-process;
 
+    #! Wait until topology is set
+    until $!topology-set {
+      sleep 0.5;
+    }
+
     my Hash $h = $!rw-sem.reader(
       'servers', {
       my $x = $!servers{$server-name}:exists
@@ -366,6 +371,11 @@ class Client {
 
   #-----------------------------------------------------------------------------
   method topology ( --> TopologyType ) {
+
+    #! Wait until topology is set
+    until $!topology-set {
+      sleep 0.5;
+    }
 
     $!rw-sem.reader( 'topology', {$!topology-type});
   }
