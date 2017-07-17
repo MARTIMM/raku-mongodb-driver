@@ -26,6 +26,8 @@ my BSON::Document $req .= new: (
   documents => [
     BSON::Document.new((
       name => 'Larry',
+      # Please note the name is purposely spelled wrong. Later in the
+      # example this is corrected with another command.
       surname => 'Walll',
       languages => BSON::Document.new((
         Perl0 => 'introduced Perl to my officemates.',
