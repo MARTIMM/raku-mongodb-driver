@@ -26,3 +26,5 @@
 * Readconcern structure does not have to be a BSON::Document. no encoding, it isn't a server object! unless it sent to a mongos server!
 * some tests in calculating the topology and server states needs some refinement.
 * Design is changed, redraw time diagrams and others
+
+* [Issue #23](https://github.com/MARTIMM/mongo-perl6-driver/issues/23)
