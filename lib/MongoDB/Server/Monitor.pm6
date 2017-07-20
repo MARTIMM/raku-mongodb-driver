@@ -120,6 +120,7 @@ class Server::Monitor {
           }
 
           else {
+            $!socket.close-on-fail if $!socket.defined;
             warn-message("no response from server $!server.name()");
             $!monitor-data-supplier.emit( {
                 ok => False,
@@ -129,7 +130,7 @@ class Server::Monitor {
           }
 
 #          sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
-#note "Sleep for {$monitor-looptime-ms / 1000.0} sec";
+#note "AA: Sleep for {$monitor-looptime-ms / 1000.0} sec";
           sleep $monitor-looptime-ms / 1000.0;
           $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
 
@@ -157,7 +158,7 @@ class Server::Monitor {
               $!monitor-data-supplier.emit( %( ok => False, reason => $s));
 
 #              sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
-#note "Sleep for {$monitor-looptime-ms / 1000.0} (0)";
+#note "BB: Sleep for {$monitor-looptime-ms / 1000.0} (0)";
               sleep $monitor-looptime-ms / 1000.0;
 
               # check if loop must be broken
