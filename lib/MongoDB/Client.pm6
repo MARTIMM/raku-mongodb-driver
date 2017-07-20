@@ -153,10 +153,8 @@ class Client {
     }
 
     # counter to check if there are new servers added. if so, the counter
-    # is set to 0. if less then 5 the sleeptime is about a second. Above it
-    # becomes the heartbeat frequency which is 10 sec by default. This is
-    # done to process the servers at Client instantiation faster and to set
-    # the topology result quicker.
+    # is set to 0. if less then 5 the sleeptime is about a second. When count
+    # reaches max, the thread is stopped.
     my Int $changes-count = 0;
 
     # Background proces to handle server monitoring data
@@ -168,59 +166,21 @@ class Client {
         $!repeat-discovery-loop = True;
         repeat {
 
-          $changes-count++;
+          # count to 5 when no servers are found then stop. if a server is
+          # found, count is reset.
+          $changes-count = self!discover-servers ?? 0 !! $changes-count + 1;
 
-          # Start processing when something is found in todo hash
-          my Str $server-name = $!rw-sem.writer(
-            'todo', {
-              ($!todo-servers.shift if $!todo-servers.elems) // Str;
-            }
-          );
-
-          if $server-name.defined {
-
-            trace-message("Processing server $server-name");
-            my Bool $server-processed = $!rw-sem.reader(
-              'servers', { $!servers{$server-name}:exists; }
-            );
-
-            # Check if server was managed before
-            if $server-processed {
-              trace-message("Server $server-name already managed");
-
-              # Skip as soon as possible
-              next;
-            }
-
-            # New server, re-examin the topology outcome, so block select-server
-            # until after topology is calculated.
-            $!topology-set = False;
-
-            $changes-count = 0;
-
-            # Create Server object
-            my MongoDB::Server $server .= new( :client(self), :$server-name);
-
-            # And start server monitoring
-            $server.server-init($!heartbeat-frequency-ms);
-
-            $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
-
-            self!process-topology;
+          # When there is no work take a nap! This sleeping period is the
+          # moment we do not process the todo list. Start taking a nap for 1.1
+          # sec.
+          if $changes-count < 5 {
+            sleep 1.1;
           }
 
           else {
-
-            # When a server changes, the topology might change too! recalculate!
-            self!process-topology;
-            $!topology-set = True;
-
-            # When there is no work take a nap! This sleeping period is the
-            # moment we do not process the todo list. Start taking a nap for 1.1
-            # sec and after that take $!heartbeat-frequency-ms. Resets to 1.1 sec
-            # when a new server is found
-            #
-            sleep $changes-count < 5 ?? 1.1 !! $!heartbeat-frequency-ms / 1000.0;
+            # stop the loop and exit thread. for new changes, discover-servers()
+            # is called later via select-server().
+            $!repeat-discovery-loop = False;
           }
 
           CATCH {
@@ -236,8 +196,9 @@ class Client {
         } while $!repeat-discovery-loop;
 
         debug-message("server discovery loop stopped");
-      }
-    );
+        'normal end of service';
+      } # block
+    ); # start
   }
 
   #-----------------------------------------------------------------------------
@@ -580,16 +541,106 @@ class Client {
   #-----------------------------------------------------------------------------
   # Check if background process is still running
   method !check-discovery-process ( ) {
+    state $check-count = 0;
 
     if $!Background-discovery.status ~~ any(Broken|Kept) {
-      fatal-message(
-        'Discovery stopped ' ~
-        ($!Background-discovery.status ~~ Broken
+      # set if loop crashed
+      $!repeat-discovery-loop = False;
+
+      info-message(
+        'Server discovery stopped: ' ~ (
+          $!Background-discovery.status ~~ Broken
                          ?? $!Background-discovery.cause
-                         !! ''
+                         !! $!Background-discovery.result
         )
       );
+
+      # check every now and then for new servers after discovery-thread has
+      # finished
+      unless $!repeat-discovery-loop or $check-count++ % 5 {
+        self!discover-servers;
+      }
     }
+  }
+
+  #-----------------------------------------------------------------------------
+  method !discover-servers ( --> Bool ) {
+
+    my Bool $found-new-server = False;
+
+    # always assume that there are changes
+    $!topology-set = False;
+
+    # When the server discovery thread is still running $!repeat-discovery-loop
+    # is still True. In this case we must get the data using semaphores.
+
+    # Repeat when a server was found, there might be another one on the stack
+    my Str $server-name;
+    repeat {
+
+      # Start processing when something is found in todo hash
+      if $!repeat-discovery-loop {
+        $server-name = $!rw-sem.writer(
+          'todo', {
+            ($!todo-servers.shift if $!todo-servers.elems) // Str;
+          }
+        );
+      }
+
+      else {
+        $server-name = ($!todo-servers.shift if $!todo-servers.elems) // Str;
+      }
+
+      # check if a server name is popped from the todo stack
+      if $server-name.defined {
+
+        trace-message("Processing server $server-name");
+
+        # check if from discovery-loop. if so do the safe access
+        my Bool $server-processed;
+        if $!repeat-discovery-loop {
+          $server-processed = $!rw-sem.reader(
+            'servers',
+            { $!servers{$server-name}:exists; }
+          );
+        }
+
+        else {
+          $server-processed = $!servers{$server-name}:exists;
+        }
+
+        # Check if server was managed before
+        if $server-processed {
+          trace-message("Server $server-name already managed");
+        }
+
+        # new server
+        else {
+
+          # new server, re-examin the topology outcome, so block select-server
+          # until after topology is calculated.
+          $found-new-server = True;
+
+          # create Server object
+          my MongoDB::Server $server .= new( :client(self), :$server-name);
+
+          # and start server monitoring
+          $server.server-init($!heartbeat-frequency-ms);
+
+          if $!repeat-discovery-loop {
+            $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
+          }
+
+          else {
+            $!servers{$server-name} = $server;
+          }
+        } # else
+      } # if
+    } while $server-name.defined; # repeat
+
+    self!process-topology;
+    $!topology-set = True;
+    $found-new-server;
   }
 
   #-----------------------------------------------------------------------------
@@ -627,39 +678,43 @@ class Client {
 
   #-----------------------------------------------------------------------------
   # Forced cleanup
+  #
+  # cleanup cannot be done in separate thread because everything must be cleaned
+  # up before other tasks are performed. the client inserts new data while
+  # removing them here. the last subtest of 110-client failed because of this.
   method cleanup ( ) {
 
     $!cleanup-started = True;
-    my Promise $p .= start( {
 
-        # some timing to see if this cleanup can be improved
-        my Instant $t0 = now;
+    # some timing to see if this cleanup can be improved
+    my Instant $t0 = now;
 
-        # stop loop and wait for exit
-        $!repeat-discovery-loop = False;
-        $!Background-discovery.result;
+    # stop loop and wait for exit
+    if $!repeat-discovery-loop {
+      $!repeat-discovery-loop = False;
+      $!Background-discovery.result;
+    }
 
-        # Remove all servers concurrently. Shouldn't be many per client.
-        $!rw-sem.writer(
-          'servers', {
+    # Remove all servers concurrently. Shouldn't be many per client.
+    $!rw-sem.writer(
+      'servers', {
 
-            for $!servers.values -> MongoDB::Server $server {
-              if $server.defined {
-                # Stop monitoring on server
-                $server.cleanup;
-                debug-message(
-                  "server '$server.name()' destroyed after {(now - $t0) * 1000.0} ms"
-                );
-              }
-            }
+        for $!servers.values -> MongoDB::Server $server {
+          if $server.defined {
+            # Stop monitoring on server
+            $server.cleanup;
+            debug-message(
+              "server '$server.name()' destroyed after {(now - $t0) * 1000.0} ms"
+            );
           }
-        );
-
-        $!servers = Nil;
-        $!todo-servers = Nil;
-
-        debug-message("Client destroyed after {(now - $t0) * 1000.0} ms");
+        }
       }
     );
+
+    $!servers = Nil;
+    $!todo-servers = Nil;
+
+    debug-message("Client destroyed after {(now - $t0) * 1000.0} ms");
+
   }
 }
