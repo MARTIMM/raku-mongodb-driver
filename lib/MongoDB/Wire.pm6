@@ -98,12 +98,12 @@ class Wire {
         when .message ~~ m:s/Failed to resolve host name/ ||
              .message ~~ m:s/Could not connect socket\: Connection refused/ {
 
-          warn-message(.message);
+          warn-message($server.name ~ ': ' ~ .message);
         }
 
         # From BSON::Document
         when X::BSON::Parse-document {
-          error-message(.message);
+          error-message($server.name ~ ': ' ~ .message);
         }
 
         # If not one of the above errors, rethrow the error after showing
