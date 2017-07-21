@@ -3,7 +3,7 @@ use v6;
 use Terminal::ANSIColor;
 
 # Code taken from Log::Async module of Brian Duggan. At 2017-06 there is a
-# serious failure with new perl6 version; In the mean time the proble is fixed
+# serious failure with new perl6 version; In the mean time the problem is fixed
 # but I think I like the slimmed down version of it
 
 #use Log::Async;
