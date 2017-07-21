@@ -37,12 +37,13 @@ class Server {
   # Server status. Must be protected by a semaphore because of a thread
   # handling monitoring data.
   # Set status to its default starting status
-  has ServerStatus $!status;
-  has Str $!error;
-  has Bool $!is-master;
-  has Duration $!weighted-mean-rtt-ms;
-  has Int $!max-wire-version;
-  has Int $!min-wire-version;
+#  has ServerStatus $!status;
+  has Hash $!server-sts-data;
+#  has Str $!error;
+#  has Bool $!is-master;
+#  has Duration $!weighted-mean-rtt-ms;
+#  has Int $!max-wire-version;
+#  has Int $!min-wire-version;
 
   has Semaphore::ReadersWriters $!rw-sem;
 
@@ -79,9 +80,13 @@ class Server {
 
     $!server-monitor .= new(:server(self));
 
-    $!status = SS-Unknown;
-    $!error = '';
-    $!is-master = False;
+#    $!status = SS-Unknown;
+#    $!error = '';
+#    $!is-master = False;
+
+    $!server-sts-data = {
+      :status(SS-Unknown), :!is-master, :error(''),
+    };
   }
 
   #-----------------------------------------------------------------------------
@@ -102,10 +107,10 @@ class Server {
 
           my Bool $is-master = False;
           my ServerStatus $server-status = SS-Unknown;
-          my Str $server-error = '';
-          my Duration $weighted-mean-rtt-ms;
-          my Int $max-wire-version;
-          my Int $min-wire-version;
+#          my Str $server-error = '';
+#          my Duration $weighted-mean-rtt-ms;
+#          my Int $max-wire-version;
+#          my Int $min-wire-version;
 
           # test monitor defined boolean field ok
           if $monitor-data<ok> {
@@ -117,59 +122,82 @@ class Server {
             # this is since newer servers return info about servers going down
             if $mdata<ok> == 1e0 {
 #note "MData: $monitor-data.perl()";
-              $max-wire-version = $mdata<maxWireVersion>.Int;
-              $min-wire-version = $mdata<minWireVersion>.Int;
-              $weighted-mean-rtt-ms = $monitor-data<weighted-mean-rtt-ms>;
+#              $max-wire-version = $mdata<maxWireVersion>.Int;
+#              $min-wire-version = $mdata<minWireVersion>.Int;
+#              $weighted-mean-rtt-ms = $monitor-data<weighted-mean-rtt-ms>;
               ( $server-status, $is-master) = self!process-status($mdata);
-            }
-          }
+
+              $!rw-sem.writer( 's-status', {
+                  $!server-sts-data = {
+                    :status($server-status), :$is-master, :error(''),
+                    :max-wire-version($mdata<maxWireVersion>.Int),
+                    :min-wire-version($mdata<minWireVersion>.Int),
+                    :weighted-mean-rtt-ms($monitor-data<weighted-mean-rtt-ms>),
+                  }
+                } # writer block
+              ); # writer
+            } # if $mdata<ok> == 1e0
+          } # if $monitor-data<ok>
 
           # Server did not respond or returned an error
           else {
 
-            if $monitor-data<reason>:exists {
-              $server-error = $monitor-data<reason>;
-            }
+            $!rw-sem.writer( 's-status', {
+                if $monitor-data<reason>:exists {
+                  $!server-sts-data<error> = $monitor-data<reason>;
+                }
 
-            else {
-              $server-error = 'Server did not respond';
-            }
+                else {
+                  $!server-sts-data<error> = 'Server did not respond';
+                }
+
+                $!server-sts-data<is-master> = False;
+                $!server-sts-data<status> = SS-Unknown;
+
+#                warn-message("server error: $!server-sts-data<error>");
+              } # writer block
+            ); # writer
           }
 
           # Set the status with the new value
-          $!rw-sem.writer( 's-status', {
-              debug-message("set status of {self.name()} $server-status");
-              $!status = $server-status;
-              $!error = $server-error;
-              $!is-master = $is-master;
-              $!max-wire-version = $max-wire-version;
-              $!min-wire-version = $min-wire-version;
-              $!weighted-mean-rtt-ms = $weighted-mean-rtt-ms;
-            }
-          );
+          debug-message("set status of {self.name()} $server-status");
+#          $!rw-sem.writer( 's-status', {
 
-#          # Let the client find the topology using all found servers
-#          # in the same rhythm as the heartbeat loop of the monitor
-#          # (of each server)
-#          $!client.process-topology;
+#              $!status = $server-status;
+#              $!error = $server-error;
+#              $!is-master = $is-master;
+#              $!max-wire-version = $max-wire-version;
+#              $!min-wire-version = $min-wire-version;
+#              $!weighted-mean-rtt-ms = $weighted-mean-rtt-ms;
+#            } # writer block
+#          ); # writer
+
+          # Let the client find the topology using all found servers
+          # in the same rhythm as the heartbeat loop of the monitor
+          # (of each server)
+          $!client.process-topology;
 
           CATCH {
             default {
               .note;
 
               # Set the status with the  value
+              error-message("{.message}, {self.name()} {SS-Unknown}");
               $!rw-sem.writer( 's-status', {
-                  error-message("{.message}, {self.name()} {SS-Unknown}");
-                  $!status = SS-Unknown;
-                  $!error = .message;
-                  $!is-master = False;
-                }
-              );
-            }
-          }
-        }
-      }
-    );
+#                  $!status = SS-Unknown;
+#                  $!error = .message;
+#                  $!is-master = False;
+
+                  $!server-sts-data = {
+                    :status(SS-Unknown), :!is-master, :error(.message),
+                  }
+                } # block
+              ); # writer
+            } # default
+          } # CATCH
+        } # try
+      } # tap block
+    ); # tap
   }
 
   #-----------------------------------------------------------------------------
@@ -220,6 +248,7 @@ class Server {
   #-----------------------------------------------------------------------------
   method get-status ( --> Hash ) {
 
+  #`{{
     my int $count = 0;
     my ServerStatus $server-status = SS-Unknown;
     my Hash $server-sts-data = {};
@@ -242,8 +271,9 @@ class Server {
       $server-status = $server-sts-data<status>;
 
     } while $server-status ~~ SS-Unknown and $count < 4;
+}}
 
-    $server-sts-data;
+    $!rw-sem.reader( 's-status', { $!server-sts-data } );
   }
 
   #-----------------------------------------------------------------------------
@@ -331,7 +361,7 @@ class Server {
       my Str $auth-mechanism = $!credential.auth-mechanism;
       if not $auth-mechanism {
         my Int $max-version = $!rw-sem.reader(
-          's-status', {$!max-wire-version}
+          's-status', {$!server-sts-data<max-wire-version>}
         );
         $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
         debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
