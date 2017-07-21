@@ -50,7 +50,7 @@ subtest {
   );
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, "Server $server.name() selected";
-  is $server.get-status<status>, SS-RSPrimary, 'Server $host:$p2 is primary';
+  is $server.get-status<status>, SS-RSPrimary, "Server $host:$p2 is primary";
 
   diag "Get server info. Get the repl version and update version";
   my BSON::Document $doc = $server.raw-query(
