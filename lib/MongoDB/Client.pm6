@@ -166,14 +166,14 @@ class Client {
         $!repeat-discovery-loop = True;
         repeat {
 
-          # count to 5 when no servers are found then stop. if a server is
-          # found, count is reset.
+          # count to some limit when no servers are found then stop. if a
+          # server is found, count is reset.
           $changes-count = self!discover-servers ?? 0 !! $changes-count + 1;
 
           # When there is no work take a nap! This sleeping period is the
           # moment we do not process the todo list. Start taking a nap for 1.1
           # sec.
-          if $changes-count < 5 {
+          if $changes-count < 10 {
             sleep 1.1;
           }
 
@@ -202,10 +202,13 @@ class Client {
   }
 
   #-----------------------------------------------------------------------------
-  method !process-topology ( ) {
+  method process-topology ( ) {
 
+#    $!rw-sem.writer( 'topology', {
     $!rw-sem.writer( 'topology', {
-
+        $!topology-set = False;
+      }
+    );
 #TODO take user topology request into account
         # Calculate topology. Upon startup, the topology is set to
         # TT-Unknown. Here, the real value is calculated and set. Doing
@@ -283,19 +286,25 @@ class Client {
                 $topology = TT-ReplicaSetNoPrimary
                   unless $topology ~~ TT-ReplicaSetWithPrimary;
               }
-            }
-          }
-        }
+            } # when any()
+          } # given $status
+        } # for $servers.keys -> $server-name
 
         if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
           $topology = TT-Single;
         }
 
-#        $!rw-sem.writer( 'topology', {$!topology-type = $topology;});
-        $!topology-type = $topology;
+        $!rw-sem.writer( 'topology', {
+            $!topology-type = $topology;
+            $!topology-set = True;
+          }
+        );
+
         info-message("Client topology type set to $topology");
-      }
-    );
+
+
+#      } # writer block
+#    ); # writer
   }
 
   #-----------------------------------------------------------------------------
@@ -313,7 +322,7 @@ class Client {
     self!check-discovery-process;
 
     #! Wait until topology is set
-    until $!topology-set {
+    until $!rw-sem.reader( 'topology', { $!topology-set }) {
       sleep 0.5;
     }
 
@@ -334,7 +343,7 @@ class Client {
   method topology ( --> TopologyType ) {
 
     #! Wait until topology is set
-    until $!topology-set {
+    until $!rw-sem.reader( 'topology', { $!topology-set }) {
       sleep 0.5;
     }
 
@@ -369,7 +378,7 @@ class Client {
     my MongoDB::Server $selected-server;
 
     #! Wait until topology is set
-    until $!topology-set {
+    until $!rw-sem.reader( 'topology', { $!topology-set }) {
       sleep 0.5;
     }
 
@@ -421,7 +430,7 @@ class Client {
     my Instant $t0 = now;
 
     #! Wait until topology is set
-    until $!topology-set {
+    until $!rw-sem.reader( 'topology', { $!topology-set }) {
       sleep 0.5;
     }
 
@@ -569,7 +578,7 @@ class Client {
     my Bool $found-new-server = False;
 
     # always assume that there are changes
-    $!topology-set = False;
+    $!rw-sem.writer( 'topology', { $!topology-set = False; } );
 
     # When the server discovery thread is still running $!repeat-discovery-loop
     # is still True. In this case we must get the data using semaphores.
@@ -638,8 +647,7 @@ class Client {
       } # if
     } while $server-name.defined; # repeat
 
-    self!process-topology;
-    $!topology-set = True;
+    self.process-topology;
     $found-new-server;
   }
 

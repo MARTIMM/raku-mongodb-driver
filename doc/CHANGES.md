@@ -2,6 +2,9 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.37.4
+  * thread in client to discover new servers is stopped after some time to save thread space.
+  * bug fixed cleaning up a Client object. This was done on a thread which cannot work while the client will add new data to the same structures. The last subtest in 110-client.t was failing because of this.
 * 0.37.3
   * Tested against newest mongod server and had to fix some bugs because of different behavior of the server. Should be downwards compatible.
 * 0.37.2
