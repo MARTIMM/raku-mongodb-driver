@@ -97,7 +97,8 @@ class Wire {
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
              .message ~~ m:s/Could not connect socket\: Connection refused/ ||
-             .message ~~ m:s/Could not receive data from socket/ {
+             .message ~~ m:s/Could not receive data from socket/ ||
+             .message ~~ m:s/Connection reset by peer/ {
 
           warn-message($server.name ~ ': ' ~ .message);
         }
@@ -168,7 +169,8 @@ class Wire {
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
              .message ~~ m:s/Failed to connect\: connection refused/ ||
-             .message ~~ m:s/Could not receive data from socket/ {
+             .message ~~ m:s/Could not receive data from socket/ ||
+             .message ~~ m:s/Connection reset by peer/ {
 
           error-message(.message);
         }
@@ -227,7 +229,8 @@ class Wire {
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
              .message ~~ m:s/Failed to connect\: connection refused/ ||
-             .message ~~ m:s/Could not receive data from socket/ {
+             .message ~~ m:s/Could not receive data from socket/ ||
+             .message ~~ m:s/Connection reset by peer/ {
 
           error-message(.message);
         }
