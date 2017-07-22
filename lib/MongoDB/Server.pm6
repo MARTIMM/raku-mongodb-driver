@@ -34,19 +34,10 @@ class Server {
 
   has MongoDB::Server::Socket @!sockets;
 
-  # Server status. Must be protected by a semaphore because of a thread
+  # Server status data. Must be protected by a semaphore because of a thread
   # handling monitoring data.
-  # Set status to its default starting status
-#  has ServerStatus $!status;
   has Hash $!server-sts-data;
-#  has Str $!error;
-#  has Bool $!is-master;
-#  has Duration $!weighted-mean-rtt-ms;
-#  has Int $!max-wire-version;
-#  has Int $!min-wire-version;
-
   has Semaphore::ReadersWriters $!rw-sem;
-
   has Tap $!server-tap;
 
 
@@ -78,15 +69,11 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
-    $!server-monitor .= new(:server(self));
-
-#    $!status = SS-Unknown;
-#    $!error = '';
-#    $!is-master = False;
-
     $!server-sts-data = {
       :status(SS-Unknown), :!is-master, :error(''),
     };
+
+    $!server-monitor .= new(:server(self));
   }
 
   #-----------------------------------------------------------------------------
@@ -107,10 +94,6 @@ class Server {
 
           my Bool $is-master = False;
           my ServerStatus $server-status = SS-Unknown;
-#          my Str $server-error = '';
-#          my Duration $weighted-mean-rtt-ms;
-#          my Int $max-wire-version;
-#          my Int $min-wire-version;
 
           # test monitor defined boolean field ok
           if $monitor-data<ok> {
@@ -122,9 +105,6 @@ class Server {
             # this is since newer servers return info about servers going down
             if $mdata<ok> == 1e0 {
 #note "MData: $monitor-data.perl()";
-#              $max-wire-version = $mdata<maxWireVersion>.Int;
-#              $min-wire-version = $mdata<minWireVersion>.Int;
-#              $weighted-mean-rtt-ms = $monitor-data<weighted-mean-rtt-ms>;
               ( $server-status, $is-master) = self!process-status($mdata);
 
               $!rw-sem.writer( 's-status', {
@@ -154,23 +134,12 @@ class Server {
                 $!server-sts-data<is-master> = False;
                 $!server-sts-data<status> = SS-Unknown;
 
-#                warn-message("server error: $!server-sts-data<error>");
               } # writer block
             ); # writer
           }
 
           # Set the status with the new value
           debug-message("set status of {self.name()} $server-status");
-#          $!rw-sem.writer( 's-status', {
-
-#              $!status = $server-status;
-#              $!error = $server-error;
-#              $!is-master = $is-master;
-#              $!max-wire-version = $max-wire-version;
-#              $!min-wire-version = $min-wire-version;
-#              $!weighted-mean-rtt-ms = $weighted-mean-rtt-ms;
-#            } # writer block
-#          ); # writer
 
           # Let the client find the topology using all found servers
           # in the same rhythm as the heartbeat loop of the monitor
@@ -184,10 +153,6 @@ class Server {
               # Set the status with the  value
               error-message("{.message}, {self.name()} {SS-Unknown}");
               $!rw-sem.writer( 's-status', {
-#                  $!status = SS-Unknown;
-#                  $!error = .message;
-#                  $!is-master = False;
-
                   $!server-sts-data = {
                     :status(SS-Unknown), :!is-master, :error(.message),
                   }
@@ -247,31 +212,6 @@ class Server {
 
   #-----------------------------------------------------------------------------
   method get-status ( --> Hash ) {
-
-  #`{{
-    my int $count = 0;
-    my ServerStatus $server-status = SS-Unknown;
-    my Hash $server-sts-data = {};
-
-    # Wait until changed, After 4 sec it should be known
-    repeat {
-
-      # Don't sleep on the first round
-      sleep 1 if $count;
-      $count++;
-
-      $server-sts-data = $!rw-sem.reader(
-        's-status', { %(
-          :$!status, :$!is-master, :$!error
-          :$!max-wire-version, :$!min-wire-version,
-          :$!weighted-mean-rtt-ms,
-        ); }
-      );
-
-      $server-status = $server-sts-data<status>;
-
-    } while $server-status ~~ SS-Unknown and $count < 4;
-}}
 
     $!rw-sem.reader( 's-status', { $!server-sts-data } );
   }

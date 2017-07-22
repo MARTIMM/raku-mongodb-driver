@@ -51,7 +51,7 @@ class Client {
 #  has Int $!idle-write-period-ms;
   constant smallest-max-staleness-seconds = 90;
 
-  # Only for single threaded implementations
+  # Only for single threaded implementations according to mongodb documents
   # has Bool $!server-selection-try-once = False;
   # has Int $!socket-check-interval-ms = 5000;
 
@@ -199,7 +199,7 @@ class Client {
         'normal end of service';
       } # block
     ); # start
-  }
+  } # method
 
   #-----------------------------------------------------------------------------
   method process-topology ( ) {
@@ -209,102 +209,99 @@ class Client {
         $!topology-set = False;
       }
     );
+
 #TODO take user topology request into account
-        # Calculate topology. Upon startup, the topology is set to
-        # TT-Unknown. Here, the real value is calculated and set. Doing
-        # it repeatedly it will be able to change dynamicaly.
-        #
-        my TopologyType $topology = TT-Unknown;
-        my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
-        my Int $servers-count = 0;
+    # Calculate topology. Upon startup, the topology is set to
+    # TT-Unknown. Here, the real value is calculated and set. Doing
+    # it repeatedly it will be able to change dynamicaly.
+    #
+    my TopologyType $topology = TT-Unknown;
+    my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
+    my Int $servers-count = 0;
 
-        my Bool $found-standalone = False;
-        my Bool $found-sharded = False;
-        my Bool $found-replica = False;
+    my Bool $found-standalone = False;
+    my Bool $found-sharded = False;
+    my Bool $found-replica = False;
 
-        for $servers.keys -> $server-name {
+    for $servers.keys -> $server-name {
 
-          my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
+      my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
 
-          given $status {
-            when SS-Standalone {
-              $servers-count++;
-              if $found-standalone or $found-sharded or $found-replica {
+      given $status {
+        when SS-Standalone {
+          $servers-count++;
+          if $found-standalone or $found-sharded or $found-replica {
 
-                # cannot have more than one standalone servers
-                $topology = TT-Unknown;
-              }
+            # cannot have more than one standalone servers
+            $topology = TT-Unknown;
+          }
 
-              else {
+          else {
 
-                $found-standalone = True;
-                $topology = TT-Single;
-              }
-            }
-
-            when SS-Mongos {
-              $servers-count++;
-              if $found-standalone or $found-replica {
-
-                # cannot have other than shard servers
-                $topology = TT-Unknown;
-              }
-
-              else {
-                $found-sharded = True;
-                $topology = TT-Sharded;
-              }
-            }
-
-#TODO test same set of replicasets -> otherwise also TT-Unknown
-            when SS-RSPrimary {
-              $servers-count++;
-              if $found-standalone or $found-sharded {
-
-                # cannot have other than replica servers
-                $topology = TT-Unknown;
-              }
-
-              else {
-
-                $found-replica = True;
-                $topology = TT-ReplicaSetWithPrimary;
-              }
-            }
-
-            when any( SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost ) {
-              $servers-count++;
-              if $found-standalone or $found-sharded {
-
-                # cannot have other than replica servers
-                $topology = TT-Unknown;
-              }
-
-              else {
-
-                $found-replica = True;
-                $topology = TT-ReplicaSetNoPrimary
-                  unless $topology ~~ TT-ReplicaSetWithPrimary;
-              }
-            } # when any()
-          } # given $status
-        } # for $servers.keys -> $server-name
-
-        if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
-          $topology = TT-Single;
+            $found-standalone = True;
+            $topology = TT-Single;
+          }
         }
 
-        $!rw-sem.writer( 'topology', {
-            $!topology-type = $topology;
-            $!topology-set = True;
+        when SS-Mongos {
+          $servers-count++;
+          if $found-standalone or $found-replica {
+
+            # cannot have other than shard servers
+            $topology = TT-Unknown;
           }
-        );
 
-        info-message("Client topology type set to $topology");
+          else {
+            $found-sharded = True;
+            $topology = TT-Sharded;
+          }
+        }
 
+#TODO test same set of replicasets -> otherwise also TT-Unknown
+        when SS-RSPrimary {
+          $servers-count++;
+          if $found-standalone or $found-sharded {
 
-#      } # writer block
-#    ); # writer
+            # cannot have other than replica servers
+            $topology = TT-Unknown;
+          }
+
+          else {
+
+            $found-replica = True;
+            $topology = TT-ReplicaSetWithPrimary;
+          }
+        }
+
+        when any( SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost ) {
+          $servers-count++;
+          if $found-standalone or $found-sharded {
+
+            # cannot have other than replica servers
+            $topology = TT-Unknown;
+          }
+
+          else {
+
+            $found-replica = True;
+            $topology = TT-ReplicaSetNoPrimary
+              unless $topology ~~ TT-ReplicaSetWithPrimary;
+          }
+        } # when any()
+      } # given $status
+    } # for $servers.keys -> $server-name
+
+    if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
+      $topology = TT-Single;
+    }
+
+    $!rw-sem.writer( 'topology', {
+        $!topology-type = $topology;
+        $!topology-set = True;
+      }
+    );
+
+    info-message("Client topology type set to $topology");
   }
 
   #-----------------------------------------------------------------------------
