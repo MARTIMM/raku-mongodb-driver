@@ -28,10 +28,6 @@ class Server {
   has Hash $!uri-data;
   has MongoDB::Authenticate::Credential $!credential;
 
-  # Variables to control infinite server monitoring actions
-  has MongoDB::Server::Monitor $!server-monitor;
-  has Promise $!monitor-promise;
-
   has MongoDB::Server::Socket @!sockets;
 
   # Server status data. Must be protected by a semaphore because of a thread
@@ -40,15 +36,14 @@ class Server {
   has Semaphore::ReadersWriters $!rw-sem;
   has Tap $!server-tap;
 
-
   #-----------------------------------------------------------------------------
   # Server must make contact first to see if server exists and reacts. This
   # must be done in the background so Client starts this process in a thread.
   #
   submethod BUILD (
-    ClientType:D :$client,
+    ClientType:D :$!client,
     Str:D :$server-name,
-    Hash :$uri-data = %(),
+    Hash :$!uri-data = %(),
   ) {
 
     $!rw-sem .= new;
@@ -58,9 +53,9 @@ class Server {
       :RWPatternType(C-RW-WRITERPRIO)
     ) unless $!rw-sem.check-mutex-names(<s-select s-status>);
 
-    $!client = $client;
-    $!uri-data = $client.uri-data;
-    $!credential := $client.credential;
+#    $!client = $client;
+#    $!uri-data = $client.uri-data;
+    $!credential := $!client.credential;
 
     @!sockets = ();
 
@@ -72,17 +67,14 @@ class Server {
     $!server-sts-data = {
       :status(SS-Unknown), :!is-master, :error(''),
     };
-
-    $!server-monitor .= new(:server(self));
   }
 
   #-----------------------------------------------------------------------------
   # Server initialization
-  method server-init ( Int:D $heartbeat-frequency-ms ) {
+  method server-init ( ) {
 
     # Start monitoring
-    $!monitor-promise = $!server-monitor.start-monitor($heartbeat-frequency-ms);
-    return unless $!monitor-promise.defined;
+    MongoDB::Server::Monitor.instance.register-server(self);
 
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
@@ -163,7 +155,7 @@ class Server {
         } # try
       } # tap block
     ); # tap
-  }
+  } # method
 
   #-----------------------------------------------------------------------------
   method !process-status ( BSON::Document $mdata --> List ) {
@@ -222,10 +214,7 @@ class Server {
   #
   method tap-monitor ( |c --> Tap ) {
 
-    $!server-monitor.get-supply.tap(|c);
-#    my Supply $supply = $!server-monitor.get-supply;
-#    $supply.act(|c);
-#    $supply.tap(|c);
+    MongoDB::Server::Monitor.instance.get-supply.tap(|c);
   }
 
   #-----------------------------------------------------------------------------
@@ -404,12 +393,7 @@ class Server {
     # non existent or some other reason.
     $!server-tap.close if $!server-tap.defined;
 
-    if $!server-monitor.defined {
-      $!server-monitor.stop-monitor;
-
-      # Wait for a proper finish
-      $!monitor-promise.result;
-    }
+    MongoDB::Server::Monitor.instance.unregister(self);
 
     # Clear all sockets
     $!rw-sem.writer( 's-select', {
@@ -422,7 +406,6 @@ class Server {
       }
     );
 
-    $!server-monitor = Nil;
     $!client = Nil;
     $!uri-data = Nil;
     @!sockets = Nil;
