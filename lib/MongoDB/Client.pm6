@@ -47,7 +47,7 @@ class Client {
   # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#mongoclient-configuration
   has Int $!local-threshold-ms;
   has Int $!server-selection-timeout-ms;
-  has Int $!heartbeat-frequency-ms;
+  has Int $.heartbeat-frequency-ms;
 #  has Int $!idle-write-period-ms;
   constant smallest-max-staleness-seconds = 90;
 
@@ -120,11 +120,11 @@ class Client {
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
     # Get some connection options from the uri
-    $!local-threshold-ms = ($!uri-data<options><localThresholdMS> // 15).Int;
+    $!local-threshold-ms = ($!uri-data<options><localThresholdMS> // MongoDB::C-LOCALTHRESHOLDMS).Int;
     $!server-selection-timeout-ms =
-         ($!uri-data<options><serverSelectionTimeoutMS> // 30_000).Int;
+         ($!uri-data<options><serverSelectionTimeoutMS> // MongoDB::C-SERVERSELECTIONTIMEOUTMS).Int;
     $!heartbeat-frequency-ms =
-         ($!uri-data<options><heartbeatFrequencyMS> // 10_000).Int;
+         ($!uri-data<options><heartbeatFrequencyMS> // MongoDB::C-HEARTBEATFREQUENCYMS).Int;
 
     my %cred-data = %();
     my $set = sub ( *@k ) {
@@ -631,7 +631,7 @@ class Client {
           my MongoDB::Server $server .= new( :client(self), :$server-name);
 
           # and start server monitoring
-          $server.server-init($!heartbeat-frequency-ms);
+          $server.server-init;
 
           if $!repeat-discovery-loop {
             $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
