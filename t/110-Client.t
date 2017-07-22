@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 use lib 't';
 
 use Test;
@@ -11,8 +11,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+#drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Fatal));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -28,9 +28,7 @@ subtest 'Unknown server', {
   my Str $server-name = 'non-existent-server.with-unknown.domain:65535';
   my @options = <serverSelectionTimeoutMS=100 heartbeatFrequencyMS=300>;
 
-  $client .= new(
-    :uri("mongodb://$server-name/?" ~ @options.join('&')),
-  );
+  $client .= new(:uri("mongodb://$server-name/?" ~ @options.join('&')));
   isa-ok $client, MongoDB::Client;
 
   $server = $client.select-server;

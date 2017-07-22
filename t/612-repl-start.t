@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 use Test;
 
 use lib 't';
@@ -13,8 +13,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -50,7 +50,7 @@ subtest {
   );
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, "Server $server.name() selected";
-  is $server.get-status<status>, SS-RSPrimary, 'Server $host:$p2 is primary';
+  is $server.get-status<status>, SS-RSPrimary, "Server $host:$p2 is primary";
 
   diag "Get server info. Get the repl version and update version";
   my BSON::Document $doc = $server.raw-query(

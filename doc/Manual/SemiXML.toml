@@ -1,26 +1,55 @@
-[ option.xml-prelude ]
-  show          = true
+#------------------------------------------------------------------------------
+[ C ]
+  xml-show      = true
+  doctype-show  = true
+  tracing       = true
 
-[ option.doctype ]
-  show          = true
-
-[ option.doctype.entities ]
+#------------------------------------------------------------------------------
+[ E.db5 ]
   mongodb       = 'MongoDB driver'
   nbsp          = ' '
-#  infin           = '&#8734;'
-  infin           = '&#x221E;'
+  infin         = '&#x221E;'
 
-[output]
-  fileext       = 'xml'
+#------------------------------------------------------------------------------
+[ S ]
+  fileroot      = 'doc/Manual'
 
-[ output.program ]
-  pdf           = 'xsltproc --encoding utf-8 --xinclude %op/stylesheet.xsl - | xep -fo - -pdf %op/%of.pdf'
-  xsl           = 'xmllint --format - > %op/%of.xsl'
-  xml           = 'xmllint --format - > %op/%of.%oe'
-  chk           = 'xmllint --format - | tee MongoDB.xml | rnv /usr/share/xml/docbook5/schema/rng/5.0/docbook.rnc'
+[ S.xml ]
+  filepath      = 'Xml'
 
-[ module ]
+[ S.chk ]
+  filepath      = 'Xml'
+
+[ S.xsl ]
+#  fileext       = 'xsl'
+  filepath      = 'Xsl'
+
+#------------------------------------------------------------------------------
+[ R.db5 ]
+  pdf           = 'xsltproc --encoding utf-8 --xinclude %op/Xsl/stylesheet.xsl - | xep -fo - -pdf "%op/%of.%oe"'
+  chk           = 'xmllint --format - | tee "%op/%of.%oe" | rnv /usr/share/xml/docbook5/schema/rng/5.0/docbook.rnc'
+
+[ R.xml ]
+  xml           = 'xmllint --format - > "%op/%of.%oe"'
+  chk           = 'xmllint --format - | tee "%op/%of.%oe" | rnv /usr/share/xml/docbook5/schema/rng/5.0/docbook.rnc'
+
+[ R.xsl ]
+  xsl           = 'xmllint --format - > "%op/%of.%oe"'
+  chk           = 'xmllint --format - | tee "%op/%of.%oe" | rnv /usr/share/xml/docbook5/schema/rng/5.0/docbook.rnc'
+
+#------------------------------------------------------------------------------
+[ ML.db5 ]
   lorem         = 'SxmlLib::LoremIpsum'
   d5b           = 'SxmlLib::Docbook5::Basic'
   d5f           = 'SxmlLib::Docbook5::FixedLayout'
   file          = 'SxmlLib::File'
+
+#------------------------------------------------------------------------------
+[ T ]
+#  config-search = false
+  config        = false
+  tables        = false
+  modules       = false
+  parse         = true
+  parse-result  = false
+  file-handling = true

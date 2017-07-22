@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use BSON::Document;
 
@@ -9,10 +9,9 @@ use MongoDB::Collection;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
-
-# Array index and error codes
+# Array index into schema
 constant C-MANDATORY            = 0;
 constant C-TYPE                 = 1;
 
@@ -127,16 +126,12 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method insert ( 
-    Array:D :$inserts
-
-    --> BSON::Document
-  ) {
+  method insert ( Array:D :$inserts --> BSON::Document ) {
 
     my Array $mod-inserts = [];
     for @$inserts {
       my Hash $ins = %$_;
-      
+
       my BSON::Document $record .= new;
 
       if $ins.defined {
@@ -213,7 +208,7 @@ role HL::CollectionRole {
       if $us<u>:exists and $us<u>.defined {
         $query-spec<u> = $us<u>;
       }
-      
+
       else {
         fatal-message("No update specification found");
       }
@@ -315,7 +310,7 @@ role HL::CollectionRole {
 
     # clear all data and set defaults
     self.reset;
-    
+
     $doc;
   }
 
@@ -418,10 +413,7 @@ role HL::CollectionRole {
   # - extra fields
   # - wrong typed fields
   #
-  method !check-record (
-    BSON::Document:D $schema,
-    BSON::Document:D $record,
-  ) {
+  method !check-record ( BSON::Document:D $schema, BSON::Document:D $record ) {
 
     # Variable is bound to real location to take care for recursive loops
     my @failed-fields := @$!failed-fields;
@@ -433,7 +425,7 @@ role HL::CollectionRole {
       if $record{$field-name}:exists {
 
         # Check type of field value with type in schema
-        if $record{$field-name} !~~ $!schema{$field-name}[C-TYPE] {
+        if $record{$field-name}.^name !~~ $!schema{$field-name}[C-TYPE] {
           @failed-fields.push: [
             $field-name,                        # failed fieldname
             C-TYPE,                             # failed on type
@@ -443,7 +435,7 @@ role HL::CollectionRole {
         }
 
         # Check if nested, if so, do recursive call
-        elsif $record{$field-name} ~~ BSON::Document {
+        elsif $record{$field-name}.^name ~~ BSON::Document {
           self!check-record( $!schema{$field-name}, $record{$field-name});
         }
       }
@@ -480,23 +472,28 @@ role HL::CollectionRole {
   }
 
   #-----------------------------------------------------------------------------
-  method !check-schema ( BSON::Document:D $schema --> BSON::Document ) {
+  method !check-schema ( Array:D $schema --> BSON::Document ) {
 
     my BSON::Document $mod-schema .= new;
 
     # insert non mandatory _id field of type Any
-    $mod-schema<_id> = [ False, Any];
+    $mod-schema<_id> = [ False, BSON::C-OBJECTID];
 
     # Copy all other fields
-    for $schema.kv -> $k, $v {
+    for @$schema -> $item {
+      my ( $k, $v) = $item.kv;
+      my Str $type = $v[C-TYPE].^name;
 
-      if $v ~~ Array and $v[0] ~~ Bool {
-        $mod-schema{$k} = $v;
+      if $v ~~ Array
+         and $v[C-MANDATORY] ~~ Bool
+         and $type ~~ m/^ ('BSON::'|'Num'|'Int'|'Str'|'Bool') / {
+
+        $mod-schema{$k} = [ $v[C-MANDATORY], $type];
       }
 
-      elsif $v ~~ BSON::Document {
-        $mod-schema{$k} = $v;
-      }
+      #elsif $v ~~ BSON::Document {
+      #  $mod-schema{$k} = $v;
+      #}
 
       else {
         fatal-message("Field $k in schema has problems: " ~ $v.perl);
@@ -524,7 +521,7 @@ role HL::CollectionRole {
       }
 
       elsif $field-spec[1] ~~ C-TYPE {
-        $error-doc<fields>{$field-spec[0]} = 
+        $error-doc<fields>{$field-spec[0]} =
           [~] 'type failure, is ', $field-spec[2].WHAT.perl, " but must be ",
           $field-spec[3].WHAT.perl;
       }
@@ -551,7 +548,7 @@ class HL::Collection does HL::CollectionRole {
     Str:D :$uri,
     Str:D :$db-name,
     Str:D :$cl-name,
-    BSON::Document:D :$schema,
+    Array:D :$schema,
     Bool :$append-unknown-fields = False
   ) {
 
@@ -565,11 +562,7 @@ class HL::Collection does HL::CollectionRole {
 }
 
 sub collection-object (
-  Str :$uri,
-  Str:D :$db-name,
-  Str:D :$cl-name,
-  BSON::Document :$schema
-
+  Str :$uri, Str:D :$db-name, Str:D :$cl-name, Array :$schema
   --> MongoDB::HL::Collection
 ) is export {
 

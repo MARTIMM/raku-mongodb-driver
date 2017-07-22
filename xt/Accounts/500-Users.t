@@ -66,7 +66,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Message {
+      when X::MongoDB {
         ok .message ~~ m:s/Username too 'short,' must be '>= 5'/,
            'Username too short';
       }
@@ -81,7 +81,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Message {
+      when X::MongoDB {
         ok .message ~~ m:s/Password too 'short,' must be '>= 6'/,
            'Password too short';
       }
@@ -96,7 +96,7 @@ subtest {
     );
 
     CATCH {
-      when X::MongoDB::Message {
+      when X::MongoDB {
         ok .message ~~ m:s/Password does not have the right properties/,
            'Password does not have the right properties';
       }

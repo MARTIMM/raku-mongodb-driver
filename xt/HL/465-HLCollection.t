@@ -1,5 +1,4 @@
-use v6.c;
-
+use v6;
 use Test;
 
 use MongoDB;
@@ -9,7 +8,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+#modify-send-to( 'screen', :level(* >= MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::HL::Collection $table = collection-object(
@@ -17,7 +16,7 @@ my MongoDB::HL::Collection $table = collection-object(
   :db-name<contacts>,
   :cl-name<address>,
 
-  :schema( BSON::Document.new: (
+  :schema( [
       street => [ True, Str],
       number => [ True, Int],
       number-mod => [ False, Str],
@@ -25,32 +24,31 @@ my MongoDB::HL::Collection $table = collection-object(
       zip => [ False, Str],
       state => [ False, Str],
       country => [ True, Str],
-    )
+    ]
   )
 );
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'all optional fields test', {
 
   my MongoDB::HL::Collection $subtable = collection-object(
     :uri<mongodb://:65010>,
     :db-name<c0>,
     :cl-name<a0>,
 
-    :schema( BSON::Document.new: (
+    :schema( [
         street => [ False, Str],
         number => [ False, Int],
-      )
+      ]
     )
   );
 
   my BSON::Document $doc = $subtable.insert( :inserts([{ },]));
   is $doc<fields><->, 'current record is empty', $doc<fields><->;
-
-}, 'all optional fields test';
+};
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'field failure test', {
 
   is $table.^name,
      'MongoDB::HL::Collection::Address',
@@ -70,16 +68,16 @@ subtest {
     )
   );
 
-say $doc.perl;
+  diag $doc.perl;
   ok !$doc<ok>, 'Document has problems';
   is $doc<fields><number>, 'missing', 'field number is missing';
-  is $doc<fields><city>, 'missing', 'field number is missing';
+  is $doc<fields><city>, 'missing', 'field city is missing';
   is $doc<fields><zip>, 'type failure, is Num but must be Str',
      "field zip $doc<fields><zip>";
-}, 'field failure test';
+};
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'Proper fields test', {
 
   my BSON::Document $doc = $table.insert(
     :inserts( [ %(
@@ -96,10 +94,10 @@ subtest {
   );
   ok $doc<ok>, 'Document written';
 
-}, 'Proper fields test';
+};
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest '2nd Object test', {
 
   my MongoDB::HL::Collection $sec-table = collection-object(
     :db-name<contacts>,
@@ -118,10 +116,10 @@ subtest {
   );
   ok $doc<ok>, 'Document written';
 
-}, '2nd Object test';
+};
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'append unknown fields test', {
 
   my MongoDB::HL::Collection $sec-table = collection-object(
     :db-name<contacts>,
@@ -143,11 +141,10 @@ subtest {
 
   ok $doc<ok>, 'write ok';
   is $doc<n>, 1, 'one record written';
-
-}, 'append unknown fields test';
+};
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'multiple records test', {
 
   my MongoDB::HL::Collection $sec-table = collection-object(
     :db-name<contacts>,
@@ -170,14 +167,12 @@ subtest {
       ]
     )
   );
+  diag $doc.perl;
   ok $doc<ok>, 'write ok';
   is $doc<n>, 2, 'two records written';
-  say $doc.perl;
-
-}, 'multiple records test';
+};
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 info-message("Test $?FILE end");
 done-testing;

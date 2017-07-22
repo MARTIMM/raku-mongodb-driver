@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use MongoDB;
 
@@ -11,7 +11,7 @@ use OpenSSL::Digest;
 #use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-----------------------------------------------------------------------------
 # Class definition to do authentication with

@@ -1,15 +1,14 @@
-use v6.c;
+use v6;
 use BSON::Document;
 use MongoDB;
 use MongoDB::Header;
 use MongoDB::Wire;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Cursor does Iterable {
-  state $header = MongoDB::Header.new;
 
   has $.client;
   has $.full-collection-name;
@@ -52,6 +51,8 @@ class Cursor does Iterable {
     # Get documents from the reply.
     @!documents = $server-reply<documents>.list;
     $!number-to-return = $number-to-return;
+
+    trace-message("Cursor set for @!documents.elems() documents (type 1)");
   }
 
   # This can be set with data received from a command e.g. listDatabases
@@ -62,6 +63,7 @@ class Cursor does Iterable {
 
     $!client = $client;
     $!full-collection-name = $cursor-doc<ns>;
+    my MongoDB::Header $header .= new;
 
     my BSON::Document $rc = $read-concern // $client.read-concern;
 
@@ -81,6 +83,8 @@ class Cursor does Iterable {
     # Get documents from the reply.
     @!documents = @($cursor-doc<firstBatch>);
     $!number-to-return = $number-to-return;
+
+    trace-message("Cursor set for @!documents.elems() documents (type 2)");
   }
 
   #-----------------------------------------------------------------------------
@@ -127,11 +131,18 @@ class Cursor does Iterable {
 
         # Get documents
         @!documents = $server-reply<documents>.list;
+
+        trace-message("Another @!documents.elems() documents retrieved");
       }
 
       else {
+        trace-message("All documents read");
         @!documents = ();
       }
+    }
+
+    else {
+      trace-message("Still @!documents.elems() documents left");
     }
 
     # Return a document when there is one. If none left, return Nil
@@ -144,12 +155,15 @@ class Cursor does Iterable {
     # Invalidate cursor on database only if id is valid
     if [+] @$.id {
       MongoDB::Wire.new.kill-cursors( (self,), :$!server);
+      trace-message("Cursor killed");
 
       # Invalidate cursor id with 8 0x00 bytes
       $!id = Buf.new(0x00 xx 8);
       $!server = Nil;
     }
+
+    else {
+      trace-message("No cursor available to kill");
+    }
   }
 }
-
-

@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use MongoDB;
 use MongoDB::Server::Socket;
@@ -7,7 +7,7 @@ use BSON::Document;
 use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Server::Monitor {
@@ -31,7 +31,7 @@ class Server::Monitor {
 
   #-----------------------------------------------------------------------------
   # Call before monitor-server to set the $!server object!
-  # Inheriting from Supplier prevents use of proper BUILD 
+  # Inheriting from Supplier prevents use of proper BUILD
   #
   submethod BUILD ( MongoDB::ServerType:D :$server ) {
 
@@ -83,7 +83,7 @@ class Server::Monitor {
         my Duration $rtt;
         my BSON::Document $doc;
 
-        # As long as the server lives test it. Changes are possible when 
+        # As long as the server lives test it. Changes are possible when
         # server conditions change.
         my Bool $mloop = $!rw-sem.writer( 'm-loop', {$!monitor-loop = True;});
 
@@ -99,10 +99,8 @@ class Server::Monitor {
           );
 
           if $doc.defined {
-
-            # Calculation of mean Return Trip Time. See also 
+            # Calculation of mean Return Trip Time. See also
             # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
-            #
             $!weighted-mean-rtt-ms .= new(
               0.2 * $rtt * 1000 + 0.8 * $!weighted-mean-rtt-ms
             );
@@ -110,6 +108,7 @@ class Server::Monitor {
             debug-message(
               "Weighted mean RTT: $!weighted-mean-rtt-ms (ms) for server $!server.name()"
             );
+
             $!monitor-data-supplier.emit( {
                 ok => True,
                 monitor => $doc<documents>[0],
@@ -121,6 +120,7 @@ class Server::Monitor {
           }
 
           else {
+            $!socket.close-on-fail if $!socket.defined;
             warn-message("no response from server $!server.name()");
             $!monitor-data-supplier.emit( {
                 ok => False,
@@ -130,7 +130,7 @@ class Server::Monitor {
           }
 
 #          sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
-#note "Sleep for {$monitor-looptime-ms / 1000.0} (1)";
+#note "AA: Sleep for {$monitor-looptime-ms / 1000.0} sec";
           sleep $monitor-looptime-ms / 1000.0;
           $mloop = $!rw-sem.reader( 'm-loop', {$!monitor-loop;});
 
@@ -138,7 +138,6 @@ class Server::Monitor {
           # version 3.2 the server just stops communicating when a shutdown
           # command was given. Opening a socket will then bring us here.
           # Send ok False to mention the fact that the server is down.
-          #
           CATCH {
 #.message.note;
             when .message ~~ m:s/Failed to resolve host name/ ||
@@ -159,7 +158,7 @@ class Server::Monitor {
               $!monitor-data-supplier.emit( %( ok => False, reason => $s));
 
 #              sleep-until ($loop-start-time-ms + $monitor-looptime-ms)/1000.0;
-#note "Sleep for {$monitor-looptime-ms / 1000.0} (0)";
+#note "BB: Sleep for {$monitor-looptime-ms / 1000.0} (0)";
               sleep $monitor-looptime-ms / 1000.0;
 
               # check if loop must be broken

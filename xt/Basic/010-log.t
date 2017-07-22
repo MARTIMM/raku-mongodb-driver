@@ -14,7 +14,7 @@ set-exception-processing(:!checking);
 trace-message("trace message 1");
 
 
-class A is X::MongoDB::Message {
+class A is X::MongoDB {
 
   method tm ($tm) {
     fatal-message($tm);

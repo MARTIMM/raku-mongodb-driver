@@ -8,9 +8,9 @@ use MongoDB::Client;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -54,7 +54,7 @@ subtest {
     key => 'code'
   );
   is $doc<ok>, 1, 'Distinct request ok';
-  
+
   is-deeply $doc<values>.sort, ( 14, 20), 'Codes found are 14, 20';
 
   $doc = $database.run-command: (

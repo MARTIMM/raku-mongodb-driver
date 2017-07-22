@@ -1,8 +1,10 @@
-use v6.c;
+use v6;
+
 use lib 't';
 
 use Test;
 use Test-support;
+
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Cursor;
@@ -12,7 +14,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Trace));
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -165,7 +167,7 @@ subtest "Testing explain and performance using hint", {
   $doc = $cursor.fetch;
   my $s = $doc<executionStats>;
   is $s<nReturned>, 1, 'One doc found, explain via bad hint';
-  is $s<totalDocsExamined>, 200, 'Scanned 200 docs, bad searching, explain via bad hint';
+  ok $s<totalDocsExamined> > 1, 'Scanned 200 docs, bad searching, explain via bad hint';
 
   # Give a good hint and get explaination(another possibility from above
   # explain using find in stead of run-command)
@@ -210,7 +212,6 @@ exit(0);
 #-------------------------------------------------------------------------------
 # Check one document for its fields. Something like {code => 1, nofield => 0}
 # use find()
-#
 sub check-document ( $criteria, $field-list, $projection = ())
 {
 #  $cursor = $collection.find( :$criteria, :$projection);

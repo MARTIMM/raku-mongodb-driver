@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 use lib 't';
 
 use Test;
@@ -9,9 +9,9 @@ use MongoDB::Client;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -31,7 +31,7 @@ my MongoDB::Cursor $cursor;
 $database.run-command: (drop => $collection.name,);
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Several inserts", {
 
   # Add records
   #
@@ -75,37 +75,39 @@ subtest {
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 6, "Inserted 6 documents";
 
-  $cursor = $collection.find: :criteria(:test(0),);
-  $req<query> = (name => 'Di D',);
+  $req .= new: ( :count($collection.name), :query((:test(0),)));
   $doc = $database.run-command($req);
   is $doc<n>, 6, '6 records of Test(0)';
 
-}, "Several inserts";
+  $req .= new: ( :count($collection.name), :query((:name('Di D'),)));
+  $doc = $database.run-command($req);
+  is $doc<n>, 1, "1 record of name('Di D')";
+};
 
 #-------------------------------------------------------------------------------
 # Drop current collection twice
-#
-$req .= new: (drop => $collection.name);
-$doc = $database.run-command($req);
+subtest 'drop collection two times', {
 
-ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
-#say $doc.perl;
-is $doc<ns>, 'test.cl1', 'Dropped collection';
-is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
-
-# Do it a second time
-#
-try {
+  $req .= new: (drop => $collection.name);
   $doc = $database.run-command($req);
-  CATCH {
-    when X::MongoDB::Message {
-      ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
+
+  ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
+  #say $doc.perl;
+  is $doc<ns>, 'test.cl1', 'Dropped collection';
+  is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
+
+  # Do it a second time
+  try {
+    $doc = $database.run-command($req);
+    CATCH {
+      when X::MongoDB {
+        ok $_.message ~~ m/ns \s+ not \s* found/, 'Collection cl1 not found';
+      }
     }
   }
-}
+};
 
-
-
+#-------------------------------------------------------------------------------
 $client.cleanup;
 done-testing();
 exit(0);
@@ -122,7 +124,7 @@ exit(0);
 try {
   $database.create-collection('abc-def and a space');
   CATCH {
-    when X::MongoDB::Message {
+    when X::MongoDB {
       ok $_.message ~~ m/Illegal \s* collection \s* name/, 'Illegal collection name';
     }
   }

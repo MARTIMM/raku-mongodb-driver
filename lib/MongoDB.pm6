@@ -1,11 +1,13 @@
-use v6.c;
-use MongoDB::Log :ALL;
+use v6;
+
+use MongoDB::Log;
 
 sub EXPORT { {
     '&add-send-to'                      => &add-send-to,
     '&modify-send-to'                   => &modify-send-to,
     '&drop-send-to'                     => &drop-send-to,
     '&drop-all-send-to'                 => &drop-all-send-to,
+
 
     '&trace-message'                    => &trace-message,
     '&debug-message'                    => &debug-message,
@@ -14,12 +16,12 @@ sub EXPORT { {
     '&error-message'                    => &error-message,
     '&fatal-message'                    => &fatal-message,
 
-    'X::MongoDB::Message'               => X::MongoDB::Message,
+    'X::MongoDB'               => X::MongoDB,
   }
 };
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:ver<0.36.1>:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 # Client object topology types

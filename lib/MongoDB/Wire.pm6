@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use BSON;
 use BSON::Document;
@@ -6,11 +6,10 @@ use MongoDB;
 use MongoDB::Header;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Wire {
-  state $header = MongoDB::Header.new;
 
   has ServerType $!server;
   has SocketType $!socket;
@@ -40,6 +39,7 @@ class Wire {
   ) {
 
     $!server = $server;
+    my MongoDB::Header $header .= new;
 
     # OR all flag values to get the integer flag, be sure it is at least 0x00.
     my Int $flags = [+|] @flags>>.value;
@@ -86,26 +86,26 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#note .WHAT;
-#note "$*THREAD.id() Error wire query: ", $_;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
-        # Fatal messages from the program
-        when X::MongoDB::Message {
+        # Fatal messages from the program elsewhere
+        when X::MongoDB {
           # Already logged
         }
 
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
-             .message ~~ m:s/Failed to connect\: connection refused/ {
+             .message ~~ m:s/Could not connect socket\: Connection refused/ ||
+             .message ~~ m:s/Could not receive data from socket/ ||
+             .message ~~ m:s/Connection reset by peer/ {
 
-#          error-message(.message);
-          .rethrow;
+          warn-message($server.name ~ ': ' ~ .message);
         }
 
         # From BSON::Document
         when X::BSON::Parse-document {
-          error-message(.message);
+          error-message($server.name ~ ': ' ~ .message);
         }
 
         # If not one of the above errors, rethrow the error after showing
@@ -127,6 +127,7 @@ class Wire {
   ) {
 
     $!server = $server;
+    my MongoDB::Header $header .= new;
     my BSON::Document $result;
 
     try {
@@ -157,17 +158,19 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#.note;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
-        when X::MongoDB::Message {
+        when X::MongoDB {
           # Already logged
         }
 
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
-             .message ~~ m:s/Failed to connect\: connection refused/ {
+             .message ~~ m:s/Failed to connect\: connection refused/ ||
+             .message ~~ m:s/Could not receive data from socket/ ||
+             .message ~~ m:s/Connection reset by peer/ {
 
           error-message(.message);
         }
@@ -192,6 +195,7 @@ class Wire {
   method kill-cursors ( @cursors where .elems > 0, ServerType:D :$server! ) {
 
     $!server = $server;
+    my MongoDB::Header $header .= new;
 
     # Gather the ids only when they are non-zero.i.e. still active.
     my Buf @cursor-ids;
@@ -214,17 +218,19 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#.note;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program
-        when X::MongoDB::Message {
+        when X::MongoDB {
           # Already logged
         }
 
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
-             .message ~~ m:s/Failed to connect\: connection refused/ {
+             .message ~~ m:s/Failed to connect\: connection refused/ ||
+             .message ~~ m:s/Could not receive data from socket/ ||
+             .message ~~ m:s/Connection reset by peer/ {
 
           error-message(.message);
         }
@@ -253,7 +259,6 @@ class Wire {
     if $bytes.elems == 0 {
 
       # No data, try again
-      #
       $bytes = $!socket.receive($n);
       fatal-message("No response from server") if $bytes.elems == 0;
     }
@@ -261,7 +266,6 @@ class Wire {
     if 0 < $bytes.elems < $n {
 
       # Not 0 but too little, try to get the rest of it
-      #
       $bytes.push($!socket.receive($n - $bytes.elems));
       fatal-message("Response corrupted") if $bytes.elems < $n;
     }

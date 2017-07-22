@@ -8,7 +8,7 @@ use MongoDB;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
-#modify-send-to( 'screen', :level(* >= MongoDB::Loglevels::Debug));
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -20,7 +20,7 @@ for $ts.server-range -> $server-number {
     ok $ts.server-control.stop-mongod('s' ~ $server-number),
        "Server $server-number is stopped";
     CATCH {
-      when X::MongoDB::Message {
+      when X::MongoDB {
         like .message, /:s exited unsuccessfully/,
              "Server 's$server-number' already down";
       }
@@ -29,7 +29,7 @@ for $ts.server-range -> $server-number {
 }
 
 throws-like { $ts.server-control.stop-mongod('s1') },
-            X::MongoDB::Message, :message(/:s exited unsuccessfully/);
+            X::MongoDB, :message(/:s exited unsuccessfully/);
 
 $ts.cleanup-sandbox();
 

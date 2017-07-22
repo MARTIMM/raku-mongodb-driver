@@ -1,6 +1,6 @@
-use v6.c;
+use v6;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 use BSON::Document;
@@ -10,12 +10,12 @@ use MongoDB::Collection;
 use MongoDB::Server::Control;
 use MongoDB::Client;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #drop-send-to('mongodb');
 #drop-send-to('screen');
-#add-send-to( 'screen', :to($*ERR), :level(* >= MongoDB::Loglevels::Trace));
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 class Test-support {
 
   # N servers needed for the tests
@@ -30,7 +30,7 @@ class Test-support {
     $!nbr-of-servers = 3;
     $!server-range = (^$!nbr-of-servers + 1);
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # If we are under the scrutany of TRAVIS then adjust the path where to find the
     # mongod/mongos binaries
     #
@@ -38,7 +38,7 @@ class Test-support {
       %*ENV<PATH> = "$*CWD/Travis-ci/MongoDB:%*ENV<PATH>";
     }
 
-    #-------------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Check directory Sandbox and start config file
     #
     unless 'Sandbox'.IO ~~ :d {
@@ -72,7 +72,7 @@ class Test-support {
         EOCONFIG
 
 
-      #-------------------------------------------------------------------------------
+      #------------------------------------------------------------------------
       for @$!server-range -> Int $server-number {
 
         my Str $server-dir = "Sandbox/Server$server-number";
@@ -120,7 +120,7 @@ class Test-support {
 #    say "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Get a connection.
   #
   method get-connection ( Int :$server = 1 --> MongoDB::Client ) {
@@ -131,7 +131,7 @@ class Test-support {
     MongoDB::Client.new(:uri("mongodb://localhost:$port-number"));
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Search and show content of documents
   #
   method show-documents (
@@ -148,7 +148,7 @@ class Test-support {
     }
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   =begin comment
     Test for usable port number
     According to https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
@@ -203,7 +203,7 @@ class Test-support {
     $port-number;
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Remove everything setup in directory Sandbox
   method cleanup-sandbox ( ) {
 
@@ -227,8 +227,3 @@ class Test-support {
     rmdir "Sandbox";
   }
 }
-
-
-
-
-
