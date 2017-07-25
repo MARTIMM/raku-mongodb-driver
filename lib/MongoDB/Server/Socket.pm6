@@ -61,7 +61,7 @@ class Server::Socket {
 
     $!thread-id = $*THREAD.id;
 
-    trace-message("open socket");
+    trace-message("open socket $!server.server-name(), $!server.server-port()");
     $!is-open = True;
     $!time-last-used = time;
 
