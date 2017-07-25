@@ -2,9 +2,12 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.37.5
+  * One monitor thread used for all servers. This implies that the heartbeat frequency given with the uri or by default will be used on all servers, no matter from which client uri it came from. The server will provide this data to the monitor when registering itself. This means, most often, that the value is set by the last server from the last client registering itself. Most of the time a single client is used with a replica server and slaves or one standalone. If more clients are needed, chances are that they will be treated equally.
+  Anyways, this implementation will save a thread for each server object in the client object. This can be a lot for example with replica servers where the slave servers are looked up and inserted in the client too, despite not mentioning them in the uri.
 * 0.37.4
-  * thread in client to discover new servers is stopped after some time to save thread space.
-  * bug fixed cleaning up a Client object. This was done on a thread which cannot work while the client will add new data to the same structures. The last subtest in 110-client.t was failing because of this.
+  * Thread in client to discover new servers is stopped after some time to save thread space.
+  * bug fixed cleaning up a Client object. This was done on a thread which cannot work while the client might add new data to the same structures. The last subtest in 110-client.t was failing because of this.
 * 0.37.3
   * Tested against newest mongod server and had to fix some bugs because of different behavior of the server. Should be downwards compatible.
 * 0.37.2
