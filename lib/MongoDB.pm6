@@ -28,7 +28,7 @@ unit package MongoDB:auth<github:MARTIMM>;
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 enum TopologyType is export <
   TT-Single TT-ReplicaSetNoPrimary TT-ReplicaSetWithPrimary
-  TT-Sharded TT-Unknown
+  TT-Sharded TT-Unknown TT-NotSet
 >;
 
 #------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ enum TopologyType is export <
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 enum ServerStatus is export <
   SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary SS-RSSecondary
-  SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
+  SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown SS-NotSet
 >;
 
 #------------------------------------------------------------------------------
