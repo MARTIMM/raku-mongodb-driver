@@ -19,18 +19,17 @@ class Server::Socket {
 #  has Bool $!must-authenticate;
 
   has Bool $.is-open;
-  has MongoDB::ServerType $!server;
+  has MongoDB::ServerType $.server;
 
   #-----------------------------------------------------------------------------
-  submethod BUILD ( MongoDB::ServerType:D :$server ) {
+  submethod BUILD ( MongoDB::ServerType:D :$!server ) {
 
-    $!server = $server;
-
-    $!is-open = False;
+    $!is-open = True;
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
-
-    trace-message("new socket");
+note "Open server $!server.server-name(), $!server.server-port()";
+    $!sock .= new( :host($!server.server-name), :port($!server.server-port));
+    trace-message("open socket $!server.server-name(), $!server.server-port()");
   };
 
   #-----------------------------------------------------------------------------
@@ -51,15 +50,19 @@ class Server::Socket {
   #-----------------------------------------------------------------------------
   # Open socket, returns True when already opened before otherwise it is opened
   method open ( --> Bool ) {
+return True;
 
     fatal-message("thread $*THREAD.id() is not owner of this socket")
       unless $.thread-id == $*THREAD.id();
+
+note "$*THREAD.id() open: $!is-open";
     return True if $!is-open;
 
+note "Open server $!server.server-name(), $!server.server-port()";
     $!sock .= new( :host($!server.server-name), :port($!server.server-port))
       unless $!sock.defined;
+note $!sock.perl;
 
-    $!thread-id = $*THREAD.id;
 
     trace-message("open socket $!server.server-name(), $!server.server-port()");
     $!is-open = True;

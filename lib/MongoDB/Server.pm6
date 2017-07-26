@@ -29,6 +29,7 @@ class Server {
   has MongoDB::Authenticate::Credential $!credential;
 
   has MongoDB::Server::Socket @!sockets;
+  has Bool $!server-is-registered;
 
   # Server status data. Must be protected by a semaphore because of a thread
   # handling monitoring data.
@@ -47,17 +48,17 @@ class Server {
   ) {
 
     $!rw-sem .= new;
-#    $!rw-sem.debug = True;
+    #$!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
-      <s-select s-status>,
-      :RWPatternType(C-RW-WRITERPRIO)
-    ) unless $!rw-sem.check-mutex-names(<s-select s-status>);
+      <s-select s-status>, :RWPatternType(C-RW-WRITERPRIO)
+    );
 
 #    $!client = $client;
 #    $!uri-data = $client.uri-data;
     $!credential := $!client.credential;
 
     @!sockets = ();
+    $!server-is-registered = False;
 
     # Save name and port of the server
     ( my $host, my $port) = split( ':', $server-name);
@@ -65,7 +66,7 @@ class Server {
     $!server-port = $port.Int;
 
     $!server-sts-data = {
-      :status(SS-Unknown), :!is-master, :error(''),
+      :status(SS-NotSet), :!is-master, :error(''),
     };
   }
 
@@ -74,15 +75,19 @@ class Server {
   method server-init ( ) {
 
     # Start monitoring
-    MongoDB::Server::Monitor.instance.register-server(self);
+    my MongoDB::Server::Monitor $m .= instance;
+    $m.set-heartbeat($!client.heartbeat-frequency-ms);
+    $m.register-server(self);
+    $!server-is-registered = True;
 
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
 
-#note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
         # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#parsing-an-ismaster-response
-        try {
+        if $monitor-data<server-name> eq self.name {
+#        try {
 
           my Bool $is-master = False;
           my ServerStatus $server-status = SS-Unknown;
@@ -128,16 +133,17 @@ class Server {
 
               } # writer block
             ); # writer
-          }
+          } # else
 
           # Set the status with the new value
-          debug-message("set status of {self.name()} $server-status");
+          info-message("Server status of {self.name()} is $server-status");
 
           # Let the client find the topology using all found servers
           # in the same rhythm as the heartbeat loop of the monitor
           # (of each server)
           $!client.process-topology;
 
+#`{{
           CATCH {
             default {
               .note;
@@ -153,6 +159,9 @@ class Server {
             } # default
           } # CATCH
         } # try
+}}
+        } # if $monitor-data<server> eq self.name
+
       } # tap block
     ); # tap
   } # method
@@ -224,66 +233,83 @@ class Server {
   # optional.
   method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
+    # If server is not registered then the server is cleaned up
+    return MongoDB::Server::Socket unless $!server-is-registered;
+
+    # Use return value to see if authentication is needed.
+    my Bool $created-anew = False;
+
 #note "$*THREAD.id() Get sock, authenticate = $authenticate";
+#note "MNames server {self.name}: ", $!rw-sem.get-mutex-names.join(', ');
 
     # Get a free socket entry
-    my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
+#    my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
 
-        my MongoDB::Server::Socket $s;
+        my MongoDB::Server::Socket $found-socket;
 
-        # Check all sockets first
-        for ^(@!sockets.elems) -> $si {
+        # Check all sockets first if timed out
+note "sockets: ", @!sockets.WHAT;
+        my @skts = $!rw-sem.reader( 's-select', { @!sockets; });
+note "skts: ", @skts.WHAT;
+        for @skts -> $socket is rw {
 
-          next unless @!sockets[$si].defined;
+          next unless $socket.defined;
 
-          if @!sockets[$si].check {
-            @!sockets[$si] = Nil;
-            trace-message("socket cleared");
+          if $socket.check {
+            $socket = Nil;
+            trace-message("Socket cleared for {self.name}");
           }
         }
 
         # Search for socket
-        for ^(@!sockets.elems) -> $si {
+        for @skts -> $socket is rw {
 
-          next unless @!sockets[$si].defined;
+          next unless $socket.defined;
 
-          if @!sockets[$si].thread-id == $*THREAD.id() {
-            $s = @!sockets[$si];
-            trace-message("socket found");
+          if $socket.thread-id == $*THREAD.id()
+             and $socket.server.name eq self.name {
+
+            $found-socket = $socket;
+            trace-message("Socket found for {self.name}");
+
             last;
           }
         }
 
         # If none is found insert a new Socket in the array
-        if not $s.defined {
+        if not $found-socket.defined {
+
           # search for an empty slot
           my Bool $slot-found = False;
-          for ^(@!sockets.elems) -> $si {
-            if not @!sockets[$si].defined {
-              $s .= new(:server(self));
-              @!sockets[$si] = $s;
+          for @skts -> $socket {
+            if not $socket.defined {
+              $found-socket = $socket .= new(:server(self));
+              $created-anew = True;
               $slot-found = True;
+              trace-message("New socket inserted for {self.name}");
             }
           }
 
           if not $slot-found {
-            $s .= new(:server(self));
-            @!sockets.push($s);
+            $found-socket .= new(:server(self));
+            $created-anew = True;
+            @!sockets.push($found-socket);
+            trace-message("New socket created for {self.name}");
           }
         }
 
-        $s;
-      }
-    );
+        $!rw-sem.writer( 's-select', {@!sockets = @skts;});
+#        $found-socket;
+#      } # writer block
+#    ); # writer
 
+note "sockets: ", $found-socket.WHAT;
 
-    # Use return value to see if authentication is needed.
-    my Bool $opened-before = $sock.open;
 
 #TODO check must be made on autenticate flag only and determined from server
     # We can only authenticate when all 3 data are True and when the socket is
-    # opened anew.
-    if not $opened-before and $authenticate
+    # created.
+    if $created-anew and $authenticate
        and (? $!uri-data<username> or ? $!uri-data<password>) {
 
       # get authentication mechanism
@@ -293,11 +319,11 @@ class Server {
           's-status', {$!server-sts-data<max-wire-version>}
         );
         $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
-        debug-message("Use mechanism '$auth-mechanism' decided by wire version($max-version)");
+        trace-message("Wire version is $max-version");
+        trace-message("Authenticate with '$auth-mechanism'");
       }
 
       $!credential.auth-mechanism(:$auth-mechanism);
-
 
       given $auth-mechanism {
 
@@ -315,7 +341,13 @@ class Server {
           );
 
           my $error = $sc.start-scram;
-          fatal-message("Authentication fail: $error") if ? $error;
+          if ?$error {
+            fatal-message("Authentication fail for $!uri-data<username>: $error");
+          }
+
+          else {
+            trace-message("$!uri-data<username> authenticated");
+          }
         }
 
         # Default in version 2.*
@@ -340,7 +372,7 @@ class Server {
     }
 
     # Return a usable socket which is opened and authenticated upon if needed.
-    $sock;
+    $found-socket;
   }
 
   #-----------------------------------------------------------------------------
@@ -351,6 +383,9 @@ class Server {
     --> List
   ) {
 
+    # Be sure the server is still active
+    return ( BSON::Document, 0) unless $!server-is-registered;
+
     my BSON::Document $doc;
     my Duration $rtt;
 
@@ -360,16 +395,19 @@ class Server {
       :server(self), :$authenticate
     );
 
-    ( $doc, $rtt);
+    ( $doc, $rtt // 0);
   }
 
-
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   multi method raw-query (
     Str:D $full-collection-name, BSON::Document:D $query,
     Int :$number-to-skip = 0, Int :$number-to-return = 1,
     Bool :$authenticate = True
     --> BSON::Document
   ) {
+    # Be sure the server is still active
+    return BSON::Document unless $!server-is-registered;
+
     debug-message("server directed query on collection $full-collection-name on server {self.name}");
 
     MongoDB::Wire.new.query(
@@ -393,22 +431,26 @@ class Server {
     # non existent or some other reason.
     $!server-tap.close if $!server-tap.defined;
 
-    MongoDB::Server::Monitor.instance.unregister(self);
+    $!server-is-registered = False;
+    MongoDB::Server::Monitor.instance.unregister-server(self);
 
     # Clear all sockets
+note "clear sockets";
     $!rw-sem.writer( 's-select', {
-        for ^(@!sockets.elems) -> $si {
-          next unless @!sockets[$si].defined;
-          @!sockets[$si].cleanup;
-          @!sockets[$si] = Nil;
-          trace-message("socket cleared");
+        for @!sockets -> $socket {
+          next unless $socket.defined;
+          $socket.cleanup;
+          trace-message("socket cleaned for $socket.server.name()");
         }
       }
     );
+
+    trace-message("Sockets cleared");
 
     $!client = Nil;
     $!uri-data = Nil;
     @!sockets = Nil;
     $!server-tap = Nil;
+    $!rw-sem.rm-mutex-names(<s-select s-status>);
   }
 }
