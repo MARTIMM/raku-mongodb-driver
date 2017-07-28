@@ -134,7 +134,6 @@ class Server::Monitor {
 
         # Do forever once it is started
         loop {
-note "Monitor loop";
           my Duration $loop-start-time-ms .= new(now * 1000);
           my %rservers = $!rw-sem.reader(
            'm-servers',

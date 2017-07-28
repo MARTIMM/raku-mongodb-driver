@@ -25,7 +25,6 @@ class Server {
 
   # As in MongoDB::Uri without servers name and port. So there are
   # database, username, password and options
-  has Hash $!uri-data;
   has MongoDB::Authenticate::Credential $!credential;
 
   has Array[MongoDB::Server::Socket] $!sockets;
@@ -43,8 +42,7 @@ class Server {
   #
   submethod BUILD (
     ClientType:D :$!client,
-    Str:D :$server-name,
-    Hash :$!uri-data = %(),
+    Str:D :$server-name
   ) {
 
     $!rw-sem .= new;
@@ -302,17 +300,13 @@ class Server {
       }
     }
 
-#note "Before set of sockets: ", $skts, ', ', $skts.WHAT;
     $!rw-sem.writer( 's-select', {$!sockets = $skts;});
-
-#note "found socket: ", $found-socket.perl;
-
 
 #TODO check must be made on autenticate flag only and determined from server
     # We can only authenticate when all 3 data are True and when the socket is
     # created.
     if $created-anew and $authenticate
-       and (? $!uri-data<username> or ? $!uri-data<password>) {
+       and (? $!client.uri-data<username> or ? $!client.uri-data<password>) {
 
       # get authentication mechanism
       my Str $auth-mechanism = $!credential.auth-mechanism;
@@ -333,22 +327,22 @@ class Server {
         when 'SCRAM-SHA-1' {
 
           my MongoDB::Authenticate::Scram $client-object .= new(
-            :$!client, :db-name($!uri-data<database>)
+            :$!client, :db-name($!client.uri-data<database>)
           );
 
           my Auth::SCRAM $sc .= new(
-            :username($!uri-data<username>),
-            :password($!uri-data<password>),
+            :username($!client.uri-data<username>),
+            :password($!client.uri-data<password>),
             :$client-object,
           );
 
           my $error = $sc.start-scram;
           if ?$error {
-            fatal-message("Authentication fail for $!uri-data<username>: $error");
+            fatal-message("Authentication fail for $!client.uri-data<username>: $error");
           }
 
           else {
-            trace-message("$!uri-data<username> authenticated");
+            trace-message("$!client.uri-data<username> authenticated");
           }
         }
 
@@ -433,6 +427,14 @@ class Server {
     # non existent or some other reason.
     $!server-tap.close if $!server-tap.defined;
 
+    # Because of race conditions it is possible that Monitor still requests
+    # for sockets(via Wire) to get server information. Next variable must be
+    # checked before proceding in get-socket(). But even then, the request
+    # could be started just before this happens. Well anyways, when a socket is
+    # returned to Wire for the final act, won't hurt because the mongod server
+    # is not dead because of this cleanup. The data retrieved from the server
+    # just not processed anymore and in the next loop of Monitor it will see
+    # that the server is un-registered.
     $!server-is-registered = False;
     MongoDB::Server::Monitor.instance.unregister-server(self);
 
@@ -441,7 +443,7 @@ class Server {
         for @$!sockets -> $socket {
           next unless ?$socket;
           $socket.cleanup;
-          trace-message("socket cleaned for $socket.server.name()");
+          trace-message("socket cleaned for $socket.server.name() in thread $socket.thread-id()");
         }
       }
     );
@@ -449,9 +451,7 @@ class Server {
     trace-message("Sockets cleared");
 
     $!client = Nil;
-    $!uri-data = Nil;
     $!sockets = Nil;
     $!server-tap = Nil;
-    $!rw-sem.rm-mutex-names(<s-select s-status>);
   }
 }
