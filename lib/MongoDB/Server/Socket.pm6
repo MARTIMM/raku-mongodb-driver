@@ -27,9 +27,9 @@ class Server::Socket {
     $!is-open = True;
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
-note "Open server $!server.server-name(), $!server.server-port()";
-    $!sock .= new( :host($!server.server-name), :port($!server.server-port));
     trace-message("open socket $!server.server-name(), $!server.server-port()");
+sleep 1;
+    $!sock .= new( :host($!server.server-name), :port($!server.server-port));
   };
 
   #-----------------------------------------------------------------------------
@@ -47,6 +47,7 @@ note "Open server $!server.server-name(), $!server.server-port()";
     $is-closed;
   }
 
+#`{{
   #-----------------------------------------------------------------------------
   # Open socket, returns True when already opened before otherwise it is opened
   method open ( --> Bool ) {
@@ -70,6 +71,7 @@ note $!sock.perl;
 
     False;
   }
+}}
 
   #-----------------------------------------------------------------------------
   method send ( Buf:D $b --> Nil ) {

@@ -28,7 +28,7 @@ class Server {
   has Hash $!uri-data;
   has MongoDB::Authenticate::Credential $!credential;
 
-  has MongoDB::Server::Socket @!sockets;
+  has Array[MongoDB::Server::Socket] $!sockets;
   has Bool $!server-is-registered;
 
   # Server status data. Must be protected by a semaphore because of a thread
@@ -48,16 +48,14 @@ class Server {
   ) {
 
     $!rw-sem .= new;
-    #$!rw-sem.debug = True;
+#    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
       <s-select s-status>, :RWPatternType(C-RW-WRITERPRIO)
     );
 
-#    $!client = $client;
-#    $!uri-data = $client.uri-data;
     $!credential := $!client.credential;
 
-    @!sockets = ();
+    $!sockets = Array[MongoDB::Server::Socket].new;
     $!server-is-registered = False;
 
     # Save name and port of the server
@@ -83,7 +81,7 @@ class Server {
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
 
-note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
+#note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
 
         # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#parsing-an-ismaster-response
         if $monitor-data<server-name> eq self.name {
@@ -231,6 +229,11 @@ note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).per
   # By default authentiction is needed when user/password info is found in the
   # uri data. Monitor, however does not need this so therefore it is made
   # optional.
+
+  # When a new socket is opened and it fails, it will not be stored because the
+  # thrown exception is catched in Wire where the call is done. This also means
+  # that calling new must be done outside any semaphore locks
+
   method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
     # If server is not registered then the server is cleaned up
@@ -240,70 +243,69 @@ note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).per
     my Bool $created-anew = False;
 
 #note "$*THREAD.id() Get sock, authenticate = $authenticate";
-#note "MNames server {self.name}: ", $!rw-sem.get-mutex-names.join(', ');
 
     # Get a free socket entry
-#    my MongoDB::Server::Socket $sock = $!rw-sem.writer( 's-select', {
 
-        my MongoDB::Server::Socket $found-socket;
+    my MongoDB::Server::Socket $found-socket;
 
-        # Check all sockets first if timed out
-note "sockets: ", @!sockets.WHAT;
-        my @skts = $!rw-sem.reader( 's-select', { @!sockets; });
-note "skts: ", @skts.WHAT;
-        for @skts -> $socket is rw {
+    # Check all sockets first if timed out
+    my Array[MongoDB::Server::Socket] $skts = $!rw-sem.reader(
+      's-select', { $!sockets; }
+    );
 
-          next unless $socket.defined;
+    # check defined sockets if they must be cleared
+    for @$skts -> $socket is rw {
 
-          if $socket.check {
-            $socket = Nil;
-            trace-message("Socket cleared for {self.name}");
-          }
+      next unless $socket.defined;
+
+      if $socket.check {
+        $socket = MongoDB::Server::Socket;
+        trace-message("Socket cleared for {self.name}");
+      }
+    }
+
+    # Search for socket
+    for @$skts -> $socket is rw {
+
+      next unless $socket.defined;
+
+      if $socket.thread-id == $*THREAD.id()
+         and $socket.server.name eq self.name {
+
+        $found-socket = $socket;
+        trace-message("Socket found for {self.name}");
+
+        last;
+      }
+    }
+
+    # If none is found insert a new Socket in the array
+    if not $found-socket.defined {
+
+      # search for an empty slot
+      my Bool $slot-found = False;
+      for @$skts -> $socket {
+        if not $socket.defined {
+          $found-socket = $socket .= new(:server(self));
+          $created-anew = True;
+          $slot-found = True;
+          trace-message("New socket inserted for {self.name}");
         }
+      }
 
-        # Search for socket
-        for @skts -> $socket is rw {
+      # Or, when no empty slot id found, add the socket to the end
+      if not $slot-found {
+        $found-socket .= new(:server(self));
+        $created-anew = True;
+        $!sockets.push($found-socket);
+        trace-message("New socket created for {self.name}");
+      }
+    }
 
-          next unless $socket.defined;
+#note "Before set of sockets: ", $skts, ', ', $skts.WHAT;
+    $!rw-sem.writer( 's-select', {$!sockets = $skts;});
 
-          if $socket.thread-id == $*THREAD.id()
-             and $socket.server.name eq self.name {
-
-            $found-socket = $socket;
-            trace-message("Socket found for {self.name}");
-
-            last;
-          }
-        }
-
-        # If none is found insert a new Socket in the array
-        if not $found-socket.defined {
-
-          # search for an empty slot
-          my Bool $slot-found = False;
-          for @skts -> $socket {
-            if not $socket.defined {
-              $found-socket = $socket .= new(:server(self));
-              $created-anew = True;
-              $slot-found = True;
-              trace-message("New socket inserted for {self.name}");
-            }
-          }
-
-          if not $slot-found {
-            $found-socket .= new(:server(self));
-            $created-anew = True;
-            @!sockets.push($found-socket);
-            trace-message("New socket created for {self.name}");
-          }
-        }
-
-        $!rw-sem.writer( 's-select', {@!sockets = @skts;});
-#        $found-socket;
-#      } # writer block
-#    ); # writer
-
-note "sockets: ", $found-socket.WHAT;
+#note "found socket: ", $found-socket.perl;
 
 
 #TODO check must be made on autenticate flag only and determined from server
@@ -435,10 +437,9 @@ note "sockets: ", $found-socket.WHAT;
     MongoDB::Server::Monitor.instance.unregister-server(self);
 
     # Clear all sockets
-note "clear sockets";
     $!rw-sem.writer( 's-select', {
-        for @!sockets -> $socket {
-          next unless $socket.defined;
+        for @$!sockets -> $socket {
+          next unless ?$socket;
           $socket.cleanup;
           trace-message("socket cleaned for $socket.server.name()");
         }
@@ -449,7 +450,7 @@ note "clear sockets";
 
     $!client = Nil;
     $!uri-data = Nil;
-    @!sockets = Nil;
+    $!sockets = Nil;
     $!server-tap = Nil;
     $!rw-sem.rm-mutex-names(<s-select s-status>);
   }
