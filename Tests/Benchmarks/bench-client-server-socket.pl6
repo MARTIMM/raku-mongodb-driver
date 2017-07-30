@@ -35,10 +35,10 @@ $b.timethese(
 );
 }}
 
-#`{{
+
 $b .= new;
 $b.timethese(
-  10, {
+  5, {
     new-select => sub {
       my MongoDB::Client $c .= new(:uri($uri));
       $srv = $c.select-server;
@@ -46,26 +46,29 @@ $b.timethese(
     }
   }
 );
-}}
 
+#`{{
 $b .= new;
 $b.timethese(
-  10, {
+  500, {
     new => sub {
       my MongoDB::Client $c .= new(:uri($uri));
     }
   }
 );
+}}
 
+#`{{
 # Select server once
 $cln .= new(:uri($uri));
 $srv = $cln.select-server;
 $b .= new;
 $b.timethese(
-  500, {
+  400, {
     socket => sub {
       $sck = $srv.get-socket;
       $sck.close;
     }
   }
 );
+}}
