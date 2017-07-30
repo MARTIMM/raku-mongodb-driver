@@ -19,18 +19,17 @@ class Server::Socket {
 #  has Bool $!must-authenticate;
 
   has Bool $.is-open;
-  has MongoDB::ServerType $!server;
+  has MongoDB::ServerType $.server;
 
   #-----------------------------------------------------------------------------
-  submethod BUILD ( MongoDB::ServerType:D :$server ) {
+  submethod BUILD ( MongoDB::ServerType:D :$!server ) {
 
-    $!server = $server;
-
-    $!is-open = False;
+    $!is-open = True;
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
-
-    trace-message("new socket");
+    trace-message("open socket $!server.server-name(), $!server.server-port()");
+sleep 1;
+    $!sock .= new( :host($!server.server-name), :port($!server.server-port));
   };
 
   #-----------------------------------------------------------------------------
@@ -48,25 +47,31 @@ class Server::Socket {
     $is-closed;
   }
 
+#`{{
   #-----------------------------------------------------------------------------
   # Open socket, returns True when already opened before otherwise it is opened
   method open ( --> Bool ) {
+return True;
 
     fatal-message("thread $*THREAD.id() is not owner of this socket")
       unless $.thread-id == $*THREAD.id();
+
+note "$*THREAD.id() open: $!is-open";
     return True if $!is-open;
 
+note "Open server $!server.server-name(), $!server.server-port()";
     $!sock .= new( :host($!server.server-name), :port($!server.server-port))
       unless $!sock.defined;
+note $!sock.perl;
 
-    $!thread-id = $*THREAD.id;
 
-    trace-message("open socket");
+    trace-message("open socket $!server.server-name(), $!server.server-port()");
     $!is-open = True;
     $!time-last-used = time;
 
     False;
   }
+}}
 
   #-----------------------------------------------------------------------------
   method send ( Buf:D $b --> Nil ) {
@@ -76,7 +81,6 @@ class Server::Socket {
 
     fatal-message("Socket not opened") unless $!sock.defined;
 
-#TODO Check if sock is usable
     trace-message("socket send, size: $b.elems()");
     $!sock.write($b);
     $!time-last-used = time;
@@ -90,7 +94,6 @@ class Server::Socket {
 
     fatal-message("socket not opened") unless $!sock.defined;
 
-#TODO Check if sock is usable
     my Buf $b = $!sock.read($nbr-bytes);
     $!time-last-used = time;
     trace-message("socket receive, request size $nbr-bytes, received size $b.elems()");

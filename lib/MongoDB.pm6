@@ -20,26 +20,26 @@ sub EXPORT { {
   }
 };
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Client object topology types
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 enum TopologyType is export <
   TT-Single TT-ReplicaSetNoPrimary TT-ReplicaSetWithPrimary
-  TT-Sharded TT-Unknown
+  TT-Sharded TT-Unknown TT-NotSet
 >;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Status values of a Server.object
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 enum ServerStatus is export <
   SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary SS-RSSecondary
-  SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
+  SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown SS-NotSet
 >;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # See also https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers
 # read concern mode values
 #TODO pod doc arguments
@@ -48,7 +48,7 @@ enum ReadConcernModes is export <
   RCM-Secondary-preferred RCM-Nearest
 >;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
 enum WireOpcode is export (
   :OP-REPLY(1),
@@ -57,7 +57,7 @@ enum WireOpcode is export (
   :OP-DELETE(2006), :OP-KILL-CURSORS(2007),
 );
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Query flags
 enum QueryFindFlags is export (
   :C-NO-FLAGS(0x00), :C-QF-RESERVED(0x01),
@@ -66,18 +66,24 @@ enum QueryFindFlags is export (
   :C-QF-EXHAUST(0x40), :C-QF-PORTAIL(0x80),
 );
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Response flags
 enum ResponseFlags is export (
   :RF-CURSORNOTFOUND(0x01), :RF-QUERYFAILURE(0x02),
   :RF-SHARDCONFIGSTALE(0x04), :RF-AWAITCAPABLE(0x08),
 );
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Socket values
 constant MAX-SOCKET-UNUSED-OPEN is export = 900; # Quarter of an hour unused
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# Server defaults
+constant C-LOCALTHRESHOLDMS is export = 15;
+constant C-SERVERSELECTIONTIMEOUTMS is export = 30_000;
+constant C-HEARTBEATFREQUENCYMS is export = 10_000;
+
+#------------------------------------------------------------------------------
 # Other types
 
 # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
@@ -90,16 +96,16 @@ subset CollectionType is export where .^name eq 'MongoDB::Collection';
 subset ServerType is export where .^name eq 'MongoDB::Server';
 subset SocketType is export where .^name eq 'MongoDB::Server::Socket';
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #
 signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 sub mongodb-driver-version ( --> Version ) is export {
   MongoDB.^ver;
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 sub mongodb-driver-author ( --> Str ) is export {
   MongoDB.^auth;
 }

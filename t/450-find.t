@@ -11,7 +11,7 @@ use MongoDB::Cursor;
 use BSON::ObjectId;
 use BSON::Document;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
@@ -111,7 +111,7 @@ subtest "Count tests", {
   is $doc<n>, 2, '2 records using skip and limit';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Testing explain and performance using cursor", {
 
   # The server needs to scan through all documents to see if the query matches
@@ -150,7 +150,7 @@ subtest "Testing explain and performance using cursor", {
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great searching';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Testing explain and performance using hint", {
 
   # Give a bad hint and get explaination(another possibility from above
@@ -186,7 +186,7 @@ subtest "Testing explain and performance using hint", {
   is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Error testing", {
 
   $cursor.kill;
@@ -203,13 +203,13 @@ subtest "Error testing", {
   is $doc<n>, 1, 'Counting 1 document on search';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Cleanup and close
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Check one document for its fields. Something like {code => 1, nofield => 0}
 # use find()
 sub check-document ( $criteria, $field-list, $projection = ())

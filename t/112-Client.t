@@ -14,7 +14,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -91,6 +91,7 @@ subtest "mongodb url with username and password SCRAM-SHA-1", {
     ]
   );
 
+  diag $doc.perl;
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 1, "Inserted 1 document";
 

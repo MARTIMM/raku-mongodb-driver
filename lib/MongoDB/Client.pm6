@@ -47,11 +47,11 @@ class Client {
   # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#mongoclient-configuration
   has Int $!local-threshold-ms;
   has Int $!server-selection-timeout-ms;
-  has Int $!heartbeat-frequency-ms;
+  has Int $.heartbeat-frequency-ms;
 #  has Int $!idle-write-period-ms;
   constant smallest-max-staleness-seconds = 90;
 
-  # Only for single threaded implementations
+  # Only for single threaded implementations according to mongodb documents
   # has Bool $!server-selection-try-once = False;
   # has Int $!socket-check-interval-ms = 5000;
 
@@ -78,12 +78,12 @@ class Client {
 #TODO pod doc arguments
   submethod BUILD (
     Str:D :$uri, BSON::Document :$read-concern,
-    TopologyType :$topology-type = TT-Unknown,
+#    TopologyType :$topology-type = TT-Unknown,
 #    Int :$!idle-write-period-ms = 10_000,
   ) {
 
-    $!user-request-topology = $topology-type;
-    $!topology-type = TT-Unknown;
+#    $!user-request-topology = $topology-type;
+    $!topology-type = TT-NotSet;
     $!topology-set = False;
 
     $!servers = {};
@@ -94,9 +94,8 @@ class Client {
 #    $!rw-sem.debug = True;
 
     $!rw-sem.add-mutex-names(
-      <servers todo topology>,
-      :RWPatternType(C-RW-WRITERPRIO)
-    ) unless $!rw-sem.check-mutex-names(<servers todo master>);
+      <servers todo topology>, :RWPatternType(C-RW-WRITERPRIO)
+    );
 
 #TODO check version: read-concern introduced in version 3.2
     # Store read concern or initialize to default
@@ -120,11 +119,11 @@ class Client {
     $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
 
     # Get some connection options from the uri
-    $!local-threshold-ms = ($!uri-data<options><localThresholdMS> // 15).Int;
+    $!local-threshold-ms = ($!uri-data<options><localThresholdMS> // MongoDB::C-LOCALTHRESHOLDMS).Int;
     $!server-selection-timeout-ms =
-         ($!uri-data<options><serverSelectionTimeoutMS> // 30_000).Int;
+         ($!uri-data<options><serverSelectionTimeoutMS> // MongoDB::C-SERVERSELECTIONTIMEOUTMS).Int;
     $!heartbeat-frequency-ms =
-         ($!uri-data<options><heartbeatFrequencyMS> // 10_000).Int;
+         ($!uri-data<options><heartbeatFrequencyMS> // MongoDB::C-HEARTBEATFREQUENCYMS).Int;
 
     my %cred-data = %();
     my $set = sub ( *@k ) {
@@ -152,13 +151,13 @@ class Client {
       $!todo-servers.push("$server-data<host>:$server-data<port>");
     }
 
-    # counter to check if there are new servers added. if so, the counter
-    # is set to 0. if less then 5 the sleeptime is about a second. When count
-    # reaches max, the thread is stopped.
-    my Int $changes-count = 0;
-
     # Background proces to handle server monitoring data
     $!Background-discovery = Promise.start( {
+
+        # counter to check if there are new servers added. if so, the counter
+        # is set to 0. if less then 5 the sleeptime is about a second. When count
+        # reaches max, the thread is stopped.
+        my Int $changes-count = 0;
 
         # Used in debug message
         my Instant $t0 = now;
@@ -173,8 +172,8 @@ class Client {
           # When there is no work take a nap! This sleeping period is the
           # moment we do not process the todo list. Start taking a nap for 1.1
           # sec.
-          if $changes-count < 10 {
-            sleep 1.1;
+          if $changes-count < 20 {
+            sleep 1.4;
           }
 
           else {
@@ -199,112 +198,116 @@ class Client {
         'normal end of service';
       } # block
     ); # start
-  }
+  } # method
 
   #-----------------------------------------------------------------------------
   method process-topology ( ) {
 
-#    $!rw-sem.writer( 'topology', {
-    $!rw-sem.writer( 'topology', {
-        $!topology-set = False;
-      }
-    );
+    $!rw-sem.writer( 'topology', { $!topology-set = False; });
+
 #TODO take user topology request into account
-        # Calculate topology. Upon startup, the topology is set to
-        # TT-Unknown. Here, the real value is calculated and set. Doing
-        # it repeatedly it will be able to change dynamicaly.
-        #
-        my TopologyType $topology = TT-Unknown;
-        my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
-        my Int $servers-count = 0;
+    # Calculate topology. Upon startup, the topology is set to
+    # TT-Unknown. Here, the real value is calculated and set. Doing
+    # it repeatedly it will be able to change dynamicaly.
+    #
+    my TopologyType $topology = TT-Unknown;
+    my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
+    my Int $servers-count = 0;
 
-        my Bool $found-standalone = False;
-        my Bool $found-sharded = False;
-        my Bool $found-replica = False;
+    my Bool $found-standalone = False;
+    my Bool $found-sharded = False;
+    my Bool $found-replica = False;
 
-        for $servers.keys -> $server-name {
+    for $servers.keys -> $server-name {
 
-          my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
+      my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
 
-          given $status {
-            when SS-Standalone {
-              $servers-count++;
-              if $found-standalone or $found-sharded or $found-replica {
+      given $status {
+        when SS-Standalone {
+          $servers-count++;
+          if $found-standalone or $found-sharded or $found-replica {
 
-                # cannot have more than one standalone servers
-                $topology = TT-Unknown;
-              }
+            # cannot have more than one standalone servers
+            $topology = TT-Unknown;
+          }
 
-              else {
+          else {
 
-                $found-standalone = True;
-                $topology = TT-Single;
-              }
-            }
-
-            when SS-Mongos {
-              $servers-count++;
-              if $found-standalone or $found-replica {
-
-                # cannot have other than shard servers
-                $topology = TT-Unknown;
-              }
-
-              else {
-                $found-sharded = True;
-                $topology = TT-Sharded;
-              }
-            }
-
-#TODO test same set of replicasets -> otherwise also TT-Unknown
-            when SS-RSPrimary {
-              $servers-count++;
-              if $found-standalone or $found-sharded {
-
-                # cannot have other than replica servers
-                $topology = TT-Unknown;
-              }
-
-              else {
-
-                $found-replica = True;
-                $topology = TT-ReplicaSetWithPrimary;
-              }
-            }
-
-            when any( SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost ) {
-              $servers-count++;
-              if $found-standalone or $found-sharded {
-
-                # cannot have other than replica servers
-                $topology = TT-Unknown;
-              }
-
-              else {
-
-                $found-replica = True;
-                $topology = TT-ReplicaSetNoPrimary
-                  unless $topology ~~ TT-ReplicaSetWithPrimary;
-              }
-            } # when any()
-          } # given $status
-        } # for $servers.keys -> $server-name
-
-        if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
-          $topology = TT-Single;
+            $found-standalone = True;
+            $topology = TT-Single;
+          }
         }
 
-        $!rw-sem.writer( 'topology', {
-            $!topology-type = $topology;
-            $!topology-set = True;
+        when SS-Mongos {
+          $servers-count++;
+          if $found-standalone or $found-replica {
+
+            # cannot have other than shard servers
+            $topology = TT-Unknown;
           }
-        );
 
-        info-message("Client topology type set to $topology");
+          else {
+            $found-sharded = True;
+            $topology = TT-Sharded;
+          }
+        }
 
+#TODO test same set of replicasets -> otherwise also TT-Unknown
+        when SS-RSPrimary {
+          $servers-count++;
+          if $found-standalone or $found-sharded {
 
-#      } # writer block
-#    ); # writer
+            # cannot have other than replica servers
+            $topology = TT-Unknown;
+          }
+
+          else {
+
+            $found-replica = True;
+            $topology = TT-ReplicaSetWithPrimary;
+          }
+        }
+
+        when any( SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost ) {
+          $servers-count++;
+          if $found-standalone or $found-sharded {
+
+            # cannot have other than replica servers
+            $topology = TT-Unknown;
+          }
+
+          else {
+
+            $found-replica = True;
+            $topology = TT-ReplicaSetNoPrimary
+              unless $topology ~~ TT-ReplicaSetWithPrimary;
+          }
+        }
+
+        when SS-NotSet {
+          # When status of a server is not yet set, stop the calculation and
+          # wait for next round
+          $topology = TT-NotSet;
+          last;
+        } # when SS-NotSet
+      } # given $status
+    } # for $servers.keys -> $server-name
+
+    # One of the servers is not ready yet
+    if $topology !~~ TT-NotSet {
+
+      if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
+        $topology = TT-Single;
+      }
+
+      $!rw-sem.writer( 'topology', {
+          $!topology-type = $topology;
+          $!topology-set = True;
+        }
+      );
+    }
+
+    info-message("Client topology is $topology");
   }
 
   #-----------------------------------------------------------------------------
@@ -316,7 +319,7 @@ class Client {
   }
 
   #-----------------------------------------------------------------------------
-  # Called from thread above where Server object is created.
+  # Get the server status
   method server-status ( Str:D $server-name --> ServerStatus ) {
 
     self!check-discovery-process;
@@ -335,7 +338,7 @@ class Client {
     });
 
     my ServerStatus $sts = $h<status> // SS-Unknown;
-    debug-message("server-status: '$server-name', $sts");
+#    debug-message("server-status: '$server-name', $sts");
     $sts;
   }
 
@@ -373,17 +376,17 @@ class Client {
     # record the server selection start time. used also in debug message
     my Instant $t0 = now;
 
-    self!check-discovery-process;
-
     my MongoDB::Server $selected-server;
-
-    #! Wait until topology is set
-    until $!rw-sem.reader( 'topology', { $!topology-set }) {
-      sleep 0.5;
-    }
 
     # find suitable servers by topology type and operation type
     repeat {
+
+      self!check-discovery-process;
+
+      #! Wait until topology is set
+      until $!rw-sem.reader( 'topology', { $!topology-set }) {
+        sleep 0.5;
+      }
 
       $selected-server = $!rw-sem.reader( 'servers', {
 #note "Servers: ", $!servers.keys;
@@ -634,7 +637,7 @@ class Client {
           my MongoDB::Server $server .= new( :client(self), :$server-name);
 
           # and start server monitoring
-          $server.server-init($!heartbeat-frequency-ms);
+          $server.server-init;
 
           if $!repeat-discovery-loop {
             $!rw-sem.writer( 'servers', {$!servers{$server-name} = $server;});
@@ -712,7 +715,7 @@ class Client {
             # Stop monitoring on server
             $server.cleanup;
             debug-message(
-              "server '$server.name()' destroyed after {(now - $t0) * 1000.0} ms"
+              "server '$server.name()' destroyed after {(now - $t0)} sec"
             );
           }
         }
@@ -721,8 +724,7 @@ class Client {
 
     $!servers = Nil;
     $!todo-servers = Nil;
-
-    debug-message("Client destroyed after {(now - $t0) * 1000.0} ms");
-
+    $!rw-sem.rm-mutex-names(<servers todo topology>);
+    debug-message("Client destroyed after {(now - $t0)} sec");
   }
 }

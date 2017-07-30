@@ -1,3 +1,0 @@
-Tests/bench-connect, parse-stage, 8.495
-Tests/bench-connect, optimize-stage, 0.003
-Tests/bench-connect, connect-50, 0.023268

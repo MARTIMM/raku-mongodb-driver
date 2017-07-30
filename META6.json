@@ -14,7 +14,7 @@
     "Unicode::PRECIS",
     "Terminal::ANSIColor"
   ],
-  "test-depends": [ "Test::META"],
+  "test-depends": [ ],
   "build-depends": [ ],
   "tags": [ "NoSQL", "Database", "mongodb"],
   "description": "MongoDB driver",
@@ -42,5 +42,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.37.4"
+  "version": "0.37.5.1"
 }

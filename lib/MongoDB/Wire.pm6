@@ -55,6 +55,10 @@ class Wire {
       );
 
       $!socket = $server.get-socket(:$authenticate);
+      if ! $!socket.defined {
+        warn-message("server {$server.name} cleaned up");
+        return BSON::Document;
+      }
 
       # start timing
       $t0 = now if $!time-query;
@@ -137,6 +141,11 @@ class Wire {
       );
 
       $!socket = $server.get-socket;
+      if ! $!socket.defined {
+        warn-message("server {$server.name} cleaned up");
+        return BSON::Document;
+      }
+
       $!socket.send($encoded-get-more);
 
       # Read 4 bytes for int32 response size
@@ -207,6 +216,10 @@ class Wire {
     try {
       fatal-message("No server available") unless $server.defined;
       $!socket = $server.get-socket;
+      if ! $!socket.defined {
+        warn-message("server {$server.name} cleaned up");
+        return BSON::Document;
+      }
 
       if +@cursor-ids {
         ( my Buf $encoded-kill-cursors,

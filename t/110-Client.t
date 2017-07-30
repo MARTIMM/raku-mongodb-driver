@@ -9,10 +9,10 @@ use MongoDB::Server;
 
 use BSON::Document;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Fatal));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -22,11 +22,11 @@ my Int $p2 = $ts.server-control.get-port-number('s2');
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest 'Unknown server', {
 
   my Str $server-name = 'non-existent-server.with-unknown.domain:65535';
-  my @options = <serverSelectionTimeoutMS=100 heartbeatFrequencyMS=300>;
+  my @options = <serverSelectionTimeoutMS=500 heartbeatFrequencyMS=300>;
 
   $client .= new(:uri("mongodb://$server-name/?" ~ @options.join('&')));
   isa-ok $client, MongoDB::Client;
@@ -38,9 +38,7 @@ subtest 'Unknown server', {
   is $client.topology, TT-Unknown, "Topology $client.topology()";
 
   $server-name = "localhost:65535";
-  $client .= new(
-    :uri("mongodb://$server-name/?" ~ @options.join('&')),
-  );
+  $client .= new(:uri("mongodb://$server-name/?" ~ @options.join('&')));
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
   is $client.server-status($server-name), SS-Unknown,
@@ -48,12 +46,13 @@ subtest 'Unknown server', {
   is $client.topology, TT-Unknown, "Topology $client.topology()";
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Standalone server", {
 
   my Str $server-name = "localhost:$p1";
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=300>;
 
-  $client .= new(:uri("mongodb://$server-name"));
+  $client .= new(:uri("mongodb://$server-name/?" ~  ~ @options.join('&')));
 
   # do select server before server status test because selection waits
   $server = $client.select-server;
@@ -65,12 +64,12 @@ subtest "Standalone server", {
   is $client.topology, TT-Single, "Topology $client.topology()";
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Two equal standalone servers", {
 
   my Str $server-name1 = "localhost:$p1";
   my Str $server-name2 = "localhost:$p2";
-  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=5000>;
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
 
   $client .= new(
     :uri("mongodb://$server-name1,$server-name2/?" ~  ~ @options.join('&'))
@@ -89,9 +88,7 @@ subtest "Two equal standalone servers", {
   $client.cleanup;
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Cleanup
 info-message("Test $?FILE end");
 done-testing();
-exit(0);
-=finish
