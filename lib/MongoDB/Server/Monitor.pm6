@@ -65,6 +65,7 @@ class Server::Monitor {
   #----------------------------------------------------------------------------
   method instance ( --> MongoDB::Server::Monitor ) {
 
+#TODO is this thread safe?
     $singleton-instance //= self.bless;
     $singleton-instance;
   }
