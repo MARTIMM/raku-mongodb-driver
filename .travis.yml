@@ -10,6 +10,7 @@ perl6:
 #  - '2017.05'
 
 before_install:
+  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 2.6.11
   - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
 
 install:
@@ -22,8 +23,12 @@ install:
 #services:
 #  - mongodb
 
-git:
-  depth: 5
+#git:
+#  depth: 5
+
+#script:
+#    - PERL6LIB=src prove -v -r --exec=perl6 tests/
+
 
 #cache:
 #  timeout: 1200
