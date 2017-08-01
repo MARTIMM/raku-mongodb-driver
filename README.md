@@ -212,26 +212,6 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations.
 
-### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
-
-|Tested|Test Filename|Test Purpose|
-|-|-|-|
-|x|110-Client|Unknown server, fails DNS lookup, topology and server state|
-|x||Down server, no connection|
-|x||Standalone server, not in replicaset|
-|x||Two standalone servers, one gets rejected|
-|x|111-client|Standalone server brought down and revived, Client object must follow|
-|x||Shutdown server and restart while inserting records|
-|x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.|
-|x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.|
-|x||Replicaset pre-init initialization to master server and update master info|
-|x|612-repl-start|Convert pre init replica server to master|
-|x|611-client|Replicaserver rejected when there is no replica option in uri|
-|x||Standalone server rejected when used in mix with replica option defined|
-|x|612-repl-start|Add servers to replicaset|
-|x|613-Client|Replicaset server master in uri, must search for secondaries and add them|
-|x||Replicaset server secondary or arbiter, must get master server and then search for secondary servers|
-
 ## Api changes
 
 There has been a lot of changes in the API.
