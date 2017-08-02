@@ -12,7 +12,7 @@ class Authenticate::Credential {
   has Str $.password;
 
   # preferred to use auth-xyz instead of xyz because of uri options autXyz
-  has Str $.auth-source;
+  has Str $.auth-source;    # source is same as database to authenticate against
   has Str $.auth-mechanism;
   has Hash $.auth-mechanism-properties;
 
