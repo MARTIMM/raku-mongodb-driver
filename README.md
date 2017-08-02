@@ -250,6 +250,9 @@ There has been a lot of changes in the API.
 * [Authentication](http://docs.mongodb.org/manual/core/authentication/)
 * [Create a User Administrator](http://docs.mongodb.org/manual/tutorial/add-user-administrator/)
 
+### Driver specs
+* [server selection]( https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst)
+
 ## INSTALLING THE MODULES
 
 Use zef to install the package.
