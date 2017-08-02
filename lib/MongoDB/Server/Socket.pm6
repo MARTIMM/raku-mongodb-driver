@@ -6,11 +6,6 @@ use MongoDB;
 unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
-#TODO Sockets must initiate a handshake procedure when socket is opened. Perhaps
-#  not needed because the monitor is keeping touch and known the type of the
-#  server which is communicated to the Server and Client object
-#TODO When authentication is needed it must be done on every opened socket
-
 class Server::Socket {
 
   has IO::Socket::INET $!sock;
@@ -28,7 +23,6 @@ class Server::Socket {
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
     trace-message("open socket $!server.server-name(), $!server.server-port()");
-sleep 1;
     $!sock .= new( :host($!server.server-name), :port($!server.server-port));
   };
 
@@ -46,32 +40,6 @@ sleep 1;
 
     $is-closed;
   }
-
-#`{{
-  #-----------------------------------------------------------------------------
-  # Open socket, returns True when already opened before otherwise it is opened
-  method open ( --> Bool ) {
-return True;
-
-    fatal-message("thread $*THREAD.id() is not owner of this socket")
-      unless $.thread-id == $*THREAD.id();
-
-note "$*THREAD.id() open: $!is-open";
-    return True if $!is-open;
-
-note "Open server $!server.server-name(), $!server.server-port()";
-    $!sock .= new( :host($!server.server-name), :port($!server.server-port))
-      unless $!sock.defined;
-note $!sock.perl;
-
-
-    trace-message("open socket $!server.server-name(), $!server.server-port()");
-    $!is-open = True;
-    $!time-last-used = time;
-
-    False;
-  }
-}}
 
   #-----------------------------------------------------------------------------
   method send ( Buf:D $b --> Nil ) {

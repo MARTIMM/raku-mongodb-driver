@@ -302,6 +302,11 @@ class Server {
 
     $!rw-sem.writer( 's-select', {$!sockets = $skts;});
 
+#TODO (from sockets) Sockets must initiate a handshake procedure when socket is opened. Perhaps
+#  not needed because the monitor is keeping touch and known the type of the
+#  server which is communicated to the Server and Client object
+#TODO When authentication is needed it must be done on every opened socket
+
 #TODO check must be made on autenticate flag only and determined from server
     # We can only authenticate when all 3 data are True and when the socket is
     # created.
