@@ -391,7 +391,7 @@ class Server {
       :server(self), :$authenticate
     );
 
-    ( $doc, $rtt // 0);
+    ( $doc, $rtt // Duration.new(0));
   }
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
