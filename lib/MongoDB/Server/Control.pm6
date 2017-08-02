@@ -27,7 +27,10 @@ class Server::Control {
       :str-mode(Config::DataLang::Refine::C-UNIX-OPTS-T1)
     );
 
-    my Str $cmdstr = (self!get-binary-path('mongod'), @$options).join(' ');
+    my Str $cmdstr = (
+      self!get-binary-path( 'mongod', @server-keys),
+      @$options
+    ).join(' ');
 
     my Bool $started = False;
 
@@ -59,7 +62,7 @@ class Server::Control {
     my MongoDB::MDBConfig $mdbcfg .= instance;
     my Hash $options = $mdbcfg.cfg.refine( 'mongod', |@server-keys);
 
-    my Str $cmdstr = self!get-binary-path('mongod');
+    my Str $cmdstr = self!get-binary-path( 'mongod', @server-keys);
     $cmdstr ~= ' --shutdown';
     $cmdstr ~= ' --dbpath ' ~ "'$options<dbpath>'" // '/data/db';
     $cmdstr ~= ' --quiet' if $options<quiet>;
@@ -107,7 +110,9 @@ class Server::Control {
   method !get-binary-path ( Str $binary, *@server-keys --> Str ) {
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
-    my Str $mongodb-server-path = $mdbcfg.cfg.refine( 'binaries', |@server-keys){$binary};
+    my Str $mongodb-server-path = $mdbcfg.cfg.refine(
+      'binaries', |@server-keys
+    ){$binary};
 
 
 #`{{

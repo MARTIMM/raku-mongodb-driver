@@ -305,6 +305,8 @@ class Server {
 #TODO check must be made on autenticate flag only and determined from server
     # We can only authenticate when all 3 data are True and when the socket is
     # created.
+note "Auth: $created-anew, $authenticate, $!client.uri-data.perl()";
+
     if $created-anew and $authenticate
        and (? $!client.uri-data<username> or ? $!client.uri-data<password>) {
 
