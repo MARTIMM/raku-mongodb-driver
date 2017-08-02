@@ -168,7 +168,7 @@ class Test-support {
       :locations(['Sandbox',]),
       :config-name<config.toml>
     );
-    say "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
+#note "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
   }
 
   #----------------------------------------------------------------------------
