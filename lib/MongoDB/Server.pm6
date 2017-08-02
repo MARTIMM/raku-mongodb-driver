@@ -51,7 +51,7 @@ class Server {
       <s-select s-status>, :RWPatternType(C-RW-WRITERPRIO)
     );
 
-    $!credential := $!client.credential;
+    $!credential := $!client.uri-obj.credential;
 
     $!sockets = Array[MongoDB::Server::Socket].new;
     $!server-is-registered = False;
@@ -72,7 +72,7 @@ class Server {
 
     # Start monitoring
     my MongoDB::Server::Monitor $m .= instance;
-    $m.set-heartbeat($!client.heartbeat-frequency-ms);
+    $m.set-heartbeat($!client.uri-obj.options<heartbeatFrequencyMS>);
     $m.register-server(self);
     $!server-is-registered = True;
 
@@ -311,7 +311,7 @@ class Server {
     # We can only authenticate when all 3 data are True and when the socket is
     # created.
     if $created-anew and $authenticate
-       and (? $!client.uri-data<username> or ? $!client.uri-data<password>) {
+       and ?$!credential.username and ?$!credential.password {
 
       # get authentication mechanism
       my Str $auth-mechanism = $!credential.auth-mechanism;
@@ -332,22 +332,22 @@ class Server {
         when 'SCRAM-SHA-1' {
 
           my MongoDB::Authenticate::Scram $client-object .= new(
-            :$!client, :db-name($!client.uri-data<database>)
+            :$!client, :db-name($!credential.auth-source)
           );
 
           my Auth::SCRAM $sc .= new(
-            :username($!client.uri-data<username>),
-            :password($!client.uri-data<password>),
+            :username($!credential.username),
+            :password($!credential.password),
             :$client-object,
           );
 
           my $error = $sc.start-scram;
           if ?$error {
-            fatal-message("Authentication fail for $!client.uri-data<username>: $error");
+            fatal-message("Authentication fail for $!credential.username(): $error");
           }
 
           else {
-            trace-message("$!client.uri-data<username> authenticated");
+            trace-message("$!credential.username() authenticated");
           }
         }
 
