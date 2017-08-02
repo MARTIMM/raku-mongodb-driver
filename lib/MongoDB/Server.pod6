@@ -72,7 +72,6 @@ Defined as:
     Str:D :$host!,
     Int:D :$port! where (0 <= $_ <= 65535),
     Int :$max-sockets where $_ >= 3 = 3,
-    Hash :$uri-data,
     MongoDB::Database:D :$db-admin,
     MongoDB::Client:D :$client
   )
