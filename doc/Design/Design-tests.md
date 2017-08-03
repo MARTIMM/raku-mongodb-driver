@@ -1,3 +1,5 @@
+[TOC]
+
 # Designing test cases
 
 ## What to test
@@ -33,17 +35,36 @@ These classes can not be tested separately because of their dependency on each o
     * [x] server can not be selected
     * [x] server state is SS-Unknown
     * [x] topology is TT-Unknown
-  * Standalone server, not in replicaset. Use server s1.
+  * Standalone server, not in replicaset. Use config s1.
+    * [x] server can be selected
+    * [x] server state is SS-Standalone
+    * [x] topology is TT-Single
+  * Two standalone servers. Use config s1 and s2.
+    * [x] server can not be selected
+    * [x] both servers have state SS-Standalone
+    * [x] topology is TT-Unknown
 
-  * Two standalone servers, one gets rejected|
+* Client/server interaction tests in **t/110-client.t**.
+  * Standalone server brought down and revived, Client object must follow. Use config s1.
+    * [x] current status and topology tested
+    * [x] shutdown server and restart
+    * [x] restarted server status and topology tested
+  * Shutdown/restart server while inserting records. Use config s1.
+    * [x] start inserting records in a thread
+    * [x] shutdown/restart server
+    * [x] wait for recovery and resume inserting
+
+* Client authentication
+  * Account preparation using config s1
+    * [x] insert a new user
+  * Restart to authenticate using config s1/authenticate
+    * [x] authenticate using SCRAM-SHA1
+    * [x] insert records in users database is ok
+    * [x] insert records in other database fails
 
 
 |Tested|Test Filename|Test Purpose|
 |-|-|-|
-|x|110-Client|Unknown server, fails DNS lookup, topology and server state|
-|x||Down server, no connection|
-|x||Standalone server, not in replicaset|
-|x||Two standalone servers, one gets rejected|
 |x|111-client|Standalone server brought down and revived, Client object must follow|
 |x||Shutdown server and restart while inserting records|
 |x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.|
