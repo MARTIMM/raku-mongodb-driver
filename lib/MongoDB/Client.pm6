@@ -41,8 +41,6 @@ class Client {
   has Promise $!Background-discovery;
   has Bool $!repeat-discovery-loop;
 
-  constant smallest-max-staleness-seconds = 90;
-
   # Only for single threaded implementations according to mongodb documents
   # has Bool $!server-selection-try-once = False;
   # has Int $!socket-check-interval-ms = 5000;
@@ -60,7 +58,6 @@ class Client {
 
       warn-message('User client object still defined, will be cleaned first');
       self.cleanup;
-#      sleep 0.5;
     }
 
     MongoDB::Client.bless(|c);
@@ -95,7 +92,7 @@ class Client {
       mode => RCM-Primary,
 #TODO  next key only when max-wire-version >= 5 ??
 #      max-staleness-seconds => 90,
-#      must be > smallest-max-staleness-seconds
+#      must be > C-SMALLEST-MAX-STALENESS-SECONDS
 #           or > $!heartbeat-frequency-ms + $!idle-write-period-ms
       tag-sets => [BSON::Document.new(),]
     );
