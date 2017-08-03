@@ -259,11 +259,11 @@ Use zef to install the package.
 
 ## Versions of PERL, MOARVM and MongoDB
 
-This project is tested with Rakudo built on MoarVM implementing Perl v6.c.
+This project is tested against the newest perl6 version with Rakudo built on MoarVM implementing Perl v6.*. On Travis-CI however, the latest rakudobrew version is used which might be a little older.
 
-MongoDB versions are supported from 2.6 and up. Versions lower than this are not supported because of not completely implementing the wire protocol. one reason of not implementing them is that these operations(update, delete etc.) are not acknowledged, so it will never be clear if the operation was successful, other than checking it by another query.
+MongoDB server versions are supported from 2.6 and up. Versions lower than this are not supported because of a not completely implemented wire protocol. One reason of not implementing them is that these operations(update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. However, these operations might come in handy to do bulk updates for instance, so I will not completely rule out the implementation of the rest of the wire protocol as these are still supported by all mongodb servers.
 
-At this moment rakudobrew has too many differences with the perl6 directly from github. It is therefore important to know that this version is tested against the newest github version. Also it is the intention to support above mentioned mongo versions, at the moment the distribution is tested against 3.0.5 and higher.
+Also it is the intention to support above mentioned mongo versions, at the moment the distribution is tested against 3.* and higher.
 
 ## AUTHORS
 
