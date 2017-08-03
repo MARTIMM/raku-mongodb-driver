@@ -17,11 +17,11 @@ drop-send-to('screen');
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
+my Int $p1 = $ts.server-control.get-port-number('s1');
 
 #-------------------------------------------------------------------------------
 subtest "Shutdown and start server", {
 
-  my Int $p1 = $ts.server-control.get-port-number('s1');
   my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
 
   my MongoDB::Client $client .= new(
@@ -52,17 +52,16 @@ subtest "Shutdown and start server", {
 }
 
 #-------------------------------------------------------------------------------
-subtest "Shutdown/restart server 3 while inserting records", {
+subtest "Shutdown/restart server 1 while inserting records", {
 
-  my Int $p3 = $ts.server-control.get-port-number('s3');
   my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
 
   my MongoDB::Client $client .= new(
-    :uri("mongodb://:$p3/?" ~ @options.join('&')),
+    :uri("mongodb://:$p1/?" ~ @options.join('&')),
   );
 
   my MongoDB::Server $server = $client.select-server;
-  is $client.server-status("localhost:$p3"), SS-Standalone, "Standalone server";
+  is $client.server-status("localhost:$p1"), SS-Standalone, "Standalone server";
 
   # Drop database test
   my MongoDB::Database $database = $client.database('test');
@@ -88,7 +87,7 @@ subtest "Shutdown/restart server 3 while inserting records", {
       );
 
       my Int $c = 8;
-      while $c-- {
+      for ^$c {
         my BSON::Document $doc = $database.run-command($req);
         my Str $msg = 'no document';
         $msg = $doc<ok> ?? 'doc returned ok' !! 'doc returned not ok' if ?$doc;
@@ -102,7 +101,7 @@ subtest "Shutdown/restart server 3 while inserting records", {
         }
       }
 
-      True;
+      "$c records inserted";
     }
   );
 
@@ -111,7 +110,7 @@ subtest "Shutdown/restart server 3 while inserting records", {
 
   # Bring server down to see what Client does...
   info-message('shutdown server');
-  ok $ts.server-control.stop-mongod('s3'), "Server 3 is stopped";
+  ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
   sleep 1.0;
 
   $server = $client.select-server;
@@ -119,11 +118,11 @@ subtest "Shutdown/restart server 3 while inserting records", {
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');
-  ok $ts.server-control.start-mongod("s3"), "Server 1 started";
+  ok $ts.server-control.start-mongod("s1"), "Server 1 started";
   sleep 0.8;
 
   # Wait for inserts to finish
-  $p.result;
+  is $p.result, "8 records inserted", "8 records inserted";
 
 #  $client.cleanup;
 }
