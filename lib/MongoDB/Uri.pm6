@@ -1,12 +1,17 @@
 use v6;
 use MongoDB;
+use MongoDB::Authenticate::Credential;
 use URI::Escape;
 
 unit package MongoDB:auth<github:MARTIMM>;
 #-----------------------------------------------------------------------------
 class Uri {
 
-  has Hash $.server-data = {};
+  has Array $.servers;
+  has Hash $.options;
+  has MongoDB::Authenticate::Credential $.credential handles <
+      username password auth-source auth-mechanism auth-mechanism-properties
+      >;
 
   #---------------------------------------------------------------------------
   my $uri-grammar = grammar {
@@ -97,26 +102,47 @@ class Uri {
     debug-message("parse $uri");
     my Match $m = $grammar.parse( $uri, :$actions, :rule<URI>);
 
+    # if parse is ok
     if ? $m {
-      $!server-data<protocol> = $actions.prtcl;
-      $!server-data<username> = $actions.uname;
-      $!server-data<password> = $actions.pword;
-
-      $!server-data<servers> = [];
+      # get all server names and ports
+      $!servers = [];
       if $actions.host-ports.elems {
         for @($actions.host-ports) -> $hp {
-          $!server-data<servers>.push: $hp;
+          $!servers.push: $hp;
         }
       }
 
       else {
-        $!server-data<servers>.push: %( :host<localhost>, :port(27017));
+        $!servers.push: %( :host<localhost>, :port(27017));
       }
 
-      $!server-data<database> = $actions.dtbs;
-      $!server-data<options> = $actions.optns;
+      # get protocol. Will be 'mongodb' always
+#      $!protocol = $actions.prtcl;
+
+
+      $!options = $actions.optns;
+
+      # set some options if not defined and convert to proper type
+      $!options<localThresholdMS> =
+        ( $!options<localThresholdMS> // MongoDB::C-LOCALTHRESHOLDMS ).Int;
+      $!options<serverSelectionTimeoutMS> =
+        ( $!options<serverSelectionTimeoutMS> // MongoDB::C-SERVERSELECTIONTIMEOUTMS ).Int;
+      $!options<heartbeatFrequencyMS> =
+        ( $!options<heartbeatFrequencyMS> // MongoDB::C-HEARTBEATFREQUENCYMS ).Int;
+
+      my Str $auth-mechanism = $!options<authMechanism> // '';
+      my Str $auth-mechanism-properties = $!options<authMechanismProperties> // '';
+      my Str $auth-source = $actions.dtbs // $!options<authSource> // 'admin';
+
+      # get username and password, database and some of
+      # the options and store in the credentials object
+      $!credential .= new(
+        :username($actions.uname), :password($actions.pword),
+        :$auth-source, :$auth-mechanism, :$auth-mechanism-properties
+      );
     }
 
+    # parser failure
     else {
       return fatal-message("Parsing error in url '$uri'");
     }

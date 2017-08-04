@@ -10,7 +10,7 @@ use MongoDB::MDBConfig;
 #-------------------------------------------------------------------------------
 class Server::Control {
 
-#TODO startup/shutdown on windows and appels
+#TODO startup/shutdown on windows and apples
   #-----------------------------------------------------------------------------
   submethod BUILD ( Str :$config-name, Array :$locations ) {
     MongoDB::MDBConfig.instance( :$config-name, :$locations);
@@ -27,7 +27,10 @@ class Server::Control {
       :str-mode(Config::DataLang::Refine::C-UNIX-OPTS-T1)
     );
 
-    my Str $cmdstr = (self!get-binary-path('mongod'), @$options).join(' ');
+    my Str $cmdstr = (
+      self!get-binary-path( 'mongod', @server-keys),
+      @$options
+    ).join(' ');
 
     my Bool $started = False;
 
@@ -59,7 +62,7 @@ class Server::Control {
     my MongoDB::MDBConfig $mdbcfg .= instance;
     my Hash $options = $mdbcfg.cfg.refine( 'mongod', |@server-keys);
 
-    my Str $cmdstr = self!get-binary-path('mongod');
+    my Str $cmdstr = self!get-binary-path( 'mongod', @server-keys);
     $cmdstr ~= ' --shutdown';
     $cmdstr ~= ' --dbpath ' ~ "'$options<dbpath>'" // '/data/db';
     $cmdstr ~= ' --quiet' if $options<quiet>;
@@ -104,21 +107,29 @@ class Server::Control {
   }
 
   #-----------------------------------------------------------------------------
-  method !get-binary-path ( Str $binary --> Str ) {
+  method !get-binary-path ( Str $binary, *@server-keys --> Str ) {
 
+    my MongoDB::MDBConfig $mdbcfg .= instance;
+    my Str $mongodb-server-path = $mdbcfg.cfg.refine(
+      'binaries', |@server-keys
+    ){$binary};
+
+
+#`{{
     my Hash $config = MongoDB::MDBConfig.instance.config;
     my Str $mongodb-server-path;
 
     # Can be configured in config file
-    if $config<Binaries>:exists
-       and $config<Binaries>{$binary}:exists
-       and $config<Binaries>{$binary}.IO ~~ :x {
+    if $config<binaries>:exists
+       and $config<binaries>{$binary}:exists
+       and $config<binaries>{$binary}.IO ~~ :x {
 
-      $mongodb-server-path = $config<Binaries>{$binary};
+      $mongodb-server-path = $config<binaries>{$binary};
     }
+}}
 
     # On linuxes it should be in /usr/bin
-    if not $mongodb-server-path.defined and $*KERNEL.name eq 'linux' {
+    if ! $mongodb-server-path and $*KERNEL.name eq 'linux' {
       if "/usr/bin/$binary".IO ~~ :x {
         $mongodb-server-path = "/usr/bin/$binary";
       }

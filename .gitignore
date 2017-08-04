@@ -4,9 +4,9 @@
 Old/*
 Tests/insert*
 Sandbox/*
-Travis-ci/M*
+Travis-ci/2*
+Travis-ci/3*
 Travis-ci/m*
-Travis-ci/P6*
 *.log
 .precomp
 */.precomp

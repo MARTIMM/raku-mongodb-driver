@@ -84,6 +84,10 @@ constant C-SERVERSELECTIONTIMEOUTMS is export = 30_000;
 constant C-HEARTBEATFREQUENCYMS is export = 10_000;
 
 #------------------------------------------------------------------------------
+# Client defaults
+constant C-SMALLEST-MAX-STALENESS-SECONDS = 90;
+
+#------------------------------------------------------------------------------
 # Other types
 
 # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
@@ -97,8 +101,7 @@ subset ServerType is export where .^name eq 'MongoDB::Server';
 subset SocketType is export where .^name eq 'MongoDB::Server::Socket';
 
 #------------------------------------------------------------------------------
-#
-signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
+#signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
 
 #------------------------------------------------------------------------------
 sub mongodb-driver-version ( --> Version ) is export {

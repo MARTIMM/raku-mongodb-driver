@@ -212,26 +212,6 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations.
 
-### Test cases handling servers in Client object. The tests are done against the mongod server version 3.0.5.
-
-|Tested|Test Filename|Test Purpose|
-|-|-|-|
-|x|110-Client|Unknown server, fails DNS lookup, topology and server state|
-|x||Down server, no connection|
-|x||Standalone server, not in replicaset|
-|x||Two standalone servers, one gets rejected|
-|x|111-client|Standalone server brought down and revived, Client object must follow|
-|x||Shutdown server and restart while inserting records|
-|x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.|
-|x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.|
-|x||Replicaset pre-init initialization to master server and update master info|
-|x|612-repl-start|Convert pre init replica server to master|
-|x|611-client|Replicaserver rejected when there is no replica option in uri|
-|x||Standalone server rejected when used in mix with replica option defined|
-|x|612-repl-start|Add servers to replicaset|
-|x|613-Client|Replicaset server master in uri, must search for secondaries and add them|
-|x||Replicaset server secondary or arbiter, must get master server and then search for secondary servers|
-
 ## Api changes
 
 There has been a lot of changes in the API.
@@ -270,17 +250,20 @@ There has been a lot of changes in the API.
 * [Authentication](http://docs.mongodb.org/manual/core/authentication/)
 * [Create a User Administrator](http://docs.mongodb.org/manual/tutorial/add-user-administrator/)
 
+### Driver specs
+* [server selection]( https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst)
+
 ## INSTALLING THE MODULES
 
 Use zef to install the package.
 
 ## Versions of PERL, MOARVM and MongoDB
 
-This project is tested with Rakudo built on MoarVM implementing Perl v6.c.
+This project is tested against the newest perl6 version with Rakudo built on MoarVM implementing Perl v6.*. On Travis-CI however, the latest rakudobrew version is used which might be a little older.
 
-MongoDB versions are supported from 2.6 and up. Versions lower than this are not supported because of not completely implementing the wire protocol. one reason of not implementing them is that these operations(update, delete etc.) are not acknowledged, so it will never be clear if the operation was successful, other than checking it by another query.
+MongoDB server versions are supported from 2.6 and up. Versions lower than this are not supported because of a not completely implemented wire protocol. One reason of not implementing them is that these operations(update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. However, these operations might come in handy to do bulk updates for instance, so I will not completely rule out the implementation of the rest of the wire protocol as these are still supported by all mongodb servers.
 
-At this moment rakudobrew has too many differences with the perl6 directly from github. It is therefore important to know that this version is tested against the newest github version. Also it is the intention to support above mentioned mongo versions, at the moment the distribution is tested against 3.0.5 and higher.
+Also it is the intention to support above mentioned mongo versions, at the moment the distribution is tested against 3.* and higher.
 
 ## AUTHORS
 

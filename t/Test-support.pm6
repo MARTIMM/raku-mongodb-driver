@@ -33,7 +33,6 @@ class Test-support {
     #--------------------------------------------------------------------------
     # If we are under the scrutany of TRAVIS then adjust the path where to find the
     # mongod/mongos binaries
-    #
     if ? %*ENV<TRAVIS> {
       %*ENV<PATH> = "$*CWD/Travis-ci/MongoDB:%*ENV<PATH>";
     }
@@ -47,82 +46,133 @@ class Test-support {
       my Int $start-portnbr = 65010;
       my Str $config-text = Q:qq:to/EOCONFIG/;
 
-        # Configuration file for the servers in the Sandbox
-        # Settings are specifically for test situations and not for deployment
-        # situations!
-        #
-        [Account]
-          user = 'test_user'
-          pwd = 'T3st-Us3r'
+      # Configuration file for the servers in the Sandbox
+      # Settings are specifically for test situations and not for deployment
+      # situations!
+      [ account ]
+        user = 'test_user'
+        pwd = 'T3st-Us3r'
 
-        [Binaries]
-          mongod = '$*CWD/Travis-ci/MongoDB/mongod'
+      [ binaries ]
+        mongod = '$*CWD/Travis-ci/2.6.11/mongod'
+        mongos = '$*CWD/Travis-ci/2.6.11/mongos'
 
-        [mongod]
-          nojournal = true
-          fork = true
-          smallfiles = true
-          oplogSize = 128
-          #ipv6 = true
-          #quiet = true
-          #verbose = '=command=v =nework=v'
-          verbose = 'vv'
-          logappend = true
+      [ mongod ]
+        nojournal = true
+        fork = true
+        smallfiles = true
+        oplogSize = 128
+        #ipv6 = true
+        #quiet = true
+        #verbose = '=command=v =nework=v'
+        verbose = 'vv'
+        logappend = true
 
-        EOCONFIG
-
+      EOCONFIG
 
       #------------------------------------------------------------------------
-      for @$!server-range -> Int $server-number {
+      my Hash $server-setup = {
+        s1 => {
+          server-version => '3.2.9',
+          replicas => {
+            replicate1 => 'first_replicate',
+            replicate2 => 'second_replicate',
+          },
+          authenticate => True,
+          account => {
+            user => 'Dondersteen',
+            pwd => 'w@tD8jeDan',
+          },
+        },
+        s2 => {
+          server-version => '3.2.9',
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+        s3 => {
+          server-version => '3.2.9',
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+      };
 
-        my Str $server-dir = "Sandbox/Server$server-number";
+      for @$!server-range -> Int $server-number {
+        my $skey = "s$server-number";
+
+        my Str $server-dir = "$*CWD/Sandbox/Server$server-number";
         mkdir( $server-dir, 0o700) unless $server-dir.IO ~~ :d;
         mkdir( "$server-dir/m.data", 0o700) unless "$server-dir/m.data".IO ~~ :d;
 
         my Int $port-number = self!find-next-free-port($start-portnbr);
         $start-portnbr = $port-number + 1;
 
-        # Save portnumber for later tests
-        #
-        spurt "$server-dir/port-number", $port-number;
+#        # Save portnumber for later tests
+#        spurt "$server-dir/port-number", $port-number;
 
         $config-text ~= Q:qq:to/EOCONFIG/;
 
-          # Configuration for Server $server-number
-          #
-          [mongod.s$server-number]
-            logpath = '$*CWD/$server-dir/m.log'
-            pidfilepath = '$*CWD/$server-dir/m.pid'
-            dbpath = '$*CWD/$server-dir/m.data'
-            port = $port-number
+        # Configuration for Server $server-number
+        [ mongod.$skey ]
+          logpath = '$server-dir/m.log'
+          pidfilepath = '$server-dir/m.pid'
+          dbpath = '$server-dir/m.data'
+          port = $port-number
+        EOCONFIG
 
-          [mongod.s$server-number.replicate1]
-            replSet = 'first_replicate'
 
-          [mongod.s$server-number.replicate2]
-            replSet = 'second_replicate'
+        if $server-setup{$skey}:exists {
+          for $server-setup{$skey}<replicas>.keys -> $rkey {
+            $config-text ~= Q:qq:to/EOCONFIG/;
 
-          [mongod.s$server-number.authenticate]
-            auth = true
+            [ mongod.s$server-number.$rkey ]
+              replSet = '$server-setup{$skey}<replicas>{$rkey}'
+            EOCONFIG
+          }
 
-          EOCONFIG
-      }
+          if $server-setup{$skey}<authenticate> {
+            $config-text ~= Q:qq:to/EOCONFIG/;
+
+            [ mongod.s$server-number.authenticate ]
+              auth = true
+            EOCONFIG
+          } # if
+
+          if $server-setup{$skey}<account>:exists {
+            $config-text ~= Q:qq:to/EOCONFIG/;
+
+            [ account.s$server-number ]
+              user = '$server-setup{$skey}<account><user>'
+              pwd = '$server-setup{$skey}<account><pwd>'
+            EOCONFIG
+          }
+
+          if $server-setup{$skey}<server-version> {
+            $config-text ~= Q:qq:to/EOCONFIG/;
+
+            [ binaries.s$server-number ]
+              mongod = '$*CWD/Travis-ci/{$server-setup{$skey}<server-version>}/mongod'
+              mongos = '$*CWD/Travis-ci/{$server-setup{$skey}<server-version>}/mongos'
+            EOCONFIG
+          }
+        } # if $server-setup{$skey}:exists
+      } # for @$!server-range
 
       my Str $file = 'Sandbox/config.toml';
       spurt( $file, $config-text);
-    }
+    } # unless 'Sandbox'.IO ~~ :d
 
 #    $!server-control .= new(:file<Sandbox/config.toml>);
     $!server-control .= new(
       :locations(['Sandbox',]),
       :config-name<config.toml>
     );
-#    say "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
+#note "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
   }
 
   #----------------------------------------------------------------------------
   # Get a connection.
-  #
   method get-connection ( Int :$server = 1 --> MongoDB::Client ) {
 
     $server = 1 unless $server ~~ any $!server-range;
@@ -133,7 +183,6 @@ class Test-support {
 
   #----------------------------------------------------------------------------
   # Search and show content of documents
-  #
   method show-documents (
     MongoDB::Collection $collection,
     BSON::Document $criteria,

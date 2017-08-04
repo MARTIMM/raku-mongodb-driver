@@ -33,23 +33,13 @@ class Client {
   has Semaphore::ReadersWriters $!rw-sem;
 
   has Str $!uri;
-  has Hash $.uri-data;
+  has MongoDB::Uri $.uri-obj;
 
   has BSON::Document $.read-concern;
   has Str $!Replicaset;
 
   has Promise $!Background-discovery;
   has Bool $!repeat-discovery-loop;
-
-  # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
-  has MongoDB::Authenticate::Credential $.credential;
-
-  # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#mongoclient-configuration
-  has Int $!local-threshold-ms;
-  has Int $!server-selection-timeout-ms;
-  has Int $.heartbeat-frequency-ms;
-#  has Int $!idle-write-period-ms;
-  constant smallest-max-staleness-seconds = 90;
 
   # Only for single threaded implementations according to mongodb documents
   # has Bool $!server-selection-try-once = False;
@@ -68,7 +58,6 @@ class Client {
 
       warn-message('User client object still defined, will be cleaned first');
       self.cleanup;
-#      sleep 0.5;
     }
 
     MongoDB::Client.bless(|c);
@@ -103,52 +92,23 @@ class Client {
       mode => RCM-Primary,
 #TODO  next key only when max-wire-version >= 5 ??
 #      max-staleness-seconds => 90,
-#      must be > smallest-max-staleness-seconds
+#      must be > C-SMALLEST-MAX-STALENESS-SECONDS
 #           or > $!heartbeat-frequency-ms + $!idle-write-period-ms
       tag-sets => [BSON::Document.new(),]
     );
 
-    # Parse the uri and get info in $uri-obj. Fields are protocol, username,
+    # Parse the uri and get info in $!uri-obj. Fields are protocol, username,
     # password, servers, database and options.
     $!uri = $uri;
+    $!uri-obj .= new(:$!uri);
 
-    # Copy some fields into $!uri-data hash which is handed over
-    # to the server object..
-    my @item-list = <username password database options>;
-    my MongoDB::Uri $uri-obj .= new(:$!uri);
-    $!uri-data = %(@item-list Z=> $uri-obj.server-data{@item-list});
-
-    # Get some connection options from the uri
-    $!local-threshold-ms = ($!uri-data<options><localThresholdMS> // MongoDB::C-LOCALTHRESHOLDMS).Int;
-    $!server-selection-timeout-ms =
-         ($!uri-data<options><serverSelectionTimeoutMS> // MongoDB::C-SERVERSELECTIONTIMEOUTMS).Int;
-    $!heartbeat-frequency-ms =
-         ($!uri-data<options><heartbeatFrequencyMS> // MongoDB::C-HEARTBEATFREQUENCYMS).Int;
-
-    my %cred-data = %();
-    my $set = sub ( *@k ) {
-      my $sk = shift @k;
-      for @k -> $rk {
-        return if %cred-data{$sk};
-        %cred-data{$sk} = $uri-obj.server-data{$rk}
-          if ? $rk and ? $uri-obj.server-data{$rk};
-      }
-    };
-
-    $set( 'username',                   'username');
-    $set( 'password',                   'password');
-    $set( 'auth-source',                'database', 'authSource', 'admin');
-    $set( 'auth-mechanism',             'authMechanism');
-    $set( 'auth-mechanism-properties',  'authMechanismProperties');
-    $!credential .= new(|%cred-data);
-
-    debug-message("Found {$uri-obj.server-data<servers>.elems} servers in uri");
+    debug-message("Found {$!uri-obj.servers.elems} servers in uri");
 
     # Setup todo list with servers to be processed, Safety net not needed yet
     # because threads are not started.
-    for @($uri-obj.server-data<servers>) -> Hash $server-data {
-      debug-message("todo: $server-data<host>:$server-data<port>");
-      $!todo-servers.push("$server-data<host>:$server-data<port>");
+    for @($!uri-obj.servers) -> Hash $server {
+      debug-message("todo: $server<host>:$server<port>");
+      $!todo-servers.push("$server<host>:$server<port>");
     }
 
     # Background proces to handle server monitoring data
@@ -296,7 +256,7 @@ class Client {
     # One of the servers is not ready yet
     if $topology !~~ TT-NotSet {
 
-      if $servers-count == 1 and $!uri-data<options><replicaSet>:!exists {
+      if $servers-count == 1 and $!uri-obj.options<replicaSet>:!exists {
         $topology = TT-Single;
       }
 
@@ -398,8 +358,8 @@ class Client {
       );
 
       last if ? $selected-server;
-      sleep $!heartbeat-frequency-ms / 1000.0;
-    } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
+      sleep $!uri-obj.options<heartbeatFrequencyMS> / 1000.0;
+    } while ((now - $t0) * 1000) < $!uri-obj.options<serverSelectionTimeoutMS>;
 
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
@@ -512,8 +472,10 @@ class Client {
           # minimum round trip time and minimum rtt plus a treshold
           for @selected-servers -> $svr {
             my Hash $svr-sts = $svr.get-status;
-            $slctd-svrs.push: $svr if $svr-sts<weighted-mean-rtt-ms>
-                                      <= ($min-rtt-ms + $!local-threshold-ms);
+            $slctd-svrs.push: $svr
+              if $svr-sts<weighted-mean-rtt-ms> <= (
+                $min-rtt-ms + $!uri-obj.options<localThresholdMS>
+              );
           }
 
           $selected-server = $slctd-svrs.pick;
@@ -525,9 +487,9 @@ class Client {
 
       # else wait for status and topology updates
 #TODO synchronize with monitor times
-      sleep $!heartbeat-frequency-ms / 1000.0;
+      sleep $!uri-obj.options<heartbeatFrequencyMS> / 1000.0;
 
-    } while ((now - $t0) * 1000) < $!server-selection-timeout-ms;
+    } while ((now - $t0) * 1000) < $!uri-obj.options<serverSelectionTimeoutMS>;
 
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
