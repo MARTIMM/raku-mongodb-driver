@@ -38,11 +38,12 @@ $b.timethese(
 
 $b .= new;
 $b.timethese(
-  5, {
+  10, {
     new-select => sub {
       my MongoDB::Client $c .= new(:uri($uri));
       $srv = $c.select-server;
-      # (20170722) Forget about cleanup... 5 temporary threads + 10 monitoring threads
+      # (20170722) Forget about cleanup... 10 temporary threads + 1 monitoring threads
+      start {$c.cleanup};
     }
   }
 );

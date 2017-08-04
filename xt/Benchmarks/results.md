@@ -12,8 +12,8 @@ Package tests;
 * p2;
     **Perl6 version 2017.07-91-g7e08f74 built on MoarVM version 2017.07-15-g0729f84**
     **MongoDB driver version 0.37.5.1**
-    **BSON version 0.9.35.2**
-
+* p3:
+    **MongoDB driver version 0.38.2**
 
 | Date | Key | Wallclock (s) | n per sec | Iterations | Notes | Test |
 |------|-----|---------------|-----------|------------|-------|--------------|
@@ -22,6 +22,7 @@ Package tests;
 | 20170722 | new-select | 15.1417 | 0.6604 | 10 | Create client and select a server | p1
 | 20170730 |            | 105.7079 | 0.0946 | | |  p2
 | |                     | 54.6671 | 0.0915 | 5 | |
+| 20170804 |            | 5.1867 | 1.92 | 10 | Big improvement of about 21x | p3
 | 20170722 | new-select-cleanup | 100.5346 | 0.0995 | 10 | Create client, select a server and cleanup client, Cleanup is expensive then | p1
 | 20170730 |                    | 111.2817 | 0.0899 | | | p2
 | 20170722 | socket | 10.3585 | 4.8269 | 50 | First select is expensive | p1
@@ -66,7 +67,8 @@ The following graph shows the 'n per sec' for each test p1, p2, etc. It shows th
     "name": "table",
     "values": [
       {"x": "p1", "y": 104.35, "c":0}, {"x": "p1", "y": 0.66, "c":1}, {"x": "p1", "y": 0.09, "c":2},
-      {"x": "p2", "y": 212.25, "c":0}, {"x": "p2", "y": 0.09, "c":1}, {"x": "p2", "y": 0.09, "c":2}
+      {"x": "p2", "y": 212.25, "c":0}, {"x": "p2", "y": 0.09, "c":1}, {"x": "p2", "y": 0.09, "c":2},
+      {"x": "p3", "y": 0, "c": 0}, {"x": "p3", "y": 0, "c": 1}, {"x": "p3", "y": 1.92, "c": 2}
     ] }
   ],
   "scales": [

@@ -23,10 +23,6 @@ class Server {
 
   has ClientType $!client;
 
-  # As in MongoDB::Uri without servers name and port. So there are
-  # database, username, password and options
-  has MongoDB::Authenticate::Credential $!credential;
-
   has Array[MongoDB::Server::Socket] $!sockets;
   has Bool $!server-is-registered;
 
@@ -37,21 +33,19 @@ class Server {
   has Tap $!server-tap;
 
   #-----------------------------------------------------------------------------
-  # Server must make contact first to see if server exists and reacts. This
-  # must be done in the background so Client starts this process in a thread.
-  #
   submethod BUILD (
     ClientType:D :$!client,
     Str:D :$server-name
   ) {
+
+    # server status is unsetled
+    $!server-sts-data = { :status(SS-NotSet), :!is-master, :error('') };
 
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
       <s-select s-status>, :RWPatternType(C-RW-WRITERPRIO)
     );
-
-    $!credential := $!client.uri-obj.credential;
 
     $!sockets = Array[MongoDB::Server::Socket].new;
     $!server-is-registered = False;
@@ -61,20 +55,58 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
-    $!server-sts-data = {
-      :status(SS-NotSet), :!is-master, :error(''),
-    };
-  }
-
-  #-----------------------------------------------------------------------------
-  # Server initialization
-  method server-init ( ) {
-
     # Start monitoring
     my MongoDB::Server::Monitor $m .= instance;
     $m.set-heartbeat($!client.uri-obj.options<heartbeatFrequencyMS>);
     $m.register-server(self);
     $!server-is-registered = True;
+
+    # no need to catch exceptions. all is trapped in Wire. with failures
+    # a type object is returned
+    # do a firsttime connect and set status data
+    trace-message("Server {self.name} makes first contact request");
+    my BSON::Document $doc = self.raw-query(
+      'admin.$cmd', BSON::Document.new((isMaster => 1)), :!authenticate
+#      , :first-phase
+    );
+
+    trace-message("First contact result: " ~ ($doc//'-').perl);
+
+#TODO in a sub: later we do the same!
+#note "\n$*THREAD.id(): {($doc//'-').perl}";
+    if $doc.defined {
+      my $mdoc = $doc<documents>[0];
+      if $mdoc<ok> == 1e0 {
+        my ServerStatus $server-status;
+        my Bool $is-master;
+        ( $server-status, $is-master) = self!process-status($mdoc);
+        $!server-sts-data = {
+          :status($server-status), :$is-master, :error(''),
+          :max-wire-version($mdoc<maxWireVersion>.Int),
+          :min-wire-version($mdoc<minWireVersion>.Int),
+          :weighted-mean-rtt-ms(0),
+        }
+      }
+
+      else {
+        $!server-sts-data<error> = $mdoc<errmsg> // 'no error message';
+        $!server-sts-data<is-master> = False;
+        $!server-sts-data<status> = SS-Unknown;
+      }
+    }
+
+    else {
+      $!server-sts-data<error> = 'Server did not respond';
+      $!server-sts-data<is-master> = False;
+      $!server-sts-data<status> = SS-Unknown;
+    }
+
+    $!client.process-topology;
+  }
+
+  #-----------------------------------------------------------------------------
+  # Server initialization
+  method server-init ( ) {
 
     # Tap into monitor data
     $!server-tap = self.tap-monitor( -> Hash $monitor-data {
@@ -91,7 +123,7 @@ class Server {
           # test monitor defined boolean field ok
           if $monitor-data<ok> {
 
-            # Used to get a socket an decide on type of authentication
+            # used to get a socket and decide on type of authentication
             my $mdata = $monitor-data<monitor>;
 
             # test mongod server defined field ok for state of returned document
@@ -139,28 +171,10 @@ class Server {
           # (of each server)
           $!client.process-topology;
 
-#`{{
-          CATCH {
-            default {
-              .note;
-
-              # Set the status with the  value
-              error-message("{.message}, {self.name()} {SS-Unknown}");
-              $!rw-sem.writer( 's-status', {
-                  $!server-sts-data = {
-                    :status(SS-Unknown), :!is-master, :error(.message),
-                  }
-                } # block
-              ); # writer
-            } # default
-          } # CATCH
-        } # try
-}}
         } # if $monitor-data<server> eq self.name
-
       } # tap block
     ); # tap
-  } # method
+  }
 
   #-----------------------------------------------------------------------------
   method !process-status ( BSON::Document $mdata --> List ) {
@@ -310,67 +324,70 @@ class Server {
 #TODO check must be made on autenticate flag only and determined from server
     # We can only authenticate when all 3 data are True and when the socket is
     # created.
-    if $created-anew and $authenticate
-       and ?$!credential.username and ?$!credential.password {
+    if $created-anew and $authenticate {
+      my MongoDB::Authenticate::Credential $credential = $!client.uri-obj.credential;
+      if ?$credential.username and ?$credential.password {
 
-      # get authentication mechanism
-      my Str $auth-mechanism = $!credential.auth-mechanism;
-      if not $auth-mechanism {
-        my Int $max-version = $!rw-sem.reader(
-          's-status', {$!server-sts-data<max-wire-version>}
-        );
-        $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
-        trace-message("Wire version is $max-version");
-        trace-message("Authenticate with '$auth-mechanism'");
-      }
-
-      $!credential.auth-mechanism(:$auth-mechanism);
-
-      given $auth-mechanism {
-
-        # Default in version 3.*
-        when 'SCRAM-SHA-1' {
-
-          my MongoDB::Authenticate::Scram $client-object .= new(
-            :$!client, :db-name($!credential.auth-source)
+        # get authentication mechanism
+        my Str $auth-mechanism = $credential.auth-mechanism;
+        if not $auth-mechanism {
+          my Int $max-version = $!rw-sem.reader(
+            's-status', {$!server-sts-data<max-wire-version>}
           );
+          $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
+          trace-message("Wire version is $max-version");
+          trace-message("Authenticate with '$auth-mechanism'");
+        }
 
-          my Auth::SCRAM $sc .= new(
-            :username($!credential.username),
-            :password($!credential.password),
-            :$client-object,
-          );
+        $credential.auth-mechanism(:$auth-mechanism);
 
-          my $error = $sc.start-scram;
-          if ?$error {
-            fatal-message("Authentication fail for $!credential.username(): $error");
+        given $auth-mechanism {
+
+          # Default in version 3.*
+          when 'SCRAM-SHA-1' {
+
+            my MongoDB::Authenticate::Scram $client-object .= new(
+              :$!client, :db-name($credential.auth-source)
+            );
+
+            my Auth::SCRAM $sc .= new(
+              :username($credential.username),
+              :password($credential.password),
+              :$client-object,
+            );
+
+            my $error = $sc.start-scram;
+            if ?$error {
+              fatal-message("Authentication fail for $credential.username(): $error");
+            }
+
+            else {
+              trace-message("$credential.username() authenticated");
+            }
           }
 
-          else {
-            trace-message("$!credential.username() authenticated");
+          # Default in version 2.*
+          when 'MONGODB-CR' {
+
           }
-        }
 
-        # Default in version 2.*
-        when 'MONGODB-CR' {
+          when 'MONGODB-X509' {
 
-        }
+          }
 
-        when 'MONGODB-X509' {
+          # Kerberos
+          when 'GSSAPI' {
 
-        }
+          }
 
-        # Kerberos
-        when 'GSSAPI' {
+          # LDAP SASL
+          when 'PLAIN' {
 
-        }
+          }
 
-        # LDAP SASL
-        when 'PLAIN' {
-
-        }
-      }
-    }
+        } # given $auth-mechanism
+      } # if ?$credential.username and ?$credential.password
+    } # if $created-anew and $authenticate
 
     # Return a usable socket which is opened and authenticated upon if needed.
     $found-socket;
@@ -392,7 +409,7 @@ class Server {
 
     ( $doc, $rtt) = MongoDB::Wire.new.timed-query(
       $full-collection-name, $query,
-      :$number-to-skip, :number-to-return,
+      :$number-to-skip, :$number-to-return,
       :server(self), :$authenticate
     );
 
@@ -400,20 +417,22 @@ class Server {
   }
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#  # :first-phase is only used by this module at the start in BUILD
   multi method raw-query (
     Str:D $full-collection-name, BSON::Document:D $query,
     Int :$number-to-skip = 0, Int :$number-to-return = 1,
     Bool :$authenticate = True
+#, Bool :$first-phase
     --> BSON::Document
   ) {
     # Be sure the server is still active
-    return BSON::Document unless $!server-is-registered;
+    return BSON::Document unless $!server-is-registered; # or $first-phase;
 
     debug-message("server directed query on collection $full-collection-name on server {self.name}");
 
     MongoDB::Wire.new.query(
       $full-collection-name, $query,
-      :$number-to-skip, :number-to-return,
+      :$number-to-skip, :$number-to-return,
       :server(self), :$authenticate
     );
   }

@@ -16,13 +16,9 @@ class Server::Monitor {
   my MongoDB::Server::Monitor $singleton-instance;
 
   has %!registered-servers;
-#  has MongoDB::ServerType $!server;
-#  has MongoDB::Server::Socket $!socket;
-#  has Duration $!weighted-mean-rtt-ms;
 
   # Variables to control infinite monitoring actions
   has Promise $!promise-monitor;
-  #has Semaphore $!server-monitor-control;
 
   has Supplier $!monitor-data-supplier;
   has Duration $!heartbeat-frequency-ms;
@@ -36,7 +32,6 @@ class Server::Monitor {
   # Call before monitor-server to set the $!server object!
   # Inheriting from Supplier prevents use of proper BUILD
   #
-#  submethod BUILD ( MongoDB::ServerType:D :$server ) {
   submethod BUILD ( ) {
 
     $!rw-sem .= new;
@@ -45,9 +40,6 @@ class Server::Monitor {
 
     %!registered-servers = %();
 
-#    $!server = $server;
-#    $!weighted-mean-rtt-ms .= new(0);
-#    $!server-monitor-control .= new(1);
     $!monitor-data-supplier .= new;
     $!heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
     trace-message("Monitor sleep time set to $!heartbeat-frequency-ms ms");
@@ -156,9 +148,7 @@ class Server::Monitor {
             trace-message("Monitor is-master request for $server-name");
             # get server info
             ( $doc, $rtt) = $server.raw-query(
-              'admin.$cmd', $!monitor-command,
-              :number-to-skip(0), :number-to-return(1), :!authenticate,
-              :timed-query
+              'admin.$cmd', $!monitor-command, :!authenticate, :timed-query
             );
 
             trace-message(
@@ -206,6 +196,9 @@ class Server::Monitor {
               ); # emit
             } # else
 
+            # no need to catch exceptions. all is trapped in Wire. with failures
+            # a type object is returned
+#`{{
             # Capture errors. When there are any, On older servers before
             # version 3.2 the server just stops communicating when a shutdown
             # command was given. Opening a socket will then bring us here.
@@ -236,6 +229,7 @@ class Server::Monitor {
                 .rethrow;
               } # default
             } # CATCH
+}}
           } # for %rservers.keys
 
           my $heartbeat-frequency-ms = $!rw-sem.reader(

@@ -11,7 +11,7 @@ use BSON::Document;
 
 #------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
+#drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
@@ -65,6 +65,7 @@ subtest "Standalone server", {
 }
 
 #------------------------------------------------------------------------------
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 subtest "Two equal standalone servers", {
 
   my Str $server-name1 = "localhost:$p1";
