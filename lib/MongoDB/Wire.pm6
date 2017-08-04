@@ -55,7 +55,7 @@ class Wire {
       );
 
       $!socket = $server.get-socket(:$authenticate);
-      if ! $!socket.defined {
+      if ! $!socket {
         warn-message("server {$server.name} cleaned up");
         return BSON::Document;
       }
@@ -90,7 +90,7 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
+note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program elsewhere
