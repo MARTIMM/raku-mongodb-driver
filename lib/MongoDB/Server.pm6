@@ -45,6 +45,11 @@ class Server {
     Str:D :$server-name
   ) {
 
+    # server status is unsetled
+    $!server-sts-data = {
+      :status(SS-NotSet), :!is-master, :error(''),
+    };
+
     $!rw-sem .= new;
 #    $!rw-sem.debug = True;
     $!rw-sem.add-mutex-names(
@@ -61,9 +66,43 @@ class Server {
     $!server-name = $host;
     $!server-port = $port.Int;
 
-    $!server-sts-data = {
-      :status(SS-NotSet), :!is-master, :error(''),
-    };
+#TODO find out if exceptions must be caught. if not, where is caught then?
+    # do a firsttime connect and set status data
+    trace-message("Server {self.name} makes first contact request");
+    my BSON::Document $doc = self.raw-query(
+      'admin.$cmd', BSON::Document.new((isMaster => 1)), :!authenticate
+    );
+
+    trace-message("First contact result: " ~ ($doc//'-').perl);
+
+#TODO in a sub: later we do the same!
+    if ?$doc {
+      if $doc<ok> == 1e0 {
+        my ServerStatus $server-status;
+        my Bool $is-master;
+        ( $server-status, $is-master) = self!process-status($doc);
+        $!server-sts-data = {
+          :status($server-status), :$is-master, :error(''),
+          :max-wire-version($doc<maxWireVersion>.Int),
+          :min-wire-version($doc<minWireVersion>.Int),
+          :weighted-mean-rtt-ms(0),
+        }
+      }
+
+      else {
+        $!server-sts-data<error> = $doc<errmsg>;
+        $!server-sts-data<is-master> = False;
+        $!server-sts-data<status> = SS-Unknown;
+      }
+    }
+
+    else {
+      $!server-sts-data<error> = 'Server did not respond';
+      $!server-sts-data<is-master> = False;
+      $!server-sts-data<status> = SS-Unknown;
+    }
+
+$!client.process-topology;
   }
 
   #-----------------------------------------------------------------------------
@@ -91,7 +130,7 @@ class Server {
           # test monitor defined boolean field ok
           if $monitor-data<ok> {
 
-            # Used to get a socket an decide on type of authentication
+            # used to get a socket and decide on type of authentication
             my $mdata = $monitor-data<monitor>;
 
             # test mongod server defined field ok for state of returned document
