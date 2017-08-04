@@ -196,6 +196,9 @@ class Server::Monitor {
               ); # emit
             } # else
 
+            # no need to catch exceptions. all is trapped in Wire. with failures
+            # a type object is returned
+#`{{
             # Capture errors. When there are any, On older servers before
             # version 3.2 the server just stops communicating when a shutdown
             # command was given. Opening a socket will then bring us here.
@@ -226,6 +229,7 @@ class Server::Monitor {
                 .rethrow;
               } # default
             } # CATCH
+}}
           } # for %rservers.keys
 
           my $heartbeat-frequency-ms = $!rw-sem.reader(
