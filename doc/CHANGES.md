@@ -6,6 +6,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
   * New config generation in Test-support to cope with multiple mongod server versions. also mongos can now be defined
   * Credential taken from Client to Uri object.
   * Some of the uri string options were set to defaults in Client. Now they are done in the Uri object where all the options from the uri string are available.
+  * Changes caused by changing exception classes in BSON
 * 0.37.5
   * One monitor thread used for all servers. This implies that the heartbeat frequency given with the uri or by default will be used on all servers, no matter from which client uri it came from. The server will provide this data to the monitor when registering itself. This means, most often, that the value is set by the last server from the last client registering itself. Most of the time a single client is used with a replica server and slaves or one standalone. If more clients are needed, chances are that they will be treated equally.
   Anyways, this implementation will save a thread for each server object in the client object. This can be a lot for example with replica servers where the slave servers are looked up and inserted in the client too, despite not mentioning them in the uri.

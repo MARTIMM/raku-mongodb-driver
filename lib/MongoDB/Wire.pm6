@@ -108,7 +108,7 @@ class Wire {
         }
 
         # From BSON::Document
-        when X::BSON::Parse-document {
+        when X::BSON {
           error-message($server.name ~ ': ' ~ .message);
         }
 
@@ -185,7 +185,7 @@ class Wire {
         }
 
         # From BSON::Document
-        when X::BSON::Parse-document {
+        when X::BSON {
           error-message(.message);
         }
 
@@ -249,7 +249,7 @@ class Wire {
         }
 
         # From BSON::Document
-        when X::BSON::Parse-document {
+        when X::BSON {
           error-message(.message);
         }
 
