@@ -2,9 +2,20 @@
 
 # Designing test cases
 
-## What to test
+## What and when/where to test
 
-This project is containing a lot of different items to focus on. For instance reading and writing from the server, topology and server state, version differences etc. So below are a number of cases and the files wherein it is tested. Also, not all will be tested when installing the software because it can take some time.
+This project is containing a lot of different items to focus on. For instance reading and writing from the server, topology and server state, version differences etc. So below are a number of cases and the files wherein it is tested.
+When a user wants to install the driver, not all functions will be tested because several tests are designed to follow server behavior when shutting down or starting up while reading or writing amongs other things. These cases might never be encountered under normal use.
+On Travis-CI and Appveyor (later) there are extensive tests to see what happens with the driver on other operating systems. The tests will be split up in those installation tests which will provide the completion result and a set of other tests of which the faulty tests will not influence the outcome.
+
+## Install tests
+
+At most two servers are started for different versions for 2.6.* and 3.*
+
+* Simple class tests of classes not (too much) depending on each other like Uri, Logging etc.
+* Simple operations tests like create database and collection, read and write documents, substitutions, deletes and drop collections or databases.
+* More complex operations such as index juggling, mapping and information gathering.
+
 
 For the tests several servers are needed. A table is shown for the used versions; (???)
 
