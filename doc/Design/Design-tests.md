@@ -2,13 +2,50 @@
 
 # Designing test cases
 
-## What and when/where to test
+This project contains a lot of different parts to focus on. Examples are Uri testing, reading, writing, states, behavior of separate classes and the behavior as a whole. Not all functions should be tested when a user is installing this software, because several tests are designed to follow server behavior when shutting down or starting up while reading or writing amongst other things. Some of the edge cases might fail caused by race conditions. These cases might never be encountered under normal use and therefore not necessary to test.
 
-This project is containing a lot of different items to focus on. For instance reading and writing from the server, topology and server state, version differences etc. So below are a number of cases and the files wherein it is tested.
-When a user wants to install the driver, not all functions will be tested because several tests are designed to follow server behavior when shutting down or starting up while reading or writing amongs other things. These cases might never be encountered under normal use.
-On Travis-CI and Appveyor (later) there are extensive tests to see what happens with the driver on other operating systems. The tests will be split up in those installation tests which will provide the completion result and a set of other tests of which the faulty tests will not influence the outcome.
 
-## Install tests
+
+## What to test
+
+### Normal day to day tests
+* Creating a database and collection.
+* Using find to read.
+* Using run-command to write, update and delete etc.
+* Using run-command to get information.
+
+### Behavior tests
+* Client behavior accessing servers defined by uri.
+* Driver behavior when a server goes down, starts up or changes state.
+* States where a driver can be in. These are held in the Client and Server objects.
+* Behavior tests are done against servers of different versions.
+
+### Other tests
+* Independent class tests like on Uri and logging.
+* Replica server tests.
+* Accounting tests
+* Authentication tests.
+
+
+
+## When and where to test
+The day to day tests are the tests placed in directory **./t**. The other tests are found in directories **./xt**.
+
+### User install from ecosystem
+* Only day to day tests are done.
+
+### On my system, a Fedora 24+, 4-core, 8 threads
+* Mostly day to day tests are done.
+* From time to time other tests.
+
+### Travis-CI and Appveyor
+
+Travis-CI and Appveyor (taken up later) are test systems where the software is installed and tests once a git push is executed. Travis is on a Ubuntu linux and the Appveyor is for windows systems.
+
+* Day to day tests are done. This will set the outcome of the whole test.
+* A select set of other tests which will change depending on the history (of failures). This will not influence the test result when one of the tests fail. Its purpose is mainly to see what happens in a driver.
+
+### Day to day tests
 
 At most two servers are started for different versions for 2.6.* and 3.*
 
@@ -17,27 +54,30 @@ At most two servers are started for different versions for 2.6.* and 3.*
 * More complex operations such as index juggling, mapping and information gathering.
 
 
-For the tests several servers are needed. A table is shown for the used versions; (???)
 
-| Server key | Version | Note |
-|------------|---------|------|
-| s1 | 3.* | For these versions the latest are used
+# The tests
+
+Test server table. In this table the key name is saying something about the server used in the tests. This key is mentioned below in the test explanations below.
+
+| Config key | Server version | Server type |
+|------------|----------------|-------------|
+| s1 | 3.* | mongod |
 
 ## Simple cases
 
-* Uri string tests in **xt/075-uri.t**
-  * [x] server names
-  * [x] uri key value options
-  * [x] default option settings
-  * [x] username and password
-  * [x] reading any of the stored values
-  * [x] failure testing on faulty uri strings
+* Uri string tests in **xt/075-uri.t**. Can be placed in day to day test set. No server needed.
+  * [x] Server names
+  * [x] Uri key value options
+  * [x] Default option settings
+  * [x] Username and password
+  * [x] Reading any of the stored values
+  * [x] Failure testing on faulty uri strings
 
 ## The MongoDB Client, Server, Monitor and Socket classes
 
-These classes can not be tested separately because of their dependency on each other so we must create these tests in such a way that all can be tested thoroughly.
+These classes can not be tested separately because of their dependency on each other so we must create these tests in such a way that all can be tested thoroughly. Tests are not for day to dat tests.
 
-* Client object interaction tests in **t/110-client.t**.
+* Client object interaction tests in **t/110-client.t**. Use config s1.
   * Unknown server which fails DNS lookup.
     * [x] server can not be selected
     * [x] server state is SS-Unknown
@@ -55,7 +95,7 @@ These classes can not be tested separately because of their dependency on each o
     * [x] both servers have state SS-Standalone
     * [x] topology is TT-Unknown
 
-* Client/server interaction tests in **t/110-client.t**.
+* Client/server interaction tests in **t/111-client.t**.
   * Standalone server brought down and revived, Client object must follow. Use config s1.
     * [x] current status and topology tested
     * [x] shutdown server and restart
@@ -65,7 +105,7 @@ These classes can not be tested separately because of their dependency on each o
     * [x] shutdown/restart server
     * [x] wait for recovery and resume inserting
 
-* Client authentication
+* Client authentication tests in **t/112-client.t**.
   * Account preparation using config s1
     * [x] insert a new user
   * Restart to authenticate using config s1/authenticate
@@ -73,11 +113,8 @@ These classes can not be tested separately because of their dependency on each o
     * [x] insert records in users database is ok
     * [x] insert records in other database fails
 
-
 |Tested|Test Filename|Test Purpose|
 |-|-|-|
-|x|111-client|Standalone server brought down and revived, Client object must follow|
-|x||Shutdown server and restart while inserting records|
 |x|610-repl-start|Replicaset server in pre-init state, is rejected when replicaSet option is not used.|
 |x||Replicaset server in pre-init state, is not a master nor secondary server, read and write denied.|
 |x||Replicaset pre-init initialization to master server and update master info|
