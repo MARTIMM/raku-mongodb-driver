@@ -72,44 +72,6 @@ Test server table. In this table, the key name is saying something about the ser
   * [x] Reading any of the stored values
   * [x] Failure testing on faulty uri strings
 
-
-<!-- ```perl6 {cmd=prove args=[ "-e", "perl6", "-v"} -->
-```perl6 {cmd=atom-mdpe-p6test.pl6 <!hide=true output=markdown args=[ "-c=cfg.toml", "-p=test1", "$input_file"]} -->
-
-```perl6 {cmd=atom-mdpe-p6test.pl6 args=[ "-c=cfg.toml", "-p=test1", "$input_file"]}
-
-ok true, 'test ok';
-```
-
-
-
-```perl6 {cmd=true hide=true}
-use v6;
-use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver';
-use Test;
-
-use MongoDB;
-use MongoDB::Uri;
-
-#------------------------------------------------------------------------------
-drop-send-to('mongodb');
-drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-info-message("Test $?FILE start");
-
-#------------------------------------------------------------------------------
-subtest "Uri parsing", {
-
-  my MongoDB::Uri $uri;
-
-  $uri .= new(:uri<mongodb://>);
-  ok $uri ~~ MongoDB::Uri , "is url type";
-  ok $uri.defined , "url initialized";
-
-};
-done-testing();
-```
-
 ## The MongoDB Client, Server, Monitor and Socket classes
 
 These classes can not be tested separately because of their dependency on each other so we must create these tests in such a way that all can be tested thoroughly. Tests are not for day to dat tests.
