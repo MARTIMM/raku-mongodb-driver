@@ -5,7 +5,6 @@
 This project contains a lot of different parts to focus on. Examples are Uri testing, reading, writing, states, behavior of separate classes and the behavior as a whole. Not all functions should be tested when a user is installing this software, because several tests are designed to follow server behavior when shutting down or starting up while reading or writing amongst other things. Some of the edge cases might fail caused by race conditions. These cases might never be encountered under normal use and therefore not necessary to test.
 
 
-
 ## What to test
 
 ### Normal day to day tests
@@ -57,7 +56,7 @@ At most two servers are started for different versions for 2.6.* and 3.*
 
 # The tests
 
-Test server table. In this table the key name is saying something about the server used in the tests. This key is mentioned below in the test explanations below.
+Test server table. In this table, the key name is saying something about the server used in the tests. This key is mentioned below in the test explanations below. There are also key combinations such as s1/authenticate which means that the particular server is started with additional options, in this case authentication is turned on.
 
 | Config key | Server version | Server type |
 |------------|----------------|-------------|
@@ -73,11 +72,49 @@ Test server table. In this table the key name is saying something about the serv
   * [x] Reading any of the stored values
   * [x] Failure testing on faulty uri strings
 
+
+<!-- ```perl6 {cmd=prove args=[ "-e", "perl6", "-v"} -->
+```perl6 {cmd=atom-mdpe-p6test.pl6 <!hide=true output=markdown args=[ "-c=cfg.toml", "-p=test1", "$input_file"]} -->
+
+```perl6 {cmd=atom-mdpe-p6test.pl6 args=[ "-c=cfg.toml", "-p=test1", "$input_file"]}
+
+ok true, 'test ok';
+```
+
+
+
+```perl6 {cmd=true hide=true}
+use v6;
+use lib '/home/marcel/Languages/Perl6/Projects/mongo-perl6-driver';
+use Test;
+
+use MongoDB;
+use MongoDB::Uri;
+
+#------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+info-message("Test $?FILE start");
+
+#------------------------------------------------------------------------------
+subtest "Uri parsing", {
+
+  my MongoDB::Uri $uri;
+
+  $uri .= new(:uri<mongodb://>);
+  ok $uri ~~ MongoDB::Uri , "is url type";
+  ok $uri.defined , "url initialized";
+
+};
+done-testing();
+```
+
 ## The MongoDB Client, Server, Monitor and Socket classes
 
 These classes can not be tested separately because of their dependency on each other so we must create these tests in such a way that all can be tested thoroughly. Tests are not for day to dat tests.
 
-* Client object interaction tests in **t/110-client.t**. Use config s1.
+* Client object interaction tests in **t/110-client.t**.
   * Unknown server which fails DNS lookup.
     * [x] server can not be selected
     * [x] server state is SS-Unknown
