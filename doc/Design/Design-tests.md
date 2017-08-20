@@ -1,3 +1,5 @@
+[stest]: https://en.wikipedia.org/wiki/Software_testing
+
 [TOC]
 
 # Designing test cases
@@ -7,13 +9,27 @@ This project contains a lot of different parts to focus on. Examples are Uri tes
 
 ## What to test
 
+There are several types of tests according to the wikipedia article [software testing][stest]. Some types to say something about;
+* **Installation test** to assure that the system is installed correctly and working at actual customer's hardware. This project has a set of day to day tests which are excecuted on the developer system (a RedHat Fedora linux system on a 4 core with 8 threads), Travis-CI (an Ubuntu linux) and Appveyor (a windows system). Furthermore the users system where it will be installed.
+
+* **Compatibility testing**. Compatibility with older perl6 version is not done because the language is still evolving very fast. Also this driver software is still not finished and therefore not compatible with older versions. This will happen after version 1.0.0. The mongodb servers are tested against the 2.* and 3.* series of servers.
+
+* **Smoke and sanity testing**. The day to day tests serve this purpose.
+
+* **Functional testing**. Execution of all available tests.
+
+* **Destructive testing**. There are tests to test exceptions when parts fail.
+
+* **Software performance testing**. These are benchmark programs of parts of the system to be compared with later tests. This is not part of the tests to install or tests on the Travis and AppVeyor systems.
+
 ### Normal day to day tests
+
 * Creating a database and collection.
 * Using find to read.
 * Using run-command to write, update and delete etc.
 * Using run-command to get information.
 
-### Behavior tests
+### Behavior and stress tests
 * Client behavior accessing servers defined by uri.
 * Driver behavior when a server goes down, starts up or changes state.
 * States where a driver can be in. These are held in the Client and Server objects.
@@ -21,8 +37,10 @@ This project contains a lot of different parts to focus on. Examples are Uri tes
 
 ### Other tests
 * Independent class tests like on Uri and logging.
+* Sharding using mongos server.
+* Accessing other server types such as arbiter.
 * Replica server tests.
-* Accounting tests
+* Accounting tests.
 * Authentication tests.
 
 
