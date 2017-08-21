@@ -58,9 +58,13 @@ participant Cl as "Client"
 participant Da as "Database"
 'participant Co as "Collection"
 
-UP -> Cl : MongoDB::Client.new(:$uri)
+UP -> Cl : Client.new(:$uri)
+activate Cl
 Cl -> UP : $client
-UP -> Cl : $client.database($name)
+UP -> Cl : $client.database(:$name)
+Cl -> Da : Database.new(:$name)
+activate Da
+Da -> Cl : $database
 Cl -> UP : $database
 UP -> Da : $database.run-command($command)
 Da -> UP : $document
@@ -69,23 +73,13 @@ Da -> UP : $document
 
 ### Using MongoDB::Collection.find and MongoDB::Cursor.fetch
 
-```plantuml
-title "Searching for information in database"
+A sequence diagram gets a bit unwieldy to show while the operations are quite simple so here are a few statements instead
 
-participant UP as "User::Program"
-participant Cl as "Client"
-participant Da as "Database"
-participant Co as "Collection"
-participant Cu as "Cursor"
+```
+my $client = MongoDB::Client.new(:uri('mongodb://')); # localhost:27017
+my $collection = $client.collection('mydb.mycol');    # get collectiion in one go
 
-UP -> Cl : MongoDB::Client.new(:$uri)
-Cl -> UP : $client
-UP -> Cl : $client.database($name)
-Cl -> UP : $database
-UP -> Da : $database.collection($name)
-Da -> UP : $collection
-UP -> Co : $collection.find($criteria,$projection)
-Co -> UP : $cursor
-UP -> Cu : $cursor.fetch
-Cu -> UP : $document
+while $collection.find -> BSON::Document $doc {       # iterate over returned Cursor
+  say $doc.perl;                                      # do something ...
+}
 ```
