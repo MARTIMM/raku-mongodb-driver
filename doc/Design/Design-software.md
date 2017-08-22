@@ -50,6 +50,21 @@ The user can use the classes in one of the two ways. First there is the `run-com
 
 ### Using MongoDB::Database.run-command
 
+The following code snippet is showing an insertion of a simple document
+```
+my $client = MongoDB::Client.new(:uri('mongodb://')); # localhost:27017
+my $database = $client.database(:name<mydb>);         # get database
+my $doc = $database.run-command: (
+  insert => 'famous-people',
+  documents => [
+    BSON::Document.new((
+      name => 'Larry',
+      surname => 'Wall',
+    )),
+  ]
+);
+```
+
 ```plantuml
 title "Using run-command to insert, update etc"
 
@@ -82,4 +97,34 @@ my $collection = $client.collection('mydb.mycol');    # get collectiion in one g
 while $collection.find -> BSON::Document $doc {       # iterate over returned Cursor
   say $doc.perl;                                      # do something ...
 }
+```
+
+```plantuml
+title "Searching for information in database"
+
+participant UP as "User::Program"
+participant Cl as "Client"
+participant Da as "Database"
+participant Co as "Collection"
+participant Cu as "Cursor"
+
+UP -> Cl : Client.new(:$uri)
+Cl -> UP : $client
+activate Cl
+UP -> Cl : $client.database(:$name)
+Cl -> Da : Database.new(:$name)
+activate Da
+Da -> Cl : $database
+Cl -> UP : $database
+UP -> Da : $database.collection(:$name)
+Da -> Co : Collection.new(:$name)
+activate Co
+Co -> Da : $collection
+Da -> UP : $collection
+UP -> Co : $collection.find($criteria,$projection)
+Co -> Cu : Cursor.new(...)
+Co -> UP : $cursor
+UP -> Cu : $cursor.fetch
+Cu -> UP : $document
+
 ```

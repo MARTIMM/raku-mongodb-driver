@@ -210,13 +210,6 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations.
 
-## Api changes
-
-There has been a lot of changes in the API.
-* All methods which had underscores ('\_') are converted to dashed ones ('-').
-* Many helper functions are removed. In the documentation, some information must be added to create a database/collection helper methods as well as examples in the xt or doc directory. In HL (higher level) there will come some modules which can be used.
-* Connection module is gone. The Client module has come in its place.
-
 ## Documentation
 
 ### Program documentation
