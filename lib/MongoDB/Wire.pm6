@@ -90,7 +90,7 @@ class Wire {
 
       # Catch all thrown exceptions and take out the server if needed
       CATCH {
-note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         $!socket.close-on-fail if $!socket.defined;
 
         # Fatal messages from the program elsewhere
@@ -108,7 +108,7 @@ note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         }
 
         # From BSON::Document
-        when X::BSON::Parse-document {
+        when X::BSON {
           error-message($server.name ~ ': ' ~ .message);
         }
 
@@ -185,7 +185,7 @@ note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         }
 
         # From BSON::Document
-        when X::BSON::Parse-document {
+        when X::BSON {
           error-message(.message);
         }
 
@@ -249,7 +249,7 @@ note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
         }
 
         # From BSON::Document
-        when X::BSON::Parse-document {
+        when X::BSON {
           error-message(.message);
         }
 
