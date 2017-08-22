@@ -34,6 +34,4 @@ throws-like { $ts.server-control.start-mongod('s1') },
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
-#info-message("Test $?FILE stop");
-done-testing();
-exit(0);
+done-testing;
