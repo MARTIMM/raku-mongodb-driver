@@ -173,13 +173,11 @@ ok 15 - updatedExisting returned False
 
 ## Notes
 
-* As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup.
+* As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without disturbing the clients databases.
 
-* Because all helper functions are torn out of the modules the support is now increased to 2.6 and above (see below). When using run-command() the documentation of MongoDB will tell for which version it applies to. 2.4 is not supported because not all of the wire protocol is supported anymore(when time comes, this might be added again depending on the outcome of discussions). Since version 2.6 it is possible to do insert, update and delete using the run-command() method and therefore those parts of the wire protocol are not needed anymore.
+* Because all helper functions are torn out of the modules, only the basic calls to access database server are available. This however will not cripple the driver because with the these few calls, one can do everything. The mongodb server support is now increased to 2.6 and above (see below) because parts of the wire protocol is also removed. Now, a few years later, I am pondering to bring them in again because it is still supported in all versions. The reason to remove them was that the run-command() in newer server versions is capable of what was possible in the wire protocol, plus returning the result of the operation which that particular part of the wire protocol did not do.
 
-* Tests are done only on newest mongod servers of versions 3.\*. 2.6 is never tested but needs to be done.
-
-* BSON has some issues which might interfere. this must be solved for bigger documents will hang in the decoding process.
+* Tests are done only on newest mongod servers of versions 3.\*. 2.6 is never tested but needs to be done. Also, testing on MS Windows must be done too. Necessary parts are already tested on AppVeyor however.
 
 ## Implementation track
 
@@ -189,35 +187,28 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 * There is another thing to mention about the helper functions. Providing them will always have a parsing impact while many of them are not always needed. Examples are list-databases(), get-prev-error() etc. Removing the helper functions will reduce the parsing time.
 
-This is done now and it has a tremendous effect on parsing time. When someone needs a particular action often, the user can make a method for him/her-self on a higher level then in this driver.
+*This is done now and it has a tremendous effect on parsing time. When someone needs a particular action often, the user can make a method for him/her-self on a higher level then in this driver. Thoughts are going to write some examples in the MongoDB::HL namespace.*
 
 * The use of hashes to send and receive mongodb documents is wrong. It is wrong because the key-value pairs in the hash often get a different order then is entered in the hash. Also mongodb needs the command pair at the front of the document. Another place where order matters are sub document queries. A sub document is matched as encoded documents.  So if the server has ```{ a: {b:1, c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since Perl 6 hashes randomizes its key order you never know what the order is.
 
-* Experiments are done using List of Pair to keep the order the same as entered. In the mean time thoughts about how to implement parallel encoding to and decoding from BSON byte strings have been past my mind. These thoughts are crystalized into a Document class in the BSON package which a) keeps the order, 2) have the same capabilities as Hashes, 3) can do encoding and decoding in parallel.
+* Experiments are done using List of Pair to keep the order the same as entered. In the mean time thoughts about how to implement parallel encoding to and decoding from BSON byte strings have been past my mind. These thoughts have been crystallized into a Document class in the BSON package which a) keeps the order, 2) have the same capabilities as Hashes, 3) can do encoding and decoding in parallel.
 
-This BSON::Document is now available in the BSON package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a BSON::Document. This will be converted internally into this type.
+*This BSON::Document is now available in the BSON package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a BSON::Document. This will be converted internally into this type.*
 
 * In the future, host/port arguments to Client must be replaced by using a URI in the format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```. See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/).
 
-This is done now. The Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The supported options are; *replicaSet*.
-
-I could not use the URI module because of small differences in how the mongodb url is defined.
+*This is done now. The Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The supported options are; *replicaSet*. I could not use the URI module because of small differences in how the mongodb url is defined.*
 
 * Authentication of users. Users can be administered in the database but authentication needs some encryption techniques which are not implemented yet. Might be me to write those using the modules from the perl5 driver which have been offered to use by David Golden.
 
+*Authentication using SCRAM-SHA is now implemented.*
+
 * The blogs [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116)
-and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read conserns. What I want to provide is the following server situations;
+and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read concerns. What I want to provide is the following server situations;
   * Single server. The simplest of situations.
   * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to with the risk that the particular server (a secondary server) is not up to date.
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
   * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations.
-
-## Api changes
-
-There has been a lot of changes in the API.
-* All methods which had underscores ('\_') are converted to dashed ones ('-').
-* Many helper functions are removed. In the documentation, some information must be added to create a database/collection helper methods as well as examples in the xt or doc directory. In HL (higher level) there will come some modules which can be used.
-* Connection module is gone. The Client module has come in its place.
 
 ## Documentation
 
