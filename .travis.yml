@@ -27,8 +27,9 @@ install:
 
 script:
 #    - PERL6LIB=src prove -v -r --exec=perl6 tests/
-    - prove -v --exec=perl6 t/
-    - prove -v --ignore-exit xt/Basic
+    - PERL6LIB=lib prove -v --exec=perl6 xt/001--meta.t
+    - PERL6LIB=lib prove -v --exec=perl6 t/
+    - PERL6LIB=lib prove -v --exec=perl6 xt/Basic || echo 'ignore failures'
 
 
 #cache:

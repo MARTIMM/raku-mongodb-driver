@@ -14,7 +14,7 @@
     "Unicode::PRECIS",
     "Terminal::ANSIColor"
   ],
-  "test-depends": [ ],
+  "test-depends": [ "Test::META" ],
   "build-depends": [ ],
   "tags": [ "NoSQL", "Database", "mongodb"],
   "description": "MongoDB driver",
