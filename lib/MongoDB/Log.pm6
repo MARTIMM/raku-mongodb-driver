@@ -434,4 +434,3 @@ sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
 add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::Error));
 add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :min-level(MongoDB::Info));
-=finish

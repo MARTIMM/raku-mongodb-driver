@@ -7,7 +7,6 @@ language: perl6
 
 perl6:
   - latest
-#  - '2017.05'
 
 before_install:
   - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 2.6.11
@@ -26,8 +25,10 @@ install:
 #git:
 #  depth: 5
 
-#script:
+script:
 #    - PERL6LIB=src prove -v -r --exec=perl6 tests/
+    - prove -v --exec=perl6 t/
+    - prove -v --ignore-exit xt/Basic
 
 
 #cache:

@@ -1,42 +1,16 @@
-use v6.c;
+use v6;
 use Test;
 use MongoDB;
 
-use Lumberjack;
+drop-send-to('mongodb');
+#drop-send-to('screen');
+modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 
-#Lumberjack.dispatchers.append: Lumberjack::Dispatcher::Console.new(:colours);
+add-send-to( 'mongodb', :pipe('sort >> /tmp/010-test.log'), :min-level(MongoDB::Info));
 
-
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
-set-exception-processing(:!checking);
-
+info-message("Test $?FILE start");
 trace-message("trace message 1");
 
-
-class A is X::MongoDB {
-
-  method tm ($tm) {
-    fatal-message($tm);
-  }
-}
-
-class B does Lumberjack::Logger {
-
-  method tm ($tm) {
-    self.log-debug($tm);
-    self.log-error($tm);
-  }
-}
-
-
-
-
-my A $a .= new;
-$a.tm('trace message 2');
-
-my B $b .= new;
-$b.log-level = Lumberjack::Debug;
-$b.tm('trace message 2');
+ok '/tmp/010-test.log'.IO ~~ :f, 'Logfile created';
 
 done-testing;
