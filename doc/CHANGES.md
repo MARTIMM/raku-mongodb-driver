@@ -2,6 +2,8 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.38.1
+  * log fixes
 * 0.38.0
   * New config generation in Test-support to cope with multiple mongod server versions. also mongos can now be defined
   * Credential taken from Client to Uri object.
