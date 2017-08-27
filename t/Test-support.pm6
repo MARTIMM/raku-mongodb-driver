@@ -19,16 +19,17 @@ use MongoDB::Client;
 class Test-support {
 
   # N servers needed for the tests
-  has Int $!nbr-of-servers;
+#  has Int $!nbr-of-servers;
   has Range $.server-range;
 
   has MongoDB::Server::Control $.server-control;
 
-  submethod BUILD ( ) {
+  submethod BUILD ( Hash :$config-extension ) {
 
     # Init here because of need in BUILD later
-    $!nbr-of-servers = 3;
-    $!server-range = (^$!nbr-of-servers + 1);
+#    $!nbr-of-servers //= $nbr-servers;
+#    die "No servers in sandbox";
+#    $!server-range = (^$!nbr-of-servers + 1);
 
     #--------------------------------------------------------------------------
     # If we are under the scrutany of TRAVIS then adjust the path where to find the
@@ -39,41 +40,36 @@ class Test-support {
 
     #--------------------------------------------------------------------------
     # Check directory Sandbox and start config file
-    #
     unless 'Sandbox'.IO ~~ :d {
 
+      die "No server specific config extensions" unless ?$config-extension;
+
       mkdir( 'Sandbox', 0o700);
-      my Int $start-portnbr = 65010;
+#      my Int $start-portnbr = 65010;
       my Str $config-text = Q:qq:to/EOCONFIG/;
 
       # Configuration file for the servers in the Sandbox
       # Settings are specifically for test situations and not for deployment
       # situations!
-      [ account ]
-        user = 'test_user'
-        pwd = 'T3st-Us3r'
-
       [ binaries ]
-        mongod = '$*CWD/Travis-ci/2.6.11/mongod'
-        mongos = '$*CWD/Travis-ci/2.6.11/mongos'
+        mongod = '$*CWD/Travis-ci/3.2.9/mongod'
+        mongos = '$*CWD/Travis-ci/3.2.9/mongos'
 
       [ mongod ]
         nojournal = true
         fork = true
         smallfiles = true
         oplogSize = 128
-        #ipv6 = true
-        #quiet = true
-        #verbose = '=command=v =nework=v'
         verbose = 'vv'
         logappend = true
 
       EOCONFIG
 
       #------------------------------------------------------------------------
+#`{{
       my Hash $server-setup = {
         s1 => {
-          server-version => '3.2.9',
+#         server-version => '3.2.9',
           replicas => {
             replicate1 => 'first_replicate',
             replicate2 => 'second_replicate',
@@ -85,13 +81,13 @@ class Test-support {
           },
         },
         s2 => {
-          server-version => '3.2.9',
+#          server-version => '3.2.9',
           replicas => {
             replicate1 => 'first_replicate',
           },
         },
         s3 => {
-          server-version => '3.2.9',
+#          server-version => '3.2.9',
           replicas => {
             replicate1 => 'first_replicate',
           },
@@ -105,7 +101,7 @@ class Test-support {
         mkdir( $server-dir, 0o700) unless $server-dir.IO ~~ :d;
         mkdir( "$server-dir/m.data", 0o700) unless "$server-dir/m.data".IO ~~ :d;
 
-        my Int $port-number = self!find-next-free-port($start-portnbr);
+        my Int $port-number = self.find-next-free-port($start-portnbr);
         $start-portnbr = $port-number + 1;
 
 #        # Save portnumber for later tests
@@ -158,10 +154,20 @@ class Test-support {
           }
         } # if $server-setup{$skey}:exists
       } # for @$!server-range
+}}
+
+      for $config-extension.keys -> $server {
+???        my Str $server-dir = "$*CWD/Sandbox/Server$server-number";
+        mkdir( $server-dir, 0o700) unless $server-dir.IO ~~ :d;
+        mkdir( "$server-dir/m.data", 0o700) unless "$server-dir/m.data".IO ~~ :d;
+      }
 
       my Str $file = 'Sandbox/config.toml';
       spurt( $file, $config-text);
     } # unless 'Sandbox'.IO ~~ :d
+
+    # Get the nbr dirs in Sandbox (substr 2 for '.' and '..'
+    my $!server-range = ^(dir('Sandbox').grep({.IO.d}).elems - 2 + 1);
 
 #    $!server-control .= new(:file<Sandbox/config.toml>);
     $!server-control .= new(
@@ -173,7 +179,7 @@ class Test-support {
 
   #----------------------------------------------------------------------------
   # Get a connection.
-  method get-connection ( Int :$server = 1 --> MongoDB::Client ) {
+  method get-connection ( Int:D :$server! --> MongoDB::Client ) {
 
     $server = 1 unless $server ~~ any $!server-range;
 
@@ -228,7 +234,7 @@ class Test-support {
     have the option of specifying a custom range anywhere within 1025-365535.
   =end comment
 
-  method !find-next-free-port ( Int $start-portnbr --> Int ) {
+  method find-next-free-port ( Int $start-portnbr --> Int ) {
 
     # Search from port 65000 until the last of possible port numbers for a free
     # port. this will be configured in the mongodb config file. At least one
