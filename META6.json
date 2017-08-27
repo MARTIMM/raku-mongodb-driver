@@ -12,7 +12,8 @@
     "OpenSSL",
     "URI::Escape",
     "Unicode::PRECIS",
-    "Terminal::ANSIColor"
+    "Terminal::ANSIColor",
+    "Log::Async"
   ],
   "test-depends": [ "Test::META" ],
   "build-depends": [ ],
@@ -42,5 +43,5 @@
     "MongoDB":                          "lib/MongoDB.pm6"
   },
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.38.3"
+  "version": "0.38.3.1"
 }

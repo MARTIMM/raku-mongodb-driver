@@ -1,96 +1,7 @@
 use v6;
 
 use Terminal::ANSIColor;
-
-# Code taken from Log::Async module of Brian Duggan. At 2017-06 there is a
-# serious failure with new perl6 version; In the mean time the problem is fixed
-# but I think I like the slimmed down version of it
-
-#use Log::Async;
-#`{{}}
-
-enum Loglevels <<:TRACE(1) DEBUG INFO WARNING ERROR FATAL>>;
-
-class Log::Async {
-  has $.source = Supplier.new;
-  has Tap @.taps;
-  has Supply $.messages;
-  has $.contextualizer is rw;
-
-  my Log::Async $instance;
-
-  method instance ( --> Log::Async ) {
-    unless ?$instance {
-      $instance = self.bless;
-      #$instance.send-to($*OUT);
-    }
-    $instance;
-  }
-
-  method close-taps {
-    .close for @.taps;
-  }
-
-  method add-tap ( Code $c, :$level, :$msg --> Tap ) {
-    $!messages //= self.source.Supply;
-    my $supply = $!messages;
-    $supply = $supply.grep( { $^m<level> ~~ $level }) with $level;
-    $supply = $supply.grep( { $^m<msg> ~~ $msg }) with $msg;
-    my $tap = $supply.act($c);
-    @.taps.push: $tap;
-
-    $tap;
-  }
-
-  method remove-tap ( Tap $t ) {
-    my ($i) = @.taps.grep( { $_ eq $t }, :k );
-    $t.close;
-    @.taps.splice( $i, 1, ());
-  }
-
-#`{{
-  multi method send-to( IO::Handle $fh, Code :$formatter is copy, |args --> Tap) {
-    $formatter //= -> $m, :$fh {
-      $fh.say: "{ $m<when> } ({$m<THREAD>.id}) { $m<level>.lc }: { $m<msg> }",
-    }
-    my $fmt = $formatter but role { method is-hidden-from-backtrace { True } };
-    self.add-tap: -> $m { $fmt($m,:$fh) }, |args
-  }
-}}
-
-  multi method send-to ( Str $path, Code :$formatter, |args --> Tap ) {
-    my $fh = open( $path, :a) or die "error opening $path";
-    self.send-to( $fh, :$formatter, |args);
-  }
-
-  multi method send-to ( IO::Path $path, Code :$formatter, |args --> Tap ) {
-    my $fh = $path.open(:a) or die "error opening $path";
-    self.send-to( $fh, :$formatter, |args);
-  }
-
-#`{{
-  method log(
-    Str :$msg,
-    Loglevels:D :$level,
-    CallFrame :$frame = callframe(1),
-    DateTime :$when = DateTime.now
-  ) {
-    say $msg;
-  }
-}}
-
-#`{{
-  method done ( ) {
-    start { sleep 0.1; $.source.done };
-    $.source.Supply.wait;
-  }
-}}
-}
-
-#sub set-logger( $new ) is export { Log::Async.set-instance($new); }
-#my Log::Async $logger .= instance;
-#sub logger is export {$logger}
-#}}
+use Log::Async;
 
 #------------------------------------------------------------------------------
 package MongoDB:auth<github:MARTIMM> {
@@ -278,8 +189,9 @@ package MongoDB:auth<github:MARTIMM> {
 }
 
 #------------------------------------------------------------------------------
-my MongoDB::Log $mdb-logger .= instance;
-sub logger is export {$mdb-logger}
+#my MongoDB::Log $mdb-logger .= instance;
+#sub logger is export {$mdb-logger}
+set-logger(MongoDB::Log.new());
 
 #------------------------------------------------------------------------------
 class X::MongoDB is Exception {
@@ -332,6 +244,7 @@ sub search-callframe ( $type --> CallFrame ) {
   return $cf;
 }
 
+#------------------------------------------------------------------------------
 # log code with stack frames
 my Code $log-code-cf = sub (
   Str:D :$msg, Any:D :$level,
@@ -362,6 +275,7 @@ my Code $log-code-cf = sub (
   );
 }
 
+#------------------------------------------------------------------------------
 # log code without stack frames
 my Code $log-code = sub (
   Str:D :$msg, Any:D :$level,
@@ -379,26 +293,32 @@ my Code $log-code = sub (
   );
 }
 
+#------------------------------------------------------------------------------
 sub trace-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Trace), :code($log-code));
 }
 
+#------------------------------------------------------------------------------
 sub debug-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Debug), :code($log-code));
 }
 
+#------------------------------------------------------------------------------
 sub info-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Info), :code($log-code));
 }
 
+#------------------------------------------------------------------------------
 sub warn-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Warn), :code($log-code-cf));
 }
 
+#------------------------------------------------------------------------------
 sub error-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Error), :code($log-code-cf));
 }
 
+#------------------------------------------------------------------------------
 sub fatal-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Fatal), :code($log-code-cf));
   sleep 0.5;
