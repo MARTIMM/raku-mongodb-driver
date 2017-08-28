@@ -16,39 +16,19 @@ info-message("Test $?FILE start");
 my Str $server-dir = "$*CWD/Sandbox/Server";
 my Str $server-version = '3.2.9';
 my Int $server-port = MongoDB::Test-support.find-next-free-port(65010);
+# next port = .find-next-free-port($server-port + 1);
 
 my MongoDB::Test-support $ts .= new(
-  :config-extension(
-#`{{    # Configuration for Server 1
-    [ mongod.s1 ]
-      logpath = "{$server-dir}1/m.log"
-      pidfilepath = "{$server-dir}1/m.pid"
-      dbpath = "{$server-dir}1/m.data"
-      port = $server-port
-
-    [ mongod.s1.replicate1 ]
-      replSet = 'first_replicate'
-
-    [ mongod.s1.replicate2 ]
-      replSet = 'second_replicate'
-
-    [ mongod.s1.authenticate ]
-      auth = true
-
-    [ account.s1 ]
-      user = 'Dondersteen'
-      pwd = 'w@tD8jeDan'
-    EOTOML
-}}
-    s1 => {
-      logpath => "{$server-dir}1/m.log",
-      pidfilepath => "{$server-dir}1/m.pid",
-      dbpath => "{$server-dir}1/m.data",
-      port => $server-port,
-    },
+  :config-extension( %(
+      s1 => {
+        logpath => "{$server-dir}1/m.log",
+        pidfilepath => "{$server-dir}1/m.pid",
+        dbpath => "{$server-dir}1/m.data",
+        port => $server-port,
+        :$server-version,
+      },
 #`{{
     s1 => {
-#         server-version => '3.2.9',
       replicas => {
         replicate1 => 'first_replicate',
         replicate2 => 'second_replicate',
@@ -72,27 +52,19 @@ my MongoDB::Test-support $ts .= new(
       },
     },
 }}
+    )
   )
 );
 
 
 
 #-------------------------------------------------------------------------------
-for $ts.server-range -> $server-number {
-  try {
-    ok $ts.server-control.start-mongod("s$server-number"),
-       "Server $server-number started";
-    CATCH {
-      when X::MongoDB {
-        like .message, /:s exited unsuccessfully /,
-             "Server 's$server-number' already started";
-      }
-    }
-  }
-}
+$ts.server-control.start-mongod('s1');
 
-throws-like { $ts.server-control.start-mongod('s1') },
-            X::MongoDB, :message(/:s exited unsuccessfully/);
+throws-like
+  { $ts.server-control.start-mongod('s1') },
+  X::MongoDB, 'Failed to start server 2nd time',
+  :message(/:s exited unsuccessfully/);
 
 #-------------------------------------------------------------------------------
 # Cleanup and close

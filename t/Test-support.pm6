@@ -20,7 +20,7 @@ class Test-support {
 
   # N servers needed for the tests
 #  has Int $!nbr-of-servers;
-  has Range $.server-range;
+#  has Range $.server-range;
 
   has MongoDB::Server::Control $.server-control;
 
@@ -156,18 +156,66 @@ class Test-support {
       } # for @$!server-range
 }}
 
-      for $config-extension.keys -> $server {
-???        my Str $server-dir = "$*CWD/Sandbox/Server$server-number";
+      for $config-extension.keys -> $skey {
+        my Str $server-dir = "$*CWD/Sandbox/Server-$skey";
         mkdir( $server-dir, 0o700) unless $server-dir.IO ~~ :d;
         mkdir( "$server-dir/m.data", 0o700) unless "$server-dir/m.data".IO ~~ :d;
-      }
+
+        my Int $port-number = $config-extension{$skey}<port>;
+
+        $config-text ~= Q:qq:to/EOCONFIG/;
+
+        # Configuration for Server $skey
+        [ mongod.$skey ]
+          logpath = '$server-dir/m.log'
+          pidfilepath = '$server-dir/m.pid'
+          dbpath = '$server-dir/m.data'
+          port = $port-number
+        EOCONFIG
+
+
+        for $config-extension{$skey}<replicas>.keys -> $rkey {
+          $config-text ~= Q:qq:to/EOCONFIG/;
+
+          [ mongod.$skey.$rkey ]
+            replSet = '$config-extension{$skey}<replicas>{$rkey}'
+          EOCONFIG
+        }
+
+        if $config-extension{$skey}<authenticate> {
+          $config-text ~= Q:qq:to/EOCONFIG/;
+
+          [ mongod.$skey.authenticate ]
+            auth = true
+          EOCONFIG
+        } # if
+
+        if $config-extension{$skey}<account>:exists {
+          $config-text ~= Q:qq:to/EOCONFIG/;
+
+          [ account.$skey ]
+            user = '$config-extension{$skey}<account><user>'
+            pwd = '$config-extension{$skey}<account><pwd>'
+          EOCONFIG
+        }
+
+        if $config-extension{$skey}<server-version> {
+          $config-text ~= Q:qq:to/EOCONFIG/;
+
+          [ binaries.$skey ]
+            mongod = '$*CWD/Travis-ci/{$config-extension{$skey}<server-version>}/mongod'
+            mongos = '$*CWD/Travis-ci/{$config-extension{$skey}<server-version>}/mongos'
+          EOCONFIG
+        }
+      } # for @$!server-range
 
       my Str $file = 'Sandbox/config.toml';
       spurt( $file, $config-text);
     } # unless 'Sandbox'.IO ~~ :d
 
-    # Get the nbr dirs in Sandbox (substr 2 for '.' and '..'
-    my $!server-range = ^(dir('Sandbox').grep({.IO.d}).elems - 2 + 1);
+#    # Get the nbr dirs in Sandbox (substr 2 for '.' and '..'
+#    $!server-range = ^(dir('Sandbox').grep(/:s ^^ Server\-/).elems + 1);
+#note "\n", dir('Sandbox').grep({.IO.d});
 
 #    $!server-control .= new(:file<Sandbox/config.toml>);
     $!server-control .= new(
@@ -179,11 +227,9 @@ class Test-support {
 
   #----------------------------------------------------------------------------
   # Get a connection.
-  method get-connection ( Int:D :$server! --> MongoDB::Client ) {
+  method get-connection ( Str:D :$skey! --> MongoDB::Client ) {
 
-    $server = 1 unless $server ~~ any $!server-range;
-
-    my Int $port-number = $!server-control.get-port-number("s$server");
+    my Int $port-number = $!server-control.get-port-number($skey);
     MongoDB::Client.new(:uri("mongodb://localhost:$port-number"));
   }
 
