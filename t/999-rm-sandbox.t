@@ -24,7 +24,7 @@ my MongoDB::Test-support $ts .= new;
       }
     }
   }
-}
+
 
 throws-like { $ts.server-control.stop-mongod('s1') },
             X::MongoDB, :message(/:s exited unsuccessfully/);

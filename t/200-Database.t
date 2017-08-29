@@ -19,7 +19,7 @@ my MongoDB::Test-support $ts .= new;
 my BSON::Document $req;
 my BSON::Document $doc;
 
-my MongoDB::Client $client1 = $ts.get-connection(:1server);
+my MongoDB::Client $client1 = $ts.get-connection(:server-key<s1>);
 my MongoDB::Database $database1 = $client1.database('test');
 my MongoDB::Database $db-admin1 = $client1.database('admin');
 

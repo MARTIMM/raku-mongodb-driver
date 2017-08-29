@@ -14,7 +14,7 @@ use BSON::ObjectId;
 #set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
-my MongoDB::Client $client = get-connection();
+my MongoDB::Client $client = get-connection(:server-key<s1>);
 my MongoDB::Database $database = $client.database('test');
 
 my MongoDB::Collection $collection = $database.collection('bulk');
