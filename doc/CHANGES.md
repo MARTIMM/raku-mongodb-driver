@@ -4,6 +4,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
 * 0.38.3
   * log fixes
+  * some fixes in basic tests
 * 0.38.2
   * changed test setup
   * changed BSON exceptions
