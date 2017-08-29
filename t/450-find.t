@@ -19,7 +19,7 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection;
+my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;

@@ -82,7 +82,7 @@ my BSON::Document $user-credentials;
 
 sub restart-to-authenticate( ) {
 
-  my MongoDB::Client $client = $ts.get-connection(:server(1));
+  my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
   my MongoDB::Database $db-admin = $client.database('admin');
   my MongoDB::Collection $u = $db-admin.collection('system.users');
   my MongoDB::Cursor $uc = $u.find( :criteria( user => 'Dondersteen',));
@@ -95,7 +95,7 @@ sub restart-to-authenticate( ) {
      "Server 1 in auth mode";
 
   # Try it again and see that we have no rights
-  $client = $ts.get-connection(:server(1));
+  $client = $ts.get-connection(:server-key<s1>);
   $db-admin = $client.database('admin');
   $u = $db-admin.collection('system.users');
   $uc = $u.find( :criteria( user => 'Dondersteen',));
@@ -131,11 +131,11 @@ class MyClientMDB {
   has MongoDB::Client $!client;
   has MongoDB::Database $!database;
   has Int $!conversation-id;
-  
+
   #-----------------------------------------------------------------------------
   submethod BUILD ( ) {
 
-    $!client = $ts.get-connection(:server(1));
+    $!client = $ts.get-connection(:server-key<s1>);
     $!database = $!client.database('test');
   }
 
@@ -205,7 +205,7 @@ class MyClientMDB {
 
   #-----------------------------------------------------------------------------
   method clean-up ( ) {
-    
+
     # Some extra chit-chat
     my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
         saslContinue => 1,

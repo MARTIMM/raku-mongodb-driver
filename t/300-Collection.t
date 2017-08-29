@@ -16,7 +16,7 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection;
+my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
 my MongoDB::Database $database = $client.database('test');
 
 # Create collection and insert data in it!

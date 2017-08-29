@@ -22,6 +22,8 @@ There are several types of tests according to the wikipedia article [software te
 
 * **Software performance testing**. These are benchmark programs of parts of the system to be compared with later tests. This is not part of the tests to install or tests on the Travis and AppVeyor systems.
 
+* **Security testing**. Sometime later there might come some tests to see if the driver is hack able. At this moment I'm quite a noob in this. The International Organization for Standardization (ISO) defines this as a "type of testing conducted to evaluate the degree to which a test item, and associated data and information, are protected so that unauthorised persons or systems cannot use, read or modify them, and authorized persons or systems are not denied access to them."
+
 ### Normal day to day tests
 
 * Creating a database and collection.

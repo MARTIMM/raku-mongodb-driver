@@ -16,7 +16,7 @@ class Header {
   my Int $request-id = 0;
 
   #-----------------------------------------------------------------------------
-  method !encode-message-header ( Int $buffer-size, WireOpcode $op-code --> List ) {
+  method encode-message-header ( Int $buffer-size, WireOpcode $op-code --> List ) {
 
     my Int $used-request-id = $request-id++;
 
@@ -145,7 +145,7 @@ class Header {
 
     # encode message header and get used request id
     ( my Buf $message-header, my Int $u-request-id) =
-      self!encode-message-header( $query-buffer.elems, OP-QUERY);
+      self.encode-message-header( $query-buffer.elems, OP-QUERY);
 
     # return total encoded buffer with request id
     return ( $message-header ~ $query-buffer, $u-request-id);
@@ -189,7 +189,7 @@ class Header {
 
     # encode message header and get used request id
     ( my Buf $message-header, my Int $u-request-id) =
-      self!encode-message-header( $get-more-buffer.elems, OP-GET-MORE);
+      self.encode-message-header( $get-more-buffer.elems, OP-GET-MORE);
 
     # return total encoded buffer with request id
     return ( $message-header ~ $get-more-buffer, $u-request-id);
@@ -222,7 +222,7 @@ class Header {
     # standard message header
     #
     ( my Buf $encoded-kill-cursors, my Int $u-request-id) =
-      self!encode-message-header( $kill-cursors-buffer.elems, OP-KILL-CURSORS);
+      self.encode-message-header( $kill-cursors-buffer.elems, OP-KILL-CURSORS);
 
     return ( $encoded-kill-cursors ~ $kill-cursors-buffer, $u-request-id);
   }

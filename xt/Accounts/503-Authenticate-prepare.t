@@ -15,7 +15,7 @@ info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
-my MongoDB::Client $client = $ts.get-connection(:server(1));
+my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $doc;
@@ -54,7 +54,7 @@ $database.run-command: (dropAllUsersFromDatabase => 1,);
 #
 subtest {
   $users.set-pw-security(
-    :min-un-length(10), 
+    :min-un-length(10),
     :min-pw-length(8),
     :pw_attribs(C-PW-OTHER-CHARS)
 #    :pw_attribs(C-PW-LOWERCASE)

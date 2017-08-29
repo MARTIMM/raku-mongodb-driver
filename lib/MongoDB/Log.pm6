@@ -1,98 +1,9 @@
 use v6;
 
 use Terminal::ANSIColor;
+use Log::Async;
 
-# Code taken from Log::Async module of Brian Duggan. At 2017-06 there is a
-# serious failure with new perl6 version; In the mean time the problem is fixed
-# but I think I like the slimmed down version of it
-
-#use Log::Async;
-#`{{}}
-
-enum Loglevels <<:TRACE(1) DEBUG INFO WARNING ERROR FATAL>>;
-
-class Log::Async {
-  has $.source = Supplier.new;
-  has Tap @.taps;
-  has Supply $.messages;
-  has $.contextualizer is rw;
-
-  my Log::Async $instance;
-
-  method instance ( --> Log::Async ) {
-    unless ?$instance {
-      $instance = self.bless;
-      #$instance.send-to($*OUT);
-    }
-    $instance;
-  }
-
-  method close-taps {
-    .close for @.taps;
-  }
-
-  method add-tap ( Code $c, :$level, :$msg --> Tap ) {
-    $!messages //= self.source.Supply;
-    my $supply = $!messages;
-    $supply = $supply.grep( { $^m<level> ~~ $level }) with $level;
-    $supply = $supply.grep( { $^m<msg> ~~ $msg }) with $msg;
-    my $tap = $supply.act($c);
-    @.taps.push: $tap;
-
-    $tap;
-  }
-
-  method remove-tap ( Tap $t ) {
-    my ($i) = @.taps.grep( { $_ eq $t }, :k );
-    $t.close;
-    @.taps.splice($i,1,());
-  }
-
-#`{{
-  multi method send-to( IO::Handle $fh, Code :$formatter is copy, |args --> Tap) {
-    $formatter //= -> $m, :$fh {
-      $fh.say: "{ $m<when> } ({$m<THREAD>.id}) { $m<level>.lc }: { $m<msg> }",
-    }
-    my $fmt = $formatter but role { method is-hidden-from-backtrace { True } };
-    self.add-tap: -> $m { $fmt($m,:$fh) }, |args
-  }
-}}
-
-  multi method send-to ( Str $path, Code :$formatter, |args --> Tap ) {
-    my $fh = open($path,:a) or die "error opening $path";
-    self.send-to($fh, :$formatter, |args);
-  }
-
-  multi method send-to ( IO::Path $path, Code :$formatter,  |args --> Tap ) {
-    my $fh = $path.open(:a) or die "error opening $path";
-    self.send-to( $fh, :$formatter, |args);
-  }
-
-#`{{
-  method log(
-    Str :$msg,
-    Loglevels:D :$level,
-    CallFrame :$frame = callframe(1),
-    DateTime :$when = DateTime.now
-  ) {
-    say $msg;
-  }
-}}
-
-#`{{
-  method done ( ) {
-    start { sleep 0.1; $.source.done };
-    $.source.Supply.wait;
-  }
-}}
-}
-
-#sub set-logger( $new ) is export { Log::Async.set-instance($new); }
-#my Log::Async $logger .= instance;
-#sub logger is export {$logger}
-#}}
-
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 package MongoDB:auth<github:MARTIMM> {
 
   enum MdbLoglevels << :Trace(TRACE) :Debug(DEBUG) :Info(INFO)
@@ -101,24 +12,26 @@ package MongoDB:auth<github:MARTIMM> {
 
 #  enum Loglevels <<:Trace(1) Debug Info Warn Error Fatal>>;
 
-  #-------------------------------------------------------------------------------
+  enum SendSetup < LOGOUTPUT LOGLEVEL LOGCODE >;
+
+  #----------------------------------------------------------------------------
   class Log is Log::Async {
 
     has Hash $!send-to-setup;
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     submethod BUILD ( ) {
 
       $!send-to-setup = {};
     }
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # add or overwrite a channel
     method add-send-to (
       Str:D $key, MdbLoglevels :$min-level = Info, Code :$code, :$to, Str :$pipe
     ) {
 
-      my $output = $*ERR;
+      my $output;# = $*ERR;
       if ? $pipe {
         my Proc $p = shell $pipe, :in;
         $output = $p.in;
@@ -135,17 +48,17 @@ package MongoDB:auth<github:MARTIMM> {
 
       # check if I/O channel is other than stdout or stderr. If so, close them.
       if $!send-to-setup{$key}:exists
-         and !($!send-to-setup{$key}[0] === $*OUT)
-         and !($!send-to-setup{$key}[0] === $*ERR) {
+         and !($!send-to-setup{$key}[LOGOUTPUT] === $*OUT)
+         and !($!send-to-setup{$key}[LOGOUTPUT] === $*ERR) {
 
-        $!send-to-setup{$key}[0].close;
+        $!send-to-setup{$key}[LOGOUTPUT].close;
       }
 
       $!send-to-setup{$key} = [ $output, (* >= $min-level), $code];
       self!start-send-to;
     }
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # modify a channel
     method modify-send-to (
       Str $key, :$level, Code :$code,
@@ -168,62 +81,81 @@ package MongoDB:auth<github:MARTIMM> {
       my Array $psto = $!send-to-setup{$key} // [];
 
       # check if I/O channel is other than stdout or stderr. If so, close them.
-      if ?$psto[0] and !($psto[0] === $*OUT) and !($psto[0] === $*ERR) {
-        $psto[0].close;
+      if ?$psto[LOGOUTPUT]
+         and !($psto[LOGOUTPUT] === $*OUT)
+         and !($psto[LOGOUTPUT] === $*ERR) {
+        $psto[LOGOUTPUT].close;
       }
 
-      $psto[0] = $to if ? $to;
-      $psto[1] = (* >= $level) if ? $level;
-      $psto[2] = $code if ? $code;
+      $psto[LOGOUTPUT] = $to if ? $to;
+      $psto[LOGLEVEL] = (* >= $level) if ? $level;
+      $psto[LOGCODE] = $code if ? $code;
       $!send-to-setup{$key} = $psto;
 
       self!start-send-to;
     }
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # drop channel
     method drop-send-to ( Str:D $key ) {
 
-      $!send-to-setup{$key}:exists and $!send-to-setup{$key}:delete;
+      if $!send-to-setup{$key}:exists {
+        my Array $psto = $!send-to-setup{$key}:delete;
+
+        # check if I/O channel is other than stdout or stderr. If so, close them.
+        if ?$psto[LOGOUTPUT]
+        and !($psto[LOGOUTPUT] === $*OUT)
+        and !($psto[LOGOUTPUT] === $*ERR) {
+          $psto[LOGOUTPUT].close;
+        }
+      }
+
       self!start-send-to;
     }
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # drop all channel
     method drop-all-send-to ( ) {
 
       self.close-taps;
+
+      for $!send-to-setup.keys -> $key {
+        self.drop-send-to($key);
+      }
+
       $!send-to-setup = {};
     }
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # start channels
     method !start-send-to ( ) {
 
       self.close-taps;
       for $!send-to-setup.keys -> $k {
-        if ? $!send-to-setup{$k}[2] {
+        if ? $!send-to-setup{$k}[LOGCODE] {
           logger.send-to:
-            $!send-to-setup{$k}[0],
-            :code($!send-to-setup{$k}[2]),
-            :level($!send-to-setup{$k}[1])
+            $!send-to-setup{$k}[LOGOUTPUT],
+            :code($!send-to-setup{$k}[LOGCODE]),
+            :level($!send-to-setup{$k}[LOGLEVEL])
           ;
         }
 
         else {
-          logger.send-to: $!send-to-setup{$k}[0], :level($!send-to-setup{$k}[1]);
+          logger.send-to:
+            $!send-to-setup{$k}[LOGOUTPUT],
+            :level($!send-to-setup{$k}[LOGLEVEL]);
         }
       }
     }
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # send-to method
     multi method send-to ( IO::Handle:D $fh, Code:D :$code!, |args ) {
 
       logger.add-tap: -> $m { $m<fh> = $fh; $code($m); }, |args;
     }
 
-    #-----------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # overload log method
     method log (
       Str:D :$msg, Loglevels:D :$level,
@@ -256,11 +188,12 @@ package MongoDB:auth<github:MARTIMM> {
   #logger.close-taps;
 }
 
-#-------------------------------------------------------------------------------
-my MongoDB::Log $mdb-logger .= instance;
-sub logger is export {$mdb-logger}
+#------------------------------------------------------------------------------
+#my MongoDB::Log $mdb-logger .= instance;
+#sub logger is export {$mdb-logger}
+set-logger(MongoDB::Log.new());
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 class X::MongoDB is Exception {
   has Str $.message;            # Error text and error code are data mostly
   has Str $.method;             # Method or routine name
@@ -268,7 +201,7 @@ class X::MongoDB is Exception {
   has Str $.file;               # File in which that happened
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # preparations of code to be provided to log()
 sub search-callframe ( $type --> CallFrame ) {
 
@@ -311,6 +244,7 @@ sub search-callframe ( $type --> CallFrame ) {
   return $cf;
 }
 
+#------------------------------------------------------------------------------
 # log code with stack frames
 my Code $log-code-cf = sub (
   Str:D :$msg, Any:D :$level,
@@ -341,6 +275,7 @@ my Code $log-code-cf = sub (
   );
 }
 
+#------------------------------------------------------------------------------
 # log code without stack frames
 my Code $log-code = sub (
   Str:D :$msg, Any:D :$level,
@@ -358,33 +293,39 @@ my Code $log-code = sub (
   );
 }
 
+#------------------------------------------------------------------------------
 sub trace-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Trace), :code($log-code));
 }
 
+#------------------------------------------------------------------------------
 sub debug-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Debug), :code($log-code));
 }
 
+#------------------------------------------------------------------------------
 sub info-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Info), :code($log-code));
 }
 
+#------------------------------------------------------------------------------
 sub warn-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Warn), :code($log-code-cf));
 }
 
+#------------------------------------------------------------------------------
 sub error-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Error), :code($log-code-cf));
 }
 
+#------------------------------------------------------------------------------
 sub fatal-message ( Str $msg ) is export {
   logger.log( :$msg, :level(MongoDB::Fatal), :code($log-code-cf));
   sleep 0.5;
   die X::MongoDB.new( :message($msg));
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # preparations of code to be provided to send-to()
 # Loglevels enum counts from 1 so 0 has placeholder PH
 my Array $sv-lvls = [< PH0 T D I W E F>];
@@ -423,15 +364,14 @@ my Code $code = -> $m {
   $fh.print: "\n";
 };
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 sub add-send-to ( |c ) is export { logger.add-send-to( |c, :$code); }
 sub modify-send-to ( |c ) is export { logger.modify-send-to( |c, :$code); }
 sub drop-send-to ( |c ) is export { logger.drop-send-to(|c); }
 sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Activate some channels. Display messages only on error and fatal to the screen
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
-add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::Error));
-add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :min-level(MongoDB::Info));
-=finish
+add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::MdbLoglevels::Error));
+add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :min-level(MongoDB::MdbLoglevels::Info));

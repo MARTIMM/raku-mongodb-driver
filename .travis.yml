@@ -1,13 +1,12 @@
 branches:
   only:
     - master
-    - develop
+#    - develop
 
 language: perl6
 
 perl6:
   - latest
-#  - '2017.05'
 
 before_install:
   - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 2.6.11
@@ -26,8 +25,11 @@ install:
 #git:
 #  depth: 5
 
-#script:
+script:
 #    - PERL6LIB=src prove -v -r --exec=perl6 tests/
+    - PERL6LIB=lib prove -v --exec=perl6 xt/001-meta.t
+    - PERL6LIB=lib prove -v --exec=perl6 t/
+    - PERL6LIB=lib prove -v --exec=perl6 xt/Basic || echo 'ignore failures'
 
 
 #cache:

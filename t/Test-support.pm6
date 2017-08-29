@@ -108,9 +108,6 @@ class Test-support {
         my Int $port-number = self!find-next-free-port($start-portnbr);
         $start-portnbr = $port-number + 1;
 
-#        # Save portnumber for later tests
-#        spurt "$server-dir/port-number", $port-number;
-
         $config-text ~= Q:qq:to/EOCONFIG/;
 
         # Configuration for Server $server-number
@@ -163,21 +160,17 @@ class Test-support {
       spurt( $file, $config-text);
     } # unless 'Sandbox'.IO ~~ :d
 
-#    $!server-control .= new(:file<Sandbox/config.toml>);
     $!server-control .= new(
       :locations(['Sandbox',]),
       :config-name<config.toml>
     );
-#note "SC: ", $!server-control.perl, ", Def: ", $!server-control.defined;
   }
 
   #----------------------------------------------------------------------------
   # Get a connection.
-  method get-connection ( Int :$server = 1 --> MongoDB::Client ) {
+  method get-connection ( Str:D :$server-key! --> MongoDB::Client ) {
 
-    $server = 1 unless $server ~~ any $!server-range;
-
-    my Int $port-number = $!server-control.get-port-number("s$server");
+    my Int $port-number = $!server-control.get-port-number("$server-key");
     MongoDB::Client.new(:uri("mongodb://localhost:$port-number"));
   }
 
