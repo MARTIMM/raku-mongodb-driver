@@ -16,7 +16,7 @@ info-message("Test $?FILE start");
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
 try {
-  $ts.server-control.start-mongod('s1');
+  ok $ts.server-control.start-mongod('s1'), "Server s1 started";
   CATCH {
     when X::MongoDB {
       like .message, /:s exited unsuccessfully/, "Server 's1' already started";
