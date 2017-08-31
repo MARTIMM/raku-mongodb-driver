@@ -4,7 +4,6 @@ use v6;
 unit package MongoDB:auth<https://github.com/MARTIMM>;
 
 use BSON::Document;
-
 use MongoDB;
 use MongoDB::Collection;
 use MongoDB::Server::Control;
@@ -33,8 +32,8 @@ class Test-support {
   # Get a connection.
   method get-connection ( Str:D :$server-key! --> MongoDB::Client ) {
 
-    my Int $port-number = $!server-control.get-port-number("$server-key");
-    MongoDB::Client.new(:uri("mongodb://localhost:$port-number"));
+    my Int $port-number = $!server-control.get-port-number($server-key);
+    MongoDB::Client.new(:uri("mongodb://localhost:$port-number"))
   }
 
   #----------------------------------------------------------------------------
@@ -105,7 +104,36 @@ class Test-support {
       }
     }
 
-    $port-number;
+    $port-number
+  }
+
+  #----------------------------------------------------------------------------
+  multi method serverkeys ( Str $serverkeys is copy ) {
+
+    %*ENV<SERVERKEYS> = $serverkeys // 's1';
+  }
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  multi method serverkeys ( --> List ) {
+
+    my $l = ();
+    $l = %*ENV<SERVERKEYS>.split(',').List
+      if %*ENV<SERVERKEYS>:exists and ?%*ENV<SERVERKEYS>;
+
+    $l
+  }
+
+  #----------------------------------------------------------------------------
+  method create-clients ( --> Hash ) {
+
+    my Hash $h = {};
+    for @(self.serverkeys) -> $skey {
+      $h{$skey} = self.get-connection(:server-key($skey));
+note "$skey: $h{$skey}";
+    }
+
+    # if %*ENV<SERVERKEYS> is not set then take default server s1
+    $h ?? $h !! %( s1 => self.get-connection(:server-key<s1>) )
   }
 
   #----------------------------------------------------------------------------
@@ -147,6 +175,8 @@ class Test-support {
 
     # setup non-default values for the servers
     my Hash $server-setup = {
+      # in this setup there is always a server s1 because defaults in other
+      # methods can be set to 's1'
       s1 => {
         replicas => {
           replicate1 => 'first_replicate',

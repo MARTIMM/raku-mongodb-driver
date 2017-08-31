@@ -15,20 +15,20 @@ my MongoDB::Test-support $ts .= new;
 
 #-----------------------------------------------------------------------------
 try {
-  ok $ts.server-control.stop-mongod('s1'), "Server s1 is stopped";
-  CATCH {
-    when X::MongoDB {
-      like .message, /:s exited unsuccessfully/, "Server 's1' already down";
+  for @($ts.serverkeys) -> $skey {
+    ok $ts.server-control.stop-mongod($skey), "Server $skey is stopped";
+    CATCH {
+      when X::MongoDB {
+        like .message, /:s exited unsuccessfully/, "Server $skey already down";
+      }
     }
   }
 }
 
 throws-like
-  { $ts.server-control.stop-mongod('s1') },
+  { $ts.server-control.stop-mongod($ts.serverkeys[0]) },
   X::MongoDB, 'Failed to stop server a 2nd time',
   :message(/:s exited unsuccessfully/);
-
-#$ts.cleanup-sandbox();
 
 #-----------------------------------------------------------------------------
 # Cleanup and close

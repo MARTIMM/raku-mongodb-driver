@@ -16,16 +16,18 @@ info-message("Test $?FILE start");
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
 try {
-  ok $ts.server-control.start-mongod('s1'), "Server s1 started";
-  CATCH {
-    when X::MongoDB {
-      like .message, /:s exited unsuccessfully/, "Server 's1' already started";
+  for @($ts.serverkeys) -> $skey {
+    ok $ts.server-control.start-mongod($skey), "Server $skey started";
+    CATCH {
+      when X::MongoDB {
+        like .message, /:s exited unsuccessfully/, "Server $skey already started";
+      }
     }
   }
 }
 
 throws-like
-  { $ts.server-control.start-mongod('s1') },
+  { $ts.server-control.start-mongod($ts.serverkeys[0]) },
   X::MongoDB, 'Failed to start server a 2nd time',
   :message(/:s exited unsuccessfully/);
 
