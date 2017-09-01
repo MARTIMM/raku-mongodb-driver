@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 use lib 't';
 
 use Test;
@@ -7,7 +7,7 @@ use MongoDB;
 use MongoDB::Client;
 use BSON::Document;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
@@ -15,7 +15,11 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
+my Hash $clients = $ts.create-clients;
+my Str $skey = $clients.keys[0];
+#my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+
+my MongoDB::Client $client = $clients{$clients.keys[0]};
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
@@ -24,7 +28,7 @@ my BSON::Document $doc;
 # Drop database first, not checked for success.
 $database.run-command(BSON::Document.new: (dropDatabase => 1));
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Insert documents", {
 
   $req .= new: (
@@ -79,7 +83,7 @@ subtest "Insert documents", {
   is $doc<n>, 6, "inserted 6 documents";
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest 'Delete documents', {
 
   $req .= new: (
@@ -96,7 +100,7 @@ subtest 'Delete documents', {
   is $doc<n>, 1, "deleted 1 doc";
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest 'Update documents', {
 
   $req .= new: (
@@ -116,7 +120,7 @@ subtest 'Update documents', {
   is $doc<nModified>, 2, "modified 2 docs using multi";
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Find and modify documents", {
 
   $doc = $database.run-command: (
@@ -139,7 +143,7 @@ subtest "Find and modify documents", {
   is $doc<value>, Any, 'record not found';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Get last error", {
 
   $doc = $database.run-command: (getLastError => 1,);
@@ -148,7 +152,7 @@ subtest "Get last error", {
   is $doc<errmsg>, Any, 'No message';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Parallel collection scan", {
 
   $doc = $database.run-command: (
@@ -175,8 +179,7 @@ subtest "Parallel collection scan", {
   }
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Cleanup
 info-message("Test $?FILE stop");
 done-testing();
-exit(0);

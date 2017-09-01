@@ -51,7 +51,7 @@ subtest "Database, create collection, drop", {
 # in mongod in future
 
   if $bin-path ~~ / '2.6.' \d+ / {
-    skip "No code returned from 2.6.* server", 1;
+    skip "No error code returned from 2.6.* server", 1;
   }
 
   else {

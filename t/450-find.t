@@ -19,7 +19,11 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
+my Hash $clients = $ts.create-clients;
+my Str $skey = $clients.keys[0];
+my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+
+my MongoDB::Client $client = $clients{$clients.keys[0]};
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
@@ -112,79 +116,88 @@ subtest "Count tests", {
 }
 
 #------------------------------------------------------------------------------
-subtest "Testing explain and performance using cursor", {
+if $bin-path ~~ / '2.6.' \d+ / {
+    skip "2.6.* server doesn't know about command 'explain'", 1;
+}
 
-  # The server needs to scan through all documents to see if the query matches
-  # when there is no index set.
-  $req .= new: (
-    explain => (
-      find => 'testf',
-      filter => (test_record => 'tr38'),
-      options => ()
-    ),
-    verbosity => 'executionStats'
-  );
+else {
+  subtest "Testing explain and performance using cursor", {
 
-  $doc = $database.run-command($req);
-  my $s = $doc<executionStats>;
-  is $s<nReturned>, 1, 'One doc found';
-  is $s<totalDocsExamined>, 200, 'Scanned 200 docs, bad searching';
-
-  # Now set an index on the field and the scan goes only through one document
-  $doc = $database.run-command: (
-    createIndexes => $collection.name,
-    indexes => [ (
-        key => (test_record => 1,),
-        name => 'tf_idx',
+    # The server needs to scan through all documents to see if the query matches
+    # when there is no index set.
+    $req .= new: (
+      explain => (
+        find => 'testf',
+        filter => (test_record => 'tr38'),
+        options => ()
       ),
-    ]
-  );
+      verbosity => 'executionStats'
+    );
 
-  is $doc<createdCollectionAutomatically>, False, 'Not created automatically';
-  is $doc<numIndexesBefore>, 1, 'Only 1 index before call';
-  is $doc<numIndexesAfter>, 2, 'Now there are 2';
+    $doc = $database.run-command($req);
+#    diag $doc;
+    my $s = $doc<executionStats>;
+    is $s<nReturned>, 1, 'One doc found';
+    is $s<totalDocsExamined>, 200, 'Scanned 200 docs, bad searching';
 
-  $doc = $database.run-command($req);
-  $s = $doc<executionStats>;
-  is $s<nReturned>, 1, 'One doc found';
-  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great searching';
+    # Now set an index on the field and the scan goes only through one document
+    $doc = $database.run-command: (
+        createIndexes => $collection.name,
+          indexes => [ (
+          key => (test_record => 1,),
+          name => 'tf_idx',
+        ),
+      ]
+    );
+
+    is $doc<createdCollectionAutomatically>, False, 'Not created automatically';
+    is $doc<numIndexesBefore>, 1, 'Only 1 index before call';
+    is $doc<numIndexesAfter>, 2, 'Now there are 2';
+
+    $doc = $database.run-command($req);
+    $s = $doc<executionStats>;
+    is $s<nReturned>, 1, 'One doc found';
+    is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great searching';
+  }
+
+  #------------------------------------------------------------------------------
+  subtest "Testing explain and performance using hint", {
+
+    # Give a bad hint and get explaination(another possibility from above
+    # explain using find in stead of run-command)
+    $cursor = $collection.find(
+      :criteria(
+        '$query' => (test_record => 'tr38',),
+        '$hint' => (_id => 1,),
+        '$explain' => 1
+      ),
+      :number-to-return(1)
+    );
+
+    $doc = $cursor.fetch;
+    my $s = $doc<executionStats>;
+    is $s<nReturned>, 1, 'One doc found, explain via bad hint';
+    ok $s<totalDocsExamined> > 1, 'Scanned 200 docs, bad searching, explain via bad hint';
+
+    # Give a good hint and get explaination(another possibility from above
+    # explain using find in stead of run-command)
+    $cursor = $collection.find(
+      :criteria(
+        '$query' => (test_record => 'tr38',),
+        '$hint' => (test_record => 1,),
+        '$explain' => 1
+      ),
+      :number-to-return(1)
+    );
+
+    $doc = $cursor.fetch;
+    $s = $doc<executionStats>;
+    is $s<nReturned>, 1, 'One doc found, explain via a good hint';
+    is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
+  }
 }
 
-#------------------------------------------------------------------------------
-subtest "Testing explain and performance using hint", {
 
-  # Give a bad hint and get explaination(another possibility from above
-  # explain using find in stead of run-command)
-  $cursor = $collection.find(
-    :criteria(
-      '$query' => (test_record => 'tr38',),
-      '$hint' => (_id => 1,),
-      '$explain' => 1
-    ),
-    :number-to-return(1)
-  );
-
-  $doc = $cursor.fetch;
-  my $s = $doc<executionStats>;
-  is $s<nReturned>, 1, 'One doc found, explain via bad hint';
-  ok $s<totalDocsExamined> > 1, 'Scanned 200 docs, bad searching, explain via bad hint';
-
-  # Give a good hint and get explaination(another possibility from above
-  # explain using find in stead of run-command)
-  $cursor = $collection.find(
-    :criteria(
-      '$query' => (test_record => 'tr38',),
-      '$hint' => (test_record => 1,),
-      '$explain' => 1
-    ),
-    :number-to-return(1)
-  );
-
-  $doc = $cursor.fetch;
-  $s = $doc<executionStats>;
-  is $s<nReturned>, 1, 'One doc found, explain via a good hint';
-  is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great indexing, explain via good hint';
-}
 
 #------------------------------------------------------------------------------
 subtest "Error testing", {
@@ -207,7 +220,7 @@ subtest "Error testing", {
 # Cleanup and close
 info-message("Test $?FILE stop");
 done-testing();
-exit(0);
+
 
 #------------------------------------------------------------------------------
 # Check one document for its fields. Something like {code => 1, nofield => 0}
