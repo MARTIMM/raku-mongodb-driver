@@ -1,7 +1,7 @@
 #!/usr/bin/env perl6
 
 use v6;
-use lib 't';
+use lib 'lib', 't';
 use Test;
 use Test-support;
 
