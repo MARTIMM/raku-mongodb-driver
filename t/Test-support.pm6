@@ -120,7 +120,7 @@ class Test-support {
     $l = %*ENV<SERVERKEYS>.split(',').List
       if %*ENV<SERVERKEYS>:exists and ?%*ENV<SERVERKEYS>;
 
-    $l
+    $l ?? $l !! ('s1',)
   }
 
   #----------------------------------------------------------------------------
@@ -129,7 +129,6 @@ class Test-support {
     my Hash $h = {};
     for @(self.serverkeys) -> $skey {
       $h{$skey} = self.get-connection(:server-key($skey));
-note "$skey: $h{$skey}";
     }
 
     # if %*ENV<SERVERKEYS> is not set then take default server s1
