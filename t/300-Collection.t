@@ -16,11 +16,14 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
+# single server tests => one server key
+my Hash $clients = $ts.create-clients;
+my Str $skey = $clients.keys[0];
+#my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+my MongoDB::Client $client = $clients{$clients.keys[0]};
 my MongoDB::Database $database = $client.database('test');
 
 # Create collection and insert data in it!
-#
 my MongoDB::Collection $collection = $database.collection('cl1');
 isa-ok( $collection, 'MongoDB::Collection');
 

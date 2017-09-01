@@ -20,8 +20,12 @@ my BSON::Document $doc;
 
 # single server tests => one server key
 my Hash $clients = $ts.create-clients;
-my MongoDB::Database $database = $clients.values[0].database('test');
-my MongoDB::Database $db-admin = $clients.values[0].database('admin');
+my Str $skey = $clients.keys[0];
+my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+
+my MongoDB::Client $client = $clients{$clients.keys[0]};
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 
 # Drop database first then create new databases
 $req .= new: ( dropDatabase => 1 );
@@ -46,12 +50,12 @@ subtest "Database, create collection, drop", {
 #TODO get all codes and test on code instead of messages to prevent changes
 # in mongod in future
 
-  if $clients.keys[0] eq 's1' {
-    is $doc<code>, 48, 'error code 48';
+  if $bin-path ~~ / '2.6.' \d+ / {
+    skip "No code returned from 2.6.* server", 1;
   }
 
   else {
-    skip "No code returned from 2.6.* server", 1;
+    is $doc<code>, 48, 'error code 48';
   }
 }
 

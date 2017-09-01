@@ -16,7 +16,12 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
+# single server tests => one server key
+my Hash $clients = $ts.create-clients;
+my Str $skey = $clients.keys[0];
+my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+my MongoDB::Client $client = $clients{$clients.keys[0]};
+
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
@@ -120,31 +125,38 @@ subtest "Diagnostic Commands", {
     documents => [(code => 15)]
   );
 
-  $doc = $database.run-command: (listCollections => 1,);
-  is $doc<ok>, 1, 'list collections request ok';
-
-  my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
-  my Bool $f-cl1 = False;
-  my Bool $f-cl2 = False;
-  while $c.fetch -> BSON::Document $d {
-    $f-cl1 = True if $d<name> eq 'cl1';
-    $f-cl2 = True if $d<name> eq 'cl2';
+  if $bin-path ~~ / '2.6.' \d+ / {
+    skip "2.6.* server does not know command listCollections", 1;
   }
 
-  ok $f-cl1, 'Collection cl1 listed';
-  ok $f-cl2, 'Collection cl2 listed';
+  else {
+    $doc = $database.run-command: (listCollections => 1,);
+    is $doc<ok>, 1, 'list collections request ok';
 
-  # Second attempt using iteratable role
-  $f-cl1 = False;
-  $f-cl2 = False;
-  $doc = $database.run-command: (listCollections => 1,);
-  for MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>)) -> BSON::Document $d {
-    $f-cl1 = True if $d<name> eq 'cl1';
-    $f-cl2 = True if $d<name> eq 'cl2';
+    my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
+    my Bool $f-cl1 = False;
+    my Bool $f-cl2 = False;
+    while $c.fetch -> BSON::Document $d {
+      $f-cl1 = True if $d<name> eq 'cl1';
+      $f-cl2 = True if $d<name> eq 'cl2';
+    }
+
+    ok $f-cl1, 'Collection cl1 listed';
+    ok $f-cl2, 'Collection cl2 listed';
+
+    # Second attempt using iteratable role
+    $f-cl1 = False;
+    $f-cl2 = False;
+    $doc = $database.run-command: (listCollections => 1,);
+    for MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>)) -> BSON::Document $d {
+      $f-cl1 = True if $d<name> eq 'cl1';
+      $f-cl2 = True if $d<name> eq 'cl2';
+    }
+
+    ok $f-cl1, 'Collection cl1 listed';
+    ok $f-cl2, 'Collection cl2 listed';
   }
 
-  ok $f-cl1, 'Collection cl1 listed';
-  ok $f-cl2, 'Collection cl2 listed';
 }
 
 #-------------------------------------------------------------------------------
