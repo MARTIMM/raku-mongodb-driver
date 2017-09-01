@@ -7,13 +7,13 @@ use Test-support;
 use MongoDB;
 use MongoDB::Server::Control;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
 try {
   for @($ts.serverkeys) -> $skey {
@@ -31,6 +31,6 @@ throws-like
   X::MongoDB, 'Failed to start server a 2nd time',
   :message(/:s exited unsuccessfully/);
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Cleanup and close
 done-testing;

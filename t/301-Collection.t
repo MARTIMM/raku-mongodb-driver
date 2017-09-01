@@ -74,4 +74,3 @@ subtest {
 $database.run-command: (dropDatabase => 1,);
 $client.cleanup;
 done-testing();
-exit(0);
