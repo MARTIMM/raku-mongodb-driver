@@ -173,11 +173,12 @@ ok 15 - updatedExisting returned False
 
 ## Notes
 
-* As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without disturbing the clients databases.
+* As of version 0.25.1 a sandbox is setup to run separate mongod and mongos servers. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without the need to fiddle with the users database servers.
 
-* Because all helper functions are torn out of the modules, only the basic calls to access database server are available. This however will not cripple the driver because with the these few calls, one can do everything. The mongodb server support is now increased to 2.6 and above (see below) because parts of the wire protocol is also removed. Now, a few years later, I am pondering to bring them in again because it is still supported in all versions. The reason to remove them was that the run-command() in newer server versions is capable of what was possible in the wire protocol, plus returning the result of the operation which that particular part of the wire protocol did not do.
+* Because all helper functions are torn out of the modules, only the basic calls to access database server are available. This however will not cripple the driver because with the these few calls, one can do everything. The mongodb server support is now increased to 2.6 and above (see below) because parts of the wire protocol is also removed.
+Now, a few years later, I am pondering to bring them in again because it is still supported in all versions. One of the reasons to remove them was that the run-command() in newer server versions is capable of what was possible in the wire protocol, plus returning the result of the operation which that particular part of the wire protocol did not do.
 
-* Tests are done only on newest mongod servers of versions 3.\*. 2.6 is never tested but needs to be done. Also, testing on MS Windows must be done too. Necessary parts are already tested on AppVeyor however.
+* Install tests are done only on newest mongod servers of versions 3.\*. 2.6.\* is now tested on Travis-CI. Also, testing on MS Windows must be done too. Necessary parts such as BSON are already tested on AppVeyor however.
 
 ## Implementation track
 
