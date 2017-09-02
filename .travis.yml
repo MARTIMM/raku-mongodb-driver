@@ -1,4 +1,5 @@
 dist: precise
+#dist: trusty
 
 branches:
   only:
@@ -34,6 +35,8 @@ script:
   - xt/wrapper.pl6 --serverkeys=s1 t/099* t/[2-5]* t/998*
   - xt/wrapper.pl6 --serverkeys=s4 t/099* t/[2-5]* t/998*
   - xt/wrapper.pl6 --ignore xt/Basic
+
+  - xt/wrapper.pl6 --serverkeys=s1,s2 --ignore t/099* xt/Behaviour/1* t/998*
 
   - xt/wrapper.pl6 t/999-rm-sandbox.t
 
