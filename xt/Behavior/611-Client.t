@@ -15,6 +15,7 @@ drop-send-to('screen');
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
+my @serverkeys = $ts.serverkeys.sort;
 
 my MongoDB::Client $client;
 my MongoDB::Server $server;
@@ -22,10 +23,10 @@ my MongoDB::Server $server;
 
 my Hash $config = MongoDB::MDBConfig.instance.config;
 
-my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+my Str $rs1-s2 = $config<mongod>{@serverkeys[1]}<replicate1><replSet>;
 my Str $host = 'localhost';
-my Int $p1 = $ts.server-control.get-port-number('s1');
-my Int $p2 = $ts.server-control.get-port-number('s2');
+my Int $p1 = $ts.server-control.get-port-number(@serverkeys[0]);
+my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
 
 #-------------------------------------------------------------------------------
 subtest "Client behaviour with a replicaserver and standalone mix", {
@@ -50,7 +51,8 @@ subtest "Client behaviour with one replicaserver", {
   $client .= new(:$uri);
 
   $server = $client.select-server;
-  is $server.get-status<status>, SS-RSPrimary, "Replicaset primary server";
+  is $server.get-status<status>, SS-RSPrimary,
+     "Replicaset primary server";
   is $client.topology, TT-Single, 'Single topology';
 }
 
