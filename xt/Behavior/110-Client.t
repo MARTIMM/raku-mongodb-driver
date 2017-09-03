@@ -11,14 +11,15 @@ use BSON::Document;
 
 #------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
+drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my Int $p1 = $ts.server-control.get-port-number('s1');
-my Int $p2 = $ts.server-control.get-port-number('s2');
+my @serverkeys = $ts.serverkeys.sort;
+my Int $p1 = $ts.server-control.get-port-number(@serverkeys[0]);
+my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
 my MongoDB::Client $client;
 my MongoDB::Server $server;
 

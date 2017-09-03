@@ -18,7 +18,8 @@ drop-send-to('screen');
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
-my Int $p1 = $ts.server-control.get-port-number('s1');
+my @serverkeys = $ts.serverkeys.sort;
+my Int $p1 = $ts.server-control.get-port-number(@serverkeys[0]);
 
 # Cleanup all before tests
 my MongoDB::Client $cl .= new(:uri("mongodb://localhost:$p1"));
@@ -30,17 +31,20 @@ $cl.cleanup;
 #---------------------------------------------------------------------------------
 sub restart-to-authenticate( ) {
 
-  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
-  ok $ts.server-control.start-mongod( 's1', 'authenticate'),
-     "Server 1 in authenticate mode";
+  ok $ts.server-control.stop-mongod(@serverkeys[0]),
+     "Server @serverkeys[0] stopped";
+  ok $ts.server-control.start-mongod( @serverkeys[0], 'authenticate'),
+     "Server @serverkeys[0] in authenticate mode";
   sleep 1.0;
 };
 
 #---------------------------------------------------------------------------------
 sub restart-to-normal( ) {
 
-  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
-  ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
+  ok $ts.server-control.stop-mongod(@serverkeys[0]),
+     "Server @serverkeys[0] stopped";
+  ok $ts.server-control.start-mongod(@serverkeys[0]),
+     "Server @serverkeys[0] in normal mode";
   sleep 1.0;
 }
 
