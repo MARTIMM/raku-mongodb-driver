@@ -18,12 +18,13 @@ drop-send-to('screen');
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
+my @serverkeys = $ts.serverkeys.sort;
 
 my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
-my Int $p2 = $ts.server-control.get-port-number('s2');
-my Str $rs1-s2 = $config<mongod><s2><replicate1><replSet>;
+my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
+my Str $rs1-s2 = $config<mongod>{@serverkeys[1]}<replicate1><replSet>;
 
 my MongoDB::Client $client;
 my MongoDB::Server $server;
@@ -32,8 +33,8 @@ my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 subtest "Replica server pre initialization no option in uri", {
 
-  ok $ts.server-control.stop-mongod("s2"), "Server 2 stopped";
-  ok $ts.server-control.start-mongod( 's2', 'replicate1'),
+  ok $ts.server-control.stop-mongod(@serverkeys[1]), "Server @serverkeys[1] stopped";
+  ok $ts.server-control.start-mongod( @serverkeys[1], 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
   my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
