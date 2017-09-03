@@ -175,7 +175,8 @@ class Test-support {
     # setup non-default values for the servers
     my Hash $server-setup = {
       # in this setup there is always a server s1 because defaults in other
-      # methods can be set to 's1'
+      # methods can be set to 's1'. Furthermore, keep server keys simple because
+      # of sorting in some of the test programs. E.g. s1, s2, s3 etc.
       s1 => {
         replicas => {
           replicate1 => 'first_replicate',
@@ -199,6 +200,27 @@ class Test-support {
       },
       s4 => {
         server-version => '2.6.11',
+        replicas => {
+          replicate1 => 'first_replicate',
+          replicate2 => 'second_replicate',
+        },
+        authenticate => True,
+        account => {
+          user => 'Dondersteen',
+          pwd => 'w@tD8jeDan',
+        },
+      },
+      s5 => {
+        server-version => '2.6.11',
+        replicas => {
+          replicate1 => 'first_replicate',
+        },
+      },
+      s6 => {
+        server-version => '2.6.11',
+        replicas => {
+          replicate1 => 'first_replicate',
+        },
       },
     };
 
@@ -259,7 +281,7 @@ class Test-support {
 
     my Str $file = 'Sandbox/config.toml';
     spurt( $file, $config-text);
-note "Server config:\n", $config-text;
+#note "Server config:\n", $config-text;
   }
 
   #----------------------------------------------------------------------------
