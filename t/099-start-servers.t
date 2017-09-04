@@ -29,7 +29,7 @@ try {
 
 throws-like
   { $ts.server-control.start-mongod($ts.serverkeys[0]) },
-  X::MongoDB, "Failed to start server $ts.serverkeys[0] a 2nd time",
+  X::MongoDB, "Failed to start server {$ts.serverkeys[0]} a 2nd time",
   :message(/:s exited unsuccessfully/);
 
 #------------------------------------------------------------------------------

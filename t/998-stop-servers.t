@@ -19,7 +19,8 @@ try {
     ok $ts.server-control.stop-mongod($skey), "Server $skey is stopped";
     CATCH {
       when X::MongoDB {
-        like .message, /:s exited unsuccessfully/, "Server $skey already down";
+        like .message, /:s exited unsuccessfully/,
+             "Server $skey already down";
       }
     }
   }
@@ -27,7 +28,7 @@ try {
 
 throws-like
   { $ts.server-control.stop-mongod($ts.serverkeys[0]) },
-  X::MongoDB, 'Failed to stop server a 2nd time',
+  X::MongoDB, "Failed to stop server {$ts.serverkeys[0]} a 2nd time",
   :message(/:s exited unsuccessfully/);
 
 #------------------------------------------------------------------------------
