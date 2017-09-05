@@ -173,11 +173,8 @@ ok 15 - updatedExisting returned False
 
 ## Notes
 
-* As of version 0.25.1 a sandbox is setup to run a separate mongod server. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without disturbing the clients databases.
-
-* Because all helper functions are torn out of the modules, only the basic calls to access database server are available. This however will not cripple the driver because with the these few calls, one can do everything. The mongodb server support is now increased to 2.6 and above (see below) because parts of the wire protocol is also removed. Now, a few years later, I am pondering to bring them in again because it is still supported in all versions. The reason to remove them was that the run-command() in newer server versions is capable of what was possible in the wire protocol, plus returning the result of the operation which that particular part of the wire protocol did not do.
-
-* Tests are done only on newest mongod servers of versions 3.\*. 2.6 is never tested but needs to be done. Also, testing on MS Windows must be done too. Necessary parts are already tested on AppVeyor however.
+* As of version 0.25.1 a sandbox is setup to run separate mongod and mongos servers. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without the need to fiddle with the users database servers.
+* When installing the driver, tests are done only on newest mongod servers of versions 3.\*. Versions 2.6.\* is now tested on Travis-CI. Testing on MS Windows must still be setup. Necessary parts such as BSON are already tested on AppVeyor however.
 
 ## Implementation track
 
@@ -185,9 +182,13 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 * Implementation of helper methods. The blog ['Why Command Helpers Suck'](http://www.kchodorow.com/blog/2011/01/25/why-command-helpers-suck/) written by Kristina Chodorow told me to be careful implementing all kinds of helper methods and perhaps even to slim down the current set of methods and to document the use of the run-command so that the user of this package can, after reading the mongodb documents, use the run-command method to get the work done themselves.
 
-* There is another thing to mention about the helper functions. Providing them will always have a parsing impact while many of them are not always needed. Examples are list-databases(), get-prev-error() etc. Removing the helper functions will reduce the parsing time.
+* There is another thing to mention about the helper functions. Providing them will always have a parsing impact while many of them are not always needed. Examples are list-databases(), get-prev-error() etc. Removing the helper functions will reduce the parsing time. This however will not cripple the driver because with the these few calls, one can do everything as long as the servers have a version of 2.6 or higher.
 
 *This is done now and it has a tremendous effect on parsing time. When someone needs a particular action often, the user can make a method for him/her-self on a higher level then in this driver. Thoughts are going to write some examples in the MongoDB::HL namespace.*
+
+* Together with the slimdown of the helper functions mentioned above, some parts of the wire protocol are not implemented and even removed. One of the reasons of not implementing them is that these operations (update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. The other reason to remove them is that the run-command() in newer server versions (2.6 and higher) is capable of what was possible in the wire protocol.
+
+*However, these operations might come in handy for some sort of operation, so I will not completely rule out the implementation of the rest of the wire protocol as these are still supported by all mongodb servers.*
 
 * The use of hashes to send and receive mongodb documents is wrong. It is wrong because the key-value pairs in the hash often get a different order then is entered in the hash. Also mongodb needs the command pair at the front of the document. Another place where order matters are sub document queries. A sub document is matched as encoded documents.  So if the server has ```{ a: {b:1, c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since Perl 6 hashes randomizes its key order you never know what the order is.
 
@@ -201,14 +202,15 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 * Authentication of users. Users can be administered in the database but authentication needs some encryption techniques which are not implemented yet. Might be me to write those using the modules from the perl5 driver which have been offered to use by David Golden.
 
-*Authentication using SCRAM-SHA is now implemented.*
+*Authentication using SCRAM-SHA is now implemented. This is not possible for the 2.6.\* servers.*
 
 * The blogs [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116)
-and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read concerns. What I want to provide is the following server situations;
-  * Single server. The simplest of situations.
-  * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to with the risk that the particular server (a secondary server) is not up to date.
+and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read concerns.
+* What I want to provide is the following server situations;
+  * Single server. The simplest of situations. *This is done and tested*.
+  * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to with the risk that the particular server (a secondary server) is not up to date. *This is done and tested*.
   * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
-  * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations.
+  * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations. *This is done and tested*.
 
 ## Documentation
 
@@ -252,13 +254,9 @@ Use zef to install the package.
 
 This project is tested against the newest perl6 version with Rakudo built on MoarVM implementing Perl v6.*. On Travis-CI however, the latest rakudobrew version is used which might be a little older.
 
-MongoDB server versions are supported from 2.6 and up. Versions lower than this are not supported because of a not completely implemented wire protocol. One reason of not implementing them is that these operations(update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. However, these operations might come in handy for some sort of operation, so I will not completely rule out the implementation of the rest of the wire protocol as these are still supported by all mongodb servers.
-
-Also it is the intention to support above mentioned mongo versions, at the moment the distribution is tested against 3.* and higher only.
+MongoDB server versions are supported from 2.6 and up. Versions lower than this are not supported because of a not completely implemented wire protocol.
 
 ## AUTHORS
 
-```
-Original creator of the modules is Paweł Pabian (2011-2015, v0.6.0)(bbkr on github)
-Current maintainer Marcel Timmerman (2015-present) (MARTIMM on github)
-```
+Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
+Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)

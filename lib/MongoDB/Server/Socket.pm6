@@ -85,9 +85,13 @@ class Server::Socket {
   #-----------------------------------------------------------------------------
   method close-on-fail ( ) {
 
-    fatal-message("thread $*THREAD.id() is not owner of this socket")
-      unless $.thread-id == $*THREAD.id();
+    # An Exception can be thrown and caught in another thread. When then a
+    # socket must close it should be able to do so
+    #fatal-message("thread $*THREAD.id() is not owner of this socket")
+    #  unless $.thread-id == $*THREAD.id();
 
+    warn-message("close exception where thread $*THREAD.id() is not owner of this socket")
+      unless $.thread-id == $*THREAD.id();
     trace-message("'close' socket on failure");
     $!sock = Nil;
     $!is-open = False;

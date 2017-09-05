@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 use lib 't';
 
 use Test;
@@ -8,7 +8,7 @@ use MongoDB::Client;
 use MongoDB::Database;
 use BSON::Document;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
@@ -16,7 +16,12 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
+# single server tests => one server key
+my Hash $clients = $ts.create-clients;
+my Str $skey = $clients.keys[0];
+my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+
+my MongoDB::Client $client = $clients{$clients.keys[0]};
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
@@ -25,7 +30,7 @@ my BSON::Document $doc;
 # Drop database first, not checked for success.
 $database.run-command(BSON::Document.new: (dropDatabase => 1));
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Query and Write Operation Commands", {
 
   $req .= new: (
@@ -87,7 +92,7 @@ subtest "Query and Write Operation Commands", {
   is $doc<n>, 5, "Inserted 5 documents";
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Diagnostic Commands", {
 
   # List databases
@@ -109,7 +114,7 @@ subtest "Diagnostic Commands", {
   ok %db-names<test>:exists, 'database test found';
   ok !$db-docs[%db-names<test>]<empty>, 'Database test is not empty';
 
-  #-------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   $doc = $database.run-command: (
     insert => 'cl1',
     documents => [(code => 10)]
@@ -120,34 +125,41 @@ subtest "Diagnostic Commands", {
     documents => [(code => 15)]
   );
 
-  $doc = $database.run-command: (listCollections => 1,);
-  is $doc<ok>, 1, 'list collections request ok';
-
-  my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
-  my Bool $f-cl1 = False;
-  my Bool $f-cl2 = False;
-  while $c.fetch -> BSON::Document $d {
-    $f-cl1 = True if $d<name> eq 'cl1';
-    $f-cl2 = True if $d<name> eq 'cl2';
+  if $bin-path ~~ / '2.6.' \d+ / {
+    skip "2.6.* server doesn't know about command 'listCollections'", 1;
   }
 
-  ok $f-cl1, 'Collection cl1 listed';
-  ok $f-cl2, 'Collection cl2 listed';
+  else {
+    $doc = $database.run-command: (listCollections => 1,);
+    is $doc<ok>, 1, 'list collections request ok';
 
-  # Second attempt using iteratable role
-  $f-cl1 = False;
-  $f-cl2 = False;
-  $doc = $database.run-command: (listCollections => 1,);
-  for MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>)) -> BSON::Document $d {
-    $f-cl1 = True if $d<name> eq 'cl1';
-    $f-cl2 = True if $d<name> eq 'cl2';
+    my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
+    my Bool $f-cl1 = False;
+    my Bool $f-cl2 = False;
+    while $c.fetch -> BSON::Document $d {
+      $f-cl1 = True if $d<name> eq 'cl1';
+      $f-cl2 = True if $d<name> eq 'cl2';
+    }
+
+    ok $f-cl1, 'Collection cl1 listed';
+    ok $f-cl2, 'Collection cl2 listed';
+
+    # Second attempt using iteratable role
+    $f-cl1 = False;
+    $f-cl2 = False;
+    $doc = $database.run-command: (listCollections => 1,);
+    for MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>)) -> BSON::Document $d {
+      $f-cl1 = True if $d<name> eq 'cl1';
+      $f-cl2 = True if $d<name> eq 'cl2';
+    }
+
+    ok $f-cl1, 'Collection cl1 listed';
+    ok $f-cl2, 'Collection cl2 listed';
   }
 
-  ok $f-cl1, 'Collection cl1 listed';
-  ok $f-cl2, 'Collection cl2 listed';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Instance Administration Commands", {
 
   # Drop database
@@ -156,7 +168,7 @@ subtest "Instance Administration Commands", {
   is $doc<ok>, 1, "Drop database test ok";
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest "Error tests", {
 
   $doc = $database.run-command: (unknownDbCommand => 'unknownCollection',);
@@ -164,8 +176,7 @@ subtest "Error tests", {
   is $doc<code>, 59, 'Code 59';
 }
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Cleanup
 info-message("Test $?FILE stop");
 done-testing();
-exit(0);

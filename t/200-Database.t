@@ -1,6 +1,5 @@
 use v6;
 use lib 't';
-
 use Test;
 use Test-support;
 use MongoDB;
@@ -19,52 +18,64 @@ my MongoDB::Test-support $ts .= new;
 my BSON::Document $req;
 my BSON::Document $doc;
 
-my MongoDB::Client $client1 = $ts.get-connection(:server-key<s1>);
-my MongoDB::Database $database1 = $client1.database('test');
-my MongoDB::Database $db-admin1 = $client1.database('admin');
+# single server tests => one server key
+my Hash $clients = $ts.create-clients;
+my Str $skey = $clients.keys[0];
+my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+
+my MongoDB::Client $client = $clients{$clients.keys[0]};
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 
 # Drop database first then create new databases
 $req .= new: ( dropDatabase => 1 );
-$database1.run-command($req);
+$database.run-command($req);
 
 #-------------------------------------------------------------------------------
 subtest "Database, create collection, drop", {
 
-  isa-ok $database1, 'MongoDB::Database';
-  is $database1.name, 'test', 'Check database name';
+  isa-ok $database, 'MongoDB::Database';
+  is $database.name, 'test', 'Check database name';
 
   # Create a collection explicitly. Try for a second time
   $req .= new: (create => 'cl1');
-  $doc = $database1.run-command($req);
+  $doc = $database.run-command($req);
   is $doc<ok>, 1, 'Created collection cl1';
 
   # Second try gets an error
-  $doc = $database1.run-command($req);
+  $doc = $database.run-command($req);
   is $doc<ok>, 0, 'Second collection cl1 not created';
   diag $doc.perl;
   like $doc<errmsg>, /:s already exists/, $doc<errmsg>;
 #TODO get all codes and test on code instead of messages to prevent changes
 # in mongod in future
-  is $doc<code>, 48, 'error code 48';
+
+  if $bin-path ~~ / '2.6.' \d+ / {
+    skip "No error code returned from 2.6.* server", 1;
+  }
+
+  else {
+    is $doc<code>, 48, 'error code 48';
+  }
 }
 
 #-------------------------------------------------------------------------------
 subtest "Error checking", {
-  $doc = $database1.run-command: (getLastError => 1,);
+  $doc = $database.run-command: (getLastError => 1,);
   is $doc<ok>, 1, 'No last errors';
 
-  $doc = $database1.run-command: (getPrevError => 1,);
+  $doc = $database.run-command: (getPrevError => 1,);
   is $doc<ok>, 1, 'No previous errors';
 
-  $doc = $database1.run-command: (resetError => 1,);
+  $doc = $database.run-command: (resetError => 1,);
   is $doc<ok>, 1, 'Rest errors ok';
 }
 
 #-------------------------------------------------------------------------------
 subtest 'Database admin tests', {
-  is $db-admin1.name, 'admin', 'Name admin database ok';
+  is $db-admin.name, 'admin', 'Name admin database ok';
   try {
-    $db-admin1.collection('my-collection');
+    $db-admin.collection('my-collection');
 
     CATCH {
       default {
@@ -79,7 +90,7 @@ subtest 'Database admin tests', {
 #-------------------------------------------------------------------------------
 subtest 'Database statistics server 1', {
 
-  $doc = $db-admin1.run-command: (listDatabases => 1,);
+  $doc = $db-admin.run-command: (listDatabases => 1,);
 #say $doc.perl;
   ok $doc<ok>.Bool, 'Run command ran ok';
   ok $doc<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
@@ -99,10 +110,10 @@ subtest 'Database statistics server 1', {
 subtest 'Drop a database', {
 
   try {
-    $doc = $database1.run-command: (dropDatabase => 1,);
+    $doc = $database.run-command: (dropDatabase => 1,);
     is $doc<ok>, 1, 'Drop command went well';
 
-    $doc = $db-admin1.run-command: (listDatabases => 1,);
+    $doc = $db-admin.run-command: (listDatabases => 1,);
     my %db-names = %();
     my $idx = 0;
     my Array $db-docs = $doc<databases>;
@@ -121,8 +132,5 @@ subtest 'Drop a database', {
 }
 
 #-------------------------------------------------------------------------------
-# Cleanup
-
 info-message("Test $?FILE stop");
 done-testing();
-exit(0);

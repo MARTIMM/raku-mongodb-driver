@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 use lib 't';
 
 use Test;
@@ -7,7 +7,7 @@ use MongoDB;
 use MongoDB::Client;
 use BSON::Document;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
@@ -15,14 +15,18 @@ info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
-my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
+# single server tests => one server key
+my Hash $clients = $ts.create-clients;
+my Str $skey = $clients.keys[0];
+#my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
+my MongoDB::Client $client = $clients{$clients.keys[0]};
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 my MongoDB::Collection $collection = $database.collection('cl1');
 my BSON::Document $req;
 my BSON::Document $doc;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 subtest {
   # Create collection and insert data in it!
   #
@@ -35,8 +39,7 @@ subtest {
     ]
   );
 
-  #-------------------------------------------------------------------------------
-  #
+  #----------------------------------------------------------------------------
   $doc = $database.run-command: (count => $collection.name,);
   is $doc<ok>, 1, 'Count request ok';
   is $doc<n>, 3, 'Three documents in collection';
@@ -47,8 +50,7 @@ subtest {
   );
   is $doc<n>, 1, 'One document found';
 
-  #-------------------------------------------------------------------------------
-  #
+  #----------------------------------------------------------------------------
   $doc = $database.run-command: (
     distinct => $collection.name,
     key => 'code'
@@ -67,13 +69,8 @@ subtest {
 
 }, "simple collection operations";
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Cleanup
-#
 $database.run-command: (dropDatabase => 1,);
 $client.cleanup;
-info-message("Test $?FILE stop");
-sleep .2;
-drop-all-send-to();
 done-testing();
-exit(0);

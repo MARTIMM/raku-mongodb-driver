@@ -17,10 +17,11 @@ drop-send-to('screen');
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
-my Int $p1 = $ts.server-control.get-port-number('s1');
+my @serverkeys = $ts.serverkeys.sort;
+my Int $p1 = $ts.server-control.get-port-number(@serverkeys[0]);
 
 #-------------------------------------------------------------------------------
-subtest "Shutdown and start server", {
+subtest "Client behaviour while shutdown and start server", {
 
   my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
 
@@ -33,14 +34,16 @@ subtest "Shutdown and start server", {
      "Status of server is SS-Standalone";
 
   # Bring server down to see what Client does...
-  ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
+  ok $ts.server-control.stop-mongod(@serverkeys[0]),
+     "Server @serverkeys[0] is stopped";
   sleep 1.0;
 
   $server = $client.select-server;
   nok $server.defined, "Server is down";
 
   # Bring server up again to see if the Client recovers...
-  ok $ts.server-control.start-mongod("s1"), "Server 1 started";
+  ok $ts.server-control.start-mongod(@serverkeys[0]),
+     "Server @serverkeys[0] started";
   sleep 0.8;
 
   $server = $client.select-server;
@@ -52,7 +55,7 @@ subtest "Shutdown and start server", {
 }
 
 #-------------------------------------------------------------------------------
-subtest "Shutdown/restart server 1 while inserting records", {
+subtest "Shutdown/restart server while inserting records", {
 
   my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=500>;
 
@@ -110,7 +113,7 @@ subtest "Shutdown/restart server 1 while inserting records", {
 
   # Bring server down to see what Client does...
   info-message('shutdown server');
-  ok $ts.server-control.stop-mongod('s1'), "Server 1 is stopped";
+  ok $ts.server-control.stop-mongod(@serverkeys[0]), "Server @serverkeys[0] is stopped";
   sleep 1.0;
 
   $server = $client.select-server;
@@ -118,7 +121,7 @@ subtest "Shutdown/restart server 1 while inserting records", {
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');
-  ok $ts.server-control.start-mongod("s1"), "Server 1 started";
+  ok $ts.server-control.start-mongod(@serverkeys[0]), "Server @serverkeys[0] started";
   sleep 0.8;
 
   # Wait for inserts to finish

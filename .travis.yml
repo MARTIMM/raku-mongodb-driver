@@ -1,3 +1,6 @@
+dist: precise
+#dist: trusty
+
 branches:
   only:
     - master
@@ -26,10 +29,20 @@ install:
 #  depth: 5
 
 script:
-#    - PERL6LIB=src prove -v -r --exec=perl6 tests/
-    - PERL6LIB=lib prove -v --exec=perl6 xt/001-meta.t
-    - PERL6LIB=lib prove -v --exec=perl6 t/
-    - PERL6LIB=lib prove -v --exec=perl6 xt/Basic || echo 'ignore failures'
+  - xt/wrapper.pl6 xt/001-meta.t
+  - xt/wrapper.pl6 t/098-mk-sandbox.t
+
+  - xt/wrapper.pl6 --serverkeys=s1 t/099* t/[2-5]* t/998*
+  - xt/wrapper.pl6 --serverkeys=s4 t/099* t/[2-5]* t/998*
+  - xt/wrapper.pl6 --ignore xt/Basic
+
+  - xt/wrapper.pl6 --serverkeys=s1,s2 --ignore t/099* xt/Behavior/1* t/998*
+  - xt/wrapper.pl6 --serverkeys=s4,s5 --ignore t/099* xt/Behavior/1* t/998*
+
+  - xt/wrapper.pl6 --serverkeys=s1,s2,s3 --ignore t/099* xt/Behavior/6* t/998*
+  - xt/wrapper.pl6 --serverkeys=s4,s5,s6 --ignore t/099* xt/Behavior/6* t/998*
+
+  - xt/wrapper.pl6 t/999-rm-sandbox.t
 
 
 #cache:

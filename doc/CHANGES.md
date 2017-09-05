@@ -2,14 +2,17 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.39.0
+  * Changes in setup of tests using a wrapper. It is now possible to start a set of tests with a particular server setup. With this, older server versions can be tested. Also tests can be grouped. So the user install can be simple and when on Travis, a complete set of tests can be executed.
+  * Mongod server version 2.6.* supported without authentication.
 * 0.38.3
-  * log fixes
-  * some fixes in basic tests
+  * Log fixes
+  * Some fixes in basic tests
 * 0.38.2
-  * changed test setup
-  * changed BSON exceptions
+  * Changed test setup
+  * Changed BSON exceptions
 * 0.38.1
-  * server does first probe of mongod server before starting monitor
+  * Server does first probe of mongod server before starting monitor
 * 0.38.0
   * New config generation in Test-support to cope with multiple mongod server versions. also mongos can now be defined
   * Credential taken from Client to Uri object.

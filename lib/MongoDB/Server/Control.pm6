@@ -1,22 +1,22 @@
 use v6;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
 
 use Config::DataLang::Refine;
 use MongoDB;
 use MongoDB::MDBConfig;
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 class Server::Control {
 
 #TODO startup/shutdown on windows and apples
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   submethod BUILD ( Str :$config-name, Array :$locations ) {
     MongoDB::MDBConfig.instance( :$config-name, :$locations);
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   method start-mongod ( *@server-keys --> Bool ) {
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
@@ -28,7 +28,7 @@ class Server::Control {
     );
 
     my Str $cmdstr = (
-      self!get-binary-path( 'mongod', @server-keys),
+      self.get-binary-path( 'mongod', @server-keys),
       @$options
     ).join(' ');
 
@@ -56,13 +56,13 @@ class Server::Control {
     $started;
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   method stop-mongod ( *@server-keys --> Bool ) {
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
     my Hash $options = $mdbcfg.cfg.refine( 'mongod', |@server-keys);
 
-    my Str $cmdstr = self!get-binary-path( 'mongod', @server-keys);
+    my Str $cmdstr = self.get-binary-path( 'mongod', @server-keys);
     $cmdstr ~= ' --shutdown';
     $cmdstr ~= ' --dbpath ' ~ "'$options<dbpath>'" // '/data/db';
     $cmdstr ~= ' --quiet' if $options<quiet>;
@@ -88,17 +88,17 @@ class Server::Control {
     $stopped;
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   method start-mongos ( ) {
 
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   method stop-mongos ( ) {
 
   }
 
-  #-----------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Get selected port number from the config
   method get-port-number ( *@server-keys --> Int ) {
 
@@ -106,8 +106,8 @@ class Server::Control {
     $mdbcfg.cfg.refine( 'mongod', |@server-keys)<port>;
   }
 
-  #-----------------------------------------------------------------------------
-  method !get-binary-path ( Str $binary, *@server-keys --> Str ) {
+  #----------------------------------------------------------------------------
+  method get-binary-path ( Str $binary, *@server-keys --> Str ) {
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
     my Str $mongodb-server-path = $mdbcfg.cfg.refine(
