@@ -186,7 +186,7 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 *This is done now and it has a tremendous effect on parsing time. When someone needs a particular action often, the user can make a method for him/her-self on a higher level then in this driver. Thoughts are going to write some examples in the MongoDB::HL namespace.*
 
-* Together with the slimdown of the helper functions mentioned above, some parts of the wire protocol are not implemented and even removed. One of the reasons of not implementing them is that these operations (update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. The other reason to remove them is that the run-command() in newer server versions (2.6 and higher) is capable of what was possible in the wire protocol.
+* Together with the slim down of the helper functions mentioned above, some parts of the wire protocol are not implemented and even removed. One of the reasons of not implementing them is that these operations (update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. The other reason to remove them is that the run-command() in newer server versions (2.6 and higher) is capable of what was possible in the wire protocol.
 
 *However, these operations might come in handy for some sort of operation, so I will not completely rule out the implementation of the rest of the wire protocol as these are still supported by all mongodb servers.*
 
