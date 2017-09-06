@@ -2,6 +2,7 @@ use v6;
 use lib 't';
 use Test;
 use Test-support;
+use MongoDB;
 
 #------------------------------------------------------------------------------
 #drop-send-to('mongodb');
