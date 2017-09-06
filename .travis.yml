@@ -3,7 +3,7 @@ dist: precise
 
 branches:
   only:
-    - master
+#    - master
 #    - develop
 
 language: perl6
