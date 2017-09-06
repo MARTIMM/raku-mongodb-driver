@@ -281,7 +281,8 @@ class Test-support {
 
     my Str $file = 'Sandbox/config.toml';
     spurt( $file, $config-text);
-#note "Server config:\n", $config-text;
+
+    trace-message("Server config:\n$config-text";
   }
 
   #----------------------------------------------------------------------------
