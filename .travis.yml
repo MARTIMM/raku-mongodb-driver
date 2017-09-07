@@ -3,9 +3,9 @@ dist: precise
 
 branches:
   only:
-#    - master
+    - master
 #    - develop
-    - accounting
+#    - accounting
 
 language: perl6
 
@@ -13,8 +13,9 @@ perl6:
   - latest
 
 before_install:
-  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 2.6.11
-  - sh $TRAVIS_BUILD_DIR/Travis-ci/install-mongodb.sh 3.2.9
+  # See also https://www.mongodb.org/dl/linux/
+  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 2.6.11
+  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 3.2.9
 
 install:
   - rakudobrew build zef
