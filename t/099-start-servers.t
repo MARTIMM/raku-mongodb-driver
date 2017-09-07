@@ -8,23 +8,15 @@ use MongoDB;
 use MongoDB::Server::Control;
 
 #------------------------------------------------------------------------------
-drop-send-to('mongodb');
-drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+#drop-send-to('mongodb');
+#drop-send-to('screen');
+modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 #------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
-try {
-  for @($ts.serverkeys) -> $skey {
-    ok $ts.server-control.start-mongod($skey), "Server $skey started";
-    CATCH {
-      when X::MongoDB {
-        like .message, /:s exited unsuccessfully/,
-             "Server $skey already started";
-      }
-    }
-  }
+for @($ts.serverkeys) -> $skey {
+  ok $ts.server-control.start-mongod($skey), "Server $skey started";
 }
 
 throws-like
