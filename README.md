@@ -3,6 +3,9 @@
 ![Leaf](logotype/logo_32x32.png)
 [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
+## Note
+There are some problems installing the package while testing is turned on. Please use `zef --/test install MongoDB` for the moment.
+
 ## Synopsis
 
 ```
