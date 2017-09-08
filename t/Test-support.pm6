@@ -1,7 +1,7 @@
 use v6;
 
 #------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 use BSON::Document;
 use MongoDB;
