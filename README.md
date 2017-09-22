@@ -16,8 +16,15 @@ use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
 
-# Set uri to find mongod server and set database to 'myPetProject'
+# Set uri to find mongod server.
+# Important note: see issue #25 here
+# at https://github.com/MARTIMM/mongo-perl6-driver/issues/25
+# To always use a specific ip format one should use 'mongodb://127.0.0.1'
+# or 'mongodb://::1'. With this, one can prevent confusion of the
+# system looking for servers in the wrong ip domain.
 my MongoDB::Client $client .= new(:uri('mongodb://'));
+
+# Set database to 'myPetProject'
 my MongoDB::Database $database = $client.database('myPetProject');
 
 # Drop database before start to get proper values for this test
