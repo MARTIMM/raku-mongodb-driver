@@ -2,6 +2,9 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.40.0
+  * Uri could not cope with ipv6 addresses. Server also need some changes.
+  * Tests added to check for a server with ipv6 address.
 * 0.39.0
   * Changes in setup of tests using a wrapper. It is now possible to start a set of tests with a particular server setup. With this, older server versions can be tested. Also tests can be grouped. So the user install can be simple and when on Travis, a complete set of tests can be executed.
   * Mongod server version 2.6.* supported without authentication.
