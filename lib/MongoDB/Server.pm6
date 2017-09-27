@@ -50,10 +50,14 @@ class Server {
     $!sockets = Array[MongoDB::Server::Socket].new;
     $!server-is-registered = False;
 
-    # Save name and port of the server
-    ( my $host, my $port) = split( ':', $server-name);
-    $!server-name = $host;
-    $!server-port = $port.Int;
+    # Save name and port of the server. Servername and port are always
+    # 'hostname:port' format, even when ipv6. This is set by Client and by
+    # the server in their hosts list and other entries. The port number is
+    # always present at this point, extracting it from the end from the spec.
+    my Int $port = $!server-port = [$server-name.split(':')].pop.Int;
+    $!server-name = $server-name;
+    $!server-name ~~ s/ ':' $port $//;
+note "S: $!server-name, H: $!server-port";
 
     # Start monitoring
     my MongoDB::Server::Monitor $m .= instance;

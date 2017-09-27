@@ -11,13 +11,15 @@ use BSON::Document;
 
 #------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
+#drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
 
+#%*ENV<SERVERKEYS> = 's1,s2';
 my @serverkeys = $ts.serverkeys.sort;
+
 my Int $p1 = $ts.server-control.get-port-number(@serverkeys[0]);
 my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
 my MongoDB::Client $client;
@@ -37,6 +39,7 @@ subtest 'Unknown server', {
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
+  $client.cleanup;
 
   $server-name = "localhost:65535";
   $client .= new(:uri("mongodb://$server-name/?" ~ @options.join('&')));
@@ -45,10 +48,11 @@ subtest 'Unknown server', {
   is $client.server-status($server-name), SS-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
+  $client.cleanup;
 }
 
 #------------------------------------------------------------------------------
-subtest "Standalone server", {
+subtest "Standalone server, localhost", {
 
   my Str $server-name = "localhost:$p1";
   my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=300>;
@@ -63,10 +67,30 @@ subtest "Standalone server", {
      "Status of server is $client.server-status($server-name)";
 
   is $client.topology, TT-Single, "Topology $client.topology()";
+  $client.cleanup;
 }
 
 #------------------------------------------------------------------------------
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+subtest "Standalone server, ipv6", {
+
+  # Try it with ipv6
+  my Str $server-name = "[::1]:$p1";
+  my @options = <serverSelectionTimeoutMS=5000 heartbeatFrequencyMS=300>;
+
+  $client .= new(:uri("mongodb://$server-name/?" ~  ~ @options.join('&')));
+
+  # do select server before server status test because selection waits
+  $server = $client.select-server;
+  ok $server.defined, 'Server selected';
+
+  is $client.server-status($server-name), SS-Standalone,
+     "Status of server is $client.server-status($server-name)";
+
+  is $client.topology, TT-Single, "Topology $client.topology()";
+  $client.cleanup;
+}
+
+#------------------------------------------------------------------------------
 subtest "Two equal standalone servers", {
 
   my Str $server-name1 = "localhost:$p1";
