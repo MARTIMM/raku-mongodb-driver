@@ -61,10 +61,10 @@ subtest "Standalone server, localhost", {
 
   # do select server before server status test because selection waits
   $server = $client.select-server;
-  ok $server.defined, 'Server selected';
+  ok $server.defined, "Server $server.name() selected";
 
   is $client.server-status($server-name), SS-Standalone,
-     "Status of server is $client.server-status($server-name)";
+     "Status of server $server.name() is $client.server-status($server-name)";
 
   is $client.topology, TT-Single, "Topology $client.topology()";
   $client.cleanup;
@@ -81,10 +81,10 @@ subtest "Standalone server, ipv6", {
 
   # do select server before server status test because selection waits
   $server = $client.select-server;
-  ok $server.defined, 'Server selected';
+  ok $server.defined, "Server $server.name() selected";
 
   is $client.server-status($server-name), SS-Standalone,
-     "Status of server is $client.server-status($server-name)";
+     "Status of server $server.name() is $client.server-status($server-name)";
 
   is $client.topology, TT-Single, "Topology $client.topology()";
   $client.cleanup;
