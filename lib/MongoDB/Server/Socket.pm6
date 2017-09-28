@@ -27,12 +27,19 @@ class Server::Socket {
       $!sock .= new( :host($!server.server-name), :port($!server.server-port));
       CATCH {
         default {
-          # Retry for ipv6
-          $!sock .= new(
-            :host($!server.server-name),
-            :port($!server.server-port),
-            :family(PF_INET6)
-          );
+          try {
+            # Retry for ipv6
+            $!sock .= new(
+              :host($!server.server-name),
+              :port($!server.server-port),
+              :family(PF_INET6)
+            );
+
+            CATCH {
+#              note '=' x 70, "\n", .message, "\n", '=' x 70;
+              .rethrow;
+            }
+          }
         }
       }
     }
