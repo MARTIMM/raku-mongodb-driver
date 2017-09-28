@@ -164,7 +164,7 @@ class Test-support {
       fork = true
       smallfiles = true
       oplogSize = 128
-      #ipv6 = true
+      ipv6 = true
       #quiet = true
       #verbose = '=command=v =nework=v'
       verbose = 'vv'
@@ -222,6 +222,9 @@ class Test-support {
           replicate1 => 'first_replicate',
         },
       },
+#      s7 => {
+#        ipv6 => true,
+#      },
     };
 
     for $server-setup.keys -> Str $skey {
