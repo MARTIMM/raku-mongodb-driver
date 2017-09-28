@@ -90,7 +90,7 @@ class Uri {
           last;
         }
       }
-note "H:$h, P:$p";
+
       $!host-ports.push: %( host => $h.lc, port => $p) unless $found-hp;
     }
 
