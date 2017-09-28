@@ -23,7 +23,19 @@ class Server::Socket {
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
     trace-message("open socket $!server.server-name(), $!server.server-port()");
-    $!sock .= new( :host($!server.server-name), :port($!server.server-port));
+    try {
+      $!sock .= new( :host($!server.server-name), :port($!server.server-port));
+      CATCH {
+        default {
+          # Retry for ipv6
+          $!sock .= new(
+            :host($!server.server-name),
+            :port($!server.server-port),
+            :family(PF_INET6)
+          );
+        }
+      }
+    }
   };
 
   #-----------------------------------------------------------------------------
