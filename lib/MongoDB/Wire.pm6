@@ -100,7 +100,7 @@ class Wire {
 
         # Other messages from Socket.open
         when .message ~~ m:s/Failed to resolve host name/ ||
-             .message ~~ m:s/Could not connect socket\: Connection refused/ ||
+             .message ~~ m:s/Could not connect socket/ ||
              .message ~~ m:s/Could not receive data from socket/ ||
              .message ~~ m:s/Connection reset by peer/ {
 
