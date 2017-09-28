@@ -51,13 +51,15 @@ class Server {
     $!server-is-registered = False;
 
     # Save name and port of the server. Servername and port are always
-    # 'hostname:port' format, even when ipv6. This is set by Client and by
-    # the server in their hosts list and other entries. The port number is
-    # always present at this point, extracting it from the end from the spec.
+    # 'hostname:port' format, even when ipv6. The port number is always
+    # present at this point, extracting it from the end from the spec.
     my Int $port = $!server-port = [$server-name.split(':')].pop.Int;
     $!server-name = $server-name;
     $!server-name ~~ s/ ':' $port $//;
-note "S: $!server-name, H: $!server-port";
+
+    # Remove the brackets if they are there.
+    $!server-name ~~ s/^ '[' //;
+    $!server-name ~~ s/ ']' $//;
 
     # Start monitoring
     my MongoDB::Server::Monitor $m .= instance;
@@ -444,7 +446,21 @@ note "S: $!server-name, H: $!server-port";
   #-----------------------------------------------------------------------------
   method name ( --> Str ) {
 
-    return [~] $!server-name // '-', ':', $!server-port // '-';
+    my Str $name = $!server-name // '-';
+    my Str $port = "$!server-port" // '-';
+    if $name eq '-' or $port eq '-' {
+      $name = '-:-';
+    }
+
+    elsif $name ~~ / ':' / {
+      $name = [~] '[', $name, ']:', $port;
+    }
+
+    else {
+      $name = [~] $name , ':', $port;
+    }
+
+    $name
   }
 
   #-----------------------------------------------------------------------------
