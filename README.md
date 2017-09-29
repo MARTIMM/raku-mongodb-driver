@@ -17,11 +17,12 @@ use MongoDB::Database;
 use MongoDB::Collection;
 
 # Set uri to find mongod server.
-# Important note: see issue #25 here
-# at https://github.com/MARTIMM/mongo-perl6-driver/issues/25
-# To always use a specific ip format one should use 'mongodb://127.0.0.1'
-# or 'mongodb://::1'. With this, one can prevent confusion of the
-# system looking for servers in the wrong ip domain.
+
+# ipv6 will be tried after a failure to connect over ipv4. To always use a
+# specific ip format one should use 'mongodb://127.0.0.1:27017' or
+#'mongodb://[::1]:27017'. Note that the port is by default 27017, so it can
+# be left out in the example above.
+
 my MongoDB::Client $client .= new(:uri('mongodb://'));
 
 # Set database to 'myPetProject'
