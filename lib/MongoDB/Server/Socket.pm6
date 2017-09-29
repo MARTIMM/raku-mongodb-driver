@@ -22,6 +22,7 @@ class Server::Socket {
     $!is-open = True;
     $!thread-id = $*THREAD.id;
     $!time-last-used = time;
+#todo try connect ipv4/ipv6 in parallel
     trace-message("open socket $!server.server-name(), $!server.server-port()");
     try {
       $!sock .= new( :host($!server.server-name), :port($!server.server-port));
