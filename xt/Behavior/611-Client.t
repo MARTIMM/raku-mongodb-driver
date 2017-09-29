@@ -1,7 +1,7 @@
 use v6;
 use Test;
 
-use lib 't', '../BSON/lib';
+use lib 't';
 use Test-support;
 
 use MongoDB;
