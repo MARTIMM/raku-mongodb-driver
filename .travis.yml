@@ -1,5 +1,5 @@
-dist: precise
-#dist: trusty
+#dist: precise
+#dist: trusty   # default after august 2017
 
 branches:
   only:
@@ -41,8 +41,8 @@ script:
   - xt/wrapper.pl6 --serverkeys=s1,s2 --ignore t/099* xt/Behavior/1* t/998*
   - xt/wrapper.pl6 --serverkeys=s4,s5 --ignore t/099* xt/Behavior/1* t/998*
 
-#  - xt/wrapper.pl6 --serverkeys=s1,s2,s3 --ignore t/099* xt/Behavior/6* t/998*
-#  - xt/wrapper.pl6 --serverkeys=s4,s5,s6 --ignore t/099* xt/Behavior/6* t/998*
+  - xt/wrapper.pl6 --serverkeys=s1,s2,s3 --ignore t/099* xt/Behavior/6* t/998*
+  - xt/wrapper.pl6 --serverkeys=s4,s5,s6 --ignore t/099* xt/Behavior/6* t/998*
 
   - xt/wrapper.pl6 t/999-rm-sandbox.t
 
