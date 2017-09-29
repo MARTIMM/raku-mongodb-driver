@@ -3,12 +3,8 @@ use v6;
 use MongoDB;
 
 use BSON::Document;
-use Auth::SCRAM;
 use Base64;
 use OpenSSL::Digest;
-#use Unicode::PRECIS;
-#use Unicode::PRECIS::Identifier::UsernameCasePreserved;
-#use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
