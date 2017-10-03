@@ -1,5 +1,5 @@
 #dist: precise
-#dist: trusty   # default after august 2017
+dist: trusty   # default after august 2017
 
 branches:
   only:
