@@ -10,8 +10,6 @@ package MongoDB:auth<github:MARTIMM> {
                        :Warn(WARNING) :Error(ERROR) :Fatal(FATAL)
                     >>;
 
-#  enum Loglevels <<:Trace(1) Debug Info Warn Error Fatal>>;
-
   enum SendSetup < LOGOUTPUT LOGLEVEL LOGCODE >;
 
   #----------------------------------------------------------------------------
@@ -54,6 +52,7 @@ package MongoDB:auth<github:MARTIMM> {
         $!send-to-setup{$key}[LOGOUTPUT].close;
       }
 
+      # define the entry [ output channel, error level, code to run]
       $!send-to-setup{$key} = [ $output, (* >= $min-level), $code];
       self!start-send-to;
     }
@@ -64,7 +63,6 @@ package MongoDB:auth<github:MARTIMM> {
       Str $key, :$level, Code :$code,
       Any :$to is copy, Str :$pipe
     ) {
-  #say "$key, $to, $level, {$code//'-'}";
 
       if $!send-to-setup{$key}:!exists {
         note "key $key not found";
@@ -133,17 +131,18 @@ package MongoDB:auth<github:MARTIMM> {
       self.close-taps;
       for $!send-to-setup.keys -> $k {
         if ? $!send-to-setup{$k}[LOGCODE] {
-          logger.send-to:
+          logger.send-to(
             $!send-to-setup{$k}[LOGOUTPUT],
             :code($!send-to-setup{$k}[LOGCODE]),
             :level($!send-to-setup{$k}[LOGLEVEL])
-          ;
+          );
         }
 
         else {
-          logger.send-to:
+          logger.send-to(
             $!send-to-setup{$k}[LOGOUTPUT],
-            :level($!send-to-setup{$k}[LOGLEVEL]);
+            :level($!send-to-setup{$k}[LOGLEVEL])
+          );
         }
       }
     }
@@ -152,7 +151,7 @@ package MongoDB:auth<github:MARTIMM> {
     # send-to method
     multi method send-to ( IO::Handle:D $fh, Code:D :$code!, |args ) {
 
-      logger.add-tap: -> $m { $m<fh> = $fh; $code($m); }, |args;
+      logger.add-tap( -> $m { $m<fh> = $fh; $code($m); }, |args);
     }
 
     #--------------------------------------------------------------------------
@@ -173,24 +172,19 @@ package MongoDB:auth<github:MARTIMM> {
       }
 
 #note "\n$m";
-      (start $.source.emit($m)).then( {
+      ( start $.source.emit($m) ).then( {
 #          say LogLevel::TRACE;
 #          say LogLevel::Trace;
 #          say MongoDB::Log::Trace;
 #          say .perl;
-          say $^p.cause unless $^p.status == Kept
+          note $^p.cause unless $^p.status == Kept
         }
       );
     }
   }
-
-  #set-logger(MongoDB::Log.new);
-  #logger.close-taps;
 }
 
 #------------------------------------------------------------------------------
-#my MongoDB::Log $mdb-logger .= instance;
-#sub logger is export {$mdb-logger}
 set-logger(MongoDB::Log.new());
 
 #------------------------------------------------------------------------------
@@ -205,7 +199,7 @@ class X::MongoDB is Exception {
 # preparations of code to be provided to log()
 sub search-callframe ( $type --> CallFrame ) {
 
-  # Skip callframes for
+  # skip callframes for
   # 0  search-callframe(method)
   # 1  log(method)
   # 2  send-to(method)
@@ -215,7 +209,7 @@ sub search-callframe ( $type --> CallFrame ) {
   my $fn = 4;
   while my CallFrame $cf = callframe($fn++) {
 
-    # End loop with the program that starts on line 1 and code object is
+    # end loop with the program that starts on line 1 and code object is
     # a hollow shell.
     if ?$cf and $cf.line == 1  and $cf.code ~~ Mu {
 
@@ -223,7 +217,7 @@ sub search-callframe ( $type --> CallFrame ) {
       last;
     }
 
-    # Cannot pass sub THREAD-ENTRY either
+    # cannot pass sub THREAD-ENTRY either
     if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
 
       $cf = Nil;
@@ -236,12 +230,12 @@ sub search-callframe ( $type --> CallFrame ) {
       last;
     }
 
-    # Try to find a better place instead of dispatch, BUILDALL etc:...
+    # try to find a better place instead of dispatch, BUILDALL etc:...
     next if $cf.code ~~ $type and $cf.code.name ~~ m/dispatch/;
     last if $cf.code ~~ $type;
   }
 
-  return $cf;
+  $cf
 }
 
 #------------------------------------------------------------------------------
@@ -252,9 +246,9 @@ my Code $log-code-cf = sub (
   --> Hash
 ) {
   my CallFrame $cf;
-  my Str $method = '';        # Method or routine name
-  my Int $line = 0;           # Line number where Message is called
-  my Str $file = '';          # File in which that happened
+  my Str $method = '';        # method or routine name
+  my Int $line = 0;           # line number where Message is called
+  my Str $file = '';          # file in which that happened
 
   $cf = search-callframe(Method);
   $cf = search-callframe(Submethod)     unless $cf.defined;
@@ -272,7 +266,7 @@ my Code $log-code-cf = sub (
     :thid($*THREAD.id),
     :$line, :$file, :$method,
     :$msg, :$level, :$when,
-  );
+  )
 }
 
 #------------------------------------------------------------------------------
@@ -282,15 +276,15 @@ my Code $log-code = sub (
   DateTime :$when = DateTime.now.utc
   --> Hash
 ) {
-  my Str $method = '';        # Method or routine name
-  my Int $line = 0;           # Line number where Message is called
-  my Str $file = '';          # File in which that happened
+  my Str $method = '';        # method or routine name
+  my Int $line = 0;           # line number where Message is called
+  my Str $file = '';          # file in which that happened
 
   hash(
     :thid($*THREAD.id),
     :$line, :$file, :$method,
     :$msg, :$level, :$when,
-  );
+  )
 }
 
 #------------------------------------------------------------------------------
@@ -327,7 +321,7 @@ sub fatal-message ( Str $msg ) is export {
 
 #------------------------------------------------------------------------------
 # preparations of code to be provided to send-to()
-# Loglevels enum counts from 1 so 0 has placeholder PH
+# loglevels enum counts from 1 so 0 has placeholder PH0
 my Array $sv-lvls = [< PH0 T D I W E F>];
 my Array $clr-lvls = [
   'PH1',
@@ -339,7 +333,7 @@ my Array $clr-lvls = [
   'bold white on_255,0,255'
 ];
 
-my Code $code = -> $m {
+my Code $code = sub ( $m ) {
   my Str $dt-str = $m<when>.Str;
   $dt-str ~~ s:g/ <[T]> / /;
   $dt-str ~~ s:g/ <[Z]> //;
@@ -349,19 +343,20 @@ my Code $code = -> $m {
     $fh.print: color($clr-lvls[$m<level>]);
   }
 
-  $fh.print: ( [~]
-    $dt-str,
-    ' [' ~ $sv-lvls[$m<level>] ~ ']',
-    ? $m<thid> ?? " $m<thid>.fmt('%2d')" !! '',
-    ? $m<msg> ?? ": $m<msg>" !! '',
-    ? $m<file> ?? ". At $m<file>" !! '',
-    ? $m<line> ?? ':' ~ $m<line> !! '',
-    ? $m<method> ?? " in $m<method>" ~ ($m<method> eq '<unit>' ?? '' !! '()')
-                 !! '',
+  $fh.print( (
+      [~] $dt-str,
+      ' [' ~ $sv-lvls[$m<level>] ~ ']',
+      ? $m<thid> ?? " $m<thid>.fmt('%2d')" !! '',
+      ? $m<msg> ?? ": $m<msg>" !! '',
+      ? $m<file> ?? ". At $m<file>" !! '',
+      ? $m<line> ?? ':' ~ $m<line> !! '',
+      ? $m<method> ?? " in $m<method>" ~ ($m<method> eq '<unit>' ?? '' !! '()')
+                   !! '',
+    )
   );
 
-  $fh.print: color('reset') if $fh ~~ any( $*OUT, $*ERR);
-  $fh.print: "\n";
+  $fh.print(color('reset')) if $fh ~~ any( $*OUT, $*ERR);
+  $fh.print("\n");
 };
 
 #------------------------------------------------------------------------------
@@ -371,7 +366,11 @@ sub drop-send-to ( |c ) is export { logger.drop-send-to(|c); }
 sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
 
 #------------------------------------------------------------------------------
-# Activate some channels. Display messages only on error and fatal to the screen
+# activate some channels. Display messages only on error and fatal to the screen
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
 add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::MdbLoglevels::Error));
-add-send-to( 'mongodb', :pipe('sort >> MongoDB.log'), :min-level(MongoDB::MdbLoglevels::Info));
+add-send-to(
+  'mongodb',
+  :pipe('sort >> MongoDB.log'),
+  :min-level(MongoDB::MdbLoglevels::Info)
+);

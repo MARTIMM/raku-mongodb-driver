@@ -364,7 +364,7 @@ class Client {
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
-      info-message("Server '$selected-server.name()' selected");
+      debug-message("Server '$selected-server.name()' selected");
     }
 
     else {
@@ -494,7 +494,7 @@ class Client {
     debug-message("Searched for {(now - $t0) * 1000} ms");
 
     if ?$selected-server {
-      info-message("Server '$selected-server.name()' selected");
+      debug-message("Server '$selected-server.name()' selected");
     }
 
     else {

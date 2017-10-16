@@ -2,6 +2,12 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.40.0
+  * Driver can now connect using IPv6
+    * Fixed: MongoDB::Uri could not cope with ipv6 addresses. One can now enter e.g. **mongodb://[::1]:27017**.
+    * Fixed: MongoDB::Server also need some changes. Method `name` returns the servername including the brackets when ipv6 address. Submethod `BUILD` is changed to handle the brackets around an ipv6 address.
+    * Fixed: MongoDB::Server::Socket submethod `BUILD` now retries after a connect failure with the `PF_INET6` family option. These tests are rather quick when the servers are close. So ipv4 is tested first, then ipv6. In the future this might change in sequence or tried in parallel.
+    * Test servers are configured to listen to ipv6 sockets (always on for 3.* servers). Tests added in 110-client.t to check for a server with ipv6 address.
 * 0.39.0
   * Changes in setup of tests using a wrapper. It is now possible to start a set of tests with a particular server setup. With this, older server versions can be tested. Also tests can be grouped. So the user install can be simple and when on Travis, a complete set of tests can be executed.
   * Mongod server version 2.6.* supported without authentication.

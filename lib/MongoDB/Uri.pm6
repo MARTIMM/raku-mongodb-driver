@@ -31,7 +31,14 @@ class Uri {
 
     token host-port { <host> [ ':' <port> ]? }
 
-    token host { <[\w\d\-\.]>* }
+#todo ipv6, ipv4 and domainames
+#https://stackoverflow.com/questions/186829/how-do-ports-work-with-ipv6
+#https://en.wikipedia.org/wiki/IPv6_address#Literal_IPv6_addresses_in_network_resource_identifiers
+#http://[1fff:0:a88:85a3::ac1f]:8001/index.html
+    token host { <ipv4-host> || <ipv6-host> || <hname> }
+    token ipv4-host { \d**1..3 [ '.' \d**1..3 ]**3 }
+    token ipv6-host { '[' ~ ']' [ [ \d || ':' ]+ ] }
+    token hname { <[\w\d\-\.]>* }
 
     token port { \d+ }
 
@@ -68,6 +75,9 @@ class Uri {
 
     method host-port (Match $m) {
       my $h = ? ~$m<host> ?? ~$m<host> !! 'localhost';
+
+      # in case of an ipv6 address, remove the brackets around the ip spec
+#      $h ~~ s:g/ <[\[\]]> //;
 
       my $p = $m<port> ?? (~$m<port>).Int !! 27017;
       return fatal-message("Port number out of range ")

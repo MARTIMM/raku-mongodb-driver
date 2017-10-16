@@ -3,6 +3,9 @@
 ![Leaf](logotype/logo_32x32.png)
 [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
+## Note
+There are some problems installing the package while testing is turned on. Please use `zef --/test install MongoDB` for the moment.
+
 ## Synopsis
 
 ```
@@ -13,8 +16,16 @@ use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
 
-# Set uri to find mongod server and set database to 'myPetProject'
+# Set uri to find mongod server.
+
+# ipv6 will be tried after a failure to connect over ipv4. To always use a
+# specific ip format one should use 'mongodb://127.0.0.1:27017' or
+#'mongodb://[::1]:27017'. Note that the port is by default 27017, so it can
+# be left out in the example above.
+
 my MongoDB::Client $client .= new(:uri('mongodb://'));
+
+# Set database to 'myPetProject'
 my MongoDB::Database $database = $client.database('myPetProject');
 
 # Drop database before start to get proper values for this test

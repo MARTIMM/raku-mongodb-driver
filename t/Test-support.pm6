@@ -1,7 +1,7 @@
 use v6;
 
 #------------------------------------------------------------------------------
-unit package MongoDB:auth<https://github.com/MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 use BSON::Document;
 use MongoDB;
@@ -140,9 +140,9 @@ class Test-support {
 
     # if we are under the scrutany of TRAVIS then adjust the path where to find the
     # mongod/mongos binaries
-    if ? %*ENV<TRAVIS> {
-      %*ENV<PATH> = "$*CWD/Travis-ci/MongoDB:%*ENV<PATH>";
-    }
+#    if ? %*ENV<TRAVIS> {
+#      %*ENV<PATH> = "$*CWD/t/Travis-ci/MongoDB:%*ENV<PATH>";
+#    }
 
     mkdir( 'Sandbox', 0o700);
     my Int $start-portnbr = 65010;
@@ -156,15 +156,15 @@ class Test-support {
       pwd = 'T3st-Us3r'
 
     [ binaries ]
-      mongod = '$*CWD/Travis-ci/3.2.9/mongod'
-      mongos = '$*CWD/Travis-ci/3.2.9/mongos'
+      mongod = '$*CWD/t/Travis-ci/3.2.9/mongod'
+      mongos = '$*CWD/t/Travis-ci/3.2.9/mongos'
 
     [ mongod ]
       nojournal = true
       fork = true
       smallfiles = true
       oplogSize = 128
-      #ipv6 = true
+      ipv6 = true
       #quiet = true
       #verbose = '=command=v =nework=v'
       verbose = 'vv'
@@ -222,6 +222,9 @@ class Test-support {
           replicate1 => 'first_replicate',
         },
       },
+#      s7 => {
+#        ipv6 => true,
+#      },
     };
 
     for $server-setup.keys -> Str $skey {
@@ -273,8 +276,8 @@ class Test-support {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
         [ binaries.$skey ]
-          mongod = '$*CWD/Travis-ci/{$server-setup{$skey}<server-version>}/mongod'
-          mongos = '$*CWD/Travis-ci/{$server-setup{$skey}<server-version>}/mongos'
+          mongod = '$*CWD/t/Travis-ci/{$server-setup{$skey}<server-version>}/mongod'
+          mongos = '$*CWD/t/Travis-ci/{$server-setup{$skey}<server-version>}/mongos'
         EOCONFIG
       }
     } # for $server-setup.keys -> Str $skey
@@ -282,8 +285,8 @@ class Test-support {
     my Str $file = 'Sandbox/config.toml';
     spurt( $file, $config-text);
 
-    trace-message("Current dir: $*CWD");
-    trace-message("Server config:\n$config-text");
+note "Current dir: $*CWD";
+note "Server config:\n$config-text";
   }
 
   #----------------------------------------------------------------------------

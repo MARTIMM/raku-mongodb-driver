@@ -23,7 +23,6 @@ This class is your most often used class. It maintains the connection to the
 servers specified in the given uri. In the background it herds a set of
 C<MongoDB::Server> objects.
 
-
 =head1 Readonly attributes
 
 =head2 read-concern
@@ -45,7 +44,11 @@ The structure will be explained elsewhere.
 =comment    TopologyType :$topology-type = TT-Unknown,
 =comment    Int :$!idle-write-period-ms = 10_000,
 
-Create a C<MongoDB::Client> object.
+Create a C<MongoDB::Client> object. The servers are reachable in both ipv4 and ipv6
+domains. The ipv4 domain is tried first and after a failure ipv6 is tried. To
+specify a specific address, the following formats is possible;
+C<mongodb://127.0.0.1:27017> for ipv4 or C<mongodb://[::1]:27017> for ipv6.
+
 
 B<Note>. It is important to keep the following in mind to prevent memory leakage.
 The object must be cleaned up by hand before the variable is reused. This is
@@ -73,7 +76,11 @@ C<MongoDB::Client> object to create a new one!
   $c2 .= new(...);
 
   # And this will result in memory leakage because $c2 was already defined.
+  # With an extra note that in the background servers mentioned in $c2 will
+  # continue to be monitored resulting in loss of performance for the rest
+  # of the program!
   $c2 = MongoDB::Client.new(...);
+
 
 =head3 read-concern
 

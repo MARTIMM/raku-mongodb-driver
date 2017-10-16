@@ -14,16 +14,8 @@ info-message("Test $?FILE start");
 my MongoDB::Test-support $ts .= new;
 
 #------------------------------------------------------------------------------
-try {
-  for @($ts.serverkeys) -> $skey {
-    ok $ts.server-control.stop-mongod($skey), "Server $skey is stopped";
-    CATCH {
-      when X::MongoDB {
-        like .message, /:s exited unsuccessfully/,
-             "Server $skey already down";
-      }
-    }
-  }
+for @($ts.serverkeys) -> $skey {
+  ok $ts.server-control.stop-mongod($skey), "Server $skey is stopped";
 }
 
 throws-like

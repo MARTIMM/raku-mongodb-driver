@@ -3,12 +3,8 @@ use v6;
 use MongoDB;
 
 use BSON::Document;
-use Auth::SCRAM;
 use Base64;
 use OpenSSL::Digest;
-#use Unicode::PRECIS;
-#use Unicode::PRECIS::Identifier::UsernameCasePreserved;
-#use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
@@ -76,21 +72,7 @@ class Authenticate::Scram {
 
   #-----------------------------------------------------------------------------
   method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
-#`{{
-    my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
-    my TestValue $tv-un = $upi-ucp.enforce($username);
-    fatal-message("Username $username not accepted") if $tv-un ~~ Bool;
-    info-message("Username '$username' accepted as '$tv-un'");
 
-    my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
-    my TestValue $tv-pw = $upf-os.enforce($password);
-    fatal-message("Password not accepted") if $tv-un ~~ Bool;
-    info-message("Password accepted");
-
-    my utf8 $mdb-hashed-pw = ($tv-un ~ ':mongo:' ~ $tv-pw).encode;
-    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-    Buf.new($md5-mdb-hashed-pw.encode);
-}}
     my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
     my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
     Buf.new($md5-mdb-hashed-pw.encode);
@@ -114,8 +96,6 @@ class Authenticate::Scram {
     else {
       error-message("$doc<code>, $doc<errmsg>");
     }
-
-#      Buf.new(decode-base64($doc<payload>)).decode;
   }
 
   #-----------------------------------------------------------------------------
