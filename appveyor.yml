@@ -16,6 +16,7 @@ install:
   - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName "%APPVEYOR_BUILD_FOLDER%\rakudo.msi"
   - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
+  - zef --/test install Log::Async
   - zef --depsonly install .
 
 build: off
