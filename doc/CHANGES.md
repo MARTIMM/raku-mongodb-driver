@@ -2,6 +2,12 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.40.3
+  * Users.pm6; normalization done client side until mongo server is ready for it. md5 method from OpenSSL::Digest now.
+* 0.40.2
+  * Removed Digest::MD5 in favor of OpenSSL::Digest used in Users.pm6.
+* 0.40.1
+  * ...
 * 0.40.0
   * Driver can now connect using IPv6
     * Fixed: MongoDB::Uri could not cope with ipv6 addresses. One can now enter e.g. **mongodb://[::1]:27017**.
