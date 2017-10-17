@@ -1,11 +1,11 @@
 use v6;
-use Digest::MD5;
+use OpenSSL::Digest;
 use MongoDB;
 use MongoDB::Database;
 use BSON::Document;
-#use Unicode::PRECIS;
-#use Unicode::PRECIS::Identifier::UsernameCasePreserved;
-#use Unicode::PRECIS::FreeForm::OpaqueString;
+use Unicode::PRECIS;
+use Unicode::PRECIS::Identifier::UsernameCasePreserved;
+use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<hgithub:MARTIMM>;
@@ -137,7 +137,7 @@ class MongoDB::HL::Users {
     }
 
 #TODO normalization done here or on server? assume on server.
-#`{{
+#`{{}}
     # Normalize username and password
     my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
     my TestValue $tv-un = $upi-ucp.prepare($user);
@@ -146,27 +146,28 @@ class MongoDB::HL::Users {
 
     my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
     my TestValue $tv-pw = $upf-os.prepare($password);
-    fatal-message("Password not accepted") if $tv-un ~~ Bool;
+    fatal-message("Password not accepted") if $tv-pw ~~ Bool;
     info-message("Password accepted");
 
     # Create user where digestPassword is set false
     my BSON::Document $req .= new: (
       createUser => $user,
-      pwd => (Digest::MD5.md5_hex( [~] $tv-un, ':mongo:', $tv-pw)),
+      pwd => md5(([~] $tv-un, ':mongo:', $tv-pw).encode)>>.fmt('%02x').join(''),
       digestPassword => False
     );
-}}
 
+#`{{
     # Create user where digestPassword is set false
     my BSON::Document $req .= new: (
       createUser => $user,
-      pwd => (Digest::MD5.md5_hex( [~] $user, ':mongo:', $password)),
+      pwd => md5(([~] $user, ':mongo:', $password).encode)>>.fmt('%02x').join(''),
       digestPassword => False
     );
-
+}}
     $req<roles> = $roles if ?$roles;
     $req<customData> = $custom-data if ?$custom-data;
 #      $req<writeConcern> = ( :j, :$wtimeout) if ?$wtimeout;
+
     return $!database.run-command($req);
   }
 
@@ -241,7 +242,7 @@ class MongoDB::HL::Users {
 
         $req<pwd> = (Digest::MD5.md5_hex([~] $tv-un, ':mongo:', $tv-pw));
 }}
-        $req<pwd> = (Digest::MD5.md5_hex([~] $user, ':mongo:', $password));
+        $req<pwd> = md5(([~] $user, ':mongo:', $password).encode)>>.fmt('%02x').join('');
       }
 
       else {

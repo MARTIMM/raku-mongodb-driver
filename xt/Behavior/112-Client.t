@@ -1,5 +1,5 @@
 use v6;
-use lib 't';
+use lib 't'; #, '../BSON/lib';
 
 use Test;
 use Test-support;
@@ -14,7 +14,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Info));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
