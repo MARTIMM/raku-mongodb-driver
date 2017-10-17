@@ -31,4 +31,7 @@ test_script:
 #shallow_clone: true
 
 # set clone depth
-#clone_depth: 4
+clone_depth: 5
+
+environment:
+  Test-Env: AppVeyor
