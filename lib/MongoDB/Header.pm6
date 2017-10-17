@@ -105,35 +105,40 @@ class Header {
 #Cannot call method 'Stringy' on a null object
 #  in block  at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) line 668
 #  in method encode-query at /home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 112
+#
+# encode() on any, error: Something went wrong in (BSON)
+#   in block  at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/1C86C2A42ED2791383D5AE68657AB40DE055BD1C (BSON::Document) line 594
+#   in method encode at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/1C86C2A42ED2791383D5AE68657AB40DE055BD1C (BSON::Document) line 585
+#   in method encode-query at /home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 111
+# ...
 
-      my Buf $query-buffer = [~]
+      my Buf $query-buffer .= new;
 
       # int32 flags
       # bit vector of query options
       #
-      encode-int32($flags),
+      $query-buffer ~= encode-int32($flags);
 
       # cstring fullCollectionName
       # "dbname.collectionname"
       #
-      encode-cstring($full-collection-name),
+      $query-buffer ~= encode-cstring($full-collection-name);
 
       # int32 numberToSkip
       # number of documents to skip
       #
-      encode-int32($number-to-skip),
+      $query-buffer ~= encode-int32($number-to-skip);
 
       # int32 numberToReturn
       # number of documents to return
       # in the first OP-REPLY batch
       #
-      encode-int32($number-to-return),
+      $query-buffer ~= encode-int32($number-to-return);
 
       # document query
       # query object
       #
-      $query.encode
-    ;
+      $query-buffer ~= $query.encode;
 
 
     # [ document  returnFieldSelector; ]
