@@ -12,8 +12,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+#drop-send-to('screen');
+modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -44,7 +44,7 @@ subtest "Client behaviour while shutdown and start server", {
   # Bring server up again to see if the Client recovers...
   ok $ts.server-control.start-mongod(@serverkeys[0]),
      "Server @serverkeys[0] started";
-  sleep 1.0;
+  sleep 5.0;
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
@@ -54,6 +54,8 @@ subtest "Client behaviour while shutdown and start server", {
   $client.cleanup;
 }
 
+done-testing;
+=finish
 #-------------------------------------------------------------------------------
 subtest "Shutdown/restart server while inserting records", {
 
