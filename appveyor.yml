@@ -17,6 +17,7 @@ install:
   - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
   - zef --/test install Log::Async
+  - zef --/test install Config::TOML
   - zef --depsonly install .
 
 build: off
