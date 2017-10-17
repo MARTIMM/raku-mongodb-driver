@@ -1,0 +1,40 @@
+os: Visual Studio 2015
+
+platform: x64
+
+branches:
+  # whitelist
+  only:
+#    - master
+#    - develop
+    - dummy-branch
+
+install:
+  - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
+  - choco feature enable -n allowEmptyChecksums
+  - choco install strawberryperl
+  - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
+  - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName "%APPVEYOR_BUILD_FOLDER%\rakudo.msi"
+  - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
+  - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
+  - zef --/test install Log::Async
+  - zef --/test install Config::TOML
+  - zef --depsonly install .
+
+build: off
+
+test_script:
+  - prove -v -e "perl6 -Ilib" t/
+
+  - xt/wrapper.pl6 t/098-mk-sandbox.t
+  - xt/wrapper.pl6 --serverkeys=s4 t/099* t/[2-5]* t/998*
+  - xt/wrapper.pl6 t/999-rm-sandbox.t
+
+# fetch repository as zip archive
+#shallow_clone: true
+
+# set clone depth
+clone_depth: 5
+
+environment:
+  Test-Env: AppVeyor
