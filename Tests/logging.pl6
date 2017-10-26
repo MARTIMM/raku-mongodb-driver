@@ -7,7 +7,6 @@ use BSON::Document;
 use MongoDB::Client;
 use MongoDB::Database;
 
-
 my MongoDB::Client $c .= new(:uri<mongodb://localhost:65011>);
 my MongoDB::Database $db = $c.database('test');
 my BSON::Document $doc = $db.run-command: (
@@ -28,6 +27,8 @@ my BSON::Document $doc = $db.run-command: (
 note "Insert result: ", $doc.perl;
 
 modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Info));
-for $db.collection('users').find() -> BSON::Document $user {
+for $db.collection('users').find(
+  :projection((:_id(0),:name(1),:address(1)))
+) -> BSON::Document $user {
   info-message(~$user);
 }
