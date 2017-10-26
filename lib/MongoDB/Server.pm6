@@ -312,7 +312,7 @@ class Server {
 
       # search for an empty slot
       my Bool $slot-found = False;
-      for @$skts -> $socket {
+      for @$skts -> $socket is rw {
         if not $socket.defined {
           $found-socket = $socket .= new(:server(self));
           $created-anew = True;
