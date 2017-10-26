@@ -270,3 +270,7 @@ MongoDB server versions are supported from 2.6 and up. Versions lower than this 
 
 Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
 Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
+
+## Contributors
+
+Dan Zwell (lefth on github)
