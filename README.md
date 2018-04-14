@@ -1,6 +1,6 @@
 # ![Leaf](logotype/logo_32x32.png) MongoDB Driver
 
-[![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/bson/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
+[![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
 ## Note
 There are some problems installing the package while testing is turned on. Please use `zef --/test install MongoDB` for the moment.
@@ -194,17 +194,17 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 * There is another thing to mention about the helper functions. Providing them will always have a parsing impact while many of them are not always needed. Examples are list-databases(), get-prev-error() etc. Removing the helper functions will reduce the parsing time. This however will not cripple the driver because with the these few calls, one can do everything as long as the servers have a version of 2.6 or higher.
 
-*This is done now and it has a tremendous effect on parsing time. When someone needs a particular action often, the user can make a method for him/her-self on a higher level then in this driver. Thoughts are going to write some examples in the MongoDB::HL namespace.*
+*vThis is done now and it has a tremendous effect on parsing time. When someone needs a particular action often, the user can make a method for him/her-self on a higher level then in this driver. Thoughts are going to write some examples in the MongoDB::HL namespace.*
 
 * Together with the slim down of the helper functions mentioned above, some parts of the wire protocol are not implemented and even removed. One of the reasons of not implementing them is that these operations (update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. The other reason to remove them is that the run-command() in newer server versions (2.6 and higher) is capable of what was possible in the wire protocol.
 
-*However, these operations might come in handy for some sort of operation, so I will not completely rule out the implementation of the rest of the wire protocol as these are still supported by all mongodb servers.*
+* However, these operations might come in handy for some sort of operation, so I will not completely rule out the implementation of the rest of the wire protocol as these are still supported by all mongodb servers.*
 
 * The use of hashes to send and receive mongodb documents is wrong. It is wrong because the key-value pairs in the hash often get a different order then is entered in the hash. Also mongodb needs the command pair at the front of the document. Another place where order matters are sub document queries. A sub document is matched as encoded documents.  So if the server has ```{ a: {b:1, c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since Perl 6 hashes randomizes its key order you never know what the order is.
 
 * Experiments are done using List of Pair to keep the order the same as entered. In the mean time thoughts about how to implement parallel encoding to and decoding from BSON byte strings have been past my mind. These thoughts have been crystallized into a Document class in the BSON package which a) keeps the order, 2) have the same capabilities as Hashes, 3) can do encoding and decoding in parallel.
 
-*This BSON::Document is now available in the BSON package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a BSON::Document. This will be converted internally into this type.*
+* This BSON::Document is now available in the BSON package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a BSON::Document. This will be converted internally into this type.*
 
 * In the future, host/port arguments to Client must be replaced by using a URI in the format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```. See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/).
 
