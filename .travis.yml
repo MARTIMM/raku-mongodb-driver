@@ -31,6 +31,9 @@ install:
 #  depth: 5
 
 script:
+  # Servers s1-s3 are running mongo binaries 3.* versions
+  # Servers s4-s6 are running mongo binaries 2.* versions
+
   - xt/wrapper.pl6 xt/001-meta.t
   - xt/wrapper.pl6 t/098-mk-sandbox.t
 
