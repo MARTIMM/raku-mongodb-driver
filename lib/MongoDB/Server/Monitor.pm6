@@ -155,6 +155,7 @@ class Server::Monitor {
               "Monitor is-master request result for $server-name: "
               ~ ($doc//'-').perl
             );
+
             # when doc is defined, the request ended properly. the ok field
             # in the doc will tell if the operation is succsessful or not
             if $doc.defined {

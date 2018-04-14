@@ -255,8 +255,8 @@ class Server {
   #-----------------------------------------------------------------------------
   # Search in the array for a closed Socket.
   # By default authentiction is needed when user/password info is found in the
-  # uri data. Monitor, however does not need this so therefore it is made
-  # optional.
+  # uri data. Monitor however, does not need this and therefore monitor is
+  # using raw-query with :!authenticate.
 
   # When a new socket is opened and it fails, it will not be stored because the
   # thrown exception is catched in Wire where the call is done. This also means
@@ -273,7 +273,6 @@ class Server {
 #note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
     # Get a free socket entry
-
     my MongoDB::Server::Socket $found-socket;
 
     # Check all sockets first if timed out
