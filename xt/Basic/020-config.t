@@ -21,7 +21,7 @@ subtest {
   );
   isa-ok $mdbcfg, MongoDB::MDBConfig;
   is $mdbcfg.config<mongod><oplogSize>, 128, 'entry oplogSize';
-  is $mdbcfg.cfg.refine(<mongod s2>)<port>, '65011', 'port number select';
+  like $mdbcfg.cfg.refine(<mongod s2>)<port>, /650\d\d/, 'port number select';
   undefine $mdbcfg;
 
 }, "config test";
@@ -31,7 +31,7 @@ subtest {
 
   my MongoDB::Server::Control $mdbcntrl .= new;
   isa-ok $mdbcntrl, MongoDB::Server::Control;
-  is $mdbcntrl.get-port-number('s2'), '65011', 'port number select';
+  like $mdbcntrl.get-port-number('s2'), /650\d\d/, 'port number select';
   undefine $mdbcntrl;
 
 }, "control test";
