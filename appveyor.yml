@@ -5,9 +5,10 @@ platform: x64
 branches:
   # whitelist
   only:
-#    - master
+    - master
+    - windows
 #    - develop
-    - dummy-branch
+#    - dummy-branch
 
 install:
   - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
@@ -24,7 +25,7 @@ install:
 build: off
 
 test_script:
-  - prove -v -e "perl6 -Ilib" t/
+#  - prove -v -e "perl6 -Ilib" t/
 
   - xt/wrapper.pl6 t/098-mk-sandbox.t
   - xt/wrapper.pl6 --serverkeys=s4 t/099* t/[2-5]* t/998*
