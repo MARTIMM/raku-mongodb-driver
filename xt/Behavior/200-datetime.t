@@ -15,7 +15,7 @@ use MongoDB::Client;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 #drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Info));
+modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -40,9 +40,9 @@ sub record-time() {
 	my BSON::Document $req .= new: (
 		update => 'timetest',
 		updates => [ (
-			q => (name => 'time-test',),
-			u => ('$currentDate' => (lastModified => True),),
-			upsert => True,
+  			q => ( name => 'time-test', ),
+  			u => ( '$currentDate' => (lastModified => True), ),
+  			upsert => True,
 		  ),
 		],
 	);
