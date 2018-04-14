@@ -2,6 +2,8 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.40.5
+  * Old relic popped up. `.find-key(Int)` was removed but referred from Database module to get current command sent to server. Changed into `.keys[0]` which does the same. Remember that keys keep same order!
 * 0.40.4
   * Thanks to Dan Zwell, Async::Logger is in the Log module is incorporated better so it can be used independently also if a user wishes.
 * 0.40.3

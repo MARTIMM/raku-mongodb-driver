@@ -59,7 +59,7 @@ class Database {
     --> BSON::Document
   ) {
 
-    debug-message("run command {$command.find-key(0)}");
+    debug-message("run command {$command.keys[0]}");
 
     my BSON::Document $rc = $read-concern // $!read-concern;
 
@@ -86,7 +86,7 @@ class Database {
   ) {
 
     my BSON::Document $command .= new: $pairs;
-    debug-message("run command {$command.find-key(0)}");
+    debug-message("run command {$command.keys[0]}");
 
     my BSON::Document $rc = $read-concern // $!read-concern;
 
@@ -102,7 +102,7 @@ class Database {
     }
 
     my $doc = $cursor.fetch;
-    debug-message("command done {$command.find-key(0)}");
+    debug-message("command done {$command.keys[0]}");
     trace-message("command result {($doc // '-').perl}");
     return $doc.defined ?? $doc !! BSON::Document.new;
   }
