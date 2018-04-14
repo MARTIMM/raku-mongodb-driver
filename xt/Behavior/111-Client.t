@@ -12,8 +12,9 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -44,7 +45,7 @@ subtest "Client behaviour while shutdown and start server", {
   # Bring server up again to see if the Client recovers...
   ok $ts.server-control.start-mongod(@serverkeys[0]),
      "Server @serverkeys[0] started";
-  sleep 5.0;
+  sleep 1.0;
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
@@ -54,8 +55,6 @@ subtest "Client behaviour while shutdown and start server", {
   $client.cleanup;
 }
 
-done-testing;
-=finish
 #-------------------------------------------------------------------------------
 subtest "Shutdown/restart server while inserting records", {
 
@@ -115,7 +114,8 @@ subtest "Shutdown/restart server while inserting records", {
 
   # Bring server down to see what Client does...
   info-message('shutdown server');
-  ok $ts.server-control.stop-mongod(@serverkeys[0]), "Server @serverkeys[0] is stopped";
+  ok $ts.server-control.stop-mongod(@serverkeys[0]),
+     "Server @serverkeys[0] is stopped";
   sleep 1.0;
 
   $server = $client.select-server;
@@ -123,13 +123,14 @@ subtest "Shutdown/restart server while inserting records", {
 
   # Bring server up again to see ift Client recovers...
   info-message('start server');
-  ok $ts.server-control.start-mongod(@serverkeys[0]), "Server @serverkeys[0] started";
+  ok $ts.server-control.start-mongod(@serverkeys[0]),
+     "Server @serverkeys[0] started";
   sleep 0.8;
 
   # Wait for inserts to finish
   is $p.result, "8 records inserted", "8 records inserted";
 
-#  $client.cleanup;
+  $client.cleanup;
 }
 
 #-------------------------------------------------------------------------------
