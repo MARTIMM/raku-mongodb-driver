@@ -222,9 +222,12 @@ class Test-support {
           replicate1 => 'first_replicate',
         },
       },
-#      s7 => {
-#        ipv6 => true,
-#      },
+
+      # Servers ending in 'w' are windows servers
+      s1w => {
+        server-version => '3.6.4',
+        ipv6 => true,
+      },
     };
 
     for $server-setup.keys -> Str $skey {
@@ -272,7 +275,17 @@ class Test-support {
         EOCONFIG
       }
 
-      if $server-setup{$skey}<server-version> {
+      # window server. special binaries location
+      if $skey ~~ /^ s \d+ w $/ {
+        $config-text ~= Q:qq:to/EOCONFIG/;
+
+        [ binaries.$skey ]
+          mongod = 'C:\Program Files\MongoDB\Server\3.6\bin\mongod'
+          mongos = 'C:\Program Files\MongoDB\Server\3.6\bin\mongos'
+        EOCONFIG
+      }
+
+      elsif $server-setup{$skey}<server-version> {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
         [ binaries.$skey ]
