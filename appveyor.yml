@@ -13,10 +13,19 @@ branches:
 install:
   - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
   - choco feature enable -n allowEmptyChecksums
+
+  # https://www.mongodb.org/dl/win32/x86_64-2008plus-ssl
+  - appveyor DownloadFile "http://downloads.mongodb.org/win32/mongodb-win32-x86_64-2008plus-ssl-3.6.4-signed.msi" -FileName "%APPVEYOR_BUILD_FOLDER%\mongod.msi"
+  - msiexec /i mongod.msi /quiet /qn /norestart /log mdb.log
+  - dir C:\Program Files\MongoDB\Server\3.6\bin
+  - SET PATH=C:\Program Files\MongoDB\Server\3.6\bin;%PATH%
+
   - choco install strawberryperl
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
+
   - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName "%APPVEYOR_BUILD_FOLDER%\rakudo.msi"
   - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
+
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
   - zef --/test install Log::Async
   - zef --/test install Config::TOML
@@ -27,9 +36,9 @@ build: off
 test_script:
 #  - prove -v -e "perl6 -Ilib" t/
 
-  - xt/wrapper.pl6 t/098-mk-sandbox.t
-  - xt/wrapper.pl6 --serverkeys=s4 t/099* t/[2-5]* t/998*
-  - xt/wrapper.pl6 t/999-rm-sandbox.t
+  - perl6 xt/wrapper.pl6 t/098-mk-sandbox.t
+  - perl6 xt/wrapper.pl6 --serverkeys=s1w t/099* t/[2-5]* t/998*
+  - perl6 xt/wrapper.pl6 t/999-rm-sandbox.t
 
 # fetch repository as zip archive
 #shallow_clone: true
