@@ -18,7 +18,6 @@ install:
   - appveyor DownloadFile "http://downloads.mongodb.org/win32/mongodb-win32-x86_64-2008plus-ssl-3.6.4.zip" -FileName C:\projects\mongo-perl6-driver\mongodb.zip
   - ps: Expand-Archive C:\projects\mongo-perl6-driver\mongodb.zip .
   - mklink /J .\mongodb-3.6.4 \mongodb-win32-x86_64-2008plus-ssl-3.6.4\bin
-#  - SET PATH="C:\Program Files\MongoDB\Server\3.6\bin;%PATH%"
   - echo %APPVEYOR_BUILD_FOLDER%
   - dir %APPVEYOR_BUILD_FOLDER%
 
@@ -26,8 +25,8 @@ install:
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
 
 #  - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName "%APPVEYOR_BUILD_FOLDER%\rakudo.msi"
-  - appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64%20(JIT).msi" -FileName "%APPVEYOR_BUILD_FOLDER%\rakudo.msi"
-  - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
+  - appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName C:\projects\mongo-perl6-driver\rakudo.msi
+  - msiexec /i C:\projects\mongo-perl6-driver\rakudo.msi /quiet /qn /norestart /log install.log
 
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
   - zef --/test install Log::Async
