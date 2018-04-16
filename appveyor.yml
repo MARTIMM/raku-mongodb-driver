@@ -24,8 +24,9 @@ install:
   - choco install strawberryperl
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
 
-#  - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName "%APPVEYOR_BUILD_FOLDER%\rakudo.msi"
-  - appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName C:\projects\mongo-perl6-driver\rakudo.msi
+    # See also https://rakudo.org/files
+  - appveyor DownloadFile "https://rakudo.org/latest/star/win64" -FileName C:\projects\mongo-perl6-driver\rakudo.msi"
+#  - appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName C:\projects\mongo-perl6-driver\rakudo.msi
   - msiexec /i C:\projects\mongo-perl6-driver\rakudo.msi /quiet /qn /norestart /log install.log
 
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
