@@ -29,9 +29,14 @@ install:
   - msiexec /i C:\projects\mongo-perl6-driver\rakudo.msi /quiet /qn /norestart /log install.log
 
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
-  - zef --/test install Log::Async
-  - zef --/test install Config::TOML
-  - zef --depsonly install .
+#  - zef --/test install Log::Async
+#  - zef --/test install Config::TOML
+#  - zef --/test install Auth::SCRAM
+#  - zef --/test install Base64
+#  - zef --/test install OpenSSL
+#  - zef --/test install Unicode::PRECIS
+#  - zef --/test install Config::DataLang::Refine
+  - zef --/test --depsonly install .
 
 build: off
 
