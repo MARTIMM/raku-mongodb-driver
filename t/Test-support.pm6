@@ -280,8 +280,8 @@ class Test-support {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
         [ binaries.$skey ]
-          mongod = 'C:\Program Files\MongoDB\Server\3.6\bin\mongod'
-          mongos = 'C:\Program Files\MongoDB\Server\3.6\bin\mongos'
+          mongod = "C:\projects\mongo-perl6-driver\mongodb-{$server-setup{$skey}<server-version>}\mongod"
+          mongos = 'C:\projects\mongo-perl6-driver\mongodb-{$server-setup{$skey}<server-version>}\mongos"
         EOCONFIG
       }
 
