@@ -367,7 +367,7 @@ sub drop-all-send-to ( ) is export { $logger.drop-all-send-to(); }
 # activate some channels. Display messages only on error and fatal to the screen
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
 add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::MdbLoglevels::Error));
-if $*kernel.name eq 'linux' {
+if $*KERNEL.name eq 'linux' {
   add-send-to(
     'mongodb',
     :pipe('sort >> MongoDB.log'),
