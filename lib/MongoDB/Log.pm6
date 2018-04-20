@@ -376,7 +376,7 @@ if $*KERNEL.name eq 'linux' {
 }
 
 else {
-  my $handle = 'MongoDB.log'.IO.open( :mode<wo>, :create, :append)
+  my $handle = 'MongoDB.log'.IO.open( :mode<wo>, :create, :append);
   add-send-to(
     'mongodb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info)
   );
