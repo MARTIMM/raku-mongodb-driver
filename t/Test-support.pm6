@@ -10,11 +10,6 @@ use MongoDB::Server::Control;
 use MongoDB::Client;
 
 #------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
-
-#------------------------------------------------------------------------------
 class Test-support {
 
   has MongoDB::Server::Control $.server-control;
@@ -222,9 +217,20 @@ class Test-support {
           replicate1 => 'first_replicate',
         },
       },
-#      s7 => {
-#        ipv6 => true,
-#      },
+
+      # Servers ending in 'w' are windows servers
+      s1w => {
+        replicas => {
+          replicate1 => 'first_replicate',
+          replicate2 => 'second_replicate',
+        },
+        authenticate => True,
+        account => {
+          user => 'Dondersteen',
+          pwd => 'w@tD8jeDan',
+        },
+        server-version => '3.6.4',
+      },
     };
 
     for $server-setup.keys -> Str $skey {
@@ -236,16 +242,29 @@ class Test-support {
       my Int $port-number = self!find-next-free-port($start-portnbr);
       $start-portnbr = $port-number + 1;
 
-      $config-text ~= Q:qq:to/EOCONFIG/;
+      if $skey ~~ m/^ s \d+ w $/ {
+        $config-text ~= Q:qq:to/EOCONFIG/;
 
-      # Configuration for Server $skey
-      [ mongod.$skey ]
-        logpath = '$server-dir/m.log'
-        pidfilepath = '$server-dir/m.pid'
-        dbpath = '$server-dir/m.data'
-        port = $port-number
-      EOCONFIG
+        # Configuration for Server $skey
+        [ mongod.$skey ]
+          logpath = '$server-dir\\m.log'
+          pidfilepath = '$server-dir\\m.pid'
+          dbpath = '$server-dir\\m.data'
+          port = $port-number
+        EOCONFIG
+      }
 
+      else {
+        $config-text ~= Q:qq:to/EOCONFIG/;
+
+        # Configuration for Server $skey
+        [ mongod.$skey ]
+          logpath = '$server-dir/m.log'
+          pidfilepath = '$server-dir/m.pid'
+          dbpath = '$server-dir/m.data'
+          port = $port-number
+        EOCONFIG
+      }
 
       for $server-setup{$skey}<replicas>.keys -> $rkey {
         $config-text ~= Q:qq:to/EOCONFIG/;
@@ -272,7 +291,17 @@ class Test-support {
         EOCONFIG
       }
 
-      if $server-setup{$skey}<server-version> {
+      # window server. special binaries location
+      if $skey ~~ /^ s \d+ w $/ {
+        $config-text ~= Q:qq:to/EOCONFIG/;
+
+        [ binaries.$skey ]
+          mongod = "C:/projects/mongo-perl6-driver/mongodb-{$server-setup{$skey}<server-version>}/mongod"
+          mongos = "C:/projects/mongo-perl6-driver/mongodb-{$server-setup{$skey}<server-version>}/mongos"
+        EOCONFIG
+      }
+
+      elsif $server-setup{$skey}<server-version> {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
         [ binaries.$skey ]
