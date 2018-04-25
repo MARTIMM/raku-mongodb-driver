@@ -28,7 +28,7 @@ class Server::Control {
     );
 
     my Str $cmdstr = (
-      self.get-binary-path( 'mongod', @server-keys),
+      self.get-binary-path( 'mongod', |@server-keys),
       @$options
     ).join(' ');
 
@@ -62,7 +62,7 @@ class Server::Control {
     my MongoDB::MDBConfig $mdbcfg .= instance;
     my Hash $options = $mdbcfg.cfg.refine( 'mongod', |@server-keys);
 
-    my Str $cmdstr = self.get-binary-path( 'mongod', @server-keys);
+    my Str $cmdstr = self.get-binary-path( 'mongod', |@server-keys);
     $cmdstr ~= ' --shutdown';
     $cmdstr ~= ' --dbpath ' ~ "'$options<dbpath>'" // '/data/db';
     $cmdstr ~= ' --quiet' if $options<quiet>;
