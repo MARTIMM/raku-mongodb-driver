@@ -5,9 +5,9 @@ platform: x64
 branches:
   # whitelist
   only:
-    - master
-    - windows
-#    - develop
+#    - master
+#    - windows
+    - develop
 #    - dummy-branch
 
 install:
