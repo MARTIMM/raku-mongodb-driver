@@ -27,13 +27,13 @@ subtest {
   my Hash $config = MongoDB::MDBConfig.instance.config;
 
   my Int $p1 = $ts.server-control.get-port-number(@serverkeys[0]);
-  my Str $rs1-s1 = $config<mongod>{@serverkeys[0]}<replicate1><replSet>;
+  my Str $rs1-s1 = $config<server>{@serverkeys[0]}<replicate1><replSet>;
 
   my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
-  my Str $rs1-s2 = $config<mongod>{@serverkeys[1]}<replicate1><replSet>;
+  my Str $rs1-s2 = $config<server>{@serverkeys[1]}<replicate1><replSet>;
 
   my Int $p3 = $ts.server-control.get-port-number(@serverkeys[2]);
-  my Str $rs1-s3 = $config<mongod>{@serverkeys[2]}<replicate1><replSet>;
+  my Str $rs1-s3 = $config<server>{@serverkeys[2]}<replicate1><replSet>;
 
   diag "\nStart server @serverkeys[0] in pre-init mode in replicaset $rs1-s1";
   ok $ts.server-control.stop-mongod(@serverkeys[0]),

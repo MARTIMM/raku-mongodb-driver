@@ -24,7 +24,7 @@ my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
 my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
-my Str $rs1-s2 = $config<mongod>{@serverkeys[1]}<replicate1><replSet>;
+my Str $rs1-s2 = $config<server>{@serverkeys[1]}<replicate1><replSet>;
 
 my MongoDB::Client $client;
 my MongoDB::Server $server;
@@ -33,7 +33,8 @@ my BSON::Document $doc;
 #-------------------------------------------------------------------------------
 subtest "Replica server pre initialization no option in uri", {
 
-  ok $ts.server-control.stop-mongod(@serverkeys[1]), "Server @serverkeys[1] stopped";
+  ok $ts.server-control.stop-mongod(@serverkeys[1]),
+     "Server @serverkeys[1] stopped";
   ok $ts.server-control.start-mongod( @serverkeys[1], 'replicate1'),
      "Start server 2 in replica set '$rs1-s2'";
 
