@@ -2,6 +2,10 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.40.7
+  * Redesigning the server configuration to setup the Sandbox. Reason to do this was caused by ideas about a support program to start and stop a server which needed a user comprehensible configuration.
+* 0.40.6
+  * Minor bugfixes
 * 0.40.5
   * Old relic popped up. `.find-key(Int)` was removed but referred from Database module to get current command sent to server. Changed into `.keys[0]` which does the same. Remember that keys keep same order!
   * `.check()` in Socket should also test for is-open when timeout wasn't yet exceeded.
