@@ -355,7 +355,7 @@ class Test-support {
     spurt( $file, $config-text);
 
 #note "Current dir: $*CWD";
-note "Server config:\n$config-text";
+#note "Server config:\n$config-text";
   }
 
   #-----------------------------------------------------------------------------
