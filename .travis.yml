@@ -42,6 +42,9 @@ script:
   - xt/wrapper.pl6 --ignore xt/Basic
 
   - xt/wrapper.pl6 --serverkeys=s1,s2 --ignore t/099* xt/Behavior/1* t/998*
+
+  # fails because SCRAM is not available for 2.6.* servers. install MONGO-CR
+  # MONGO-CR is deprecated after 3.6
   - xt/wrapper.pl6 --serverkeys=s4,s5 --ignore t/099* xt/Behavior/1* t/998*
 
   - xt/wrapper.pl6 --serverkeys=s1,s2,s3 --ignore t/099* xt/Behavior/6* t/998*
