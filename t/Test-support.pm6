@@ -14,6 +14,9 @@ class Test-support {
 
   has MongoDB::Server::Control $.server-control;
 
+  # Environment variable SERVERKEYS holds a list of server keys. This is set by
+  # xt/wrapper.pl6
+
   submethod BUILD ( ) {
 
     # initialize Control object with config
