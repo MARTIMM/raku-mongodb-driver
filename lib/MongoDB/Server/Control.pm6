@@ -1,36 +1,60 @@
 use v6;
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
 
 use Config::DataLang::Refine;
 use MongoDB;
 use MongoDB::MDBConfig;
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 class Server::Control {
 
 #TODO startup/shutdown on windows and apples
-  #----------------------------------------------------------------------------
-  submethod BUILD ( Str :$config-name, Array :$locations ) {
+  #-----------------------------------------------------------------------------
+  submethod BUILD ( Str :$config-name, Array :$locations = [] ) {
+    # one time init can provide some data. later only instantiate without
+    # arguments is possible
     MongoDB::MDBConfig.instance( :$config-name, :$locations);
   }
 
-  #----------------------------------------------------------------------------
-  method start-mongod ( *@server-keys --> Bool ) {
+  #-----------------------------------------------------------------------------
+  method start-mongod (
+    *@server-keys, Bool :$create-environment = False
+    --> Bool
+  ) {
+    # check for windows or other os to get proper path delimiter
+    my Bool $is-win = $*KERNEL.name eq 'win32';
+    my Str $path-delim = ($is-win ?? '\\' !! '/');
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
-    my Array $options = $mdbcfg.cfg.refine-str(
-      'mongod',
-      |@server-keys,
-      :filter,
-      :str-mode(Config::DataLang::Refine::C-UNIX-OPTS-T1)
-    );
 
-    my Str $cmdstr = (
-      self.get-binary-path( 'mongod', |@server-keys),
-      @$options
-    ).join(' ');
+    # get server data locations and create directories if needed
+    my Hash $locations = $mdbcfg.cfg.refine( 'locations', |@server-keys);
+    my Str $server-path = $locations<server-path>;
+    $server-path ~~ s:g/ \/ /\\/ if $is-win;
+    my Str $server-subdir =
+       [~] $server-path, $path-delim, $locations<server-subdir>;
+
+    my Str $binary-path = self.get-binary-path( 'mongod', $locations<mongod>);
+    $binary-path ~~ s:g/ \/ /\\/ if $is-win;
+
+    my Hash $options = $mdbcfg.cfg.refine( 'server', |@server-keys, :filter);
+    $options<logpath> = [~] $server-subdir, $path-delim, $locations<logpath>;
+    $options<pidfilepath> =
+      [~] $server-subdir, $path-delim, $locations<pidfilepath>;
+    $options<dbpath> = [~] $server-subdir, $path-delim, $locations<dbpath>;
+
+    if $create-environment {
+      mkdir( $server-path, 0o700) unless $server-path.IO ~~ :d;
+      mkdir( $server-subdir, 0o700) unless $server-subdir.IO ~~ :d;
+      mkdir( $options<dbpath>, 0o700) unless $options<dbpath>.IO ~~ :d;
+    }
+
+    my Str $cmdstr = $binary-path ~ ' ';
+    for $options.kv -> $key, $value {
+      $cmdstr ~= "--$key" ~ ($value ~~ Bool ?? '' !! "=$value") ~ " ";
+    }
 
     my Bool $started = False;
 
@@ -56,16 +80,31 @@ class Server::Control {
     $started;
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method stop-mongod ( *@server-keys --> Bool ) {
 
-    my MongoDB::MDBConfig $mdbcfg .= instance;
-    my Hash $options = $mdbcfg.cfg.refine( 'mongod', |@server-keys);
+    my Bool $is-win = $*KERNEL.name eq 'win32';
+    my Str $path-delim = ($is-win ?? '\\' !! '/');
 
-    my Str $cmdstr = self.get-binary-path( 'mongod', |@server-keys);
-    $cmdstr ~= ' --shutdown';
-    $cmdstr ~= ' --dbpath ' ~ "'$options<dbpath>'" // '/data/db';
-    $cmdstr ~= ' --quiet' if $options<quiet>;
+    my MongoDB::MDBConfig $mdbcfg .= instance;
+
+    my Hash $locations = $mdbcfg.cfg.refine( 'locations', |@server-keys);
+    my Str $server-path = $locations<server-path>;
+    $server-path ~~ s:g/ \/ /\\/ if $is-win;
+    my Str $server-subdir =
+       [~] $server-path, $path-delim, $locations<server-subdir>;
+    my Str $binary-path = self.get-binary-path( 'mongod', $locations<mongod>);
+    $binary-path ~~ s:g/ \/ /\\/ if $is-win;
+
+    # get options. to shutdown we only need a subset and --shutdown added
+    my Hash $options = $mdbcfg.cfg.refine( 'server', |@server-keys, :filter);
+    $options<dbpath> = [~] $server-subdir, $path-delim, $locations<dbpath>;
+
+    my Str $cmdstr = $binary-path ~ ' ';
+    $cmdstr ~= '--shutdown ';
+    $cmdstr ~= '--dbpath ' ~ "'$options<dbpath>' " // '/data/db ';
+    $cmdstr ~= '--quiet ' if $options<quiet>;
+
 
     my Bool $stopped = False;
     info-message($cmdstr);
@@ -88,60 +127,45 @@ class Server::Control {
     $stopped;
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method start-mongos ( ) {
 
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method stop-mongos ( ) {
 
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Get selected port number from the config
   method get-port-number ( *@server-keys --> Int ) {
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
-    $mdbcfg.cfg.refine( 'mongod', |@server-keys)<port>;
+    $mdbcfg.cfg.refine( 'server', |@server-keys)<port>;
   }
 
-  #----------------------------------------------------------------------------
-  method get-binary-path ( Str $binary, *@server-keys --> Str ) {
-
-    my MongoDB::MDBConfig $mdbcfg .= instance;
-    my Str $mongodb-server-path = $mdbcfg.cfg.refine(
-      'binaries', |@server-keys
-    ){$binary};
-
-
-#`{{
-    my Hash $config = MongoDB::MDBConfig.instance.config;
-    my Str $mongodb-server-path;
-
-    # Can be configured in config file
-    if $config<binaries>:exists
-       and $config<binaries>{$binary}:exists
-       and $config<binaries>{$binary}.IO ~~ :x {
-
-      $mongodb-server-path = $config<binaries>{$binary};
-    }
-}}
+  #-----------------------------------------------------------------------------
+  method get-binary-path (
+    Str $binaryname, Str $mongodb-server-path is copy
+    --> Str
+  ) {
 
     # On linuxes it should be in /usr/bin
-    if ! $mongodb-server-path and $*KERNEL.name eq 'linux' {
-      if "/usr/bin/$binary".IO ~~ :x {
-        $mongodb-server-path = "/usr/bin/$binary";
+    if not $mongodb-server-path.defined and $*KERNEL.name eq 'linux' {
+      my Str $path = "/usr/bin/$binaryname";
+      if $path.IO ~~ :e {
+        $mongodb-server-path = $path;
       }
     }
 
     # On windows it should be in C:/Program Files/MongoDB/Server/*/bin if the
     # user keeps the default installation directory.
-    #
     if not $mongodb-server-path.defined and $*KERNEL.name eq 'win32' {
-
       for 2.6, 2.8 ... 10 -> $vn {
-        my Str $path = "C:/Program Files/MongoDB/Server/$vn/bin/$binary.exe";
+        my Str $path =
+          "C:/Program Files/MongoDB/Server/$vn/bin/$binaryname.exe";
+
         if $path.IO ~~ :e {
           $mongodb-server-path = $path;
           last;
@@ -153,8 +177,8 @@ class Server::Control {
     if not $mongodb-server-path.defined and %*ENV<PATH> {
 
       for %*ENV<PATH>.split(':') -> $path {
-        if "$path/$binary".IO ~~ :x {
-          $mongodb-server-path = "$path/$binary";
+        if "$path/$binaryname".IO ~~ :x {
+          $mongodb-server-path = "$path/$binaryname";
           last;
         }
       }

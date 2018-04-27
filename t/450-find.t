@@ -11,7 +11,7 @@ use MongoDB::Cursor;
 use BSON::ObjectId;
 use BSON::Document;
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
@@ -20,8 +20,6 @@ info-message("Test $?FILE start");
 my MongoDB::Test-support $ts .= new;
 
 my Hash $clients = $ts.create-clients;
-my Str $skey = $clients.keys[0];
-my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
 
 my MongoDB::Client $client = $clients{$clients.keys[0]};
 my MongoDB::Database $database = $client.database('test');
@@ -30,7 +28,11 @@ my BSON::Document $req;
 my BSON::Document $doc;
 my MongoDB::Cursor $cursor;
 
-#------------------------------------------------------------------------------
+# get version to skip certain tests
+my Str $version = $ts.server-version($database);
+#note $version;
+
+#-------------------------------------------------------------------------------
 subtest 'setup database', {
 
   $database.run-command: (dropDatabase => 1,);
@@ -71,7 +73,7 @@ subtest 'setup database', {
   is $doc<test_record>, 'tr100', 'test record 100 found';
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 subtest "Find tests", {
 
   check-document(
@@ -92,7 +94,7 @@ subtest "Find tests", {
   );
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 subtest "Count tests", {
 
   $req .= new: ( count => $collection.name);
@@ -115,8 +117,8 @@ subtest "Count tests", {
   is $doc<n>, 2, '2 records using skip and limit';
 }
 
-#------------------------------------------------------------------------------
-if $bin-path ~~ / '2.6.' \d+ / {
+#-------------------------------------------------------------------------------
+if $version ~~ / '2.6.' \d+ / {
     skip "2.6.* server doesn't know about command 'explain'", 1;
 }
 
@@ -160,7 +162,7 @@ else {
     is $s<totalDocsExamined>, 1, 'Scanned 1 doc, great searching';
   }
 
-  #------------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   subtest "Testing explain and performance using hint", {
 
     # Give a bad hint and get explaination(another possibility from above
@@ -199,7 +201,7 @@ else {
 
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 subtest "Error testing", {
 
   $cursor.kill;
@@ -216,13 +218,13 @@ subtest "Error testing", {
   is $doc<n>, 1, 'Counting 1 document on search';
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Cleanup and close
 info-message("Test $?FILE stop");
 done-testing();
 
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Check one document for its fields. Something like {code => 1, nofield => 0}
 # use find()
 sub check-document ( $criteria, $field-list, $projection = ())
