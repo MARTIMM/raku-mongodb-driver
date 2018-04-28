@@ -20,7 +20,10 @@ modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 
 #-------------------------------------------------------------------------------
 # start servers
-sub MAIN ( *@servers, Str :$conf-loc is copy = '.' ) {
+sub MAIN (
+  *@servers, Str :$conf-loc is copy = '.',
+  Bool :$use-repl = False, Bool :$auth-on = False
+) {
 
   # get config path
   $conf-loc = $conf-loc.IO.absolute;
@@ -35,8 +38,12 @@ note MongoDB::MDBConfig.instance.cfg.perl;
 
   for @servers -> $server {
     try {
-      $server-control.start-mongod( $server, :create-environment);
+      my Str @list = ($server,);
+      @list.push('replica') if $use-repl;
+      @list.push('authenticate') if $auth-on;
+      $server-control.start-mongod( |@list, :create-environment);
       CATCH {
+        # no need to show error because of log messages to screen
         default { }
       }
     }
