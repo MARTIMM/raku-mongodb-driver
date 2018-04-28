@@ -19,8 +19,8 @@ use Semaphore::ReadersWriters;
 #-------------------------------------------------------------------------------
 class Client {
 
-  # topology-set is used to block the server-select() process when topology still
-  # needs to be calculated.
+  # topology-set is used to block the server-select() process when topology
+  # still needs to be calculated.
   has TopologyType $!topology-type;
   has TopologyType $!user-request-topology;
   has Bool $!topology-set;
