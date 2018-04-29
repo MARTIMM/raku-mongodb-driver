@@ -13,7 +13,7 @@ branches:
 install:
   - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
 
-  - ps: "C:\projects\mongo-perl6-driver\t\Appveyor\install-all.ps1"
+  - C:\projects\mongo-perl6-driver\t\Appveyor\install-all.ps1
 
   # some features to enable
 #  - choco feature enable -n allowEmptyChecksums
