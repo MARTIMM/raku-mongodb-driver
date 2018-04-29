@@ -22,13 +22,14 @@ modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Error));
 # start servers
 sub MAIN (
   $server, Str :$conf-loc is copy = '.',
-  Bool :$add is copy = True, Bool :$del = False
+  Bool :$add is copy = True, Bool :$del = False, Bool :$mod is copy = False
 ) {
 
   # turn adding off if del is set True but when add is False,
   # it is set to True when del is also False.
   $add = True unless $del;
   $add = False if $del;
+  $mod = False if ($add or $del)
 
   my MongoDB::Server::Control $server-control .= new(
     :config-name<server-configuration.toml>, :locations[$conf-loc]
@@ -224,7 +225,8 @@ note "U: ", $client.uri-obj.perl;
     }
 
     else {
-      note "Creation of user $uname failed;\n", $doc.perl;
+      note "Creation of user $uname failed;\n",
+           "  Code: $doc<code>\n  Message: $doc<errmsg>";
     }
 
     my Str $yn = prompt "Are there more accounts to create? [ y(es), N(o)]";
