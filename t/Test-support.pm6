@@ -199,8 +199,10 @@ class Test-support {
         },
       },
 
-      # Servers ending in 'w' are windows servers
-      #s1w => {
+      # This server is for tests on windows. therefore the path must be set
+      s7 => {
+#        server-version => '3.6.4'
+        server-path => 'C:\projects\mongo-perl6-driver\MDB\bin'
       #  replicas => {
       #    replicate1 => 'first_replicate',
       #    replicate2 => 'second_replicate',
@@ -210,8 +212,7 @@ class Test-support {
 #          user => 'Dondersteen',
 #          pwd => 'w@tD8jeDan',
 #        },
-      #  server-version => '3.6.4',
-      #},
+      },
     };
 
     my Str $config-text = '';
@@ -293,6 +294,11 @@ class Test-support {
           '  mongos = \'', $*CWD, $path-delim, 't', $path-delim, 'Travis-ci',
              $path-delim, $server-setup{$skey}<server-version>, $path-delim,
              "mongos'\n";
+      }
+
+      elsif $server-setup{$skey}<server-path>.defined {
+        $config-text ~= "  mongod = '$server-setup{$skey}<server-path>\\mongod'\n";
+        $config-text ~= "  mongos = '$server-setup{$skey}<server-path>\\mongos'\n";
       }
 
       # server specific options
