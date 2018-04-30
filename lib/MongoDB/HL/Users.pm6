@@ -10,18 +10,13 @@ use Unicode::PRECIS::FreeForm::OpaqueString;
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<hgithub:MARTIMM>;
 
-constant C-PW-LOWERCASE is export = 0;
-constant C-PW-UPPERCASE is export = 1;
-constant C-PW-NUMBERS is export = 2;
-constant C-PW-OTHER-CHARS is export = 3;
-
 #-----------------------------------------------------------------------------
 #
 class MongoDB::HL::Users {
 
   has MongoDB::Database $.database;
-  has Int $.min-un-length = 2;
-  has Int $.min-pw-length = 2;
+  has Int $.min-un-length = MongoDB::C-PW-MIN-UN-LEN;
+  has Int $.min-pw-length = MongoDB::C-PW-MIN-PW-LEN;
   has Int $.pw-attribs-code = MongoDB::C-PW-LOWERCASE;
 
   #---------------------------------------------------------------------------
