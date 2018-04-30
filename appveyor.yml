@@ -5,10 +5,10 @@ platform: x64
 branches:
   # whitelist
   only:
-    - master
+#    - master
 #    - windows
 #    - develop
-#    - dummy-branch
+    - dummy-branch
 
 install:
   - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
