@@ -142,7 +142,19 @@ class Server::Control {
   method get-port-number ( *@server-keys --> Int ) {
 
     my MongoDB::MDBConfig $mdbcfg .= instance;
-    $mdbcfg.cfg.refine( 'server', |@server-keys)<port>;
+
+    # try remote port number first, then the server number
+    $mdbcfg.cfg.refine( 'remote', |@server-keys)<port> //
+      $mdbcfg.cfg.refine( 'server', |@server-keys)<port>
+  }
+
+  #-----------------------------------------------------------------------------
+  # Get selected port number from the config
+  method get-hostname ( *@server-keys --> Str ) {
+
+    # hostnames are only in remote tables
+    my MongoDB::MDBConfig $mdbcfg .= instance;
+    $mdbcfg.cfg.refine( 'remote', |@server-keys)<host>;
   }
 
   #-----------------------------------------------------------------------------
