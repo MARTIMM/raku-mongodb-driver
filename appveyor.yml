@@ -38,7 +38,7 @@ install:
         "C:\strawberry\perl\bin;" +
         "C:\rakudo\bin;" +
         "C:\rakudo\share\perl6\site\bin;" +
-        %PATH%
+        "%PATH%"
       [Environment]::SetEnvironmentVariable( "PATH", $path, "User")
 
   # some features to enable
