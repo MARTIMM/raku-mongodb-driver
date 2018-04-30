@@ -43,9 +43,10 @@ sub MAIN (
     :config-name<server-configuration.toml>, :locations[$conf-loc]
   );
   my Int $port-number = $server-control.get-port-number($server);
+  my Str $hostname = $server-control.get-hostname($server);
 #TODO url encoding
   my MongoDB::Client $client .=
-     new(:uri("mongodb://{$auth-input}localhost:$port-number"));
+     new(:uri("mongodb://$auth-input$hostname:$port-number"));
 
   ismaster($client);
 
