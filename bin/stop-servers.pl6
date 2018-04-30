@@ -10,7 +10,7 @@ use BSON::Document;
 
 # set logging levels
 modify-send-to( 'mongodb', :level(MongoDB::MdbLoglevels::Info));
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Error));
 
 #-------------------------------------------------------------------------------
 # stop servers

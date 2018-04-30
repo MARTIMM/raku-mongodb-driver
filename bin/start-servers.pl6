@@ -16,7 +16,7 @@ use BSON::Document;
 
 # set logging levels
 modify-send-to( 'mongodb', :level(MongoDB::MdbLoglevels::Info));
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Error));
 
 #-------------------------------------------------------------------------------
 # start servers
@@ -28,13 +28,13 @@ sub MAIN (
   # get config path
   $conf-loc = $conf-loc.IO.absolute;
 
-note $conf-loc;
+#note $conf-loc;
 
   my MongoDB::Server::Control $server-control .= new(
     :config-name<server-configuration.toml>, :locations[$conf-loc]
   );
 
-note MongoDB::MDBConfig.instance.cfg.perl;
+#note MongoDB::MDBConfig.instance.cfg.perl;
 
   for @servers -> $server {
     try {
