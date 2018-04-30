@@ -23,16 +23,9 @@ modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Error));
 sub MAIN (
   $server, Str :$conf-loc is copy = '.',
   Bool :$add = False, Bool :$del = False,
-  Bool :$mod = False, Bool :$show,
+  Bool :$modpw = False, Bool :$modrole = False, Bool :$list = False
 
 ) {
-
-  # turn adding off if del is set True but when add is False,
-  # it is set to True when del is also False.
-#  $add = True unless $del;
-#  $add = False if $del;
-#  $mod = False if ($add or $del);
-#  $add = $mod = $del = False if $show;
 
   my MongoDB::Server::Control $server-control .= new(
     :config-name<server-configuration.toml>, :locations[$conf-loc]
@@ -41,7 +34,7 @@ sub MAIN (
   note "\nAdmin name and password is needed when authentication is turned on";
   note "Admin must also have global access. Type return if not needed";
   my Str $admin-name = prompt "Admin account name: ";
-  my Str $admin-passwd = prompt "Admin password: ";
+  my Str $admin-passwd = prompt "Admin password: " if $admin-name;
   my Str $auth-input = '';
   $auth-input = "$admin-name:$admin-passwd\@"
     if ?$admin-name and ?$admin-passwd;
@@ -50,22 +43,23 @@ sub MAIN (
   my MongoDB::Client $client .=
      new(:uri("mongodb://{$auth-input}localhost:$port-number"));
 
-  add-accounts($client) if $add;
-  mod-accounts($client) if $mod;
+  ismaster($client);
+
   del-accounts($client) if $del;
-  show-accounts($client) if $show;
+  modpw-accounts($client) if $modpw;
+  modrole-accounts($client) if $modrole;
+  add-accounts($client) if $add;
+
+  list-accounts($client) if $list;
 }
 
 #-------------------------------------------------------------------------------
 sub add-accounts ( MongoDB::Client $client ) {
 
   my BSON::Document $doc;
-  my MongoDB::Database $database = $client.database('admin');
-  my MongoDB::HL::Users $users .= new(:$database);
 
-  my Hash $users-in-db = {};
+#`{{
   $doc = $database.run-command: (usersInfo => 1,);
-
   if $doc<ok> == 0e0 {
     my Str $server = $client.uri-obj.host ~ ':' ~ $client.uri-obj.port;
     given $doc<code> {
@@ -89,10 +83,10 @@ sub add-accounts ( MongoDB::Client $client ) {
   for $doc<users> -> $u {
     note "Account:\n  ", $u.perl;
   }
+}}
 
   # loop inserting accounts
   loop {
-
     my Str $uname;
     my Str $passw;
     while !$uname or !$passw {
@@ -149,7 +143,8 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: ( role => $dbrole, db => $dbname);
+          $roles.push: $dbrole;
+          #$roles.push: ( role => $dbrole, db => $dbname);
         }
 
         when 'B' {
@@ -159,7 +154,8 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: ( role => $dbrole, db => 'admin');
+          $roles.push: 'admin';
+          #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
         when 'C' {
@@ -169,7 +165,8 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: ( role => $dbrole, db => 'admin');
+          $roles.push: 'admin';
+          #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
         when 'D' {
@@ -179,7 +176,8 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: ( role => $dbrole, db => 'admin');
+          $roles.push: 'admin';
+          #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
         when 'S' {
@@ -189,7 +187,8 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: ( role => $dbrole, db => 'admin');
+          $roles.push: 'admin';
+          #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
         when 'U' {
@@ -205,7 +204,8 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: ( role => $dbrole, db => $dbname);
+          $roles.push: $dbname;
+          #$roles.push: ( role => $dbrole, db => $dbname);
         }
 
         default {
@@ -218,6 +218,8 @@ sub add-accounts ( MongoDB::Client $client ) {
       last if $yn ~~ m:i/^ n | no $/;
     }
 
+    my MongoDB::Database $database = $client.database($dbname);
+    my MongoDB::HL::Users $users .= new(:$database);
     $doc = $users.create-user( $uname, $passw, :$roles);
     if $doc<ok> eq 1e0 {
       note "Creation of user $uname ok";
@@ -235,11 +237,16 @@ sub add-accounts ( MongoDB::Client $client ) {
   }
 
 
-  show-accounts($client);
+  list-accounts($client);
 }
 
 #-------------------------------------------------------------------------------
-sub mod-accounts ( MongoDB::Client $client ) {
+sub modpw-accounts ( MongoDB::Client $client ) {
+
+}
+
+#-------------------------------------------------------------------------------
+sub modrole-accounts ( MongoDB::Client $client ) {
 
 }
 
@@ -249,7 +256,7 @@ sub del-accounts ( MongoDB::Client $client ) {
 }
 
 #-------------------------------------------------------------------------------
-sub show-accounts ( MongoDB::Client $client ) {
+sub list-accounts ( MongoDB::Client $client ) {
 
   my MongoDB::Database $database = $client.database('admin');
   my BSON::Document $doc = $database.run-command: (usersInfo => 1,);
@@ -308,4 +315,13 @@ R: BSON::Document.new((
       EOINFO
     }
   }
+}
+
+#-------------------------------------------------------------------------------
+sub ismaster ( MongoDB::Client $client ) {
+
+  my MongoDB::Database $database = $client.database('admin');
+  my BSON::Document $doc = $database.run-command: (ismaster => 1,);
+  note "\nServer status: ", $doc.perl;
+  print "\n";
 }
