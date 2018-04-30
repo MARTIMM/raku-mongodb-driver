@@ -22,14 +22,17 @@ modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Error));
 # start servers
 sub MAIN (
   $server, Str :$conf-loc is copy = '.',
-  Bool :$add is copy = True, Bool :$del = False, Bool :$mod is copy = False
+  Bool :$add = False, Bool :$del = False,
+  Bool :$mod = False, Bool :$show,
+
 ) {
 
   # turn adding off if del is set True but when add is False,
   # it is set to True when del is also False.
-  $add = True unless $del;
-  $add = False if $del;
-  $mod = False if ($add or $del)
+#  $add = True unless $del;
+#  $add = False if $del;
+#  $mod = False if ($add or $del);
+#  $add = $mod = $del = False if $show;
 
   my MongoDB::Server::Control $server-control .= new(
     :config-name<server-configuration.toml>, :locations[$conf-loc]
@@ -47,13 +50,10 @@ sub MAIN (
   my MongoDB::Client $client .=
      new(:uri("mongodb://{$auth-input}localhost:$port-number"));
 
-  if $add {
-    add-accounts($client);
-  }
-
-  elsif $del {
-    del-accounts($client);
-  }
+  add-accounts($client) if $add;
+  mod-accounts($client) if $mod;
+  del-accounts($client) if $del;
+  show-accounts($client) if $show;
 }
 
 #-------------------------------------------------------------------------------
@@ -65,8 +65,7 @@ sub add-accounts ( MongoDB::Client $client ) {
 
   my Hash $users-in-db = {};
   $doc = $database.run-command: (usersInfo => 1,);
-note "R: ", $doc.perl;
-note "U: ", $client.uri-obj.perl;
+
   if $doc<ok> == 0e0 {
     my Str $server = $client.uri-obj.host ~ ':' ~ $client.uri-obj.port;
     given $doc<code> {
@@ -236,7 +235,24 @@ note "U: ", $client.uri-obj.perl;
   }
 
 
-  $doc = $database.run-command: (usersInfo => 1,);
+  show-accounts($client);
+}
+
+#-------------------------------------------------------------------------------
+sub mod-accounts ( MongoDB::Client $client ) {
+
+}
+
+#-------------------------------------------------------------------------------
+sub del-accounts ( MongoDB::Client $client ) {
+
+}
+
+#-------------------------------------------------------------------------------
+sub show-accounts ( MongoDB::Client $client ) {
+
+  my MongoDB::Database $database = $client.database('admin');
+  my BSON::Document $doc = $database.run-command: (usersInfo => 1,);
 =begin comment
 note "R: ", $doc.perl;
 R: BSON::Document.new((
@@ -261,13 +277,35 @@ R: BSON::Document.new((
 ))
 =end comment
 
-  note "There are {$doc<users>.elems} users defined";
-  for $doc<users> -> $u {
-#    note "Account:\n  ", $u.perl;
+  print "\n";
+  given $doc<users>.elems {
+    when 0 {
+      note "There are no users defined";
+      return;
+    }
+
+    when 1 {
+      note "There is 1 user defined";
+    }
+
+    default {
+      note "There are {$doc<users>.elems} users defined";
+    }
   }
-}
 
-#-------------------------------------------------------------------------------
-sub del-accounts ( MongoDB::Client $client ) {
+  for @($doc<users>) -> $u {
+    note qq:s:to/EOINFO/;
+      Account:
+        username:     $u<user>
+        database:     $u<db>
+        Roles:
+    EOINFO
 
+    for @($u<roles>) -> $r {
+      note qq:s:to/EOINFO/;
+            role:       $r<role>
+            database:   $r<db>
+      EOINFO
+    }
+  }
 }
