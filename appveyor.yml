@@ -32,16 +32,16 @@ install:
       # appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName $workdir\$insdir\rakudo.msi
       msiexec /i "$workdir\$insdir\rakudo.msi" /quiet /qn /norestart /log "workdir\$insdir\rakudo-install.log"
 
-    <#
-      $path = "$workdir\$insdir\$mdbname\bin;" +
-        "C:\strawberry\c\bin;" +
-        "C:\strawberry\perl\site\bin;" +
-        "C:\strawberry\perl\bin;" +
-        "C:\rakudo\bin;" +
-        "C:\rakudo\share\perl6\site\bin;" +
-        "%PATH%"
-      [Environment]::SetEnvironmentVariable( "PATH", $path, "User")
-    #>
+      <#
+        $path = "$workdir\$insdir\$mdbname\bin;" +
+          "C:\strawberry\c\bin;" +
+          "C:\strawberry\perl\site\bin;" +
+          "C:\strawberry\perl\bin;" +
+          "C:\rakudo\bin;" +
+          "C:\rakudo\share\perl6\site\bin;" +
+          "%PATH%"
+        [Environment]::SetEnvironmentVariable( "PATH", $path, "User")
+      #>
 
   - SET PATH=C:\projects\mongo-perl6-driver\t\Appveyor\mongodb-win32-x86_64-2008plus-ssl-3.6.4\bin;%PATH%
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
