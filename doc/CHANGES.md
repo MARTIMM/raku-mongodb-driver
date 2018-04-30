@@ -2,11 +2,14 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.42.0
+  * **mongodb-accounting.pl6**: `--show` option to get user info.
 * 0.41.1
-  * Try to implement appveyor tests
+  * Try to implement appveyor tests -> still fail to write proper script
 * 0.41.0
-  * Programs are made to start and stop servers.
-  * A program is made to add and remove accounts.
+  * **start-servers.pl6**: Program to start servers.
+  * **stop-servers.pl6**: Program to stop servers.
+  * **mongodb-accounting.pl6**: Program to add accounts with `--add` option.
 * 0.40.7
   * Redesigning the server configuration to setup the Sandbox. Reason to do this was caused by ideas about a support program to start and stop a server which needed a user comprehensible configuration.
 * 0.40.6
