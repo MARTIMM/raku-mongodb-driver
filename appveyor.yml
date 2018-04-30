@@ -24,22 +24,22 @@ install:
       # install mongodb
       Invoke-WebRequest -Uri "https://downloads.mongodb.org/win32/$mdbname.zip" -OutFile "$workdir\$insdir\mongodb.zip"
       Expand-Archive "$workdir\$insdir\mongodb.zip" "$workdir\$insdir"
-      mklink /J "$workdir\$insdir\bin" "C:\$workdir\$insdir\$mdbname\bin"
 
       choco install strawberryperl
 
       # Invoke-WebRequest -Uri "https://rakudo.org/latest/star/win64" -OutFile "C:\$workdir\$insdir\rakudo.msi"
-      Invoke-WebRequest -Uri "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -OutFile "C:\$workdir\$insdir\rakudo.msi"
+      Invoke-WebRequest -Uri "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64%20(JIT).msi" -OutFile "C:\$workdir\$insdir\rakudo.msi"
       msiexec /i "C:\$workdir\$insdir\rakudo.msi" /quiet /qn /norestart /log "C:\workdir\$insdir\rakudo-install.log"
 
 
-      $path = "C:\$workdir\$insdir\bin;" +
+      $path = "C:\$workdir\$insdir\$mdbname\bin;" +
         "C:\strawberry\c\bin;" +
         "C:\strawberry\perl\site\bin;" +
         "C:\strawberry\perl\bin;" +
         "C:\rakudo\bin;" +
-        "C:\rakudo\share\perl6\site\bin"
-      [Environment]::SetEnvironmentVariable( "PATH", "$path%PATH%", "User")
+        "C:\rakudo\share\perl6\site\bin;" +
+        %PATH%
+      [Environment]::SetEnvironmentVariable( "PATH", $path, "User")
 
   # some features to enable
 #  - choco feature enable -n allowEmptyChecksums
