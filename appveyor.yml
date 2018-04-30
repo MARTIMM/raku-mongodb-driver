@@ -12,6 +12,7 @@ branches:
 
 install:
   - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
+  - appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName C:\$workdir\$insdir\rakudo.msi
 
   - ps: |
       choco feature enable -n allowGlobalConfirmation
@@ -28,8 +29,8 @@ install:
       choco install strawberryperl
 
       # Invoke-WebRequest -Uri "https://rakudo.org/latest/star/win64" -OutFile "C:\$workdir\$insdir\rakudo.msi"
-      # Invoke-WebRequest -Uri "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -OutFile "C:\$workdir\$insdir\rakudo.msi"
-      appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName C:\$workdir\$insdir\rakudo.msi
+      # Invoke-WebRequest -Uri "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64%20(JIT).msi" -OutFile "C:\$workdir\$insdir\rakudo.msi"
+      # appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName C:\$workdir\$insdir\rakudo.msi
       msiexec /i "C:\$workdir\$insdir\rakudo.msi" /quiet /qn /norestart /log "C:\workdir\$insdir\rakudo-install.log"
 
 
