@@ -20,7 +20,6 @@ class MongoDB::HL::Users {
   has Int $.pw-attribs-code = MongoDB::C-PW-LOWERCASE;
 
   #---------------------------------------------------------------------------
-  #
   submethod BUILD ( MongoDB::Database :$database ) {
 
 #TODO validate name
@@ -28,10 +27,9 @@ class MongoDB::HL::Users {
   }
 
   #---------------------------------------------------------------------------
-  #
   method set-pw-security (
-    Int:D :$min-un-length where $min-un-length >= 2,
-    Int:D :$min-pw-length where $min-pw-length >= 2,
+    Int:D :$min-un-length where $_ >= 2,
+    Int:D :$min-pw-length where $_ >= 2,
     Int :$pw_attribs = MongoDB::C-PW-LOWERCASE
   ) {
 
@@ -73,21 +71,13 @@ class MongoDB::HL::Users {
     # Check if username is too short
     #
     if $user.chars < $!min-un-length {
-      fatal-message(
-        "Username too short, must be >= $!min-un-length",
-        oper-data => $user,
-        collection-ns => $!database.name
-      );
+      fatal-message("Username too short, must be >= $!min-un-length");
     }
 
     # Check if password is too short
     #
     elsif $password.chars < $!min-pw-length {
-      fatal-message(
-        "Password too short, must be >= $!min-pw-length",
-        oper-data => $password,
-        collection-ns => $!database.name
-      );
+      fatal-message("Password too short, must be >= $!min-pw-length");
     }
 
     # Check if password answers to rule given by attribute code
@@ -124,11 +114,8 @@ class MongoDB::HL::Users {
         }
       }
 
-      fatal-message(
-        "Password does not have the right properties",
-        oper-data => $password,
-        collection-ns => $!database.name
-      ) unless $pw-ok;
+      fatal-message("Password does not have the right properties")
+        unless $pw-ok;
     }
 
 #TODO normalization done here or on server? assume on server.
