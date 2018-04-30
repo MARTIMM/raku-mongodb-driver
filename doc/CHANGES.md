@@ -4,6 +4,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
 * 0.42.0
   * **mongodb-accounting.pl6**: `--show` option to get user info.
+  * **mongodb-accounting.pl6**: `--del` option to delete user account.
 * 0.41.1
   * Try to implement appveyor tests -> still fail to write proper script
 * 0.41.0

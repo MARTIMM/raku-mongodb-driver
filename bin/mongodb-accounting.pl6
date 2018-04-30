@@ -23,14 +23,13 @@ modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Error));
 sub MAIN (
   $server, Str :$conf-loc is copy = '.',
   Bool :$add = False, Bool :$del = False,
-  Bool :$modpw = False, Bool :$modrole = False, Bool :$list = False
-
+  Bool :$modpw = False, Bool :$modrole = False, Bool :$list = False,
+  Int :$unlen = MongoDB::C-PW-MIN-UN-LEN,
+  Int :$pwlen = MongoDB::C-PW-MIN-PW-LEN,
+  Int :$pwsec = MongoDB::C-PW-LOWERCASE,
 ) {
 
-  my MongoDB::Server::Control $server-control .= new(
-    :config-name<server-configuration.toml>, :locations[$conf-loc]
-  );
-
+  # check if an admin account is needed to do the administration
   note "\nAdmin name and password is needed when authentication is turned on";
   note "Admin must also have global access. Type return if not needed";
   my Str $admin-name = prompt "Admin account name: ";
@@ -39,7 +38,12 @@ sub MAIN (
   $auth-input = "$admin-name:$admin-passwd\@"
     if ?$admin-name and ?$admin-passwd;
 
+  # get the controller to get servers port number. then connect to the server
+  my MongoDB::Server::Control $server-control .= new(
+    :config-name<server-configuration.toml>, :locations[$conf-loc]
+  );
   my Int $port-number = $server-control.get-port-number($server);
+#TODO url encoding
   my MongoDB::Client $client .=
      new(:uri("mongodb://{$auth-input}localhost:$port-number"));
 
@@ -48,13 +52,14 @@ sub MAIN (
   del-accounts($client) if $del;
   modpw-accounts($client) if $modpw;
   modrole-accounts($client) if $modrole;
-  add-accounts($client) if $add;
+  add-accounts( $client, $unlen, $pwlen, $pwsec) if $add;
 
   list-accounts($client) if $list;
 }
 
 #-------------------------------------------------------------------------------
-sub add-accounts ( MongoDB::Client $client ) {
+sub add-accounts (
+  MongoDB::Client $client, Int $unlen, Int $pwlen, Int $pwsec ) {
 
   my BSON::Document $doc;
 
@@ -91,7 +96,6 @@ sub add-accounts ( MongoDB::Client $client ) {
     my Str $passw;
     while !$uname or !$passw {
       note "Provide both username and password (repeats if any is empty)";
-      note "Do not use '@' or ':' characters";
       $uname = prompt("What is the username: ");
       $passw = prompt("What is the password: ");
       $uname = '' if $uname ~~ m/ <[@:]> /;
@@ -143,8 +147,7 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: $dbrole;
-          #$roles.push: ( role => $dbrole, db => $dbname);
+          $roles.push: ( role => $dbrole, db => $dbname);
         }
 
         when 'B' {
@@ -154,7 +157,7 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: 'admin';
+          $roles.push: $dbrole;
           #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
@@ -165,7 +168,7 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: 'admin';
+          $roles.push: $dbrole;
           #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
@@ -176,7 +179,7 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: 'admin';
+          $roles.push: $dbrole;
           #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
@@ -187,7 +190,7 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: 'admin';
+          $roles.push: $dbrole;
           #$roles.push: ( role => $dbrole, db => 'admin');
         }
 
@@ -204,8 +207,8 @@ sub add-accounts ( MongoDB::Client $client ) {
             next;
           }
 
-          $roles.push: $dbname;
-          #$roles.push: ( role => $dbrole, db => $dbname);
+          #$roles.push: $dbname;
+          $roles.push: ( role => $dbrole, db => $dbname);
         }
 
         default {
@@ -214,30 +217,31 @@ sub add-accounts ( MongoDB::Client $client ) {
         }
       }
 
-      my Str $yn = prompt "Any more roles for user $uname? [Y(es), n(o)]";
+      my Str $yn = prompt "Any more roles for user $uname? [Y(es), n(o)]: ";
       last if $yn ~~ m:i/^ n | no $/;
     }
 
-    my MongoDB::Database $database = $client.database($dbname);
+    my MongoDB::Database $database = $client.database('admin');
     my MongoDB::HL::Users $users .= new(:$database);
+note "len, sec: $unlen, $pwlen, $pwsec";
+    $users.set-pw-security(
+      :min-un-length($unlen), :min-pw-length($pwlen), :pw-attribs($pwsec)
+    );
     $doc = $users.create-user( $uname, $passw, :$roles);
     if $doc<ok> eq 1e0 {
-      note "Creation of user $uname ok";
+      note "Creation of user '$uname' ok";
     }
 
     else {
-      note "Creation of user $uname failed;\n",
+      note "Creation of user '$uname' failed;\n",
            "  Code: $doc<code>\n  Message: $doc<errmsg>";
     }
 
-    my Str $yn = prompt "Are there more accounts to create? [ y(es), N(o)]";
+    my Str $yn = prompt "Are there more accounts to create? [y(es), N(o)]: ";
     last unless $yn ~~ m:i/^ (y | yes ) $/;
 
     print "\n";
   }
-
-
-  list-accounts($client);
 }
 
 #-------------------------------------------------------------------------------
@@ -253,6 +257,25 @@ sub modrole-accounts ( MongoDB::Client $client ) {
 #-------------------------------------------------------------------------------
 sub del-accounts ( MongoDB::Client $client ) {
 
+  loop {
+    my Str $uname = prompt "User account to remove: ";
+    my MongoDB::Database $database = $client.database('admin');
+    my BSON::Document $doc = $database.run-command: (dropUser => $uname,);
+    note "A: ", $doc.perl;
+    if $doc<ok> == 1e0 {
+      note "Account '$uname' is deleted";
+    }
+
+    else {
+      note "Error deleting account '$uname'\n",
+           "  Code: $doc<code>\n  Message: $doc<errmsg>";
+    }
+
+    my Str $yn = prompt "Are there more accounts to remove? [y(es), N(o)]: ";
+    last unless $yn ~~ m:i/^ (y | yes ) $/;
+
+    print "\n";
+  }
 }
 
 #-------------------------------------------------------------------------------
