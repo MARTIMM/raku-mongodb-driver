@@ -73,15 +73,15 @@ subtest {
           members => [ (
               _id => 0,
               host => "$host:$p2",
-              tags => ( name => 'server2', )
+#              tags => ( name => 'server2', )
             ),(
               _id => 1,
               host => "$host:$p1",
-              tags => ( name => 'server1', )
+#              tags => ( name => 'server1', )
             ),(
               _id => 2,
               host => "$host:$p3",
-              tags => ( name => 'server3', )
+#              tags => ( name => 'server3', )
             ),
           ]
         )
@@ -108,7 +108,8 @@ subtest {
   }
 
   $server = $client.select-server(:servername("$host:$p3"));
-  is $server.get-status<status>, SS-RSSecondary, "Server $host:$p3 is secondary";
+  is $server.get-status<status>, SS-RSSecondary,
+     "Server $host:$p3 is secondary";
 
   is $client.topology, TT-ReplicaSetWithPrimary,
      'Replicaset with primary topology';

@@ -105,10 +105,10 @@ subtest "Replica server initialization and modification", {
           members => [ (
               _id => 0,
               host => "$host:$p2",
-              tags => (
-                name => 'default-server',
-                use => 'testing'
-              )
+#              tags => (
+#                name => 'default-server',
+#                use => 'testing'
+#              )
             ),
           ]
         ),
@@ -160,10 +160,10 @@ subtest "Replica servers update replica data", {
           members => [ (
               _id => 0,
               host => "$host:$p2",
-              tags => (
-                name => 'still-same-default-server',
-                use => 'testing'
-              )
+#              tags => (
+#                name => 'still-same-default-server',
+#                use => 'testing'
+#              )
             ),
           ]
         ),
