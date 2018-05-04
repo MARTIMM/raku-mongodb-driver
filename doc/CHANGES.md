@@ -2,6 +2,8 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.43.0
+  * **make-replicaset.pl6**: Program to create a replicaset or add servers to the replicaset.
 * 0.42.0
   * **mongodb-accounting.pl6**: `--show` option to get user info.
   * **mongodb-accounting.pl6**: `--del` option to delete user account.
