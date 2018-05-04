@@ -350,7 +350,7 @@ class Client {
 
       $selected-server = $!rw-sem.reader( 'servers', {
 #note "Servers: ", $!servers.keys;
-#note "Request: $selected-servername";
+#note "Request: $selected-server.name()";
           $!servers{$servername}:exists
                   ?? $!servers{$servername}
                   !! MongoDB::Server;
