@@ -8,6 +8,10 @@ use MongoDB;
 use MongoDB::Server::Control;
 use BSON::Document;
 
+#-------------------------------------------------------------------------------
+# allow switches after positionals. pinched from an early panda program.
+@*ARGS = |@*ARGS.grep(/^ '-'/), |@*ARGS.grep(/^ <-[-]>/);
+
 # set logging levels
 modify-send-to( 'mongodb', :level(MongoDB::MdbLoglevels::Info));
 modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Error));
