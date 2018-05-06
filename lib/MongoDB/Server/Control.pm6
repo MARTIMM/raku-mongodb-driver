@@ -34,7 +34,13 @@ class Server::Control {
     my Str $server-path = $locations<server-path>;
     $server-path ~~ s:g/ \/ /\\/ if $is-win;
     my Str $server-subdir =
-       [~] $server-path, $path-delim, $locations<server-subdir>;
+       [~] $server-path, $path-delim, ($locations<server-subdir> // '');
+
+    unless ?$locations<server-subdir> {
+      fatal-message(
+        "Server keys '@server-keys[*]' did not have a server sub directory"
+      );
+    }
 
     my Str $binary-path = self.get-binary-path( 'mongod', $locations<mongod>);
     $binary-path ~~ s:g/ \/ /\\/ if $is-win;
@@ -92,7 +98,14 @@ class Server::Control {
     my Str $server-path = $locations<server-path>;
     $server-path ~~ s:g/ \/ /\\/ if $is-win;
     my Str $server-subdir =
-       [~] $server-path, $path-delim, $locations<server-subdir>;
+       [~] $server-path, $path-delim, ($locations<server-subdir> // '');
+
+    unless ?$locations<server-subdir> {
+      fatal-message(
+        "Server keys '@server-keys[*]' did not have a server sub directory"
+      );
+    }
+
     my Str $binary-path = self.get-binary-path( 'mongod', $locations<mongod>);
     $binary-path ~~ s:g/ \/ /\\/ if $is-win;
 
@@ -110,7 +123,8 @@ class Server::Control {
     info-message($cmdstr);
 
     try {
-      # inconsequent server error messaging. when starting it says ERROR on stdout
+      # inconsequent server error messaging. when starting it says ERROR
+      # on stdout
       my Proc $proc = shell $cmdstr, :err, :out;
       $proc.err.close;
       $proc.out.close;
