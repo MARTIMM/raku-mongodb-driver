@@ -25,6 +25,7 @@ sub MAIN ( *@servers, Str :$conf-loc is copy = '.',  ) {
 
   # get config path
   $conf-loc = $conf-loc.IO.absolute;
+#TODO use environment variable for config file
 
 note $conf-loc;
 
