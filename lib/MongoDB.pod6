@@ -227,16 +227,71 @@ Response flags found in result documents from the server. Used internally.
 
 
 =head2 Constants
-
-=head3 MAX-SOCKET-UNUSED-OPEN
+=head3 Socket Values
+=head4 MAX-SOCKET-UNUSED-OPEN
 
   constant MAX-SOCKET-UNUSED-OPEN is export = 900;
 
 Time in seconds that a socket can be left open unused.
 
+=head3 Server defaults
+=head4 C-LOCALTHRESHOLDMS
+
+  constant C-LOCALTHRESHOLDMS is export = 15;
+
+=head4 C-SERVERSELECTIONTIMEOUTMS
+
+  constant C-SERVERSELECTIONTIMEOUTMS is export = 30_000;
+
+=head4 C-HEARTBEATFREQUENCYMS
+
+  constant C-HEARTBEATFREQUENCYMS is export = 10_000;
+
+
+=head3 Client defaults
+=head4 C-SMALLEST-MAX-STALENESS-SECONDS
+
+  constant C-SMALLEST-MAX-STALENESS-SECONDS = 90;
+
+=head3 User administration defaults
+=head4 C-PW-LOWERCASE
+
+  constant C-PW-LOWERCASE is export = 0;
+
+At least lowercase letters are needed for the password. This is the lowest type of security
+
+=head4 C-PW-UPPERCASE
+
+  constant C-PW-UPPERCASE is export = 1;
+
+Passwords must have lower and uppercase letters.
+
+=head4 C-PW-NUMBERS
+
+  constant C-PW-NUMBERS is export = 2;
+
+Passwords must have also have number characters
+
+=head4 C-PW-OTHER-CHARS
+
+  constant C-PW-OTHER-CHARS is export = 3;
+
+Passwords must also have 'other' characters. The '@', ':' and others can be used in the username and password. But when using these characters in the url, they must be encoded like C<%40> and C<%3A>.
+
+=head4 C-PW-MIN-UN-LEN
+
+  constant C-PW-MIN-UN-LEN is export = 6;
+
+Minimal number of characters for a username
+
+=head4 C-PW-MIN-PW-LEN
+
+  constant C-PW-MIN-PW-LEN is export = 6;
+
+Minimal number of characters for a password
+
+
 =head2 Subsets
-
-
 =head3 PortType
 
   subset PortType of Int is export where 0 < $_ <= 65535;
@@ -246,7 +301,7 @@ Port type is a number denoting a specific protocol, e.g. 80 is for C<http> and
 port than its default. The range is from 0 to 65535 where 0 to 1023 can only
 be used by servers with privileges.
 
-=head3 Helper subsets when module cannot be loaded creating circular dependencies
+=head3 Helper subsets when module cannot be loaded due to creating circular dependencies
 
   subset ClientType is export where .^name eq 'MongoDB::Client';
   subset DatabaseType is export where .^name eq 'MongoDB::Database';

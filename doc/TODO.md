@@ -15,27 +15,47 @@
 * The perl6 behavior is also changed. One thing is that it generates parsed code in directory .precomp. The first time after a change in code it takes more time at the parse stage. After the first run the parsing time is shorter.
 
 ## Testing mongo\* servers
-* Testing $mod in queries seems to have problems in version 3.0.5
-* Table to map mongo status codes to severity level. This will modify the default severity when an error code from the server is received. Look for  [error table here](https://github.com/mongodb/mongo/blob/master/docs/errors.md)
-* Find a way to incorporate the servers error codes into the log messages when server returns a failure.
+* Testing $mod in queries seems to have problems in version 3.0.5. This will not be checked anymore because there are newer versions not showing the problems.
 * I am now more satisfied with logging because of the use of parts of the Log::Async module. A few additions might be to use macros to get info at the calling point before sending to the \*-message() subs. This will make the search through the stack unnecessary.
 
 * Must check for max BSON document size
 * There is an occasional 'double free' bug in perl6 which torpedes tests now and then. This is a perl6 problem.
 
-* Other items to check; [MongoDB Limits and Thresholds](https://docs.mongodb.org/manual/reference/limits/)
+## Other items to check
+* [MongoDB Limits and Thresholds](https://docs.mongodb.org/manual/reference/limits/)
 
 * Handle read/write concerns.
 * Readconcern structure does not have to be a BSON::Document. no encoding, it isn't a server object! unless it sent to a mongos server!
 * some tests in calculating the topology and server states needs some refinement.
 * Design is changed, redraw time diagrams and others
 
+* Account management program
+  * gui
+  * authenticationRestrictions
+  * writeConcern
+  * digestPassword
+  * customData
+  * user-defined roles
+  * collection-level access control
 
+* A program to create a replica set.
+
+* [Transport encryption](https://docs.mongodb.com/manual/core/security-transport-encryption/)
 
 # Important issues
+Current issues
+```
+> ghi list
+# bbkr/mongo-perl6-driver open issues
+  28: Windows support 2
+  21: $collection.insert is not implemented?  Todo  2
+  20: zef install: MongoDB fails 23
+  12: login and logout  Todo  1
+  11: setup a user account should go secure  Todo  1
+```
 
 ## [Issue #11 Securely add new accounts](https://github.com/MARTIMM/mongo-perl6-driver/issues/11)
-Adding an account is done in such a way that it might be possible for a hacker to steel the password in the process. The channel should be encrypted for the purpose.
+Adding an account is done in such a way that it might be possible for a hacker to steal the password in the process. The channel should be encrypted for the purpose.
 
 ## [Issue #12 Login and out](https://github.com/MARTIMM/mongo-perl6-driver/issues/12)
 Some more authentication methods should be added.

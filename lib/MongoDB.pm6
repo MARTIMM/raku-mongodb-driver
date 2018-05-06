@@ -88,6 +88,16 @@ constant C-HEARTBEATFREQUENCYMS is export = 10_000;
 constant C-SMALLEST-MAX-STALENESS-SECONDS = 90;
 
 #------------------------------------------------------------------------------
+# User admin defaults
+constant C-PW-LOWERCASE is export = 0;
+constant C-PW-UPPERCASE is export = 1;
+constant C-PW-NUMBERS is export = 2;
+constant C-PW-OTHER-CHARS is export = 3;
+
+constant C-PW-MIN-UN-LEN is export = 6;
+constant C-PW-MIN-PW-LEN is export = 6;
+
+#------------------------------------------------------------------------------
 # Other types
 
 # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
