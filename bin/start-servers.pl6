@@ -39,7 +39,7 @@ sub MAIN (
   for @servers -> $server {
     try {
       my Str @list = ($server,);
-      @list.push('replica') if $use-repl;
+      @list.push('replicate') if $use-repl;
       @list.push('authenticate') if $auth-on;
       $server-control.start-mongod( |@list, :create-environment);
       CATCH {
