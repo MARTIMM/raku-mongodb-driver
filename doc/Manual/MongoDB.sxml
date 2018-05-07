@@ -78,11 +78,11 @@ $!d5b.article [
 
           $itemizedlist spacing=compact [
             $listitem [
-              $emphasis[Server states].
+            $emphasis[Server states]. Server states are situations in which a server can be.
             ]
 
             $listitem [
-              $emphasis[Topology].
+            $emphasis[Topology]. The topology of a client is defined by the set of servers and their states.
             ]
 
             $listitem [
@@ -103,24 +103,15 @@ $!d5b.article [
             ]
 
             $listitem [
-              $emphasis[Server selection process].
+            $emphasis[Server selection process]. This is the process of finding a server depending on the server state and the topology.
             ]
           ]
         ]
 
         $listitem [
-          $emphasis[Modules and classes].
+          $emphasis[Modules and classes]. There are many more classes but the classes named below are the ones which will be used by you.
 
           $itemizedlist spacing=compact [
-
-            $listitem [
-              $emphasis[MongoDB::Client]. This module is the starting point of all
-              applications which need access to a mongodb database server.
-
-# named attributes to control selecting and monitoring
-# cleanup!
-            ]
-
 
             $listitem [
               $emphasis[BSON::Document]. This is the basic vehicle to insert,
@@ -132,7 +123,15 @@ $!d5b.article [
             ]
 
             $listitem [
-              $emphasis[MongoDB::Database].
+              $emphasis[MongoDB].
+            ]
+
+            $listitem [
+              $emphasis[MongoDB::Client]. This module is the starting point of all
+              applications which need access to a mongodb database server.
+
+# named attributes to control selecting and monitoring
+# cleanup!
             ]
 
             $listitem [
@@ -141,6 +140,10 @@ $!d5b.article [
 
             $listitem [
               $emphasis[MongoDB::Cursor].
+            ]
+
+            $listitem [
+              $emphasis[MongoDB::Database].
             ]
 
             $listitem [
@@ -153,14 +156,19 @@ $!d5b.article [
           ]
         ]
 
-#        $listitem [
-#          $emphasis[Dependensies]. There are some dependencies which are
-#          explained a bit here. These are e.g. the server and its version,
-#          modules like BSON, PKCS5, Auth::SCRAM etcetera.
-#        ]
-
         $listitem [
-          $emphasis[BSON].
+          $emphasis[Programs]. There are also a few programs in this package to help you with a few administrative tasks;
+          $itemizedlist spacing=compact [
+            $listitem [
+              Starting and stopping of servers
+            ]
+            $listitem [
+              Add, remove and modify accounts
+            ]
+            $listitem [
+              Creating a replicaset
+            ]
+          ]
         ]
 
         $listitem [
@@ -168,8 +176,22 @@ $!d5b.article [
         ]
 
         $listitem [
-          $emphasis[Examples]. Of course, a document whithout examples is a
-          bit like an empty box as a present.
+          $emphasis[Examples].
+        ]
+
+        $listitem [
+          $emphasis[Things to add to the driver]. The program is far from complete. The most important items to add are the following;
+
+          $itemizedlist spacing=compact [
+            $listitem [
+              Secure connection to the server. This is at least needed when authentication is performed. If not, the username/password information is visible when you know where to look.
+            ]
+            $listitem [
+              Higher level commands. There is a need for some convenience methods like insert, update, remove etcetera. In the past there were methods like these but I have removed them for two reasons: 1) the methods were based on the wire protocol which will be obsoleted partly in the future by MongoDB and 2) MongoDB has replaced them by operations all executable using the MongoDB runCommand function and therefore by the run-command method from the MongoDB::Database class.
+            ]
+            $listitem [
+            ]
+          ]
         ]
       ]
     ]
