@@ -24,7 +24,7 @@ my Hash $config = MongoDB::MDBConfig.instance.config;
 my Str $host = 'localhost';
 
 my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
-my Str $rs1-s2 = $config<server>{@serverkeys[1]}<replicate1><replicaSet>;
+my Str $rs1-s2 = $config<server>{@serverkeys[1]}<replicate1><replSet>;
 
 my MongoDB::Client $client;
 my MongoDB::Server $server;
