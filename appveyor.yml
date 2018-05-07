@@ -31,6 +31,10 @@ install:
   - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 
+  - dir %WORKDIR%
+  - dir %WORKDIR%\%INSDIR%
+  - dir %WORKDIR%\%INSDIR%\%MDBNAME%\bin
+
 
 #  - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 #  - zef --/test install Log::Async
