@@ -54,7 +54,7 @@ test_script:
   - dir %WORKDIR%
   - dir %WORKDIR%\Sandbox
   - type %WORKDIR%\Sandbox\config.toml
-  - perl6 xt/wrapper.pl6 --serverkeys=s7 t/099* t/[2-5]* t/998*
+  - perl6 xt/wrapper.pl6 --serverkeys=s1 t/099* t/[2-5]* t/998*
   - perl6 xt/wrapper.pl6 t/999-rm-sandbox.t
 
 # fetch repository as zip archive

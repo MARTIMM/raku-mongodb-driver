@@ -149,71 +149,84 @@ class Test-support {
     my Int $start-portnbr = 65010;
 
     # setup non-default values for the servers
-    my Hash $server-setup = {
-      # in this setup there is always a server s1 because defaults in other
-      # methods can be set to 's1'. Furthermore, keep server keys simple because
-      # of sorting in some of the test programs. E.g. s1, s2, s3 etc.
-      s1 => {
-        replicas => {
-          replicate1 => 'first_replicate',
-          replicate2 => 'second_replicate',
-        },
-        authenticate => True,
-#        account => {
-#          user => 'Dondersteen',
-#          pwd => 'w@tD8jeDan',
-#        },
-      },
-      s2 => {
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
-      s3 => {
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
-      s4 => {
-        server-version => '2.6.11',
-        replicas => {
-          replicate1 => 'first_replicate',
-          replicate2 => 'second_replicate',
-        },
-        authenticate => True,
-#        account => {
-#          user => 'Dondersteen',
-#          pwd => 'w@tD8jeDan',
-#        },
-      },
-      s5 => {
-        server-version => '2.6.11',
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
-      s6 => {
-        server-version => '2.6.11',
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
+    my Hash $server-setup;
+    if $*KERNEL.name eq 'win32' {
 
-      # This server is for tests on windows. therefore the path must be set
-      s7 => {
-#        server-version => '3.6.4'
-        server-path => 'C:\projects\mongo-perl6-driver\MDB\bin'
-      #  replicas => {
-      #    replicate1 => 'first_replicate',
-      #    replicate2 => 'second_replicate',
-      #  },
-#        authenticate => True,
-#        account => {
-#          user => 'Dondersteen',
-#          pwd => 'w@tD8jeDan',
-#        },
-      },
-    };
+      # These variabl;es are also used in the appveyor script
+      my Str $WORKDIR = 'C:\projects\mongo-perl6-driver';
+      my Str $INSDIR = 't\Appveyor';
+      my Str $MDBNAME = 'mongodb-win32-x86_64-2008plus-ssl-3.6.4';
+      $server-setup = {
+
+        s1 => {
+  #        server-version => '3.6.4',
+          server-path => [~] $WORKDIR, "\\", $INSDIR, "\\", $MDBNAME, "\\bin",
+        #  replicas => {
+        #    replicate1 => 'first_replicate',
+        #    replicate2 => 'second_replicate',
+        #  },
+  #        authenticate => True,
+  #        account => {
+  #          user => 'Dondersteen',
+  #          pwd => 'w@tD8jeDan',
+  #        },
+        },
+      };
+    }
+
+    else {
+      $server-setup = {
+
+        # in this setup there is always a server s1 because defaults in other
+        # methods can be set to 's1'. Furthermore, keep server keys simple because
+        # of sorting in some of the test programs. E.g. s1, s2, s3 etc.
+        s1 => {
+          replicas => {
+            replicate1 => 'first_replicate',
+            replicate2 => 'second_replicate',
+          },
+          authenticate => True,
+  #        account => {
+  #          user => 'Dondersteen',
+  #          pwd => 'w@tD8jeDan',
+  #        },
+        },
+        s2 => {
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+        s3 => {
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+        s4 => {
+          server-version => '2.6.11',
+          replicas => {
+            replicate1 => 'first_replicate',
+            replicate2 => 'second_replicate',
+          },
+          authenticate => True,
+  #        account => {
+  #          user => 'Dondersteen',
+  #          pwd => 'w@tD8jeDan',
+  #        },
+        },
+        s5 => {
+          server-version => '2.6.11',
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+        s6 => {
+          server-version => '2.6.11',
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+      };
+    }
 
     my Str $config-text = '';
     # window server. special binaries location
