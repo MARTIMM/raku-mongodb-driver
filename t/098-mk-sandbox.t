@@ -3,7 +3,6 @@ use lib 't';
 use Test;
 use Test-support;
 use MongoDB;
-use MongoDB::MDBConfig;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
@@ -15,9 +14,7 @@ info-message("Test $?FILE start");
 subtest 'Create new sandbox and server environments', {
   MongoDB::Test-support.new.create-sandbox;
   ok "$*CWD/Sandbox".IO.d, "Sandbox created";
-note "\nConfig:\n", MongoDB::MDBConfig.instance.cfg.perl;
 }
 
 #-------------------------------------------------------------------------------
-
 done-testing;
