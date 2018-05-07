@@ -231,11 +231,8 @@ class Test-support {
     my Str $config-text = '';
     # window server. special binaries location
     if $*KERNEL.name eq 'win32' {
-
-      $config-text ~= Q:qq:to/EOCONFIG/;
-      # no binary spec for windows yet. user can install at normal spot
-      # in C:\\Program Files. program will find out version etc.
-      EOCONFIG
+      $config-text ~=  [~] "\n[ locations ]\n",
+        '  server-path = \'', $*CWD, $path-delim, "Sandbox'\n";
     }
 
     else {
@@ -247,13 +244,13 @@ class Test-support {
            $path-delim, '3.2.9', $path-delim, "mongos'\n",
 
         '  server-path = \'', $*CWD, $path-delim, "Sandbox'\n";
-
-      $config-text ~= Q:qq:to/EOCONFIG/;
-        logpath = 'm.log'
-        pidfilepath = 'm.pid'
-        dbpath = 'm.data'
-      EOCONFIG
     }
+
+    $config-text ~= Q:qq:to/EOCONFIG/;
+      logpath = 'm.log'
+      pidfilepath = 'm.pid'
+      dbpath = 'm.data'
+    EOCONFIG
 
     $config-text ~= Q:qq:s:to/EOCONFIG/;
 
