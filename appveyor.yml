@@ -16,18 +16,18 @@ install:
   - choco feature enable -n allowGlobalConfirmation
   - choco feature enable -n allowEmptyChecksums
 
-  - SET WORKDIR="C:\projects\mongo-perl6-driver"
-  - SET INSDIR="t\Appveyor"
-  - SET MDBNAME="mongodb-win32-x86_64-2008plus-ssl-3.6.4"
+  - SET WORKDIR=C:\projects\mongo-perl6-driver
+  - SET INSDIR=t\Appveyor
+  - SET MDBNAME=mongodb-win32-x86_64-2008plus-ssl-3.6.4
 
-  - appveyor DownloadFile "https://downloads.mongodb.org/win32/%MDBNAME%.zip" -FileName "%WORKDIR%\%INSDIR%\mongodb.zip"
-  - PS: Expand-Archive "%WORKDIR%\%INSDIR%\mongodb.zip" "%WORKDIR%\%INSDIR%"
+  - appveyor DownloadFile https://downloads.mongodb.org/win32/%MDBNAME%.zip -FileName %WORKDIR%\%INSDIR%\mongodb.zip
+  - PS: Expand-Archive %WORKDIR%\%INSDIR%\mongodb.zip %WORKDIR%\%INSDIR%
   - SET PATH=%WORKDIR%\%INSDIR%\%MDBNAME%\bin;%PATH%
 
   - choco install strawberryperl
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
 
-  - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName "%APPVEYOR_BUILD_FOLDER%\rakudo.msi"
+  - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName %APPVEYOR_BUILD_FOLDER%\rakudo.msi
   - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 
