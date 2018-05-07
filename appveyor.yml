@@ -21,7 +21,7 @@ install:
   - SET MDBNAME=mongodb-win32-x86_64-2008plus-ssl-3.6.4
 
   - appveyor DownloadFile https://downloads.mongodb.org/win32/%MDBNAME%.zip -FileName %WORKDIR%\%INSDIR%\mongodb.zip
-  - PS: Expand-Archive %WORKDIR%\%INSDIR%\mongodb.zip %WORKDIR%\%INSDIR%
+  - 7z x %WORKDIR%\%INSDIR%\mongodb.zip
   - SET PATH=%WORKDIR%\%INSDIR%\%MDBNAME%\bin;%PATH%
 
   - choco install strawberryperl
