@@ -59,7 +59,7 @@ class Server::Control {
 
     my Str $cmdstr = $binary-path ~ ' ';
     for $options.kv -> $key, $value {
-      $cmdstr ~= "--$key" ~ ($value ~~ Bool ?? '' !! "=$value") ~ " ";
+      $cmdstr ~= "--$key" ~ ($value ~~ Bool ?? '' !! " $value") ~ " ";
     }
 
     my Bool $started = False;
