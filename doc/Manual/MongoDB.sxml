@@ -78,7 +78,7 @@ $!d5b.article [
 
           $itemizedlist spacing=compact [
             $listitem [
-            $emphasis[Server states]. Server states are situations in which a server can be.
+            $emphasis[Server states].
             ]
 
             $listitem [
@@ -103,7 +103,7 @@ $!d5b.article [
             ]
 
             $listitem [
-            $emphasis[Server selection process]. This is the process of finding a server depending on the server state and the topology.
+              $emphasis[Server selection process]. This is the process of finding a server depending on the server state and the topology.
             ]
           ]
         ]
@@ -123,35 +123,26 @@ $!d5b.article [
             ]
 
             $listitem [
-              $emphasis[MongoDB].
+              $emphasis[MongoDB]. Here a lot of the programs constants, enumerations and subtypes are defined as well as the import of logging subs.
             ]
 
             $listitem [
-              $emphasis[MongoDB::Client]. This module is the starting point of all
-              applications which need access to a mongodb database server.
+              $emphasis[MongoDB::Client]. This module is the starting point of all applications which need access to a mongodb database server. The client receives the uri from the user of the module to access one or more servers.
 
 # named attributes to control selecting and monitoring
 # cleanup!
             ]
 
             $listitem [
-              $emphasis[MongoDB::Collection].
+              $emphasis[MongoDB::Collection]. The Collection module is used to search through the collection data of the database.
             ]
 
             $listitem [
-              $emphasis[MongoDB::Cursor].
+              $emphasis[MongoDB::Cursor]. The Cursor is used to process the found data returned from the search.
             ]
 
             $listitem [
-              $emphasis[MongoDB::Database].
-            ]
-
-            $listitem [
-              $emphasis[MongoDB::Server].
-            ]
-
-            $listitem [
-              $emphasis[MongoDB::Server::Control].
+              $emphasis[MongoDB::Database]. The Database is the most used module to send commands to the server.
             ]
           ]
         ]
@@ -180,7 +171,7 @@ $!d5b.article [
         ]
 
         $listitem [
-          $emphasis[Things to add to the driver]. The program is far from complete. The most important items to add are the following;
+        $emphasis[Things to add to this package]. The program is far from complete. The most important items to add are the following;
 
           $itemizedlist spacing=compact [
             $listitem [
@@ -200,12 +191,19 @@ $!d5b.article [
   $sect1 [
     $title [Implementation]
     $para [
+      A short description of what happens when a user instantiates a MongoDB::Client object providing it with a URI. The Client object parses the URI for server names. These are used by the Client to instantiate a MongoDB::Server object. The server object instantiates a MongoDB::Monitor object to keep contact with the server and to process any changes when they appear. The Monitor object informs the Server object to set the Server state. The Client object will then use the Server states to define the topology of that group of servers.
+    ]
+    $para [
+      Conflicts can happen when servers defined in the URI not belong together in a group. For example a replica server and a standalone server can not be taken together in one URI because both servers can accept commands to change data. The Client object cannot guess to which of the servers the command must be send to. In such cases the topology is set to $emphasis[MongoDB::TT-Unknown] which will block any operation.
     ]
 
     $sect2 [
       $title [Server states]
       $para [
+        Server states are situations in which a server can be. The server is queried regularly with a so called $emphasis[ismaster] command. The result of this command is processed to see what kind of server we are dealing with. Based on these results the $emphasis[MongoDB::Server] object sets a state which is displayed in the table below.
+      ]
 
+      $para [
         $table rules=all [
           $title [Server states depending on isMaster outcome]
           $thead [
@@ -219,8 +217,9 @@ $!d5b.article [
             $tr [
               $td [SS-Unknown]
               $td [
-                Initial, or after a network error or failed ismaster call, or
-                "ok: 1" not in ismaster response.
+                a) Initial state before processing the response.
+                b) After a network error or failed ismaster call.
+                c) "ok: 1" not in ismaster response.
               ]
             ]
           ]
@@ -229,7 +228,7 @@ $!d5b.article [
             $tr [
               $td [SS-Standalone]
               $td [
-                No "msg: isdbgrid", no setName, and no "isreplicaset: true".
+                There is no key/value pair "msg: isdbgrid", there is no setName, and there is no "isreplicaset: true" key/value pair.
               ]
             ]
           ]
@@ -237,7 +236,8 @@ $!d5b.article [
           $tbody [
             $tr [
               $td [SS-Mongos]
-              $td ["msg: isdbgrid"]
+              $td [ Key/value pair "msg: isdbgrid" is found in the Monitor response.
+              ]
             ]
           ]
 
@@ -245,7 +245,7 @@ $!d5b.article [
             $tr [
               $td [SS-PossiblePrimary]
               $td [
-                Not yet checked, but another member thinks it is the primary.
+                Not yet processed, but another secondary server member thinks it is the primary.
               ]
             ]
           ]
@@ -253,7 +253,9 @@ $!d5b.article [
           $tbody [
             $tr [
               $td [SS-RSPrimary]
-              $td ["ismaster: true", "setName" in response.]
+              $td [
+                Key/value "ismaster: true" and "setName" is found in the Monitor response.
+              ]
             ]
           ]
 
