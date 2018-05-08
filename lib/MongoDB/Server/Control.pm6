@@ -34,7 +34,13 @@ class Server::Control {
     my Str $server-path = $locations<server-path>;
     $server-path ~~ s:g/ \/ /\\/ if $is-win;
     my Str $server-subdir =
-       [~] $server-path, $path-delim, $locations<server-subdir>;
+       [~] $server-path, $path-delim, ($locations<server-subdir> // '');
+
+    unless ?$locations<server-subdir> {
+      fatal-message(
+        "Server keys '@server-keys[*]' did not have a server sub directory"
+      );
+    }
 
     my Str $binary-path = self.get-binary-path( 'mongod', $locations<mongod>);
     $binary-path ~~ s:g/ \/ /\\/ if $is-win;
@@ -53,9 +59,11 @@ class Server::Control {
 
     my Str $cmdstr = $binary-path ~ ' ';
     for $options.kv -> $key, $value {
-      $cmdstr ~= "--$key" ~ ($value ~~ Bool ?? '' !! "=$value") ~ " ";
+      $cmdstr ~= "--$key" ~ ($value ~~ Bool ?? '' !! " \"$value\"") ~ " ";
     }
 
+    # when ready, remove last space from the commandline
+    $cmdstr ~~ s/ \s+ $//;
     my Bool $started = False;
 
     info-message($cmdstr);
@@ -77,7 +85,7 @@ class Server::Control {
     $started = True;
     debug-message('Command executed ok');
 
-    $started;
+    $started
   }
 
   #-----------------------------------------------------------------------------
@@ -92,7 +100,14 @@ class Server::Control {
     my Str $server-path = $locations<server-path>;
     $server-path ~~ s:g/ \/ /\\/ if $is-win;
     my Str $server-subdir =
-       [~] $server-path, $path-delim, $locations<server-subdir>;
+       [~] $server-path, $path-delim, ($locations<server-subdir> // '');
+
+    unless ?$locations<server-subdir> {
+      fatal-message(
+        "Server keys '@server-keys[*]' did not have a server sub directory"
+      );
+    }
+
     my Str $binary-path = self.get-binary-path( 'mongod', $locations<mongod>);
     $binary-path ~~ s:g/ \/ /\\/ if $is-win;
 
@@ -105,12 +120,14 @@ class Server::Control {
     $cmdstr ~= '--dbpath ' ~ "'$options<dbpath>' " // '/data/db ';
     $cmdstr ~= '--quiet ' if $options<quiet>;
 
-
+    # when ready, remove last space from the commandline
+    $cmdstr ~~ s/ \s+ $//;
     my Bool $stopped = False;
     info-message($cmdstr);
 
     try {
-      # inconsequent server error messaging. when starting it says ERROR on stdout
+      # inconsequent server error messaging. when starting it says ERROR
+      # on stdout
       my Proc $proc = shell $cmdstr, :err, :out;
       $proc.err.close;
       $proc.out.close;
@@ -121,10 +138,10 @@ class Server::Control {
       }
     }
 
-    debug-message('Command executed ok');
     $stopped = True;
+    debug-message('Command executed ok');
 
-    $stopped;
+    $stopped
   }
 
   #-----------------------------------------------------------------------------

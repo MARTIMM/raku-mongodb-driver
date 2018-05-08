@@ -13,66 +13,28 @@ branches:
 install:
   - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
 
-  - ps: |
-      choco feature enable -n allowGlobalConfirmation
-      choco feature enable -n allowEmptyChecksums
+  - choco feature enable -n allowGlobalConfirmation
+  - choco feature enable -n allowEmptyChecksums
 
-      $workdir = "C:\projects\mongo-perl6-driver"
-      $insdir = "t\Appveyor"
-      $mdbname = "mongodb-win32-x86_64-2008plus-ssl-3.6.4"
+  - SET WORKDIR=C:\projects\mongo-perl6-driver
+  - SET INSDIR=t\Appveyor
+  - SET MDBNAME=mongodb-win32-x86_64-2008plus-ssl-3.6.4
 
-      # install mongodb
-      Invoke-WebRequest -Uri "https://downloads.mongodb.org/win32/$mdbname.zip" -OutFile "$workdir\$insdir\mongodb.zip"
-      Expand-Archive "$workdir\$insdir\mongodb.zip" "$workdir\$insdir"
+  - appveyor DownloadFile https://downloads.mongodb.org/win32/%MDBNAME%.zip -FileName %WORKDIR%\%INSDIR%\mongodb.zip
+  - 7z x %WORKDIR%\%INSDIR%\mongodb.zip -o%WORKDIR%\%INSDIR% * -r
+  - SET PATH=%WORKDIR%\%INSDIR%\%MDBNAME%\bin;%PATH%
 
-      choco install strawberryperl
-
-      # Invoke-WebRequest -Uri "https://rakudo.org/latest/star/win64" -OutFile "$workdir\$insdir\rakudo.msi"
-      Invoke-WebRequest -Uri "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -OutFile "$workdir\$insdir\rakudo.msi"
-      # appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName $workdir\$insdir\rakudo.msi
-      msiexec /i "$workdir\$insdir\rakudo.msi" /quiet /qn /norestart /log "workdir\$insdir\rakudo-install.log"
-
-      <#
-        $path = "$workdir\$insdir\$mdbname\bin;" +
-          "C:\strawberry\c\bin;" +
-          "C:\strawberry\perl\site\bin;" +
-          "C:\strawberry\perl\bin;" +
-          "C:\rakudo\bin;" +
-          "C:\rakudo\share\perl6\site\bin;" +
-          "%PATH%"
-        [Environment]::SetEnvironmentVariable( "PATH", $path, "User")
-      #>
-
-  - SET PATH=C:\projects\mongo-perl6-driver\t\Appveyor\mongodb-win32-x86_64-2008plus-ssl-3.6.4\bin;%PATH%
+  - choco install strawberryperl
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
+
+  - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName %APPVEYOR_BUILD_FOLDER%\rakudo.msi
+  - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 
-  # some features to enable
-#  - choco feature enable -n allowEmptyChecksums
-#  - choco feature enable -n allowGlobalConfirmation
+#  - dir %WORKDIR%
+#  - dir %WORKDIR%\%INSDIR%
+#  - dir %WORKDIR%\%INSDIR%\%MDBNAME%\bin
 
-  # https://www.mongodb.org/dl/win32/x86_64-2008plus-ssl
-#  - appveyor DownloadFile "http://downloads.mongodb.org/win32/mongodb-win32-x86_64-2008plus-ssl-3.6.4.zip" -FileName C:\projects\mongo-perl6-driver\mongodb.zip
-#  - ps: Expand-Archive C:\projects\mongo-perl6-driver\mongodb.zip .
-#  - mklink /J .\mongodb-3.6.4 \mongodb-win32-x86_64-2008plus-ssl-3.6.4\bin
-#  - echo %APPVEYOR_BUILD_FOLDER%
-#  - dir %APPVEYOR_BUILD_FOLDER%
-
-  # This will be the latest version
-#  - choco install mongodb
-
-#  - choco install strawberryperl
-#  - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
-
-    # See also https://rakudo.org/files
-    # Powershell 2
-#    $webClient = New-Object System.Net.WebClient
-#    $webClient.DownLoadFile( "https://rakudo.org/latest/star/win64", "C:\projects\mongo-perl6-driver\rakudo.msi")
-    # Powershell 3
-#  - Invoke-WebRequest -Uri "https://rakudo.org/latest/star/win64" -OutFile "C:\projects\mongo-perl6-driver\rakudo.msi"
-#  - appveyor DownloadFile "https://rakudo.org/latest/star/win64" -FileName C:\projects\mongo-perl6-driver\rakudo.msi"
-#  - appveyor DownloadFile   "https://rakudo.org/dl/star/rakudo-star-2018.01-x86_64 (JIT).msi" -FileName C:\projects\mongo-perl6-driver\rakudo.msi
-#  - msiexec /i C:\projects\mongo-perl6-driver\rakudo.msi /quiet /qn /norestart /log install.log
 
 #  - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 #  - zef --/test install Log::Async
@@ -89,7 +51,12 @@ build: off
 
 test_script:
   - perl6 xt/wrapper.pl6 t/098-mk-sandbox.t
-  - perl6 xt/wrapper.pl6 --serverkeys=s7 t/099* t/[2-5]* t/998*
+#  - dir %WORKDIR%
+  - dir %WORKDIR%\Sandbox\Server-s1
+  - type %WORKDIR%\Sandbox\config.toml
+  - perl6 xt/wrapper.pl6 --serverkeys=s1 t/099*
+#  - type %WORKDIR%\Sandbox\Server-s1\m.log
+#  - perl6 xt/wrapper.pl6 --serverkeys=s1 t/099* t/[2-5]* t/998*
   - perl6 xt/wrapper.pl6 t/999-rm-sandbox.t
 
 # fetch repository as zip archive

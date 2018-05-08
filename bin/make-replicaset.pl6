@@ -25,6 +25,7 @@ sub MAIN ( *@servers, Str :$conf-loc is copy = '.',  ) {
 
   # get config path
   $conf-loc = $conf-loc.IO.absolute;
+#TODO use environment variable for config file
 
 note $conf-loc;
 
@@ -67,14 +68,14 @@ sub get-server-state (
   my Int $port = $mdbcfg.cfg.refine( 'remote', $server-key)<port>;
   my Str $hostname = $mdbcfg.cfg.refine( 'remote', $server-key)<host>;
   my Str $connection = "$hostname:$port";
-  my Str $replicaSet =
-    $mdbcfg.cfg.refine( 'remote', $server-key, 'replicaSet')<replicaSet>;
+  my Str $replSet =
+    $mdbcfg.cfg.refine( 'remote', $server-key, 'replicate')<replSet>;
 
   my Str $uri = "mongodb://$auth-input$connection";
   my MongoDB::Client $client .= new(:$uri);
   my $state = $client.server-status($connection);
   if $state !~~ SS-RSGhost {
-    $uri = "mongodb://$auth-input$connection/?replicaSet=$replicaSet";
+    $uri = "mongodb://$auth-input$connection/?replSet=$replSet";
     $client.cleanup;
     $client .= new(:$uri);
   }
@@ -102,8 +103,8 @@ sub get-server-state (
     note "Master data:\n", $doc.perl;
 
     %(
-      :$connection, :$replicaSet,
-      url => "mongodb://$auth-input$connection/?replicaSet=$replicaSet",
+      :$connection, :$replSet,
+      url => "mongodb://$auth-input$connection/?replSet=$replSet",
       :$client, :$server,
 #      :$database,
       ismaster => $doc, :$state
@@ -192,7 +193,7 @@ sub make-replicaset (
       'admin.$cmd',
       BSON::Document.new( (
           replSetInitiate => (
-            :_id($master-server-state<replicaSet>),
+            :_id($master-server-state<replSet>),
             :$members
           ),
         )
@@ -230,7 +231,7 @@ sub make-replicaset (
           'admin.$cmd',
           BSON::Document.new( (
               replSetReconfig => (
-                _id => $sval<replicaSet>,
+                _id => $sval<replSet>,
                 version => $new-version,
                 members => [ (
                     _id => 0,
@@ -268,7 +269,7 @@ sub make-replicaset (
           'admin.$cmd',
           BSON::Document.new( (
               replSetReconfig => (
-                _id => $sval<replicaSet>,
+                _id => $sval<replSet>,
                 version => $new-version,
                 members => [ (
                     _id => 0,
