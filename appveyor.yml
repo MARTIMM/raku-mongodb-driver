@@ -6,7 +6,7 @@ branches:
   # whitelist
   only:
 #    - master
-    - windows
+#    - windows
 #    - develop
     - dummy-branch
 
