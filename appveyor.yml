@@ -31,8 +31,8 @@ install:
   - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
   - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 
-  - dir %WORKDIR%
-  - dir %WORKDIR%\%INSDIR%
+#  - dir %WORKDIR%
+#  - dir %WORKDIR%\%INSDIR%
   - dir %WORKDIR%\%INSDIR%\%MDBNAME%\bin
 
 
@@ -51,10 +51,11 @@ build: off
 
 test_script:
   - perl6 xt/wrapper.pl6 t/098-mk-sandbox.t
-  - dir %WORKDIR%
-  - dir %WORKDIR%\Sandbox
+#  - dir %WORKDIR%
+  - dir %WORKDIR%\Sandbox\Server-s1
   - type %WORKDIR%\Sandbox\config.toml
   - perl6 xt/wrapper.pl6 --serverkeys=s1 t/099* t/[2-5]* t/998*
+  - type %WORKDIR%\Sandbox\Server-s1\m.log
   - perl6 xt/wrapper.pl6 t/999-rm-sandbox.t
 
 # fetch repository as zip archive
