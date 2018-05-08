@@ -307,8 +307,8 @@ class Test-support {
       }
 
       elsif $server-setup{$skey}<server-path>.defined {
-        $config-text ~= "  mongod = '$server-setup{$skey}<server-path>\\mongod'\n";
-        $config-text ~= "  mongos = '$server-setup{$skey}<server-path>\\mongos'\n";
+        $config-text ~= "  mongod = '$server-setup{$skey}<server-path>\\mongod.exe'\n";
+        $config-text ~= "  mongos = '$server-setup{$skey}<server-path>\\mongos.exe'\n";
       }
 
       # server specific options
