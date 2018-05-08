@@ -22,7 +22,8 @@ try {
 
   CATCH {
     default {
-      shell "type C:\\projects\\mongo-perl6-driver\\Sandbox\\Server-s1\\m.log";
+      note .message;
+      "C:/projects/mongo-perl6-driver/Sandbox/Server-s1/m.log".IO.slurp.note;
     }
   }
 }

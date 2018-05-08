@@ -33,7 +33,7 @@ install:
 
 #  - dir %WORKDIR%
 #  - dir %WORKDIR%\%INSDIR%
-  - dir %WORKDIR%\%INSDIR%\%MDBNAME%\bin
+#  - dir %WORKDIR%\%INSDIR%\%MDBNAME%\bin
 
 
 #  - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
