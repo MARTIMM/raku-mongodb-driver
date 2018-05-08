@@ -15,8 +15,16 @@ info-message("Test $?FILE start");
 
 #------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
-for @($ts.serverkeys) -> $skey {
-  ok $ts.server-control.start-mongod($skey), "Server $skey started";
+try {
+  for @($ts.serverkeys) -> $skey {
+    ok $ts.server-control.start-mongod($skey), "Server $skey started";
+  }
+
+  CATCH {
+    default {
+      shell "type C:\\projects\\mongo-perl6-driver\\Sandbox\\Server-s1\\m.log";
+    }
+  }
 }
 
 throws-like
