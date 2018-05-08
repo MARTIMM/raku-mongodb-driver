@@ -59,9 +59,11 @@ class Server::Control {
 
     my Str $cmdstr = $binary-path ~ ' ';
     for $options.kv -> $key, $value {
-      $cmdstr ~= "--$key" ~ ($value ~~ Bool ?? '' !! " $value") ~ " ";
+      $cmdstr ~= "--$key" ~ ($value ~~ Bool ?? '' !! " \"$value\"") ~ " ";
     }
 
+    # when ready, remove last space from the commandline
+    $cmdstr ~~ s/ \s+ $//;
     my Bool $started = False;
 
     info-message($cmdstr);
@@ -83,7 +85,7 @@ class Server::Control {
     $started = True;
     debug-message('Command executed ok');
 
-    $started;
+    $started
   }
 
   #-----------------------------------------------------------------------------
@@ -118,7 +120,8 @@ class Server::Control {
     $cmdstr ~= '--dbpath ' ~ "'$options<dbpath>' " // '/data/db ';
     $cmdstr ~= '--quiet ' if $options<quiet>;
 
-
+    # when ready, remove last space from the commandline
+    $cmdstr ~~ s/ \s+ $//;
     my Bool $stopped = False;
     info-message($cmdstr);
 
@@ -135,10 +138,10 @@ class Server::Control {
       }
     }
 
-    debug-message('Command executed ok');
     $stopped = True;
+    debug-message('Command executed ok');
 
-    $stopped;
+    $stopped
   }
 
   #-----------------------------------------------------------------------------
