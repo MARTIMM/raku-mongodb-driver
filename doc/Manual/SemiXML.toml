@@ -41,7 +41,7 @@
 [ ML.db5 ]
   lorem         = 'SxmlLib::LoremIpsum'
   d5b           = 'SxmlLib::Docbook5::Basic'
-  d5f           = 'SxmlLib::Docbook5::FixedLayout'
+#  d5f           = 'SxmlLib::Docbook5::FixedLayout'
   file          = 'SxmlLib::File'
 
 #------------------------------------------------------------------------------

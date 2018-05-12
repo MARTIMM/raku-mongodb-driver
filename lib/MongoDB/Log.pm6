@@ -3,6 +3,8 @@ use v6;
 use Terminal::ANSIColor;
 use Log::Async;
 
+my $logger;
+
 #------------------------------------------------------------------------------
 package MongoDB:auth<github:MARTIMM> {
 
@@ -33,11 +35,6 @@ package MongoDB:auth<github:MARTIMM> {
       if ? $pipe {
         my Proc $p = shell $pipe, :in;
         $output = $p.in;
-#note "Ex code: $p.exitcode()";
-#        if $p.exitcode > 0 {
-#          $p.in.close;
-#          die "error opening pipe to '$pipe'" if $p.exitcode > 0;
-#        }
       }
 
       else {
@@ -100,7 +97,8 @@ package MongoDB:auth<github:MARTIMM> {
       if $!send-to-setup{$key}:exists {
         my Array $psto = $!send-to-setup{$key}:delete;
 
-        # check if I/O channel is other than stdout or stderr. If so, close them.
+        # check if I/O channel is other than stdout or stderr.
+        # If so, close them.
         if ?$psto[LOGOUTPUT]
         and !($psto[LOGOUTPUT] === $*OUT)
         and !($psto[LOGOUTPUT] === $*ERR) {
@@ -131,7 +129,7 @@ package MongoDB:auth<github:MARTIMM> {
       self.close-taps;
       for $!send-to-setup.keys -> $k {
         if ? $!send-to-setup{$k}[LOGCODE] {
-          logger.send-to(
+          $logger.send-to(
             $!send-to-setup{$k}[LOGOUTPUT],
             :code($!send-to-setup{$k}[LOGCODE]),
             :level($!send-to-setup{$k}[LOGLEVEL])
@@ -139,7 +137,7 @@ package MongoDB:auth<github:MARTIMM> {
         }
 
         else {
-          logger.send-to(
+          $logger.send-to(
             $!send-to-setup{$k}[LOGOUTPUT],
             :level($!send-to-setup{$k}[LOGLEVEL])
           );
@@ -151,7 +149,7 @@ package MongoDB:auth<github:MARTIMM> {
     # send-to method
     multi method send-to ( IO::Handle:D $fh, Code:D :$code!, |args ) {
 
-      logger.add-tap( -> $m { $m<fh> = $fh; $code($m); }, |args);
+      $logger.add-tap( -> $m { $m<fh> = $fh; $code($m); }, |args);
     }
 
     #--------------------------------------------------------------------------
@@ -185,7 +183,7 @@ package MongoDB:auth<github:MARTIMM> {
 }
 
 #------------------------------------------------------------------------------
-set-logger(MongoDB::Log.new());
+$logger = MongoDB::Log.new();
 
 #------------------------------------------------------------------------------
 class X::MongoDB is Exception {
@@ -289,32 +287,32 @@ my Code $log-code = sub (
 
 #------------------------------------------------------------------------------
 sub trace-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(MongoDB::Trace), :code($log-code));
+  $logger.log( :$msg, :level(MongoDB::Trace), :code($log-code));
 }
 
 #------------------------------------------------------------------------------
 sub debug-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(MongoDB::Debug), :code($log-code));
+  $logger.log( :$msg, :level(MongoDB::Debug), :code($log-code));
 }
 
 #------------------------------------------------------------------------------
 sub info-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(MongoDB::Info), :code($log-code));
+  $logger.log( :$msg, :level(MongoDB::Info), :code($log-code));
 }
 
 #------------------------------------------------------------------------------
 sub warn-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(MongoDB::Warn), :code($log-code-cf));
+  $logger.log( :$msg, :level(MongoDB::Warn), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
 sub error-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(MongoDB::Error), :code($log-code-cf));
+  $logger.log( :$msg, :level(MongoDB::Error), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
 sub fatal-message ( Str $msg ) is export {
-  logger.log( :$msg, :level(MongoDB::Fatal), :code($log-code-cf));
+  $logger.log( :$msg, :level(MongoDB::Fatal), :code($log-code-cf));
   sleep 0.5;
   die X::MongoDB.new( :message($msg));
 }
@@ -360,17 +358,26 @@ my Code $code = sub ( $m ) {
 };
 
 #------------------------------------------------------------------------------
-sub add-send-to ( |c ) is export { logger.add-send-to( |c, :$code); }
-sub modify-send-to ( |c ) is export { logger.modify-send-to( |c, :$code); }
-sub drop-send-to ( |c ) is export { logger.drop-send-to(|c); }
-sub drop-all-send-to ( ) is export { logger.drop-all-send-to(); }
+sub add-send-to ( |c ) is export { $logger.add-send-to( |c, :$code); }
+sub modify-send-to ( |c ) is export { $logger.modify-send-to( |c, :$code); }
+sub drop-send-to ( |c ) is export { $logger.drop-send-to(|c); }
+sub drop-all-send-to ( ) is export { $logger.drop-all-send-to(); }
 
 #------------------------------------------------------------------------------
 # activate some channels. Display messages only on error and fatal to the screen
 # and all messages of type info, warning, error and fatal to a file MongoDB.log
 add-send-to( 'screen', :to($*ERR), :min-level(MongoDB::MdbLoglevels::Error));
-add-send-to(
-  'mongodb',
-  :pipe('sort >> MongoDB.log'),
-  :min-level(MongoDB::MdbLoglevels::Info)
-);
+if $*KERNEL.name eq 'linux' {
+  add-send-to(
+    'mongodb',
+    :pipe('sort >> MongoDB.log'),
+    :min-level(MongoDB::MdbLoglevels::Info)
+  );
+}
+
+else {
+  my $handle = 'MongoDB.log'.IO.open( :mode<wo>, :create, :append);
+  add-send-to(
+    'mongodb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info)
+  );
+}

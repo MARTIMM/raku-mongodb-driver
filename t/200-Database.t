@@ -10,7 +10,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -20,12 +20,13 @@ my BSON::Document $doc;
 
 # single server tests => one server key
 my Hash $clients = $ts.create-clients;
-my Str $skey = $clients.keys[0];
-my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
-
 my MongoDB::Client $client = $clients{$clients.keys[0]};
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
+
+# get version to skip certain tests
+my Str $version = $ts.server-version($database);
+#note $version;
 
 # Drop database first then create new databases
 $req .= new: ( dropDatabase => 1 );
@@ -50,7 +51,7 @@ subtest "Database, create collection, drop", {
 #TODO get all codes and test on code instead of messages to prevent changes
 # in mongod in future
 
-  if $bin-path ~~ / '2.6.' \d+ / {
+  if $version ~~ / '2.6.' \d+ / {
     skip "No error code returned from 2.6.* server", 1;
   }
 

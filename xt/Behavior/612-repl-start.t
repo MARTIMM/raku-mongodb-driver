@@ -27,13 +27,13 @@ subtest {
   my Hash $config = MongoDB::MDBConfig.instance.config;
 
   my Int $p1 = $ts.server-control.get-port-number(@serverkeys[0]);
-  my Str $rs1-s1 = $config<mongod>{@serverkeys[0]}<replicate1><replSet>;
+  my Str $rs1-s1 = $config<server>{@serverkeys[0]}<replicate1><replSet>;
 
   my Int $p2 = $ts.server-control.get-port-number(@serverkeys[1]);
-  my Str $rs1-s2 = $config<mongod>{@serverkeys[1]}<replicate1><replSet>;
+  my Str $rs1-s2 = $config<server>{@serverkeys[1]}<replicate1><replSet>;
 
   my Int $p3 = $ts.server-control.get-port-number(@serverkeys[2]);
-  my Str $rs1-s3 = $config<mongod>{@serverkeys[2]}<replicate1><replSet>;
+  my Str $rs1-s3 = $config<server>{@serverkeys[2]}<replicate1><replSet>;
 
   diag "\nStart server @serverkeys[0] in pre-init mode in replicaset $rs1-s1";
   ok $ts.server-control.stop-mongod(@serverkeys[0]),
@@ -73,15 +73,15 @@ subtest {
           members => [ (
               _id => 0,
               host => "$host:$p2",
-              tags => ( name => 'server2', )
+#              tags => ( name => 'server2', )
             ),(
               _id => 1,
               host => "$host:$p1",
-              tags => ( name => 'server1', )
+#              tags => ( name => 'server1', )
             ),(
               _id => 2,
               host => "$host:$p3",
-              tags => ( name => 'server3', )
+#              tags => ( name => 'server3', )
             ),
           ]
         )
@@ -108,7 +108,8 @@ subtest {
   }
 
   $server = $client.select-server(:servername("$host:$p3"));
-  is $server.get-status<status>, SS-RSSecondary, "Server $host:$p3 is secondary";
+  is $server.get-status<status>, SS-RSSecondary,
+     "Server $host:$p3 is secondary";
 
   is $client.topology, TT-ReplicaSetWithPrimary,
      'Replicaset with primary topology';

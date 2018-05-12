@@ -2,6 +2,26 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 0.43.0
+  * **make-replicaset.pl6**: Program to create a replicaset or add servers to the replicaset.
+* 0.42.0
+  * **mongodb-accounting.pl6**: `--show` option to get user info.
+  * **mongodb-accounting.pl6**: `--del` option to delete user account.
+* 0.41.1
+  * Try to implement appveyor tests -> still fail to write proper script
+* 0.41.0
+  * **start-servers.pl6**: Program to start servers.
+  * **stop-servers.pl6**: Program to stop servers.
+  * **mongodb-accounting.pl6**: Program to add accounts with `--add` option.
+* 0.40.7
+  * Redesigning the server configuration to setup the Sandbox. Reason to do this was caused by ideas about a support program to start and stop a server which needed a user comprehensible configuration.
+* 0.40.6
+  * Minor bugfixes
+* 0.40.5
+  * Old relic popped up. `.find-key(Int)` was removed but referred from Database module to get current command sent to server. Changed into `.keys[0]` which does the same. Remember that keys keep same order!
+  * `.check()` in Socket should also test for is-open when timeout wasn't yet exceeded.
+* 0.40.4
+  * Thanks to Dan Zwell, Async::Logger is in the Log module is incorporated better so it can be used independently also if a user wishes.
 * 0.40.3
   * Users.pm6; normalization done client side until mongo server is ready for it. md5 method from OpenSSL::Digest now.
 * 0.40.2

@@ -1,6 +1,6 @@
 use v6;
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
 
 use BSON::Document;
@@ -9,15 +9,13 @@ use MongoDB::Collection;
 use MongoDB::Server::Control;
 use MongoDB::Client;
 
-#------------------------------------------------------------------------------
-#drop-send-to('mongodb');
-#drop-send-to('screen');
-#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
-
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 class Test-support {
 
   has MongoDB::Server::Control $.server-control;
+
+  # Environment variable SERVERKEYS holds a list of server keys. This is set by
+  # xt/wrapper.pl6
 
   submethod BUILD ( ) {
 
@@ -28,7 +26,7 @@ class Test-support {
     ) if 'Sandbox'.IO ~~ :d;
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Get a connection.
   method get-connection ( Str:D :$server-key! --> MongoDB::Client ) {
 
@@ -36,7 +34,7 @@ class Test-support {
     MongoDB::Client.new(:uri("mongodb://localhost:$port-number"))
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   # Search and show content of documents
   method show-documents (
     MongoDB::Collection $collection,
@@ -52,7 +50,7 @@ class Test-support {
     }
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   =begin comment
     Test for usable port number
     According to https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
@@ -107,13 +105,13 @@ class Test-support {
     $port-number
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   multi method serverkeys ( Str $serverkeys is copy ) {
 
     %*ENV<SERVERKEYS> = $serverkeys // 's1';
   }
 
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   multi method serverkeys ( --> List ) {
 
     my $l = ();
@@ -123,7 +121,7 @@ class Test-support {
     $l ?? $l !! ('s1',)
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method create-clients ( --> Hash ) {
 
     my Hash $h = {};
@@ -135,8 +133,11 @@ class Test-support {
     $h ?? $h !! %( s1 => self.get-connection(:server-key<s1>) )
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
   method create-sandbox ( ) {
+
+    my Bool $is-win = $*KERNEL.name eq 'win32';
+    my Str $path-delim = ($is-win ?? '\\' !! '/');
 
     # if we are under the scrutany of TRAVIS then adjust the path where to find the
     # mongod/mongos binaries
@@ -146,123 +147,197 @@ class Test-support {
 
     mkdir( 'Sandbox', 0o700);
     my Int $start-portnbr = 65010;
-    my Str $config-text = Q:qq:to/EOCONFIG/;
+
+    # setup non-default values for the servers
+    my Hash $server-setup;
+    if $*KERNEL.name eq 'win32' {
+
+      # These variabl;es are also used in the appveyor script
+      my Str $WORKDIR = 'C:\projects\mongo-perl6-driver';
+      my Str $INSDIR = 't\Appveyor';
+      my Str $MDBNAME = 'mongodb-win32-x86_64-2008plus-ssl-3.6.4';
+      $server-setup = {
+
+        s1 => {
+  #        server-version => '3.6.4',
+          server-path => [~] $WORKDIR, "\\", $INSDIR, "\\", $MDBNAME, "\\bin",
+        #  replicas => {
+        #    replicate1 => 'first_replicate',
+        #    replicate2 => 'second_replicate',
+        #  },
+  #        authenticate => True,
+  #        account => {
+  #          user => 'Dondersteen',
+  #          pwd => 'w@tD8jeDan',
+  #        },
+        },
+      };
+    }
+
+    else {
+      $server-setup = {
+
+        # in this setup there is always a server s1 because defaults in other
+        # methods can be set to 's1'. Furthermore, keep server keys simple because
+        # of sorting in some of the test programs. E.g. s1, s2, s3 etc.
+        s1 => {
+          replicas => {
+            replicate1 => 'first_replicate',
+            replicate2 => 'second_replicate',
+          },
+          authenticate => True,
+  #        account => {
+  #          user => 'Dondersteen',
+  #          pwd => 'w@tD8jeDan',
+  #        },
+        },
+        s2 => {
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+        s3 => {
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+        s4 => {
+          server-version => '2.6.11',
+          replicas => {
+            replicate1 => 'first_replicate',
+            replicate2 => 'second_replicate',
+          },
+          authenticate => True,
+  #        account => {
+  #          user => 'Dondersteen',
+  #          pwd => 'w@tD8jeDan',
+  #        },
+        },
+        s5 => {
+          server-version => '2.6.11',
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+        s6 => {
+          server-version => '2.6.11',
+          replicas => {
+            replicate1 => 'first_replicate',
+          },
+        },
+      };
+    }
+
+    my Str $config-text = '';
+    # window server. special binaries location
+    if $*KERNEL.name eq 'win32' {
+      $config-text ~=  [~] "\n[ locations ]\n",
+        '  server-path = \'', $*CWD, $path-delim, "Sandbox'\n";
+    }
+
+    else {
+      $config-text ~= [~] "\n[ locations ]\n",
+        '  mongod = \'', $*CWD, $path-delim, 't', $path-delim, 'Travis-ci',
+           $path-delim, '3.2.9', $path-delim, "mongod'\n",
+
+        '  mongos = \'', $*CWD, $path-delim, 't', $path-delim, 'Travis-ci',
+           $path-delim, '3.2.9', $path-delim, "mongos'\n",
+
+        '  server-path = \'', $*CWD, $path-delim, "Sandbox'\n";
+    }
+
+    $config-text ~= Q:qq:to/EOCONFIG/;
+      logpath = 'm.log'
+      pidfilepath = 'm.pid'
+      dbpath = 'm.data'
+    EOCONFIG
+
+    $config-text ~= Q:qq:s:to/EOCONFIG/;
 
     # Configuration file for the servers in the Sandbox
     # Settings are specifically for test situations and not for deployment
     # situations!
-    [ account ]
-      user = 'test_user'
-      pwd = 'T3st-Us3r'
+    #[ account ]
+    #  user = 'test_user'
+    #  pwd = 'T3st-Us3r'
 
-    [ binaries ]
-      mongod = '$*CWD/t/Travis-ci/3.2.9/mongod'
-      mongos = '$*CWD/t/Travis-ci/3.2.9/mongos'
-
-    [ mongod ]
+    [ server ]
       nojournal = true
       fork = true
-      smallfiles = true
-      oplogSize = 128
+    # next is not for wiredtiger but for mmapv1
+    #  smallfiles = true
       ipv6 = true
-      #quiet = true
-      #verbose = '=command=v =nework=v'
+    #  quiet = true
+    #  verbose = '=command=v =network=v'
       verbose = 'vv'
       logappend = true
 
     EOCONFIG
 
-    # setup non-default values for the servers
-    my Hash $server-setup = {
-      # in this setup there is always a server s1 because defaults in other
-      # methods can be set to 's1'. Furthermore, keep server keys simple because
-      # of sorting in some of the test programs. E.g. s1, s2, s3 etc.
-      s1 => {
-        replicas => {
-          replicate1 => 'first_replicate',
-          replicate2 => 'second_replicate',
-        },
-        authenticate => True,
-        account => {
-          user => 'Dondersteen',
-          pwd => 'w@tD8jeDan',
-        },
-      },
-      s2 => {
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
-      s3 => {
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
-      s4 => {
-        server-version => '2.6.11',
-        replicas => {
-          replicate1 => 'first_replicate',
-          replicate2 => 'second_replicate',
-        },
-        authenticate => True,
-        account => {
-          user => 'Dondersteen',
-          pwd => 'w@tD8jeDan',
-        },
-      },
-      s5 => {
-        server-version => '2.6.11',
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
-      s6 => {
-        server-version => '2.6.11',
-        replicas => {
-          replicate1 => 'first_replicate',
-        },
-      },
-#      s7 => {
-#        ipv6 => true,
-#      },
-    };
-
     for $server-setup.keys -> Str $skey {
 
-      my Str $server-dir = "$*CWD/Sandbox/Server-$skey";
+      my Str $server-dir = [~] $*CWD, $path-delim, 'Sandbox',
+         $path-delim, 'Server-', $skey;
       mkdir( $server-dir, 0o700) unless $server-dir.IO ~~ :d;
-      mkdir( "$server-dir/m.data", 0o700) unless "$server-dir/m.data".IO ~~ :d;
+      my Str $datadir = $server-dir ~ $path-delim ~ 'm.data';
+      mkdir( $datadir, 0o700) unless $datadir.IO ~~ :d;
 
       my Int $port-number = self!find-next-free-port($start-portnbr);
       $start-portnbr = $port-number + 1;
 
+
+      # server specific locations
       $config-text ~= Q:qq:to/EOCONFIG/;
 
       # Configuration for Server $skey
-      [ mongod.$skey ]
-        logpath = '$server-dir/m.log'
-        pidfilepath = '$server-dir/m.pid'
-        dbpath = '$server-dir/m.data'
+      [ locations.$skey ]
+        server-subdir = 'Server-$skey'
+      EOCONFIG
+
+      # add location of binary depending on version if specified
+      if $server-setup{$skey}<server-version>.defined {
+        $config-text ~= [~]
+          '  mongod = \'', $*CWD, $path-delim, 't', $path-delim, 'Travis-ci',
+             $path-delim, $server-setup{$skey}<server-version>, $path-delim,
+             "mongod'\n",
+
+          '  mongos = \'', $*CWD, $path-delim, 't', $path-delim, 'Travis-ci',
+             $path-delim, $server-setup{$skey}<server-version>, $path-delim,
+             "mongos'\n";
+      }
+
+      elsif $server-setup{$skey}<server-path>.defined {
+        $config-text ~= "  mongod = '$server-setup{$skey}<server-path>\\mongod.exe'\n";
+        $config-text ~= "  mongos = '$server-setup{$skey}<server-path>\\mongos.exe'\n";
+      }
+
+      # server specific options
+      $config-text ~= Q:qq:to/EOCONFIG/;
+
+      [ server.$skey ]
         port = $port-number
       EOCONFIG
 
-
+      # if replicas are specified add them
       for $server-setup{$skey}<replicas>.keys -> $rkey {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
-        [ mongod.$skey.$rkey ]
+        [ server.$skey.$rkey ]
+          oplogSize = 128
           replSet = '$server-setup{$skey}<replicas>{$rkey}'
         EOCONFIG
       }
 
+      # if authentication is specified add them
       if $server-setup{$skey}<authenticate> {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
-        [ mongod.$skey.authenticate ]
+        [ server.$skey.authenticate ]
           auth = true
         EOCONFIG
       }
 
+=begin comment
       if $server-setup{$skey}<account>:exists {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
@@ -271,8 +346,20 @@ class Test-support {
           pwd = '$server-setup{$skey}<account><pwd>'
         EOCONFIG
       }
+=end comment
 
-      if $server-setup{$skey}<server-version> {
+=begin comment
+      # window server. special binaries location
+      if $skey ~~ /^ s \d+ w $/ {
+        $config-text ~= Q:qq:to/EOCONFIG/;
+
+        [ binaries.$skey ]
+          mongod = "C:/projects/mongo-perl6-driver/mongodb-{$server-setup{$skey}<server-version>}/mongod"
+          mongos = "C:/projects/mongo-perl6-driver/mongodb-{$server-setup{$skey}<server-version>}/mongos"
+        EOCONFIG
+      }
+
+      elsif $server-setup{$skey}<server-version> {
         $config-text ~= Q:qq:to/EOCONFIG/;
 
         [ binaries.$skey ]
@@ -280,16 +367,32 @@ class Test-support {
           mongos = '$*CWD/t/Travis-ci/{$server-setup{$skey}<server-version>}/mongos'
         EOCONFIG
       }
+=end comment
     } # for $server-setup.keys -> Str $skey
 
     my Str $file = 'Sandbox/config.toml';
     spurt( $file, $config-text);
 
-note "Current dir: $*CWD";
-note "Server config:\n$config-text";
+#note "Current dir: $*CWD";
+#note "Server config:\n$config-text";
   }
 
-  #----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
+  method server-version ( DatabaseType $db --> Str ) {
+
+    my BSON::Document $doc = $db.run-command: (
+      serverStatus => 1,
+      repl => 0, metrics => 0, locks => 0, asserts => 0,
+      backgroundFlushing => 0, connections => 0, cursors => 0,
+      extra_info => 0, globalLock => 0, indexCounters => 0, network => 0,
+      opcounters => 0, opcountersRepl => 0, recordStats => 0
+    );
+
+#note "V: ", $doc.perl;
+    $doc<version>
+  }
+
+  #-----------------------------------------------------------------------------
   # Remove everything setup in directory Sandbox
   method cleanup-sandbox ( ) {
 

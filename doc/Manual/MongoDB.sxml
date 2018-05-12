@@ -1,4 +1,4 @@
-#!/usr/bin/env sxml2xml.pl6 --run=pdf
+#!/usr/bin/env sxml2xml.pl6 --in=db5 --out=pdf MongoDB.sxml
 
 $!d5b.article [
   $title [ Perl 6 MongoDB driver ]
@@ -8,8 +8,8 @@ $!d5b.article [
              copy-year='2015, 2016 ... Inf' copy-holder='Marcel Timmerman' [
 
     $para [
-      MongoDB is a $**glossterm linkend=nosql [Non SQL] database which uses
-      $**glossterm linkend=bson [Binary JSON (BSON)] to 
+      MongoDB is a $glossterm linkend=nosql [Non SQL] database which uses
+      $glossterm linkend=bson [Binary JSON (BSON)] to
       store and load information in a database. With the mongodb package a
       shell program called mongo is available to give instructions to a
       mongodb server.
@@ -20,7 +20,7 @@ $!d5b.article [
       There are drivers for many program languages. This document describes a
       driver for the Perl6 language. In the perl6 ecosystem, which might grow
       into a cpan like system later, there are two packages needed to work with
-      the driver. These are $**glossterm linkend=mongodb [MongoDB] and BSON.
+      the driver. These are $glossterm linkend=mongodb [MongoDB] and BSON.
       BSON is automatically installed with other necessary modules.
     ]
 
@@ -78,11 +78,11 @@ $!d5b.article [
 
           $itemizedlist spacing=compact [
             $listitem [
-              $emphasis[Server states].
+            $emphasis[Server states].
             ]
 
             $listitem [
-              $emphasis[Topology].
+            $emphasis[Topology]. The topology of a client is defined by the set of servers and their states.
             ]
 
             $listitem [
@@ -103,24 +103,15 @@ $!d5b.article [
             ]
 
             $listitem [
-              $emphasis[Server selection process].
+              $emphasis[Server selection process]. This is the process of finding a server depending on the server state and the topology.
             ]
           ]
         ]
 
         $listitem [
-          $emphasis[Modules and classes].
+          $emphasis[Modules and classes]. There are many more classes but the classes named below are the ones which will be used by you.
 
           $itemizedlist spacing=compact [
-
-            $listitem [
-              $emphasis[MongoDB::Client]. This module is the starting point of all
-              applications which need access to a mongodb database server.
-
-# named attributes to control selecting and monitoring
-# cleanup!
-            ]
-
 
             $listitem [
               $emphasis[BSON::Document]. This is the basic vehicle to insert,
@@ -132,35 +123,43 @@ $!d5b.article [
             ]
 
             $listitem [
-              $emphasis[MongoDB::Database].
+              $emphasis[MongoDB]. Here a lot of the programs constants, enumerations and subtypes are defined as well as the import of logging subs.
             ]
 
             $listitem [
-              $emphasis[MongoDB::Collection].
+              $emphasis[MongoDB::Client]. This module is the starting point of all applications which need access to a mongodb database server. The client receives the uri from the user of the module to access one or more servers.
+
+# named attributes to control selecting and monitoring
+# cleanup!
             ]
 
             $listitem [
-              $emphasis[MongoDB::Cursor].
+              $emphasis[MongoDB::Collection]. The Collection module is used to search through the collection data of the database.
             ]
 
             $listitem [
-              $emphasis[MongoDB::Server].
+              $emphasis[MongoDB::Cursor]. The Cursor is used to process the found data returned from the search.
             ]
 
             $listitem [
-              $emphasis[MongoDB::Server::Control].
+              $emphasis[MongoDB::Database]. The Database is the most used module to send commands to the server.
             ]
           ]
         ]
 
-#        $listitem [
-#          $emphasis[Dependensies]. There are some dependencies which are
-#          explained a bit here. These are e.g. the server and its version,
-#          modules like BSON, PKCS5, Auth::SCRAM etcetera.
-#        ]
-
         $listitem [
-          $emphasis[BSON].
+          $emphasis[Programs]. There are also a few programs in this package to help you with a few administrative tasks;
+          $itemizedlist spacing=compact [
+            $listitem [
+              Starting and stopping of servers
+            ]
+            $listitem [
+              Add, remove and modify accounts
+            ]
+            $listitem [
+              Creating a replicaset
+            ]
+          ]
         ]
 
         $listitem [
@@ -168,8 +167,22 @@ $!d5b.article [
         ]
 
         $listitem [
-          $emphasis[Examples]. Of course, a document whithout examples is a
-          bit like an empty box as a present.
+          $emphasis[Examples].
+        ]
+
+        $listitem [
+        $emphasis[Things to add to this package]. The program is far from complete. The most important items to add are the following;
+
+          $itemizedlist spacing=compact [
+            $listitem [
+              Secure connection to the server. This is at least needed when authentication is performed. If not, the username/password information is visible when you know where to look.
+            ]
+            $listitem [
+              Higher level commands. There is a need for some convenience methods like insert, update, remove etcetera. In the past there were methods like these but I have removed them for two reasons: 1) the methods were based on the wire protocol which will be obsoleted partly in the future by MongoDB and 2) MongoDB has replaced them by operations all executable using the MongoDB runCommand function and therefore by the run-command method from the MongoDB::Database class.
+            ]
+            $listitem [
+            ]
+          ]
         ]
       ]
     ]
@@ -178,12 +191,19 @@ $!d5b.article [
   $sect1 [
     $title [Implementation]
     $para [
+      A short description of what happens when a user instantiates a MongoDB::Client object providing it with a URI. The Client object parses the URI for server names. These are used by the Client to instantiate a MongoDB::Server object. The server object instantiates a MongoDB::Monitor object to keep contact with the server and to process any changes when they appear. The Monitor object informs the Server object to set the Server state. The Client object will then use the Server states to define the topology of that group of servers.
+    ]
+    $para [
+      Conflicts can happen when servers defined in the URI not belong together in a group. For example a replica server and a standalone server can not be taken together in one URI because both servers can accept commands to change data. The Client object cannot guess to which of the servers the command must be send to. In such cases the topology is set to $emphasis[MongoDB::TT-Unknown] which will block any operation.
     ]
 
     $sect2 [
       $title [Server states]
       $para [
+        Server states are situations in which a server can be. The server is queried regularly with a so called $emphasis[ismaster] command. The result of this command is processed to see what kind of server we are dealing with. Based on these results the $emphasis[MongoDB::Server] object sets a state which is displayed in the table below.
+      ]
 
+      $para [
         $table rules=all [
           $title [Server states depending on isMaster outcome]
           $thead [
@@ -197,8 +217,9 @@ $!d5b.article [
             $tr [
               $td [SS-Unknown]
               $td [
-                Initial, or after a network error or failed ismaster call, or
-                "ok: 1" not in ismaster response.
+                a) Initial state before processing the response.
+                b) After a network error or failed ismaster call.
+                c) "ok: 1" not in ismaster response.
               ]
             ]
           ]
@@ -207,7 +228,7 @@ $!d5b.article [
             $tr [
               $td [SS-Standalone]
               $td [
-                No "msg: isdbgrid", no setName, and no "isreplicaset: true".
+                There is no key/value pair "msg: isdbgrid", there is no setName, and there is no "isreplicaset: true" key/value pair.
               ]
             ]
           ]
@@ -215,7 +236,8 @@ $!d5b.article [
           $tbody [
             $tr [
               $td [SS-Mongos]
-              $td ["msg: isdbgrid"]
+              $td [ Key/value pair "msg: isdbgrid" is found in the Monitor response.
+              ]
             ]
           ]
 
@@ -223,7 +245,7 @@ $!d5b.article [
             $tr [
               $td [SS-PossiblePrimary]
               $td [
-                Not yet checked, but another member thinks it is the primary.
+                Not yet processed, but another secondary server member thinks it is the primary.
               ]
             ]
           ]
@@ -231,7 +253,9 @@ $!d5b.article [
           $tbody [
             $tr [
               $td [SS-RSPrimary]
-              $td ["ismaster: true", "setName" in response.]
+              $td [
+                Key/value "ismaster: true" and "setName" is found in the Monitor response.
+              ]
             ]
           ]
 
@@ -615,7 +639,7 @@ $!d5b.article [
               $td [
                 This object is generated on the server by default. However, it
                 can be used to refer to other objects or to create the document
-                $**emphasis[_id] themselves.
+                $emphasis[_id] themselves.
               ]
             ]
           ]
@@ -721,25 +745,25 @@ $!d5b.article [
     $para [
 
     ]
-    
+
     $sect2 [
       $title [Supported versions]
       $para [
-      
+
       ]
     ]
-    
+
     $sect2 [
       $title [mongod]
       $para [
-      
+
       ]
     ]
-    
+
     $sect2 [
       $title [mongos]
       $para [
-      
+
       ]
     ]
   ]
@@ -856,7 +880,7 @@ $!d5b.article [
             BSON is a computer data interchange format used mainly as a data
             storage and network transfer format in the MongoDB database.
             See also on
-            $*|link xlink:href=https://nl.wikipedia.org/wiki/BSON [
+            $link xlink:href=https://nl.wikipedia.org/wiki/BSON [
               WikipediA
             ].
           ]
@@ -877,7 +901,7 @@ $!d5b.article [
             human-readable text to transmit data objects consisting of
             attribute-value pairs.
             See also on
-            $*|link xlink:href=https://nl.wikipedia.org/wiki/JSON [
+            $link xlink:href=https://nl.wikipedia.org/wiki/JSON [
               WikipediA
             ].
           ]
@@ -910,11 +934,11 @@ $!d5b.article [
         $acronim [NoSql]
         $glossdef [
           $para [
-            A NoSQL (originally referring to "non $**glossterm linkend=sql
+            A NoSQL (originally referring to "non $glossterm linkend=sql
             [Structured Query Language]", "non relational" or "not only SQL"
             database provides a mechanism for storage and retrieval of data
             which is modeled in means other than the tabular relations used in
-            relational databases. 
+            relational databases.
           ]
         ]
       ]

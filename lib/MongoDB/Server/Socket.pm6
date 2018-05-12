@@ -51,6 +51,10 @@ class Server::Socket {
       $is-closed = True;
     }
 
+    else {
+      $is-closed = ! $!is-open;
+    }
+
     $is-closed;
   }
 
