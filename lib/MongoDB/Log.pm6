@@ -61,10 +61,8 @@ package MongoDB:auth<github:MARTIMM> {
       Any :$to is copy, Str :$pipe
     ) {
 
-      if $!send-to-setup{$key}:!exists {
-        note "key $key not found";
-        return;
-      }
+      # this can happen in some race conditions
+      return if $!send-to-setup{$key}:!exists;
 
       if ? $pipe {
         my Proc $p = shell $pipe, :in;
