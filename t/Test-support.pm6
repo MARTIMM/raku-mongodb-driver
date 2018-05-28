@@ -262,7 +262,7 @@ class Test-support {
     #  pwd = 'T3st-Us3r'
 
     [ server ]
-      nojournal = true
+    #  nojournal = true
       fork = true
     # next is not for wiredtiger but for mmapv1
     #  smallfiles = true
@@ -270,7 +270,7 @@ class Test-support {
     #  quiet = true
     #  verbose = '=command=v =network=v'
       verbose = 'vv'
-      logappend = true
+    #  logappend = true
 
     EOCONFIG
 
