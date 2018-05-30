@@ -27,13 +27,14 @@ install:
   - choco install strawberryperl
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
 
+  # this is more like what is happening on Travis so tests are more the same
   # From https://gist.github.com/ugexe/e95307a3a606df83fdcb
-  - git clone https://github.com/rakudo/rakudo.git %APPVEYOR_BUILD_FOLDER%\..\rakudo
-  - cd %APPVEYOR_BUILD_FOLDER%\..\rakudo
+  - git clone https://github.com/rakudo/rakudo.git C:\rakudo
+  - cd C:\rakudo
   - perl Configure.pl --gen-moar=HEAD --gen-nqp
   - nmake install
-  - SET PATH=%APPVEYOR_BUILD_FOLDER%\..\rakudo\install\bin;%PATH%
   - cd %APPVEYOR_BUILD_FOLDER%
+  - SET PATH=C:\rakudo\install\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 
   #- appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName %APPVEYOR_BUILD_FOLDER%\rakudo.msi
   #- msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
@@ -53,8 +54,8 @@ install:
 #  - zef --/test install Unicode::PRECIS
 #  - zef --/test install Config::DataLang::Refine
 
-  - git clone https://github.com/ugexe/zef.git %APPVEYOR_BUILD_FOLDER%\..\zef
-  - cd %APPVEYOR_BUILD_FOLDER%\..\zef
+  - git clone https://github.com/ugexe/zef.git C:\zef
+  - cd C:\zef
   - perl6 -Ilib bin/zef --verbose install .
   - cd %APPVEYOR_BUILD_FOLDER%
 
