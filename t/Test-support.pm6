@@ -263,13 +263,13 @@ class Test-support {
 
     [ server ]
     #  nojournal = true
-      fork = true
+    #  fork = true
     # next is not for wiredtiger but for mmapv1
     #  smallfiles = true
       ipv6 = true
     #  quiet = true
     #  verbose = '=command=v =network=v'
-      verbose = 'vv'
+    #  verbose = 'vv'
     #  logappend = true
 
     EOCONFIG
