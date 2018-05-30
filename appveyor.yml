@@ -34,7 +34,7 @@ install:
   - perl Configure.pl --gen-moar=HEAD --gen-nqp
   - nmake install
   - cd %APPVEYOR_BUILD_FOLDER%
-  - SET PATH=C:\rakudo\install\bin;C:\rakudo\share\perl6\site\bin;%PATH%
+  - SET PATH=C:\rakudo\install\bin;C:\rakudo\install\share\perl6\site\bin;%PATH%
 
   #- appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName %APPVEYOR_BUILD_FOLDER%\rakudo.msi
   #- msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
