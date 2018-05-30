@@ -27,9 +27,17 @@ install:
   - choco install strawberryperl
   - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
 
-  - appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName %APPVEYOR_BUILD_FOLDER%\rakudo.msi
-  - msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
-  - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
+  # From https://gist.github.com/ugexe/e95307a3a606df83fdcb
+  - git clone https://github.com/rakudo/rakudo.git %APPVEYOR_BUILD_FOLDER%\..\rakudo
+  - cd %APPVEYOR_BUILD_FOLDER%\..\rakudo
+  - perl Configure.pl --gen-moar=HEAD --gen-nqp
+  - nmake install
+  - SET PATH=%APPVEYOR_BUILD_FOLDER%\..\rakudo\install\bin;%PATH%
+  - cd %APPVEYOR_BUILD_FOLDER%
+
+  #- appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName %APPVEYOR_BUILD_FOLDER%\rakudo.msi
+  #- msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
+  #- SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
 
 #  - dir %WORKDIR%
 #  - dir %WORKDIR%\%INSDIR%
@@ -44,6 +52,11 @@ install:
 #  - zef --/test install OpenSSL
 #  - zef --/test install Unicode::PRECIS
 #  - zef --/test install Config::DataLang::Refine
+
+  - git clone https://github.com/ugexe/zef.git %APPVEYOR_BUILD_FOLDER%\..\zef
+  - cd %APPVEYOR_BUILD_FOLDER%\..\zef
+  - perl6 -Ilib bin/zef --verbose install .
+  - cd %APPVEYOR_BUILD_FOLDER%
 
   - zef --/test --depsonly install .
 
@@ -60,7 +73,7 @@ test_script:
   - perl6 xt/wrapper.pl6 t/999-rm-sandbox.t
 
 # fetch repository as zip archive
-#shallow_clone: true
+shallow_clone: true
 
 # set clone depth
 clone_depth: 5
