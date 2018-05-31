@@ -266,7 +266,7 @@ class Test-support {
     #  fork = true
     # next is not for wiredtiger but for mmapv1
     #  smallfiles = true
-      ipv6 = true
+    #  ipv6 = true
     #  quiet = true
     #  verbose = '=command=v =network=v'
     #  verbose = 'vv'
