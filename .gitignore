@@ -5,6 +5,7 @@ Old/*
 Tests/insert*
 Sandbox/*
 t/Travis-ci/*.tgz
+t/Travis-ci/*/mongo*
 *.log
 .precomp
 */.precomp
