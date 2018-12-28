@@ -12,6 +12,9 @@ use MongoDB::Client;
 #-------------------------------------------------------------------------------
 class Test-support {
 
+  constant SERVER-VERSION1 = '3.6.9';
+  constant SERVER-VERSION2 = '4.0.5';
+
   has MongoDB::Server::Control $.server-control;
 
   # Environment variable SERVERKEYS holds a list of server keys. This is set by
@@ -202,7 +205,7 @@ class Test-support {
           },
         },
         s4 => {
-          server-version => '2.6.11',
+          server-version => SERVER-VERSION1,
           replicas => {
             replicate1 => 'first_replicate',
             replicate2 => 'second_replicate',
@@ -214,13 +217,13 @@ class Test-support {
   #        },
         },
         s5 => {
-          server-version => '2.6.11',
+          server-version => SERVER-VERSION1,
           replicas => {
             replicate1 => 'first_replicate',
           },
         },
         s6 => {
-          server-version => '2.6.11',
+          server-version => SERVER-VERSION1,
           replicas => {
             replicate1 => 'first_replicate',
           },
@@ -238,10 +241,10 @@ class Test-support {
     else {
       $config-text ~= [~] "\n[ locations ]\n",
         '  mongod = \'', $*CWD, $path-delim, 't', $path-delim, 'Travis-ci',
-           $path-delim, '3.2.9', $path-delim, "mongod'\n",
+           $path-delim, SERVER-VERSION2, $path-delim, "mongod'\n",
 
         '  mongos = \'', $*CWD, $path-delim, 't', $path-delim, 'Travis-ci',
-           $path-delim, '3.2.9', $path-delim, "mongos'\n",
+           $path-delim, SERVER-VERSION2, $path-delim, "mongos'\n",
 
         '  server-path = \'', $*CWD, $path-delim, "Sandbox'\n";
     }
@@ -262,14 +265,14 @@ class Test-support {
     #  pwd = 'T3st-Us3r'
 
     [ server ]
-    #  nojournal = true
-    #  fork = true
+      nojournal = true
+      fork = true
     # next is not for wiredtiger but for mmapv1
     #  smallfiles = true
     #  ipv6 = true
     #  quiet = true
     #  verbose = '=command=v =network=v'
-    #  verbose = 'vv'
+      verbose = 'vv'
     #  logappend = true
 
     EOCONFIG

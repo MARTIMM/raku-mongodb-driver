@@ -14,8 +14,8 @@ perl6:
 
 before_install:
   # See also https://www.mongodb.org/dl/linux/
-  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 2.6.11
-  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 3.2.9
+  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 3.6.9
+  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 4.0.5
 
 install:
   - rakudobrew build zef
@@ -31,8 +31,8 @@ install:
 #  depth: 5
 
 script:
-  # Servers s1-s3 are running mongo binaries 3.* versions
-  # Servers s4-s6 are running mongo binaries 2.* versions
+  # Servers s1-s3 are running mongo binaries 3.6.9 versions
+  # Servers s4-s6 are running mongo binaries 4.0.5 versions
 
   - xt/wrapper.pl6 xt/001-meta.t
   - xt/wrapper.pl6 t/098-mk-sandbox.t
@@ -42,9 +42,6 @@ script:
   - xt/wrapper.pl6 --ignore xt/Basic
 
   - xt/wrapper.pl6 --serverkeys=s1,s2 --ignore t/099* xt/Behavior/1* t/998*
-
-  # fails because SCRAM is not available for 2.6.* servers. install MONGO-CR
-  # MONGO-CR is deprecated after 3.6
   - xt/wrapper.pl6 --serverkeys=s4,s5 --ignore t/099* xt/Behavior/1* t/998*
 
   - xt/wrapper.pl6 --serverkeys=s1,s2,s3 --ignore t/099* xt/Behavior/6* t/998*
