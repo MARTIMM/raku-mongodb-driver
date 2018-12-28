@@ -11,8 +11,8 @@ use BSON::Document;
 
 #------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
@@ -70,7 +70,9 @@ subtest "Standalone server, localhost", {
   $client.cleanup;
 }
 
+#`{{
 #------------------------------------------------------------------------------
+# Cannot test ipv6 with expressVPN turned on
 subtest "Standalone server, ipv6", {
 
   # Try it with ipv6
@@ -89,6 +91,7 @@ subtest "Standalone server, ipv6", {
   is $client.topology, TT-Single, "Topology $client.topology()";
   $client.cleanup;
 }
+}}
 
 #------------------------------------------------------------------------------
 subtest "Two equal standalone servers", {
