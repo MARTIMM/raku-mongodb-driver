@@ -214,21 +214,22 @@ sub search-callframe ( $type --> CallFrame ) {
     }
 
     # cannot pass sub THREAD-ENTRY either
-    if ?$cf and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
+    if ?$cf and ?$cf.code and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
 
       $cf = Nil;
       last;
     }
 
-    if ?$cf and $type ~~ Sub
+    if ?$cf and ?$cf.code and $type ~~ Sub
        and $cf.code.name ~~ m/[trace|debug|info|warn|error|fatal] '-message'/ {
 
       last;
     }
 
     # try to find a better place instead of dispatch, BUILDALL etc:...
-    next if $cf.code ~~ $type and $cf.code.name ~~ m/dispatch/;
-    last if $cf.code ~~ $type;
+    next if ?$cf.code and $cf.code ~~ $type and
+            $cf.code.name ~~ m/dispatch/;
+    last if ?$cf.code and $cf.code ~~ $type;
   }
 
   $cf
