@@ -3,10 +3,13 @@
 */*.html
 Old/*
 Tests/insert*
+t/Sandbox/*
 Sandbox/*
+t/Software/*
 t/Travis-ci/*.tgz
 t/Travis-ci/*/mongo*
 *.log
+*.mlog
 .precomp
 */.precomp
 *.zargo~
