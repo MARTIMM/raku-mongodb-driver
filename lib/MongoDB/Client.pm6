@@ -22,7 +22,7 @@ class Client {
   # topology-set is used to block the server-select() process when topology
   # still needs to be calculated.
   has TopologyType $!topology-type;
-  has TopologyType $!user-request-topology;
+#  has TopologyType $!user-request-topology;
   has Bool $!topology-set;
 
   # Store all found servers here. key is the name of the server which is
@@ -103,7 +103,6 @@ class Client {
     $!uri-obj .= new(:$!uri);
 
     debug-message("Found {$!uri-obj.servers.elems} servers in uri");
-
     # Setup todo list with servers to be processed, Safety net not needed yet
     # because threads are not started.
     for @($!uri-obj.servers) -> Hash $server {
@@ -182,6 +181,7 @@ class Client {
 
       my ServerStatus $status = $servers{$server-name}.get-status<status> // SS-Unknown;
 
+      # check status of server
       given $status {
         when SS-Standalone {
           $servers-count++;
@@ -193,6 +193,7 @@ class Client {
 
           else {
 
+            # set standalone server
             $found-standalone = True;
             $topology = TT-Single;
           }
