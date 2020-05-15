@@ -2,6 +2,8 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
+* 2020-05-11 0.43.3
+  * Issue #31. Add a test in the client discovery code so that I/O to a server can start more quickly while building topology.
 * 0.43.2
   * Tested for perl6 version 6.d
   * Support for only last few versions of mongodb, i.e. 4.0, 3.6 and 3.4 (2018-12-27).
