@@ -44,6 +44,45 @@ Cl <- Cu
 
 ```
 
+## Activity of client
+
+```plantuml
+
+(*) --> user
+user --> client
+
+client --> ===BD===
+--> "Background Discovery"
+--> ===B2===
+
+===B1=== --> "Parallel Activity 2"
+--> ===B2===
+
+--> (*)
+
+```
+
+```plantuml
+title "Using run-command to insert, update etc"
+
+participant UP as "User::Program"
+participant Cl as "Client"
+participant Da as "Database"
+'participant Co as "Collection"
+
+UP -> Cl : Client.new(:$uri)
+activate Cl
+Cl -> UP : $client
+UP -> Cl : $client.database(:$name)
+Cl -> Da : Database.new(:$name)
+activate Da
+Da -> Cl : $database
+Cl -> UP : $database
+UP -> Da : $database.run-command($command)
+Da -> UP : $document
+
+```
+
 ## Class usages from users point of view
 
 The user can use the classes in one of the two ways. First there is the `run-command` method in the `MongoDB::Database` class. You can almost do all things with it. Second is the use of `find` in `MongoDB::Collection` to do searches. it returns a `Cursor` object from where you can retrieve the returned documents.
