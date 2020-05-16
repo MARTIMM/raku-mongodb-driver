@@ -68,12 +68,10 @@ class Server {
     $!server-is-registered = True;
 
     # no need to catch exceptions. all is trapped in Wire. with failures
-    # a type object is returned
-    # do a firsttime connect and set status data
+    # a type object is returned. do a firsttime connect and set status data
     trace-message("Server {self.name} makes first contact request");
     my BSON::Document $doc = self.raw-query(
       'admin.$cmd', BSON::Document.new((isMaster => 1)), :!authenticate
-#      , :first-phase
     );
 
     trace-message("First contact result: " ~ ($doc//'-').perl);
@@ -381,7 +379,7 @@ class Server {
             }
           }
 
-          # Default in version 2.*
+          # Default in version 2.* NOTE: will not be supported!!
           when 'MONGODB-CR' {
 
           }
@@ -432,16 +430,14 @@ class Server {
   }
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#  # :first-phase is only used by this module at the start in BUILD
   multi method raw-query (
     Str:D $full-collection-name, BSON::Document:D $query,
     Int :$number-to-skip = 0, Int :$number-to-return = 1,
     Bool :$authenticate = True
-#, Bool :$first-phase
     --> BSON::Document
   ) {
     # Be sure the server is still active
-    return BSON::Document unless $!server-is-registered; # or $first-phase;
+    return BSON::Document unless $!server-is-registered;
 
     debug-message("server directed query on collection $full-collection-name on server {self.name}");
 
