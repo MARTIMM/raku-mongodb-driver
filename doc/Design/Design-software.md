@@ -97,6 +97,9 @@ else
 endif
 ```
 
+```plantuml
+[*] --> Client
+```
 
 ```plantuml
 title "Using run-command to insert, update etc"
