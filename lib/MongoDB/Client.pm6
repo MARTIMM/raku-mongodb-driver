@@ -118,8 +118,8 @@ class Client {
         # count reaches max, the thread is stopped.
         my Int $changes-count = 0;
 
-        # Used in debug message
-        my Instant $t0 = now;
+#        # Used in debug message
+#        my Instant $t0 = now;
 
         $!repeat-discovery-loop = True;
         repeat {
@@ -150,7 +150,8 @@ class Client {
             }
           }
 
-          debug-message("One client processing cycle done after {(now - $t0) * 1000} ms");
+#          debug-message("One client processing cycle done after {(now - $t0) * 1000} ms");
+          debug-message("One client processing cycle done");
         } while $!repeat-discovery-loop;
 
         debug-message("server discovery loop stopped");
