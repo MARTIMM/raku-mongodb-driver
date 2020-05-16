@@ -114,8 +114,8 @@ class Client {
     $!Background-discovery = Promise.start( {
 
         # counter to check if there are new servers added. if so, the counter
-        # is set to 0. if less then 5 the sleeptime is about a second. When count
-        # reaches max, the thread is stopped.
+        # is set to 0. if less then 5 the sleeptime is about a second. When
+        # count reaches max, the thread is stopped.
         my Int $changes-count = 0;
 
         # Used in debug message
