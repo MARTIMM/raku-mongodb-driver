@@ -46,21 +46,57 @@ Cl <- Cu
 
 ## Activity of client
 
+Diagram shows that there is one process monitoring all servers. This is a singleton class. The results are retur
+
 ```plantuml
 
-(*) --> user
-user --> client
+(*) -->[URL] "new Client"
 
-client --> ===BD===
---> "Background Discovery"
---> ===B2===
+if "server?" then
+  --> [yes] "new Server"
+  --> ===SBegin===
+  --> "background\ndiscovery"
+  --> ===SEnd===
+  --> if "next\nserver?" then
+        --> [yes] "new Server"
+      else
+        --> [no] (*)
+      endif
 
-===B1=== --> "Parallel Activity 2"
---> ===B2===
+  "new Server" --> [server\nip] ===SMon===
+  --> "Monitor\nserver"
+  if "kill monitor\nprocess" then
+    ---> [no] "Monitor\nserver"
+  else
+    --> [yes] ===BMon===
+    --> (*)
+  endif
 
---> (*)
+else
+  -->[no] (*)
+endif
 
+(*) -->[URL] "other\nnew Client"
+if "server?" then
+  --> [yes] "other\nnew Server"
+  --> ===S2Begin===
+  --> "other background\ndiscovery"
+  --> ===S2End===
+  '--> (*)
+  --> if "next\nserver?" then
+        --> [yes] "other\nnew Server"
+      else
+        --> [no] (*)
+      endif
+
+  "other\nnew Server" --> [server\nip] ===SMon===
+  '--> [no] "Monitor\nserver"
+
+else
+  -->[no] (*)
+endif
 ```
+
 
 ```plantuml
 title "Using run-command to insert, update etc"
