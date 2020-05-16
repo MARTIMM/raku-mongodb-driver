@@ -28,7 +28,7 @@ package MongoDB:auth<github:MARTIMM> {
     #--------------------------------------------------------------------------
     # add or overwrite a channel
     method add-send-to (
-      Str:D $key, MdbLoglevels :$min-level = Info, Code :$code, :$to, Str :$pipe
+      Str:D $key, MdbLoglevels :$min-level = Info, Callable :$code, :$to, Str :$pipe
     ) {
 
       my $output;# = $*ERR;
@@ -42,9 +42,9 @@ package MongoDB:auth<github:MARTIMM> {
       }
 
       # check if I/O channel is other than stdout or stderr. If so, close them.
-      if $!send-to-setup{$key}:exists
-         and !($!send-to-setup{$key}[LOGOUTPUT] === $*OUT)
-         and !($!send-to-setup{$key}[LOGOUTPUT] === $*ERR) {
+      if $!send-to-setup{$key}:exists and
+         !($!send-to-setup{$key}[LOGOUTPUT] === $*OUT) and
+         !($!send-to-setup{$key}[LOGOUTPUT] === $*ERR) {
 
         $!send-to-setup{$key}[LOGOUTPUT].close;
       }
@@ -57,7 +57,7 @@ package MongoDB:auth<github:MARTIMM> {
     #--------------------------------------------------------------------------
     # modify a channel
     method modify-send-to (
-      Str $key, :$level, Code :$code,
+      Str $key, :$level, Callable :$code,
       Any :$to is copy, Str :$pipe
     ) {
 
@@ -145,7 +145,7 @@ package MongoDB:auth<github:MARTIMM> {
 
     #--------------------------------------------------------------------------
     # send-to method
-    multi method send-to ( IO::Handle:D $fh, Code:D :$code!, |args ) {
+    method send-to ( IO::Handle:D $fh, Callable:D :$code!, |args ) {
 
       $logger.add-tap( -> $m { $m<fh> = $fh; $code($m); }, |args);
     }
@@ -155,7 +155,7 @@ package MongoDB:auth<github:MARTIMM> {
     method log (
       Str:D :$msg, Loglevels:D :$level,
       DateTime :$when = DateTime.now.utc,
-      Code :$code
+      Callable :$code
     ) {
 
       my Hash $m;
@@ -167,12 +167,7 @@ package MongoDB:auth<github:MARTIMM> {
         $m = { :$msg, :$level, :$when };
       }
 
-#note "\n$m";
       ( start $.source.emit($m) ).then( {
-#          say LogLevel::TRACE;
-#          say LogLevel::Trace;
-#          say MongoDB::Log::Trace;
-#          say .perl;
           note $^p.cause unless $^p.status == Kept
         }
       );
@@ -193,7 +188,7 @@ class X::MongoDB is Exception {
 
 #------------------------------------------------------------------------------
 # preparations of code to be provided to log()
-sub search-callframe ( $type --> CallFrame ) {
+sub search-callframe ( *@types --> CallFrame ) {
 
   # skip callframes for
   # 0  search-callframe(method)
@@ -203,6 +198,7 @@ sub search-callframe ( $type --> CallFrame ) {
   # 4  *-message(sub) helper functions
   #
   my $fn = 4;
+
   while my CallFrame $cf = callframe($fn++) {
 
     # end loop with the program that starts on line 1 and code object is
@@ -214,22 +210,14 @@ sub search-callframe ( $type --> CallFrame ) {
     }
 
     # cannot pass sub THREAD-ENTRY either
-    if ?$cf and ?$cf.code and $cf.code.^can('name') and $cf.code.name eq 'THREAD-ENTRY' {
+    if ?$cf and ?$cf.code and $cf.code.^can('name') and
+       $cf.code.name eq 'THREAD-ENTRY' {
 
       $cf = Nil;
       last;
     }
 
-    if ?$cf and ?$cf.code and $type ~~ Sub
-       and $cf.code.name ~~ m/[trace|debug|info|warn|error|fatal] '-message'/ {
-
-      last;
-    }
-
-    # try to find a better place instead of dispatch, BUILDALL etc:...
-    next if ?$cf.code and $cf.code ~~ $type and
-            $cf.code.name ~~ m/dispatch/;
-    last if ?$cf.code and $cf.code ~~ $type;
+    last if ?$cf.code and $cf.code ~~ any(@types);
   }
 
   $cf
@@ -237,9 +225,8 @@ sub search-callframe ( $type --> CallFrame ) {
 
 #------------------------------------------------------------------------------
 # log code with stack frames
-my Code $log-code-cf = sub (
-  Str:D :$msg, Any:D :$level,
-  DateTime :$when = DateTime.now.utc
+my Callable $log-code-cf = sub (
+  Str:D :$msg, Any:D :$level, DateTime :$when = DateTime.now.utc
   --> Hash
 ) {
   my CallFrame $cf;
@@ -247,10 +234,7 @@ my Code $log-code-cf = sub (
   my Int $line = 0;           # line number where Message is called
   my Str $file = '';          # file in which that happened
 
-  $cf = search-callframe(Method);
-  $cf = search-callframe(Submethod)     unless $cf.defined;
-  $cf = search-callframe(Sub)           unless $cf.defined;
-  $cf = search-callframe(Block)         unless $cf.defined;
+  $cf = search-callframe( Method, Submethod, Sub, Block);
 
   if $cf.defined {
     $line = $cf.line.Int // 1;
@@ -259,6 +243,7 @@ my Code $log-code-cf = sub (
     $method = $cf.code.name // '';
   }
 
+#note "F: ", $file;
   hash(
     :thid($*THREAD.id),
     :$line, :$file, :$method,
@@ -268,7 +253,7 @@ my Code $log-code-cf = sub (
 
 #------------------------------------------------------------------------------
 # log code without stack frames
-my Code $log-code = sub (
+my Callable $log-code = sub (
   Str:D :$msg, Any:D :$level,
   DateTime :$when = DateTime.now.utc
   --> Hash
@@ -286,17 +271,17 @@ my Code $log-code = sub (
 
 #------------------------------------------------------------------------------
 sub trace-message ( Str $msg ) is export {
-  $logger.log( :$msg, :level(MongoDB::Trace), :code($log-code));
+  $logger.log( :$msg, :level(MongoDB::Trace), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
 sub debug-message ( Str $msg ) is export {
-  $logger.log( :$msg, :level(MongoDB::Debug), :code($log-code));
+  $logger.log( :$msg, :level(MongoDB::Debug), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
 sub info-message ( Str $msg ) is export {
-  $logger.log( :$msg, :level(MongoDB::Info), :code($log-code));
+  $logger.log( :$msg, :level(MongoDB::Info), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
@@ -322,34 +307,55 @@ sub fatal-message ( Str $msg ) is export {
 my Array $sv-lvls = [< PH0 T D I W E F>];
 my Array $clr-lvls = [
   'PH1',
-  '0,150,150',
-  '0,150,255',
-  '0,200,0',
-  '200,200,0',
-  'bold white on_255,0,0',
-  'bold white on_255,0,255'
+  '150,150,150',              # trace: light gray
+  '100,100,100',              # debug: darker grey
+  '0,200,0',                  # info: green
+  '200,130,0',                # warning: orange
+  'bold white on_255,0,0',    # error: red
+  'bold white on_255,0,255'   # fatal: purple
 ];
 
-my Code $code = sub ( $m ) {
-  my Str $dt-str = $m<when>.Str;
-  $dt-str ~~ s:g/ <[T]> / /;
-  $dt-str ~~ s:g/ <[Z]> //;
+#------------------------------------------------------------------------------
+my Callable $code = sub ( Hash $m ) {
 
   my IO::Handle $fh = $m<fh>;
   if $fh ~~ any( $*OUT, $*ERR) {
     $fh.print: color($clr-lvls[$m<level>]);
   }
 
-  $fh.print( (
-      [~] $dt-str,
-      ' [' ~ $sv-lvls[$m<level>] ~ ']',
-      ? $m<thid> ?? " $m<thid>.fmt('%2d')" !! '',
-      ? $m<msg> ?? ": $m<msg>" !! '',
-      ? $m<file> ?? ". At $m<file>" !! '',
-      ? $m<line> ?? ':' ~ $m<line> !! '',
-      ? $m<method> ?? " in $m<method>" ~ ($m<method> eq '<unit>' ?? '' !! '()')
-                   !! '',
-    )
+  state Hash $slow-part = %();
+
+  my Str $dt-str = $m<when>.Str;
+  $dt-str ~~ s:g/ <[T]> / /;
+  $dt-str ~~ s:g/ <[Z]> //;
+  my Str ( $spart, $minutes, $fast-part) = $dt-str.split(':');
+
+  # don't repeat too much of the date and time. only seconds are repeated until
+  # next minute
+  if $slow-part{$fh.Str}:!exists or $slow-part{$fh.Str} ne "$spart:$minutes" {
+    $slow-part{$fh.Str} = "$spart:$minutes";
+    $dt-str = "\n" ~ '-' x 80 ~ "\n$spart:$minutes\n\n$fast-part";
+  }
+  else {
+    $dt-str = "$fast-part";
+  }
+
+  my Str $module = '[ ]';
+  if $m<file> and $m<file> ~~ m/ '(' $<mname> = ( <-[)]>+ ) ')' $/ {
+    $module = $/<mname>.Str;
+    $module = $module.split('::')[*-1] if $module ~~ m/'::'/;
+    $module = [~] '[', $module, ']';
+  }
+
+  $fh.print(
+     $dt-str,
+    ' [' ~ $sv-lvls[$m<level>] ~ ']',
+    ? $m<thid> ?? "[$m<thid>]" !! '',
+    $module,
+    $m<line> ?? [~] '[', $m<line>,  ']' !! [ ],
+    ? $m<msg> ?? ": $m<msg>" !! '',
+  #  ? $m<method> ?? " in $m<method>" ~ ($m<method> eq '<unit>' ?? '' !! '()')
+  #               !! '',
   );
 
   $fh.print(color('reset')) if $fh ~~ any( $*OUT, $*ERR);
