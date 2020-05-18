@@ -97,9 +97,44 @@ else
 endif
 ```
 
+#### Client work
 ```plantuml
-[*] --> Client
+state server
+server : create Server\nwith ip addr
+
+state url
+url : process\nurl
+
+[*] -> url
+url -> server : ip
+server -> [*]
 ```
+
+#### Server work
+```plantuml
+state d <<fork>>
+state dj <<join>>
+
+state "server state" as sts
+state init
+init : store ip
+
+[*] -> init
+
+init --> monitor
+monitor : provide monitor\n with ip addr
+monitor --> [*]
+
+init --> d
+d --> discovery
+discovery : contact server
+discovery --> sts
+sts : store state
+sts --> dj
+
+dj -> [*]
+```
+
 
 ```plantuml
 title "Using run-command to insert, update etc"
