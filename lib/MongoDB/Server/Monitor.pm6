@@ -83,7 +83,7 @@ class Server::Monitor {
 
   #----------------------------------------------------------------------------
   method register-server ( MongoDB::ServerType:D $server ) {
-note "register $server.name()";
+#note "register $server.name()";
 
     $!rw-sem.writer( 'm-servers', {
         if %!registered-servers{$server.name}:exists {

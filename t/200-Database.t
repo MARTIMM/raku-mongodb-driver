@@ -46,7 +46,7 @@ subtest "Database, create collection, drop", {
   # Second try gets an error
   $doc = $database.run-command($req);
   is $doc<ok>, 0, 'Second collection cl1 not created';
-  diag $doc.perl;
+#  diag $doc.perl;
   like $doc<errmsg>, /:s already exists/, $doc<errmsg>;
 #TODO get all codes and test on code instead of messages to prevent changes
 # in mongod in future
