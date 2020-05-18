@@ -2,11 +2,13 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
-* 2020-05-11 0.43.3
+* 2020-05-11 0.43.9
   * Issue #31.
     * Add a test in the client discovery code so that I/O to a server can start more quickly while building topology.
     * Tests on other development system is showing 0.5 sec from client init to run-command result. This in contrast to issuer Samuel Chase which still claims to wait for about 23 sec. I have to add that on my old laptop the time spent in tests showed about 20 sec. It depends on all sorts of items such as compiler, system, processor etc, but it should not be this large a gap in results. So we need a rewrite of the discovery process because I think it is in the handling of threads where it might go wrong.
     * Improve logging output. It was difficult to see where logging came from and which object ran in which thread.
+
+* 0.43.8 Something went wrong with version notes: on CPAN it seems to be 0.43.8 already
 
 * 0.43.2
   * Tested for perl6 version 6.d
