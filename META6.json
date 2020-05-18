@@ -1,27 +1,17 @@
 {
+  "version": "0.43.3.1",
+  "description": "MongoDB driver",
+  "name": "MongoDB",
+
+  "perl": "6.d",
+  "license": "Artistic-2.0",
+  "tags": [ "NoSQL", "database", "mongodb", "driver"],
+
   "authors": [
     "Marcel Timmerman",
     "Paweł Pabian"
   ],
-  "depends": [
-    "BSON",
-    "Semaphore::ReadersWriters",
-    "Config::DataLang::Refine",
-    "Auth::SCRAM",
-    "Base64",
-    "OpenSSL",
-    "URI::Escape",
-    "Unicode::PRECIS",
-    "Terminal::ANSIColor",
-    "Log::Async"
-  ],
-  "test-depends": [ "Test::META" ],
-  "build-depends": [ ],
-  "tags": [ "NoSQL", "database", "mongodb", "driver"],
-  "description": "MongoDB driver",
-  "license": "Artistic-2.0",
-  "name": "MongoDB",
-  "perl": "6",
+
   "provides": {
     "MongoDB::Authenticate::Credential": "lib/MongoDB/Authenticate/Credential.pm6",
     "MongoDB::Authenticate::Scram":     "lib/MongoDB/Authenticate/Scram.pm6",
@@ -42,6 +32,21 @@
     "MongoDB::Wire":                    "lib/MongoDB/Wire.pm6",
     "MongoDB":                          "lib/MongoDB.pm6"
   },
-  "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git",
-  "version": "0.43.3"
+
+  "depends": [
+    "BSON",
+    "Semaphore::ReadersWriters",
+    "Config::DataLang::Refine",
+    "Auth::SCRAM",
+    "Base64",
+    "OpenSSL",
+    "URI::Escape",
+    "Unicode::PRECIS",
+    "Terminal::ANSIColor",
+    "Log::Async"
+  ],
+  "test-depends": [ "Test::META" ],
+  "build-depends": [ ],
+
+  "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git"
 }
