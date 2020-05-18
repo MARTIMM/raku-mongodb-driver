@@ -22,6 +22,7 @@ method download ( Str $sversion ) {
   # test if version directory exists. saves us a download
   if "$!dist-path/t/Travis-ci/$sversion".IO.d {
     note "MongoDB server version $sversion already downloaded";
+  }
   else {
     note "Download server version $sversion";
     shell "$!dist-path/t/Travis-ci/install-mongodb.sh $sversion";
