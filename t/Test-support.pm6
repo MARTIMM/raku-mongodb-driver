@@ -12,10 +12,11 @@ use MongoDB::Client;
 #-------------------------------------------------------------------------------
 class Test-support {
 
+# also keep this the same as in Build.pm6
 #  constant SERVER-VERSION1 = '3.6.9';
 #  constant SERVER-VERSION2 = '4.0.5';
-#  constant SERVER-VERSION1 = '4.0.5';
-#  constant SERVER-VERSION2 = '4.0.18';
+  constant SERVER-VERSION1 = '4.0.5';
+  constant SERVER-VERSION2 = '4.0.18';
 
   has MongoDB::Server::Control $.server-control;
 

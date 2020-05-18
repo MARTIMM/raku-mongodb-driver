@@ -1,8 +1,8 @@
 use v6.d;
 
-use MongoDB;
-#constant SERVER-VERSION1 is export = '4.0.5';
-#constant SERVER-VERSION2 is export = '4.0.18';
+# also keep this the same as in t/Test-support.pm6
+constant SERVER-VERSION1 = '4.0.5';
+constant SERVER-VERSION2 = '4.0.18';
 
 unit class Build;
 
