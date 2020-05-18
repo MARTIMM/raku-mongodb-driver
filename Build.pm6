@@ -1,7 +1,7 @@
 use v6.d;
 
-constant SERVER-VERSION1 is export = '4.0.5';
-constant SERVER-VERSION2 is export = '4.0.18';
+#constant SERVER-VERSION1 is export = '4.0.5';
+#constant SERVER-VERSION2 is export = '4.0.18';
 
 unit class Build;
 

@@ -24,6 +24,10 @@ sub EXPORT { {
 unit package MongoDB:auth<github:MARTIMM>;
 
 #------------------------------------------------------------------------------
+constant SERVER-VERSION1 is export = '4.0.5';
+constant SERVER-VERSION2 is export = '4.0.18';
+
+#------------------------------------------------------------------------------
 # Client object topology types
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 enum TopologyType is export <
