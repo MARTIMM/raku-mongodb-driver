@@ -59,13 +59,13 @@ class Server::Monitor {
 
 #TODO is this thread safe?
     $singleton-instance //= self.bless;
-    $singleton-instance;
+    $singleton-instance
   }
 
   #----------------------------------------------------------------------------
   method get-supply ( --> Supply ) {
 
-    $!monitor-data-supplier.Supply;
+    $!monitor-data-supplier.Supply
   }
 
   #----------------------------------------------------------------------------
@@ -83,6 +83,7 @@ class Server::Monitor {
 
   #----------------------------------------------------------------------------
   method register-server ( MongoDB::ServerType:D $server ) {
+note "register $server.name()";
 
     $!rw-sem.writer( 'm-servers', {
         if %!registered-servers{$server.name}:exists {
@@ -118,133 +119,157 @@ class Server::Monitor {
 
   #----------------------------------------------------------------------------
   method !start-monitor ( ) {
+    # infinite
+    Promise.start( {
+      # start first run
+      $!promise-monitor .= start( { self.monitor-work } );
 
-    $!promise-monitor .= start( {
+      # then infinite loop
+      loop {
 
-        my Duration $rtt;
-        my BSON::Document $doc;
-        my Int $weighted-mean-rtt-ms;
+        # wait for end of thread
+        $!promise-monitor.result;
 
-        # Do forever once it is started
-        loop {
-          my Duration $loop-start-time-ms .= new(now * 1000);
-          my %rservers = $!rw-sem.reader(
-           'm-servers',
-            sub () { %!registered-servers; }
+        # heartbeat can be adjusted with set-heartbeat()
+        my $heartbeat-frequency-sec = $!heartbeat-frequency-ms / 1000.0;
+        trace-message("heart beat frequency: $heartbeat-frequency-sec sec");
+
+        # set new thread to start after some time
+        $!promise-monitor = Promise.at(
+          now + $heartbeat-frequency-sec
+        ).then(
+          { self.monitor-work }
+        );
+      }
+    } );
+  }
+
+  #-----------------------------------------------------------------------------
+  method monitor-work ( ) {
+
+    my Duration $rtt;
+    my BSON::Document $doc;
+    my Int $weighted-mean-rtt-ms;
+
+    # Do forever once it is started
+#    loop {
+      my Duration $loop-start-time-ms .= new(now * 1000);
+      my %rservers = $!rw-sem.reader(
+       'm-servers',
+        sub () { %!registered-servers; }
+      );
+
+      trace-message("Servers to monitor: " ~ %rservers.keys.join(', '));
+
+      for %rservers.keys -> $server-name {
+        # Last check if server is still registered
+        next unless $!rw-sem.reader(
+          'm-servers',
+          { %!registered-servers{$server-name}:exists; }
+        );
+
+        trace-message("Monitoring $server-name");
+        my $server = %rservers{$server-name}[ServerObj];
+
+        trace-message("Monitor is-master request for $server-name");
+        # get server info
+        ( $doc, $rtt) = $server.raw-query(
+          'admin.$cmd', $!monitor-command, :!authenticate, :timed-query
+        );
+
+        trace-message(
+          "Monitor is-master request result for $server-name: "
+          ~ ($doc//'-').perl
+        );
+
+        # when doc is defined, the request ended properly. the ok field
+        # in the doc will tell if the operation is succsessful or not
+        if $doc.defined {
+          # Calculation of mean Return Trip Time. See also
+          # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
+          %rservers{$server-name}[WMRttMs] = Duration.new(
+            0.2 * $rtt * 1000 + 0.8 * %rservers{$server-name}[WMRttMs]
           );
 
-          trace-message("Servers to monitor: " ~ %rservers.keys.join(', '));
-
-          for %rservers.keys -> $server-name {
-            # Last check if server is still registered
-            next unless $!rw-sem.reader(
-              'm-servers',
-              { %!registered-servers{$server-name}:exists; }
-            );
-
-            trace-message("Monitoring $server-name");
-            my $server = %rservers{$server-name}[ServerObj];
-
-            trace-message("Monitor is-master request for $server-name");
-            # get server info
-            ( $doc, $rtt) = $server.raw-query(
-              'admin.$cmd', $!monitor-command, :!authenticate, :timed-query
-            );
-
-            trace-message(
-              "Monitor is-master request result for $server-name: "
-              ~ ($doc//'-').perl
-            );
-
-            # when doc is defined, the request ended properly. the ok field
-            # in the doc will tell if the operation is succsessful or not
-            if $doc.defined {
-              # Calculation of mean Return Trip Time. See also
-              # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
-              %rservers{$server-name}[WMRttMs] = Duration.new(
-                0.2 * $rtt * 1000 + 0.8 * %rservers{$server-name}[WMRttMs]
-              );
-
-              # set new value of waiten mean rtt if the server is still registered
-              $!rw-sem.writer( 'm-servers', {
-                  if %!registered-servers{$server-name}:exists {
-                    %!registered-servers{$server-name}[WMRttMs] =
-                      %rservers{$server-name}[WMRttMs];
-                  }
-                }
-              );
-
-              debug-message(
-                "Weighted mean RTT: %rservers{$server-name}[WMRttMs] (ms) for server $server.name()"
-              );
-
-              $!monitor-data-supplier.emit( {
-                  :ok, monitor => $doc<documents>[0], :$server-name,
-                  weighted-mean-rtt-ms => %rservers{$server-name}[WMRttMs]
-                } # emit data
-              ); # emit
-  #TODO SS-RSPrimary must do periodic no-op
-  #See https://github.com/mongodb/specifications/blob/master/source/max-staleness/max-staleness.rst#primary-must-write-periodic-no-ops
-            }
-
-            # no doc returned, server is in trouble or the connection
-            # between it is down.
-            else {
-              warn-message("no response from server $server.name()");
-              $!monitor-data-supplier.emit( {
-                  :!ok, reason => 'Undefined document', :$server-name
-                } # emit data
-              ); # emit
-            } # else
-
-            # no need to catch exceptions. all is trapped in Wire. with failures
-            # a type object is returned
-#`{{
-            # Capture errors. When there are any, On older servers before
-            # version 3.2 the server just stops communicating when a shutdown
-            # command was given. Opening a socket will then bring us here.
-            # Send ok False to mention the fact that the server is down.
-            CATCH {
-              #.message.note;
-              when .message ~~ m:s/Failed to resolve host name/ ||
-                   .message ~~ m:s/No response from server/ ||
-                   .message ~~ m:s/Failed to connect\: connection refused/ ||
-                   .message ~~ m:s/Socket not available/ ||
-                   .message ~~ m:s/Out of range\: attempted to read/ ||
-                   .message ~~ m:s/Not enaugh characters left/ {
-
-                # Failure messages;
-                #   No response from server - This can happen when there is some
-                #   communication going on but the server has problems/down.
-                my Str $s = .message();
-                error-message("Server $server-name error $s");
-
-                $!monitor-data-supplier.emit( %(
-                  :!ok, reason => $s, :$server-name
-                ));
+          # set new value of waiten mean rtt if the server is still registered
+          $!rw-sem.writer( 'm-servers', {
+              if %!registered-servers{$server-name}:exists {
+                %!registered-servers{$server-name}[WMRttMs] =
+                  %rservers{$server-name}[WMRttMs];
               }
-
-              # If not one of the above errors, show and rethrow the error
-              default {
-                .note;
-                .rethrow;
-              } # default
-            } # CATCH
-}}
-          } # for %rservers.keys
-
-          my $heartbeat-frequency-ms = $!rw-sem.reader(
-            'm-loop', {$!heartbeat-frequency-ms}
+            }
           );
-          trace-message("Monitor sleeps for $heartbeat-frequency-ms ms");
-          # Sleep after all servers are monitored
-          sleep $heartbeat-frequency-ms / 1000.0;
 
-        } # loop
+          debug-message(
+            "Weighted mean RTT: %rservers{$server-name}[WMRttMs] (ms) for server $server.name()"
+          );
 
-        "server monitoring stopped";
+          $!monitor-data-supplier.emit( {
+              :ok, monitor => $doc<documents>[0], :$server-name,
+              weighted-mean-rtt-ms => %rservers{$server-name}[WMRttMs]
+            } # emit data
+          ); # emit
+#TODO SS-RSPrimary must do periodic no-op
+#See https://github.com/mongodb/specifications/blob/master/source/max-staleness/max-staleness.rst#primary-must-write-periodic-no-ops
+        }
 
-      } # promise block
-    ); # promise
-  } # method
+        # no doc returned, server is in trouble or the connection
+        # between it is down.
+        else {
+          warn-message("no response from server $server.name()");
+          $!monitor-data-supplier.emit( {
+              :!ok, reason => 'Undefined document', :$server-name
+            } # emit data
+          ); # emit
+        } # else
+
+        # no need to catch exceptions. all is trapped in Wire. with failures
+        # a type object is returned
+#`{{
+        # Capture errors. When there are any, On older servers before
+        # version 3.2 the server just stops communicating when a shutdown
+        # command was given. Opening a socket will then bring us here.
+        # Send ok False to mention the fact that the server is down.
+        CATCH {
+          #.message.note;
+          when .message ~~ m:s/Failed to resolve host name/ ||
+               .message ~~ m:s/No response from server/ ||
+               .message ~~ m:s/Failed to connect\: connection refused/ ||
+               .message ~~ m:s/Socket not available/ ||
+               .message ~~ m:s/Out of range\: attempted to read/ ||
+               .message ~~ m:s/Not enaugh characters left/ {
+
+            # Failure messages;
+            #   No response from server - This can happen when there is some
+            #   communication going on but the server has problems/down.
+            my Str $s = .message();
+            error-message("Server $server-name error $s");
+
+            $!monitor-data-supplier.emit( %(
+              :!ok, reason => $s, :$server-name
+            ));
+          }
+
+          # If not one of the above errors, show and rethrow the error
+          default {
+            .note;
+            .rethrow;
+          } # default
+        } # CATCH
+}}
+      } # for %rservers.keys
+
+#      my $heartbeat-frequency-ms = $!rw-sem.reader(
+#        'm-loop', {$!heartbeat-frequency-ms}
+#      );
+#      trace-message("Monitor sleeps for $heartbeat-frequency-ms ms");
+      # Sleep after all servers are monitored
+#      sleep $heartbeat-frequency-ms / 1000.0;
+
+#    } # loop
+
+#    "server monitoring stopped";
+
+  }
+   # promise block
 }

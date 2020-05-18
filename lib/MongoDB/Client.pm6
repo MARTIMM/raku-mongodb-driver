@@ -38,7 +38,7 @@ class Client {
   has BSON::Document $.read-concern;
   has Str $!Replicaset;
 
-  has Promise $!Background-discovery;
+#  has Promise $!background-discovery;
   has Bool $!repeat-discovery-loop;
 
   # Only for single threaded implementations according to mongodb documents
@@ -110,8 +110,11 @@ class Client {
       $!todo-servers.push("$server<host>:$server<port>");
     }
 
+    self!discover-servers;
+
+#`{{
     # Background proces to handle server monitoring data
-    $!Background-discovery = Promise.start( {
+    $!background-discovery = Promise.start( {
 
         # counter to check if there are new servers added. if so, the counter
         # is set to 0. if less then 5 the sleeptime is about a second. When
@@ -158,6 +161,7 @@ class Client {
         'normal end of service';
       } # block
     ); # start
+}}
   } # method
 
   #-----------------------------------------------------------------------------
@@ -519,15 +523,16 @@ class Client {
   method !check-discovery-process ( ) {
     state $check-count = 0;
 
-    if $!Background-discovery.status ~~ any(Broken|Kept) {
+#`{{
+    if $!background-discovery.status ~~ any(Broken|Kept) {
       # set if loop crashed
       $!repeat-discovery-loop = False;
 
       info-message(
         'Server discovery stopped: ' ~ (
-          $!Background-discovery.status ~~ Broken
-                         ?? $!Background-discovery.cause
-                         !! $!Background-discovery.result
+          $!background-discovery.status ~~ Broken
+                         ?? $!background-discovery.cause
+                         !! $!background-discovery.result
         )
       );
 
@@ -537,6 +542,8 @@ class Client {
         self!discover-servers;
       }
     }
+}}
+    self!discover-servers;
   }
 
   #-----------------------------------------------------------------------------
@@ -667,7 +674,7 @@ class Client {
     # stop loop and wait for exit
     if $!repeat-discovery-loop {
       $!repeat-discovery-loop = False;
-      $!Background-discovery.result;
+#      $!background-discovery.result;
     }
 
     # Remove all servers concurrently. Shouldn't be many per client.

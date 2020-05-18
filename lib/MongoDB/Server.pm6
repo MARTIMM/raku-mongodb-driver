@@ -33,10 +33,7 @@ class Server {
   has Tap $!server-tap;
 
   #-----------------------------------------------------------------------------
-  submethod BUILD (
-    ClientType:D :$!client,
-    Str:D :$server-name
-  ) {
+  submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
 
     # server status is unsetled
     $!server-sts-data = { :status(SS-NotSet), :!is-master, :error('') };
@@ -60,6 +57,8 @@ class Server {
     # Remove the brackets if they are there.
     $!server-name ~~ s/^ '[' //;
     $!server-name ~~ s/ ']' $//;
+
+    trace-message("Server {self.name} initialized");
 
     # Start monitoring
     my MongoDB::Server::Monitor $m .= instance;
