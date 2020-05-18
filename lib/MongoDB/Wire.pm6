@@ -11,7 +11,7 @@ unit package MongoDB:auth<github:MARTIMM>;
 #-------------------------------------------------------------------------------
 class Wire {
 
-  has ServerType $!server;
+#  has ServerType $!server;
   has SocketType $!socket;
 
   #-----------------------------------------------------------------------------
@@ -38,7 +38,7 @@ class Wire {
     --> BSON::Document
   ) {
 
-    $!server = $server;
+#    $!server = $server;
     my MongoDB::Header $header .= new;
 
     # OR all flag values to get the integer flag, be sure it is at least 0x00.
@@ -126,11 +126,11 @@ class Wire {
   #-----------------------------------------------------------------------------
   method get-more (
     $cursor, Int :$number-to-return,
-    ServerType:D :$server where .^name eq 'MongoDB::Server'
+    ServerType:D :$server # where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
 
-    $!server = $server;
+#    $!server = $server;
     my MongoDB::Header $header .= new;
     my BSON::Document $result;
 
@@ -203,7 +203,7 @@ class Wire {
   #-----------------------------------------------------------------------------
   method kill-cursors ( @cursors where .elems > 0, ServerType:D :$server! ) {
 
-    $!server = $server;
+#    $!server = $server;
     my MongoDB::Header $header .= new;
 
     # Gather the ids only when they are non-zero.i.e. still active.
