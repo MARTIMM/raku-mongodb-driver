@@ -352,7 +352,7 @@ my Callable $code = sub ( Hash $m ) {
     ' [' ~ $sv-lvls[$m<level>] ~ ']',
     ? $m<thid> ?? "[$m<thid>]" !! '',
     $module,
-    $m<line> ?? [~] '[', $m<line>,  ']' !! [ ],
+    $m<line>:exists ?? [~] '[', $m<line>//'',  ']' !! [ ],
     ? $m<msg> ?? ": $m<msg>" !! '',
   #  ? $m<method> ?? " in $m<method>" ~ ($m<method> eq '<unit>' ?? '' !! '()')
   #               !! '',
