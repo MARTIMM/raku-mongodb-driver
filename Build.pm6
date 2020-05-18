@@ -1,5 +1,6 @@
 use v6.d;
 
+use MongoDB;
 #constant SERVER-VERSION1 is export = '4.0.5';
 #constant SERVER-VERSION2 is export = '4.0.18';
 
