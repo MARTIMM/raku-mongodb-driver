@@ -327,7 +327,7 @@ my Callable $code = sub ( Hash $m ) {
   }
 
   else {
-    $fhkey = $fh.Str;
+    $fhkey = ($fh // '-').Str;
   }
 
   state Hash $slow-part = %();
