@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 #set -evx
-set -e
+#set -e
 
 # Install mongod of specified version, unpack and create a link to the bin
 # directory: ${TRAVIS_BUILD_DIR}/t/Travis-ci/MongoDB
@@ -39,3 +39,4 @@ fi
 
 mv mongodb-linux-x86_64-${version}/bin ${version}
 rmdir mongodb-linux-x86_64-${version}
+rm mongodb-linux-x86_64-${version}.tgz
