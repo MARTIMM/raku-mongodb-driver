@@ -319,8 +319,15 @@ my Array $clr-lvls = [
 my Callable $code = sub ( Hash $m ) {
 
   my IO::Handle $fh = $m<fh>;
+  my Str $fhkey;
   if $fh ~~ any( $*OUT, $*ERR) {
     $fh.print: color($clr-lvls[$m<level>]);
+    $fhkey = 'OUT' if $*OUT;
+    $fhkey = 'ERR' if $*ERR;
+  }
+
+  else {
+    $fhkey = $fh.Str;
   }
 
   state Hash $slow-part = %();
@@ -332,8 +339,8 @@ my Callable $code = sub ( Hash $m ) {
 
   # don't repeat too much of the date and time. only seconds are repeated until
   # next minute
-  if $slow-part{$fh.Str}:!exists or $slow-part{$fh.Str} ne "$spart:$minutes" {
-    $slow-part{$fh.Str} = "$spart:$minutes";
+  if $slow-part{$fhkey}:!exists or $slow-part{$fhkey} ne "$spart:$minutes" {
+    $slow-part{$fhkey} = "$spart:$minutes";
     $dt-str = "\n" ~ '-' x 80 ~ "\n$spart:$minutes\n\n$fast-part";
   }
   else {
@@ -352,7 +359,7 @@ my Callable $code = sub ( Hash $m ) {
     ' [' ~ $sv-lvls[$m<level>] ~ ']',
     ? $m<thid> ?? "[$m<thid>]" !! '',
     $module,
-    $m<line>:exists ?? [~] '[', $m<line>//'',  ']' !! [ ],
+    $m<line> ?? [~] '[', $m<line>,  ']' !! [ ],
     ? $m<msg> ?? ": $m<msg>" !! '',
   #  ? $m<method> ?? " in $m<method>" ~ ($m<method> eq '<unit>' ?? '' !! '()')
   #               !! '',
