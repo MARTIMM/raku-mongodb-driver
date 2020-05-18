@@ -327,6 +327,7 @@ my Callable $code = sub ( Hash $m ) {
   }
 
   else {
+note "FH: ", $fh.path.perl;
     $fhkey = ($fh // '-').Str;
   }
 
