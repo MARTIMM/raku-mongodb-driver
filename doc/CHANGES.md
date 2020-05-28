@@ -3,7 +3,7 @@
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
 
 * 2020-05-28 0.43.10
-  * Now that there is a Build.pl6, all of the shell script is moved into the build program. This save us some nasty shell quirks.
+  * Now that there is a Build.pm6, all of the shell script is moved into the build module. This save us some nasty shell quirks.
 
 * 2020-05-11 0.43.9
   * Issue #31.
