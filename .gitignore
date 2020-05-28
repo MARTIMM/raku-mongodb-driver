@@ -2,12 +2,12 @@
 *.html
 */*.html
 Old/*
-Tests/insert*
+Tests/*
 t/Sandbox/*
 Sandbox/*
 t/Software/*
-t/Travis-ci/*.tgz
-t/Travis-ci/*/mongo*
+t/Travis-ci/*
+t/Appveyor/*
 *.log
 *.mlog
 .precomp
