@@ -10,7 +10,7 @@ use MongoDB::Uri;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
-use MongoDB::Wire;
+#use MongoDB::Wire;
 use MongoDB::Authenticate::Credential;
 
 use BSON::Document;
