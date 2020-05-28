@@ -4,6 +4,7 @@ dist: trusty   # default after august 2017
 branches:
   only:
     - master
+    - discovery-rewrite
 #    - develop
 #    - accounting
 
@@ -12,16 +13,19 @@ language: perl6
 perl6:
   - latest
 
-before_install:
-  # See also https://www.mongodb.org/dl/linux/
-  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 3.6.9
-  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.sh 4.0.5
+# Build.pl6 must solve this now
+#before_install:
+#  # See also https://www.mongodb.org/dl/linux/
+#  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.bash 4.0.5
+#  - sh $TRAVIS_BUILD_DIR/t/Travis-ci/install-mongodb.bash 4.0.18
 
 install:
   - rakudobrew build zef
 #  - zef --debug --/test install Crane
 #  - zef --debug --/test install Config::TOML
-  - zef --/test --depsonly install .
+
+#  - zef --/test --depsonly install .
+  - zef --/test --debug --depsonly install .
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #services:
@@ -31,8 +35,8 @@ install:
 #  depth: 5
 
 script:
-  # Servers s1-s3 are running mongo binaries 3.6.9 versions
-  # Servers s4-s6 are running mongo binaries 4.0.5 versions
+  # Servers s1-s3 are running mongo binaries 4.0.5 versions
+  # Servers s4-s6 are running mongo binaries 4.0.18 versions
 
   - xt/wrapper.pl6 xt/001-meta.t
   - xt/wrapper.pl6 t/098-mk-sandbox.t
