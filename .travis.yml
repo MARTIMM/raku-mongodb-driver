@@ -11,7 +11,8 @@ branches:
 language: perl6
 
 perl6:
-  - latest
+  - '2020.05'
+#  - latest
 
 # Build.pl6 must solve this now
 #before_install:
@@ -26,6 +27,7 @@ install:
 
 #  - zef --/test --depsonly install .
   - zef --/test --debug --depsonly install .
+  - zef build .
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #services:
@@ -38,7 +40,6 @@ script:
   # Servers s1-s3 are running mongo binaries 4.0.5 versions
   # Servers s4-s6 are running mongo binaries 4.0.18 versions
 
-  - xt/wrapper.pl6 xt/001-meta.t
   - xt/wrapper.pl6 t/098-mk-sandbox.t
 
   - xt/wrapper.pl6 --serverkeys=s1 t/099* t/[2-5]* t/998*

@@ -1,5 +1,5 @@
 {
-  "version": "0.43.10",
+  "version": "0.43.10.1",
   "description": "MongoDB driver",
   "name": "MongoDB",
 
@@ -45,7 +45,7 @@
     "Terminal::ANSIColor",
     "Log::Async"
   ],
-  "test-depends": [ "Test::META" ],
+  "test-depends": [ ],
   "build-depends": [ ],
 
   "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git"
