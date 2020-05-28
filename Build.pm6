@@ -46,7 +46,9 @@ method download ( Str $sversion ) {
     note "Installing MongoDB version $sversion";
     note "Build directory: $!dist-path";
 
+    # create directory when on Travis or on user installments
     my Str $load-dir = "$!dist-path/t/Travis-ci";
+    mkdir( $load-dir, 0o777) unless $load-dir.IO.e;
     my Str $downloadname;
 
     # if directory (named as a mongodb version) does not exist, download mongodb
