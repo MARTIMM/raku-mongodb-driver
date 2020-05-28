@@ -46,7 +46,7 @@ Cl <- Cu
 
 ## Activity of client
 
-Diagram shows that there is one process monitoring all servers. This is a singleton class. The results are retur
+Diagram shows that there is one process monitoring all servers. This is a singleton class. The results are returned using an event like system.
 
 ```plantuml
 
