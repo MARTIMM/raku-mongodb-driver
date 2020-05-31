@@ -19,6 +19,8 @@ method build( Str $!dist-path ) {
   # in the download script. normally set when on travis-ci.
   %*ENV<TRAVIS_BUILD_DIR> = $!dist-path unless %*ENV<TRAVIS_BUILD_DIR>:exists;
 
+  #TODO check if installing on Travis or for a user. in the last case only
+  # one version needs to be installed to save download and install time.
   self.download(SERVER-VERSION1);
   self.download(SERVER-VERSION2);
 }
