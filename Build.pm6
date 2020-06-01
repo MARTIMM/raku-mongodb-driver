@@ -11,18 +11,21 @@ constant SERVER-VERSION2 = '4.0.18';
 #constant SERVER-VERSION2 = '4.2.6';
 
 has Str $!dist-path;
+hs Bool $!on-travis;
 
 #-------------------------------------------------------------------------------
 # do build stuff to your module which is located at $!dist-path
 method build( Str $!dist-path ) {
 
   # in the download script. normally set when on travis-ci.
-  %*ENV<TRAVIS_BUILD_DIR> = $!dist-path unless %*ENV<TRAVIS_BUILD_DIR>:exists;
+  #%*ENV<TRAVIS_BUILD_DIR> = $!dist-path unless %*ENV<TRAVIS_BUILD_DIR>:exists;
 
-  #TODO check if installing on Travis or for a user. in the last case only
+  $!on-travis = %*ENV<TRAVIS_BUILD_DIR>:exists;
+
+  # check if installing on Travis or for a user. in the last case only
   # one version needs to be installed to save download and install time.
   self.download(SERVER-VERSION1);
-  self.download(SERVER-VERSION2);
+  self.download(SERVER-VERSION2) unless $!on-travis;
 }
 
 #-------------------------------------------------------------------------------
