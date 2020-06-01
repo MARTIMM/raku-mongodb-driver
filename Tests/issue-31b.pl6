@@ -16,7 +16,7 @@ add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 
 sub MAIN( ) {
 
-  my Str $uri = 'mongodb://localhost:65013/';
+  my Str $uri = 'mongodb://localhost:65010/';
   my $t0 = now;
 
   my MongoDB::Client $client .= new(:$uri);
