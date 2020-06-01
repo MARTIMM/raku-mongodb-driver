@@ -1,7 +1,7 @@
 #!/usr/bin/env raku
 
 use v6;
-#use lib 'perl6-event-emitter/lib';
+use lib 'perl6-event-emitter/lib';
 use Event::Emitter;
 
 my Event::Emitter $e .= new(:threaded);
@@ -29,8 +29,6 @@ Without :threaded => all are 1. With :threaded all are not 1
 4: world 9 8 7 6 5 4 3 2 1 0                  # triggered by 3
 4: hello world 9 8 7 6 5 4 3 2 1 0            # triggered by 4
 }}
-
-
 
 #-------------------------------------------------------------------------------
 use Event::Emitter::Role::Handler;
