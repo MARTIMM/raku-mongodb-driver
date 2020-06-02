@@ -9,8 +9,11 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+my $handle = "t/Log-Database.log".IO.open( :mode<wo>, :create, :truncate);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;

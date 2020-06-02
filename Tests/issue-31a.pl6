@@ -10,7 +10,6 @@ use MongoDB::Collection;
 drop-send-to('mongodb');
 #drop-send-to('screen');
 modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
-#my $handle = "Issue31a-{DateTime.now.Str}.log".IO.open( :mode<wo>, :create);
 my $handle = "Issue31a.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 
