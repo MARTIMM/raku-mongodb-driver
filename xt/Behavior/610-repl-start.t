@@ -47,7 +47,7 @@ subtest "Replica server pre initialization no option in uri", {
 
   sleep 2.0;
   $server = $client.select-server;
-  is $server.get-status<status>, SS-RSGhost,
+  is $server.get-status<status>, ST-RSGhost,
      "Server 2 is a ghost replica server, needs initialization";
 
   is $client.topology, TT-Single, "Topology $client.topology()";
@@ -135,7 +135,7 @@ subtest "Replica server initialization and modification", {
 subtest "Replica servers update replica data", {
 
   my MongoDB::Server $server = $client.select-server;
-  is $server.get-status<status>, SS-RSPrimary,
+  is $server.get-status<status>, ST-RSPrimary,
      "Server is replica server primary";
   is $client.topology, TT-ReplicaSetWithPrimary,
      "Topology replicaset with primary";

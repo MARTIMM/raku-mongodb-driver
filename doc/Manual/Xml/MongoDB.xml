@@ -55,55 +55,55 @@
           </thead>
           <tbody>
             <tr>
-              <td>SS-Unknown</td>
+              <td>ST-Unknown</td>
               <td>Initial, or after a network error or failed ismaster call, or "ok: 1" not in ismaster response. </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-Standalone</td>
+              <td>ST-Standalone</td>
               <td>No "msg: isdbgrid", no setName, and no "isreplicaset: true". </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-Mongos</td>
+              <td>ST-Mongos</td>
               <td>"msg: isdbgrid"</td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-PossiblePrimary</td>
+              <td>ST-PossiblePrimary</td>
               <td>Not yet checked, but another member thinks it is the primary. </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-RSPrimary</td>
+              <td>ST-RSPrimary</td>
               <td>"ismaster: true", "setName" in response.</td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-RSSecondary</td>
+              <td>ST-RSSecondary</td>
               <td>"secondary: true", "setName" in response.</td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-RSArbiter</td>
+              <td>ST-RSArbiter</td>
               <td>"arbiterOnly: true", "setName" in response.</td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-RSOther</td>
+              <td>ST-RSOther</td>
               <td>"setName" in response, "hidden: true" or not primary, secondary, nor arbiter. E.g. starting up or recovering. </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
-              <td>SS-RSGhost</td>
+              <td>ST-RSGhost</td>
               <td>"isreplicaset: true" in response. E.g. briefly during server startup, in an uninitialized replica set, or when the server is shunned (removed from the replica set config). </td>
             </tr>
           </tbody>
@@ -124,31 +124,31 @@
           <tbody>
             <tr>
               <td>TT-Unknown</td>
-              <td>When a deployment has this topology type, no servers are suitable for read or write operations. These are servers which did not respond on initial connection or threw an exception because of e.g. a DNS lookup failure. All server states of these servers herded by the Client object is SS-Unknown. </td>
+              <td>When a deployment has this topology type, no servers are suitable for read or write operations. These are servers which did not respond on initial connection or threw an exception because of e.g. a DNS lookup failure. All server states of these servers herded by the Client object is ST-Unknown. </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
               <td>TT-Single</td>
-              <td>A deployment of topology type TT-Single contains only a single server which can have any state except SS-Unknown. This topology type signifies a direct connection intended to receive all read and write operations. </td>
+              <td>A deployment of topology type TT-Single contains only a single server which can have any state except ST-Unknown. This topology type signifies a direct connection intended to receive all read and write operations. </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
               <td>TT-Sharded</td>
-              <td>A deployment of topology type TT-Sharded contains one or more servers of type SS-Mongos or SS-Unknown of at least one is SS-Mongos. </td>
+              <td>A deployment of topology type TT-Sharded contains one or more servers of type ST-Mongos or ST-Unknown of at least one is ST-Mongos. </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
               <td>TT-ReplicaSetNoPrimary</td>
-              <td>A deployment with this topology type can have a mix of server types: SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost, SS-Unknown or SS-PossiblePrimary. </td>
+              <td>A deployment with this topology type can have a mix of server types: ST-RSSecondary, ST-RSArbiter, ST-RSOther, ST-RSGhost, ST-Unknown or ST-PossiblePrimary. </td>
             </tr>
           </tbody>
           <tbody>
             <tr>
               <td>TT-ReplicaSetWithPrimary</td>
-              <td>A deployment with this topology type can have a mix of server types: SS-RSPrimary, SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost, SS-Unknown or SS-PossiblePrimary. </td>
+              <td>A deployment with this topology type can have a mix of server types: ST-RSPrimary, ST-RSSecondary, ST-RSArbiter, ST-RSOther, ST-RSGhost, ST-Unknown or ST-PossiblePrimary. </td>
             </tr>
           </tbody>
         </table>

@@ -51,7 +51,7 @@ subtest "Client behaviour with one replicaserver", {
   $client .= new(:$uri);
 
   $server = $client.select-server;
-  is $server.get-status<status>, SS-RSPrimary,
+  is $server.get-status<status>, ST-RSPrimary,
      "Replicaset primary server";
   is $client.topology, TT-Single, 'Single topology';
 }

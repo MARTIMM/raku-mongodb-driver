@@ -215,7 +215,7 @@ $!d5b.article [
 
           $tbody [
             $tr [
-              $td [SS-Unknown]
+              $td [ST-Unknown]
               $td [
                 a) Initial state before processing the response.
                 b) After a network error or failed ismaster call.
@@ -226,7 +226,7 @@ $!d5b.article [
 
           $tbody [
             $tr [
-              $td [SS-Standalone]
+              $td [ST-Standalone]
               $td [
                 There is no key/value pair "msg: isdbgrid", there is no setName, and there is no "isreplicaset: true" key/value pair.
               ]
@@ -235,7 +235,7 @@ $!d5b.article [
 
           $tbody [
             $tr [
-              $td [SS-Mongos]
+              $td [ST-Mongos]
               $td [ Key/value pair "msg: isdbgrid" is found in the Monitor response.
               ]
             ]
@@ -243,7 +243,7 @@ $!d5b.article [
 
           $tbody [
             $tr [
-              $td [SS-PossiblePrimary]
+              $td [ST-PossiblePrimary]
               $td [
                 Not yet processed, but another secondary server member thinks it is the primary.
               ]
@@ -252,7 +252,7 @@ $!d5b.article [
 
           $tbody [
             $tr [
-              $td [SS-RSPrimary]
+              $td [ST-RSPrimary]
               $td [
                 Key/value "ismaster: true" and "setName" is found in the Monitor response.
               ]
@@ -261,21 +261,21 @@ $!d5b.article [
 
           $tbody [
             $tr [
-              $td [SS-RSSecondary]
+              $td [ST-RSSecondary]
               $td ["secondary: true", "setName" in response.]
             ]
           ]
 
           $tbody [
             $tr [
-              $td [SS-RSArbiter]
+              $td [ST-RSArbiter]
               $td ["arbiterOnly: true", "setName" in response.]
             ]
           ]
 
           $tbody [
             $tr [
-              $td [SS-RSOther]
+              $td [ST-RSOther]
               $td [
                 "setName" in response, "hidden: true" or not primary,
                 secondary, nor arbiter. E.g. starting up or recovering.
@@ -285,7 +285,7 @@ $!d5b.article [
 
           $tbody [
             $tr [
-              $td [SS-RSGhost]
+              $td [ST-RSGhost]
               $td [
                 "isreplicaset: true" in response. E.g.  briefly during server
                 startup, in an uninitialized replica set, or when the server
@@ -317,7 +317,7 @@ $!d5b.article [
                 suitable for read or write operations. These are servers which
                 did not respond on initial connection or threw an exception
                 because of e.g. a DNS lookup failure. All server states of
-                these servers herded by the Client object is SS-Unknown.
+                these servers herded by the Client object is ST-Unknown.
               ]
             ]
           ]
@@ -327,7 +327,7 @@ $!d5b.article [
               $td [TT-Single]
               $td [
                 A deployment of topology type TT-Single contains only a single
-                server which can have any state except SS-Unknown. This topology
+                server which can have any state except ST-Unknown. This topology
                 type signifies a direct connection intended to receive all read
                 and write operations.
               ]
@@ -339,8 +339,8 @@ $!d5b.article [
               $td [TT-Sharded]
               $td [
                 A deployment of topology type TT-Sharded contains one or more
-                servers of type SS-Mongos or SS-Unknown of at least one is
-                SS-Mongos.
+                servers of type ST-Mongos or ST-Unknown of at least one is
+                ST-Mongos.
               ]
             ]
           ]
@@ -350,8 +350,8 @@ $!d5b.article [
               $td [TT-ReplicaSetNoPrimary]
               $td [
                 A deployment with this topology type can have a mix of server
-                types: SS-RSSecondary, SS-RSArbiter, SS-RSOther, SS-RSGhost,
-                SS-Unknown or SS-PossiblePrimary.
+                types: ST-RSSecondary, ST-RSArbiter, ST-RSOther, ST-RSGhost,
+                ST-Unknown or ST-PossiblePrimary.
               ]
             ]
           ]
@@ -361,8 +361,8 @@ $!d5b.article [
               $td [TT-ReplicaSetWithPrimary]
               $td [
                 A deployment with this topology type can have a mix of server
-                types: SS-RSPrimary, SS-RSSecondary, SS-RSArbiter, SS-RSOther,
-                SS-RSGhost, SS-Unknown or SS-PossiblePrimary.
+                types: ST-RSPrimary, ST-RSSecondary, ST-RSArbiter, ST-RSOther,
+                ST-RSGhost, ST-Unknown or ST-PossiblePrimary.
               ]
             ]
           ]

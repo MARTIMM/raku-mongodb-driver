@@ -52,7 +52,7 @@ subtest {
   );
   my MongoDB::Server $server = $client.select-server;
   ok $server.defined, "Server $server.name() selected";
-  is $server.get-status<status>, SS-RSPrimary, "Server $host:$p2 is primary";
+  is $server.get-status<status>, ST-RSPrimary, "Server $host:$p2 is primary";
 
   #my BSON::Document $doc = $server.raw-query( 'test.$cmd', BSON::Document.new((isMaster => 1,)));
   #diag $doc.perl;
@@ -108,7 +108,7 @@ subtest {
   }
 
   $server = $client.select-server(:servername("$host:$p3"));
-  is $server.get-status<status>, SS-RSSecondary,
+  is $server.get-status<status>, ST-RSSecondary,
      "Server $host:$p3 is secondary";
 
   is $client.topology, TT-ReplicaSetWithPrimary,

@@ -29,7 +29,7 @@ class Cursor does Iterable {
   # Support for the newer BSON::Document
   multi submethod BUILD (
     MongoDB::CollectionType:D :$collection!, BSON::Document:D :$server-reply!,
-    ServerType:D :$server!, Int :$number-to-return = 0
+    ServerClassType:D :$server!, Int :$number-to-return = 0
   ) {
 
     $!client = $collection.database.client;

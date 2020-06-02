@@ -300,7 +300,7 @@ especially when processing replicasets.
 
 =head2 server-status
 
-  method server-status ( Str:D $server-name --> ServerStatus )
+  method server-status ( Str:D $server-name --> ServerClassType )
 
 Return the status of some server. The defined values are shown in the table and
 when it applies.
@@ -309,29 +309,29 @@ when it applies.
 
   Server state          When
   ===========================================================================
-  SS-Mongos             Field 'msg' in returned resuld of ismaster request is
+  ST-Mongos             Field 'msg' in returned resuld of ismaster request is
                         'isdbgrid'.
   ---------------------------------------------------------------------------
-  SS-RSGhost            Field 'isreplicaset' is set. Server is in a
+  ST-RSGhost            Field 'isreplicaset' is set. Server is in a
                         initialization state.
   ---------------------------------------------------------------------------
-  SS-RSPrimary          Replicaset primary server. Field 'setName' is the
+  ST-RSPrimary          Replicaset primary server. Field 'setName' is the
                         replicaset name and 'ismaster' is True.
   ---------------------------------------------------------------------------
-  SS-RSSecondary        Replicaset secondary server. Field 'setName' is the
+  ST-RSSecondary        Replicaset secondary server. Field 'setName' is the
                         replicaset name and 'secondary' is True.
   ---------------------------------------------------------------------------
-  SS-RSArbiter          Replicaset arbiter. Field 'setName' is the replicaset
+  ST-RSArbiter          Replicaset arbiter. Field 'setName' is the replicaset
                         name and 'arbiterOnly' is True.
   ---------------------------------------------------------------------------
-  SS-RSOther            An other type of replicaserver is found. Possibly in
+  ST-RSOther            An other type of replicaserver is found. Possibly in
                         transition between states.
   ---------------------------------------------------------------------------
-  SS-Standalone         Any other server being master or slave.
+  ST-Standalone         Any other server being master or slave.
   ---------------------------------------------------------------------------
-  SS-Unknown            Servers which are down or with errors.
+  ST-Unknown            Servers which are down or with errors.
   ---------------------------------------------------------------------------
-  SS-PossiblePrimary    not implemeted
+  ST-PossiblePrimary    not implemeted
 
 =end table
 
@@ -350,7 +350,7 @@ next;
   ============================================================================
   TT-Single                     The first server with no faulty responses will
                                 set the topology to single. Any new
-                                SS-Standalone server will flip the topology to
+                                ST-Standalone server will flip the topology to
                                 TT-Unknown
   ----------------------------------------------------------------------------
   TT-ReplicaSetNoPrimary        When there are no primary servers found (yet)
@@ -370,7 +370,7 @@ next;
                                 this topology applies. When there is only one
                                 server, the type would become TT-Single.
   ----------------------------------------------------------------------------
-  TT-Unknown                    Any set of servers which are SS-Unknown will
+  TT-Unknown                    Any set of servers which are ST-Unknown will
                                 set the topology to TT-Unknown. Depending on the
                                 problems of these servers their states can
                                 change, and with that, the topology. When there

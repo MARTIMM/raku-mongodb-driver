@@ -14,10 +14,10 @@ class Server::Socket {
 #  has Bool $!must-authenticate;
 
   has Bool $.is-open;
-  has MongoDB::ServerType $.server;
+  has MongoDB::ServerClassType $.server;
 
   #-----------------------------------------------------------------------------
-  submethod BUILD ( MongoDB::ServerType:D :$!server ) {
+  submethod BUILD ( MongoDB::ServerClassType:D :$!server ) {
 
     $!is-open = True;
     $!thread-id = $*THREAD.id;

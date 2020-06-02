@@ -103,19 +103,19 @@ These classes can not be tested separately because of their dependency on each o
 * Client object interaction tests in **t/110-client.t**.
   * Unknown server which fails DNS lookup.
     * [x] server can not be selected
-    * [x] server state is SS-Unknown
+    * [x] server state is ST-Unknown
     * [x] topology is TT-Unknown
   * Down server, no connection.
     * [x] server can not be selected
-    * [x] server state is SS-Unknown
+    * [x] server state is ST-Unknown
     * [x] topology is TT-Unknown
   * Standalone server, not in replicaset. Use config s1.
     * [x] server can be selected
-    * [x] server state is SS-Standalone
+    * [x] server state is ST-Standalone
     * [x] topology is TT-Single
   * Two standalone servers. Use config s1 and s2.
     * [x] server can not be selected
-    * [x] both servers have state SS-Standalone
+    * [x] both servers have state ST-Standalone
     * [x] topology is TT-Unknown
 
 * Client/server interaction tests in **t/111-client.t**.

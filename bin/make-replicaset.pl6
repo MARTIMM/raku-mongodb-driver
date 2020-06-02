@@ -74,7 +74,7 @@ sub get-server-state (
   my Str $uri = "mongodb://$auth-input$connection";
   my MongoDB::Client $client .= new(:$uri);
   my $state = $client.server-status($connection);
-  if $state !~~ SS-RSGhost {
+  if $state !~~ ST-RSGhost {
     $uri = "mongodb://$auth-input$connection/?replSet=$replSet";
     $client.cleanup;
     $client .= new(:$uri);
@@ -82,7 +82,7 @@ sub get-server-state (
 
   note "Server engaged using $uri";
 
-  if $state ~~ any(SS-NotSet,SS-Unknown,SS-Standalone,SS-Mongos,SS-RSOther) {
+  if $state ~~ any(ST-Unknown,ST-Standalone,ST-Mongos,ST-RSOther) {
     print "server state of $connection is $state, server is skipped\n";
 
     %(:$state)
@@ -301,7 +301,7 @@ sub make-replicaset (
     given $state {
 
       # initialize if isreplicaset is defined
-      when SS-RSGhost {
+      when ST-RSGhost {
         $doc = $server.raw-query(
           'admin.$cmd',
           BSON::Document.new( (
@@ -341,7 +341,7 @@ sub make-replicaset (
       }
 
       # initialized
-      #when SS-Normal {
+      #when ST-Normal {
       #}
 
       # not started as a replicaserver
@@ -370,11 +370,11 @@ sub prepare-work (
   my Array $server-failures = [];
   my Str $master-server-key = '';
   for $server-states.kv -> $skey, $sval {
-    if $sval<state> ~~ SS-RSGhost {
+    if $sval<state> ~~ ST-RSGhost {
       $sval<work> = 'init';
     }
 
-    elsif $sval<state> ~~ SS-RSPrimary {
+    elsif $sval<state> ~~ ST-RSPrimary {
       # is a master, add secondary servers. ismaster<hosts> has at least
       # one member which is the master server
 
@@ -389,7 +389,7 @@ sub prepare-work (
       }
     }
 
-    elsif $sval<state> ~~ SS-RSSecondary {
+    elsif $sval<state> ~~ ST-RSSecondary {
       # is a secondary, should have been added to a primary server
       $sval<work> = 'skip';
 
@@ -411,7 +411,7 @@ sub prepare-work (
     }
 
 #`{{
-    elsif $sval<state> ~~ SS-RSArbiter {
+    elsif $sval<state> ~~ ST-RSArbiter {
       # is a secondary, add to primary server if not yet done so
       $server-states<work> = 'arbiter';
     }

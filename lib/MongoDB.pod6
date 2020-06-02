@@ -175,12 +175,12 @@ Base module to hold constants, enums and subs
 Used to describe the state of the Client object. See also C<MongoDB::Client>.
 
 
-=head3 ServerStatus
+=head3 ServerType
 
-  enum ServerStatus is export <
+  enum ServerType is export <
 
-    SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary RSSecondary
-    SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown
+    ST-Standalone ST-Mongos ST-PossiblePrimary ST-RSPrimary RSSecondary
+    ST-RSArbiter ST-RSOther ST-RSGhost
   >;
 
 Used to describe the status of a Server object. See also C<MongoDB::Client>.
@@ -249,9 +249,9 @@ Time in seconds that a socket can be left open unused.
 
 
 =head3 Client defaults
-=head4 C-SMALLEST-MAX-STALENESS-SECONDS
+=head4 C-SMALLEST-MAX-STALENEST-SECONDS
 
-  constant C-SMALLEST-MAX-STALENESS-SECONDS = 90;
+  constant C-SMALLEST-MAX-STALENEST-SECONDS = 90;
 
 =head3 User administration defaults
 =head4 C-PW-LOWERCASE
@@ -306,7 +306,7 @@ be used by servers with privileges.
   subset ClientType is export where .^name eq 'MongoDB::Client';
   subset DatabaseType is export where .^name eq 'MongoDB::Database';
   subset CollectionType is export where .^name eq 'MongoDB::Collection';
-  subset ServerType is export where .^name eq 'MongoDB::Server';
+  subset ServerClassType is export where .^name eq 'MongoDB::Server';
   subset SocketType is export where .^name eq 'MongoDB::Socket';
 
 These types can be used when an object is provided in some call interface. Only

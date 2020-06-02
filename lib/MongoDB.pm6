@@ -28,8 +28,13 @@ constant SERVER-VERSION1 is export = '4.0.5';
 constant SERVER-VERSION2 is export = '4.0.18';
 
 #------------------------------------------------------------------------------
+constant clientMinWireVersion is export = 0;
+constant clientMaxWireVersion is export = 7;
+
+#------------------------------------------------------------------------------
 # Client object topology types
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
+
 enum TopologyType is export <
   TT-Single TT-ReplicaSetNoPrimary TT-ReplicaSetWithPrimary
   TT-Sharded TT-Unknown TT-NotSet
@@ -38,9 +43,10 @@ enum TopologyType is export <
 #------------------------------------------------------------------------------
 # Status values of a Server.object
 # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
-enum ServerStatus is export <
-  SS-Standalone SS-Mongos SS-PossiblePrimary SS-RSPrimary SS-RSSecondary
-  SS-RSArbiter SS-RSOther SS-RSGhost SS-Unknown SS-NotSet
+
+enum ServerType is export <
+  ST-Standalone ST-Mongos ST-PossiblePrimary ST-RSPrimary ST-RSSecondary
+  ST-RSArbiter ST-RSOther ST-RSGhost ST-Unknown
 >;
 
 #------------------------------------------------------------------------------
@@ -89,7 +95,7 @@ constant C-HEARTBEATFREQUENCYMS is export = 10_000;
 
 #------------------------------------------------------------------------------
 # Client defaults
-constant C-SMALLEST-MAX-STALENESS-SECONDS = 90;
+constant C-SMALLEST-MAX-STALENEST-SECONDS = 90;
 
 #------------------------------------------------------------------------------
 # User admin defaults
@@ -111,7 +117,7 @@ subset PortType of Int is export where 0 < $_ <= 65535;
 subset ClientType is export where .^name eq 'MongoDB::Client';
 subset DatabaseType is export where .^name eq 'MongoDB::Database';
 subset CollectionType is export where .^name eq 'MongoDB::Collection';
-subset ServerType is export where .^name eq 'MongoDB::Server';
+subset ServerClassType is export where .^name eq 'MongoDB::Server';
 subset SocketType is export where .^name eq 'MongoDB::Server::Socket';
 
 #------------------------------------------------------------------------------

@@ -11,7 +11,7 @@ unit package MongoDB:auth<github:MARTIMM>;
 #-------------------------------------------------------------------------------
 class Wire {
 
-#  has ServerType $!server;
+#  has ServerClassType $!server;
   has SocketType $!socket;
 
   #-----------------------------------------------------------------------------
@@ -33,7 +33,7 @@ class Wire {
     Str:D $full-collection-name,
     BSON::Document:D $qdoc, BSON::Document $projection?,
     QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
-    Int :$number-to-return, ServerType :$server, Bool :$authenticate = True
+    Int :$number-to-return, ServerClassType :$server, Bool :$authenticate = True
 
     --> BSON::Document
   ) {
@@ -126,7 +126,7 @@ class Wire {
   #-----------------------------------------------------------------------------
   method get-more (
     $cursor, Int :$number-to-return,
-    ServerType:D :$server # where .^name eq 'MongoDB::Server'
+    ServerClassType:D :$server # where .^name eq 'MongoDB::Server'
     --> BSON::Document
   ) {
 
@@ -201,7 +201,7 @@ class Wire {
   }
 
   #-----------------------------------------------------------------------------
-  method kill-cursors ( @cursors where .elems > 0, ServerType:D :$server! ) {
+  method kill-cursors ( @cursors where .elems > 0, ServerClassType:D :$server! ) {
 
 #    $!server = $server;
     my MongoDB::Header $header .= new;

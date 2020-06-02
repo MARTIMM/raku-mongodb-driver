@@ -31,8 +31,8 @@ subtest "Client behaviour while shutdown and start server", {
   );
 
   my MongoDB::Server $server = $client.select-server;
-  is $client.server-status("localhost:$p1"), SS-Standalone,
-     "Status of server is SS-Standalone";
+  is $client.server-status("localhost:$p1"), ST-Standalone,
+     "Status of server is ST-Standalone";
 
   # Bring server down to see what Client does...
   ok $ts.server-control.stop-mongod(@serverkeys[0]),
@@ -49,8 +49,8 @@ subtest "Client behaviour while shutdown and start server", {
 
   $server = $client.select-server;
   ok $server.defined, 'Server is defined';
-  is $client.server-status("localhost:$p1"), SS-Standalone,
-     "Status of server is SS-Standalone again";
+  is $client.server-status("localhost:$p1"), ST-Standalone,
+     "Status of server is ST-Standalone again";
 
   $client.cleanup;
 }
@@ -65,7 +65,7 @@ subtest "Shutdown/restart server while inserting records", {
   );
 
   my MongoDB::Server $server = $client.select-server;
-  is $client.server-status("localhost:$p1"), SS-Standalone, "Standalone server";
+  is $client.server-status("localhost:$p1"), ST-Standalone, "Standalone server";
 
   # Drop database test
   my MongoDB::Database $database = $client.database('test');

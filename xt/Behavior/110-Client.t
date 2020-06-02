@@ -36,7 +36,7 @@ subtest 'Unknown server', {
 
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
-  is $client.server-status($server-name), SS-Unknown,
+  is $client.server-status($server-name), ST-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
   $client.cleanup;
@@ -45,7 +45,7 @@ subtest 'Unknown server', {
   $client .= new(:uri("mongodb://$server-name/?" ~ @options.join('&')));
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
-  is $client.server-status($server-name), SS-Unknown,
+  is $client.server-status($server-name), ST-Unknown,
      "Status of server is $client.server-status($server-name)";
   is $client.topology, TT-Unknown, "Topology $client.topology()";
   $client.cleanup;
@@ -63,7 +63,7 @@ subtest "Standalone server, localhost", {
   $server = $client.select-server;
   ok $server.defined, "Server $server.name() selected";
 
-  is $client.server-status($server-name), SS-Standalone,
+  is $client.server-status($server-name), ST-Standalone,
      "Status of server $server.name() is $client.server-status($server-name)";
 
   is $client.topology, TT-Single, "Topology $client.topology()";
@@ -85,7 +85,7 @@ subtest "Standalone server, ipv6", {
   $server = $client.select-server;
   ok $server.defined, "Server $server.name() selected";
 
-  is $client.server-status($server-name), SS-Standalone,
+  is $client.server-status($server-name), ST-Standalone,
      "Status of server $server.name() is $client.server-status($server-name)";
 
   is $client.topology, TT-Single, "Topology $client.topology()";
@@ -107,10 +107,10 @@ subtest "Two equal standalone servers", {
   $server = $client.select-server;
   nok $server.defined, 'No servers selected';
 
-  is $client.server-status($server-name1), SS-Standalone,
+  is $client.server-status($server-name1), ST-Standalone,
      "Server $server-name1 is $client.server-status($server-name1)";
 
-  is $client.server-status($server-name2), SS-Standalone,
+  is $client.server-status($server-name2), ST-Standalone,
      "Server $server-name2 is $client.server-status($server-name2)";
 
   is $client.topology, TT-Unknown, "Topology $client.topology()";

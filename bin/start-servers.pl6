@@ -140,7 +140,7 @@ sub check-convert-replicaset (
   info-message("server state of 192.168.0.253:$port1 is $s1-state");
 
   my BSON::Document $doc;
-  if $s1-state ~~ SS-RSGhost {
+  if $s1-state ~~ ST-RSGhost {
 
     $doc = $s1.raw-query(
       'admin.$cmd',
