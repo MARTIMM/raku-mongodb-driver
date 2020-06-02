@@ -1,9 +1,17 @@
 # Release notes
 
-See [semantic versioning](http://semver.org/). Please note point 4. on that page: ***Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable.***
+See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
+
+* 2020-06-02 0.43.11
+  * New class **MongoDB::ObserverEmitter** which is a canabalized project Event::Emitter from Tony O'Dell.
+    Changes to his classes are;
+    * Needed code brought into one class.
+    * No threading because we need order in event handling.
+    * All objects of this class share the same data.
+    * Observers and Providers can be in different threads.
 
 * 2020-05-28 0.43.10
-  * Now that there is a Build.pm6, all of the shell script is moved into the build module. This save us some nasty shell quirks.
+  * Now that there is a `Build.pm6`, all of the shell script is moved into the build module. This saves us some nasty shell quirks.
 
 * 2020-05-11 0.43.9
   * Issue #31.

@@ -1,5 +1,5 @@
 {
-  "version": "0.43.10.2",
+  "version": "0.43.11",
   "description": "MongoDB driver",
   "name": "MongoDB",
 
@@ -24,6 +24,7 @@
     "MongoDB::HL::Users":               "lib/MongoDB/HL/Users.pm6",
     "MongoDB::Log":                     "lib/MongoDB/Log.pm6",
     "MongoDB::MDBConfig":               "lib/MongoDB/MDBConfig.pm6",
+    "MongoDB::ObserverEmitter":         "lib/MongoDB/ObserverEmitter.pm6",
     "MongoDB::Server::Control":         "lib/MongoDB/Server/Control.pm6",
     "MongoDB::Server::Monitor":         "lib/MongoDB/Server/Monitor.pm6",
     "MongoDB::Server::Socket":          "lib/MongoDB/Server/Socket.pm6",
