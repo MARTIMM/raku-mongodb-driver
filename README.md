@@ -49,7 +49,7 @@ my BSON::Document $req .= new: (
         Perl3 => 'introduced the ability to handle binary data.',
         Perl4 => 'introduced the first Camel book.',
         Perl5 => 'introduced everything else, including the ability to introduce everything else.',
-        Perl6 => 'A perl changing perl event, Dec 12,2015'
+        Perl6 => 'Well, everything else became perl6 :-) Dec 12,2015'
       )),
     )),
   ]
@@ -186,8 +186,8 @@ ok 15 - updatedExisting returned False
 
 ## Notes
 
-* As of version 0.25.1 a sandbox is setup to run separate mongod and mongos servers. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without the need to fiddle with the users database servers.
-* When installing the driver, tests are done only on newest mongod servers of versions 3.\*. Versions 2.6.\* is now tested on Travis-CI. Testing on MS Windows must still be setup. Necessary parts such as BSON are already tested on AppVeyor however.
+* As of version 0.25.1 a sandbox is setup to run separate mongod and mongos servers. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without the need to fiddle with the user's database servers.
+* When installing the driver, tests are done only on newest mongod servers of versions 3.\*. Testing on MS Windows must still be setup. Necessary parts such as **BSON** are already tested on AppVeyor however.
 
 ## Implementation track
 
@@ -201,11 +201,14 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 * Together with the slim down of the helper functions mentioned above, some parts of the wire protocol are not implemented and even removed. One of the reasons of not implementing them is that these operations (update, delete etc.) are not acknowledged by the server, so it will never be clear if the operation was successful, other than by checking with another query. The other reason to remove them is that the run-command() in newer server versions (2.6 and higher) is capable of what was possible in the wire protocol.
 
-* The use of hashes to send and receive mongodb documents is wrong. It is wrong because the key-value pairs in the hash often get a different order then is entered in the hash. Also mongodb needs the command pair at the front of the document. Another place where order matters are sub document queries. A sub document is matched as encoded documents.  So if the server has ```{ a: {b:1, c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since Perl 6 hashes randomizes its key order you never know what the order is.
+* The use of hashes to send and receive mongodb documents is wrong. It is wrong because the key-value pairs in the hash often get a different order then is entered in the hash. Also mongodb needs the command pair at the front of the document. Another place where order matters are sub document queries. A sub document is matched as encoded documents.  So if the server has ```{ a: {b:1, c:2} }``` and you search for ```{ a: {c:2, b:1} }```, it won't find it.  Since Raku hashes randomizes its key order you never know what the order is.
 
-* Experiments are done using List of Pair to keep the order the same as entered. In the mean time thoughts about how to implement parallel encoding to and decoding from BSON byte strings have been past my mind. These thoughts have been crystallized into a Document class in the BSON package which a) keeps the order, 2) have the same capabilities as Hashes, 3) can do encoding and decoding in parallel.
+* Experiments are done using List of Pair to keep the order the same as entered. In the mean time thoughts about how to implement parallel encoding to and decoding from BSON byte strings have been past my mind. These thoughts have been crystallized into a Document class in the BSON package which
+  * keeps the order.
+  * have the same capabilities as Hashes.
+  * can do encoding and decoding in parallel.
 
-* This BSON::Document is now available in the BSON package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a BSON::Document. This will be converted internally into this type.*
+* This BSON::Document is now available in the **BSON** package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a **BSON::Document**. This will be converted internally into this type.
 
 * Host/port arguments to Client are replaced by using a URI in the format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```. See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/). Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The supported options are; *replicaSet*.
 
@@ -262,6 +265,12 @@ Use zef to install the package.
 This project is tested against the newest perl6 version with Rakudo built on MoarVM implementing Perl v6.*. On Travis-CI however, the latest rakudobrew version is used which might be a little older.
 
 MongoDB server versions are supported from 2.6 and up. Versions lower than this are not supported because of a not completely implemented wire protocol.
+
+## Attribution
+
+* Raku, once called Perl6, is a great language. It is still becoming more mature and is a lovely language. A big thank you!
+* The documentation of Raku is also great, I get all the info I need from there. On top of that, there are great bloggers out there who make things even more clear and provide you with the wildest ideas. I can start naming them but there will be no end to the list and I would certainly miss one or two.
+* Module writers from which I steal code (;-) to use it in my own projects like the Event::Emitter of Tony O'Dell.
 
 ## AUTHORS
 
