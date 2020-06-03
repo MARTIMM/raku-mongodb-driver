@@ -109,7 +109,7 @@ class Uri {
     my $actions = $uri-actions.new;
     my $grammar = $uri-grammar.new;
 
-    debug-message("parse $uri");
+    trace-message("parse '$uri'");
     my Match $m = $grammar.parse( $uri, :$actions, :rule<URI>);
 
     # if parse is ok

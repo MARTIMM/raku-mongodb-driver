@@ -28,7 +28,7 @@ class Collection {
     $!database = $database;
     self!set-name($name) if ?$name;
 
-    trace-message("create collection $database.name()\.$name");
+    debug-message("create collection $database.name()\.$name");
   }
 
   #-----------------------------------------------------------------------------

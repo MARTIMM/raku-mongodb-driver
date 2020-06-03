@@ -96,16 +96,18 @@ submethod BUILD (
   $!uri = $uri;
   $!uri-obj .= new(:$!uri);
 
-  debug-message("Found {$!uri-obj.servers.elems} servers in uri");
+  trace-message("Found {$!uri-obj.servers.elems} servers in uri");
   # Setup todo list with servers to be processed, Safety net not needed yet
   # because threads are not started.
   for @($!uri-obj.servers) -> Hash $server-data {
     my Str $server-name = "$server-data<host>:$server-data<port>";
-    debug-message("Initialize $server-name");
+    debug-message("Initialize server object for $server-name");
 #    $!todo-servers.push("$server<host>:$server<port>");
 
     # create Server object
-    my MongoDB::Server $server .= new( :client(self), :$server-name);
+    my MongoDB::Server $server .= new(
+      :client(self), :$server-name, :$!uri-obj
+    );
 
     # and start server monitoring
     $server.server-init;
@@ -137,7 +139,8 @@ method process-topology ( ) {
 
   for $servers.keys -> $server-name {
 
-    my ServerType $status = $servers{$server-name}.get-status<status> // ST-Unknown;
+    my ServerType $status =
+      $servers{$server-name}.get-status<status> // ST-Unknown;
 
     # check status of server
     given $status {
