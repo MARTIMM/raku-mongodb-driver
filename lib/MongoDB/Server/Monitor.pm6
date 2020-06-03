@@ -2,6 +2,7 @@ use v6;
 
 use MongoDB;
 use MongoDB::Server::Socket;
+use MongoDB::ObserverEmitter;
 use BSON;
 use BSON::Document;
 use Semaphore::ReadersWriters;
@@ -27,7 +28,7 @@ has BSON::Document $!monitor-result;
 
 has Semaphore::ReadersWriters $!rw-sem;
 
-#----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Call before monitor-server to set the $!server object!
 # Inheriting from Supplier prevents use of proper BUILD
 #
@@ -41,19 +42,38 @@ submethod BUILD ( ) {
 
   $!monitor-data-supplier .= new;
   $!heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
-  trace-message("Monitor sleep time set to $!heartbeat-frequency-ms ms");
+  debug-message("Monitor sleep time set to $!heartbeat-frequency-ms ms");
   $!monitor-command .= new: (isMaster => 1);
+
+  # observe heartbeat changes
+  my MongoDB::ObserverEmitter $event-manager .= new;
+  $event-manager.subscribe-observer(
+    'set heartbeatfrequency ms',
+    -> Int $heartbeat { self!set-heartbeat($heartbeat) }
+  );
+
+  # observe server registration
+  $event-manager.subscribe-observer(
+    'register server',
+    -> MongoDB::ServerClassType:D $server { self!register-server($server) }
+  );
+
+  # observe server un-registration
+  $event-manager.subscribe-observer(
+    'unregister server',
+    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) }
+  );
 
   # start the monitor
   debug-message("Start monitoring");
   self!start-monitor;
 }
 
-#----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Prevent calling new(). Must use instance()
 method new ( ) { !!! }
 
-#----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 method instance ( --> MongoDB::Server::Monitor ) {
 
 #TODO is this thread safe?
@@ -61,27 +81,29 @@ method instance ( --> MongoDB::Server::Monitor ) {
   $singleton-instance
 }
 
-#----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 method get-supply ( --> Supply ) {
 
   $!monitor-data-supplier.Supply
 }
 
-#----------------------------------------------------------------------------
-method set-heartbeat ( Int:D $heartbeat-frequency-ms ) {
+#-------------------------------------------------------------------------------
+method !set-heartbeat ( Int:D $heartbeat-frequency-ms ) {
 
   $!rw-sem.writer( 'm-loop', {
       # Don't let looptime become lower than 100 ms
       $!heartbeat-frequency-ms .= new(
         $heartbeat-frequency-ms > 100 ?? $heartbeat-frequency-ms !! 100
       );
-      trace-message("Monitor sleep time set to $!heartbeat-frequency-ms ms");
+      debug-message(
+        "Monitor sleep time modified to $!heartbeat-frequency-ms ms"
+      );
     }
   );
 }
 
-#----------------------------------------------------------------------------
-method register-server ( MongoDB::ServerClassType:D $server ) {
+#-------------------------------------------------------------------------------
+method !register-server ( MongoDB::ServerClassType:D $server ) {
 #note "register $server.name()";
 
   $!rw-sem.writer( 'm-servers', {
@@ -90,7 +112,7 @@ method register-server ( MongoDB::ServerClassType:D $server ) {
       }
 
       else {
-        trace-message("Server $server.name() registered");
+        debug-message("Server $server.name() registered");
         %!registered-servers{$server.name} = [
           $server,    # provided server
           0,          # init weighted mean rtt in ms
@@ -100,13 +122,13 @@ method register-server ( MongoDB::ServerClassType:D $server ) {
   ); # writer
 }
 
-#----------------------------------------------------------------------------
-method unregister-server ( MongoDB::ServerClassType:D $server ) {
+#-------------------------------------------------------------------------------
+method !unregister-server ( MongoDB::ServerClassType:D $server ) {
 
   $!rw-sem.writer( 'm-servers', {
       if %!registered-servers{$server.name}:exists {
         %!registered-servers{$server.name}:delete;
-        trace-message("Server $server.name() un-registered");
+        debug-message("Server $server.name() un-registered");
       }
 
       else {
@@ -116,7 +138,7 @@ method unregister-server ( MongoDB::ServerClassType:D $server ) {
   ); # writer
 }
 
-#----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 method !start-monitor ( ) {
   # infinite
   Promise.start( {
@@ -143,7 +165,7 @@ method !start-monitor ( ) {
   } );
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 method monitor-work ( ) {
 
   my Duration $rtt;

@@ -1,11 +1,13 @@
 use v6;
 
 use MongoDB;
+use MongoDB::Uri;
 use MongoDB::Wire;
 use MongoDB::Server::Monitor;
 use MongoDB::Server::Socket;
 use MongoDB::Authenticate::Credential;
 use MongoDB::Authenticate::Scram;
+use MongoDB::ObserverEmitter;
 
 use BSON::Document;
 use Semaphore::ReadersWriters;
@@ -19,6 +21,7 @@ has Str $.server-name;
 has PortType $.server-port;
 
 has ClientType $!client;
+has MongoDB::Uri $!uri-obj;
 
 has Array[MongoDB::Server::Socket] $!sockets;
 has Bool $!server-is-registered;
@@ -30,7 +33,9 @@ has Semaphore::ReadersWriters $!rw-sem;
 has Tap $!server-tap;
 
 #-------------------------------------------------------------------------------
-submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
+submethod BUILD (
+  ClientType:D :$!client, Str:D :$server-name, MongoDB::Uri:D :$!uri-obj
+) {
 
   # server status is unsetled
   $!server-sts-data = { :status(ST-Unknown), :!is-master, :error('') };
@@ -55,53 +60,19 @@ submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
   $!server-name ~~ s/^ '[' //;
   $!server-name ~~ s/ ']' $//;
 
-  trace-message("Server {self.name} initialized");
+  trace-message("Server object for {self.name} initialized");
 
   # Start monitoring
   my MongoDB::Server::Monitor $m .= instance;
-  $m.set-heartbeat($!client.uri-obj.options<heartbeatFrequencyMS>);
-  $m.register-server(self);
-  $!server-is-registered = True;
 
-  # no need to catch exceptions. all is trapped in Wire. with failures
-  # a type object is returned. do a firsttime connect and set status data
-  trace-message("Server {self.name} makes first contact request");
-  my BSON::Document $doc = self.raw-query(
-    'admin.$cmd', BSON::Document.new((isMaster => 1)), :!authenticate
+  # emit some events
+  my MongoDB::ObserverEmitter $event-manager .= new;
+  $event-manager.emit(
+    'set heartbeatfrequency ms', $!uri-obj.options<heartbeatFrequencyMS>
   );
 
-  trace-message("First contact result: " ~ ($doc//'-').perl);
-
-#TODO in a sub: later we do the same!
-#note "\n$*THREAD.id(): {($doc//'-').perl}";
-  if $doc.defined {
-    my $mdoc = $doc<documents>[0];
-    if $mdoc<ok> == 1e0 {
-      my ServerType $server-status;
-      my Bool $is-master;
-      ( $server-status, $is-master) = self!process-status($mdoc);
-      $!server-sts-data = {
-        :status($server-status), :$is-master, :error(''),
-        :max-wire-version($mdoc<maxWireVersion>.Int),
-        :min-wire-version($mdoc<minWireVersion>.Int),
-        :weighted-mean-rtt-ms(0),
-      }
-    }
-
-    else {
-      $!server-sts-data<error> = $mdoc<errmsg> // 'no error message';
-      $!server-sts-data<is-master> = False;
-      $!server-sts-data<status> = ST-Unknown;
-    }
-  }
-
-  else {
-    $!server-sts-data<error> = 'Server did not respond';
-    $!server-sts-data<is-master> = False;
-    $!server-sts-data<status> = ST-Unknown;
-  }
-
-  $!client.process-topology;
+  $event-manager.emit( 'register server', self);
+  $!server-is-registered = True;
 }
 
 #-------------------------------------------------------------------------------
@@ -334,7 +305,7 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
   # We can only authenticate when all 3 data are True and when the socket is
   # created.
   if $created-anew and $authenticate {
-    my MongoDB::Authenticate::Credential $credential = $!client.uri-obj.credential;
+    my MongoDB::Authenticate::Credential $credential = $!uri-obj.credential;
     if ?$credential.username and ?$credential.password {
 
       # get authentication mechanism
@@ -481,7 +452,8 @@ method cleanup ( ) {
   # just not processed anymore and in the next loop of Monitor it will see
   # that the server is un-registered.
   $!server-is-registered = False;
-  MongoDB::Server::Monitor.instance.unregister-server(self);
+  my MongoDB::ObserverEmitter $event-manager .= new;
+  $event-manager.emit( 'unregister server', self);
 
   # Clear all sockets
   $!rw-sem.writer( 's-select', {
