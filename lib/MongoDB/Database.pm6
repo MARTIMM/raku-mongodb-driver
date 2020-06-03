@@ -25,7 +25,7 @@ class Database {
     self!set-name($name);
     $!client = $client;
 
-    trace-message("create database $name");
+    debug-message("create database $name");
 
     # Create a collection $cmd to be used with run-command()
     $!cmd-collection = self.collection( '$cmd', :$read-concern);
@@ -59,7 +59,7 @@ class Database {
     --> BSON::Document
   ) {
 
-    debug-message("run command {$command.keys[0]}");
+    info-message("run command '{$command.keys[0]}'");
 
     my BSON::Document $rc = $read-concern // $!read-concern;
 
