@@ -28,6 +28,8 @@ constant SERVER-VERSION1 is export = '4.0.5';
 constant SERVER-VERSION2 is export = '4.0.18';
 
 #------------------------------------------------------------------------------
+# wire versions
+# See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 constant clientMinWireVersion is export = 0;
 constant clientMaxWireVersion is export = 7;
 
