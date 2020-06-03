@@ -1,8 +1,9 @@
 use v6;
 
 use MongoDB;
-use MongoDB::Server::Socket;
 use MongoDB::ObserverEmitter;
+use MongoDB::Server::Socket;
+use MongoDB::Server::MonitorTimer;
 use BSON;
 use BSON::Document;
 use Semaphore::ReadersWriters;
@@ -21,10 +22,18 @@ has %!registered-servers;
 has Promise $!promise-monitor;
 
 has Supplier $!monitor-data-supplier;
+
+# heartbeat frequency is the normal wait period between ismaster requests.
+# settle frequency is a much shorter period to settle the typology until
+# everything gets stable. $servers-settled is False when any server has
+# a SS-UNKNOWN state
 has Duration $!heartbeat-frequency-ms;
+has Duration $!settle-frequency-ms;
+has Bool $!servers-settled;
 
 has BSON::Document $!monitor-command;
 has BSON::Document $!monitor-result;
+has MongoDB::Server::MonitorTimer $!monitor-timer;
 
 has Semaphore::ReadersWriters $!rw-sem;
 
@@ -34,6 +43,11 @@ has Semaphore::ReadersWriters $!rw-sem;
 #
 submethod BUILD ( ) {
 
+  $!settle-frequency-ms .= new(5e2);
+  $!heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
+  $!servers-settled = False;
+  debug-message("Monitor sleep time set to $!heartbeat-frequency-ms ms");
+
   $!rw-sem .= new;
   #$!rw-sem.debug = True;
   $!rw-sem.add-mutex-names( <m-loop m-servers>, :RWPatternType(C-RW-WRITERPRIO));
@@ -41,8 +55,6 @@ submethod BUILD ( ) {
   %!registered-servers = %();
 
   $!monitor-data-supplier .= new;
-  $!heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
-  debug-message("Monitor sleep time set to $!heartbeat-frequency-ms ms");
   $!monitor-command .= new: (isMaster => 1);
 
   # observe heartbeat changes
@@ -67,6 +79,7 @@ submethod BUILD ( ) {
   # start the monitor
   debug-message("Start monitoring");
   self!start-monitor;
+#  sleep(0.2);
 }
 
 #-------------------------------------------------------------------------------
@@ -76,7 +89,6 @@ method new ( ) { !!! }
 #-------------------------------------------------------------------------------
 method instance ( --> MongoDB::Server::Monitor ) {
 
-#TODO is this thread safe?
   $singleton-instance //= self.bless;
   $singleton-instance
 }
@@ -112,6 +124,9 @@ method !register-server ( MongoDB::ServerClassType:D $server ) {
       }
 
       else {
+        $!servers-settled = False;
+        $!monitor-timer.cancel if $!monitor-timer.defined;
+
         debug-message("Server $server.name() registered");
         %!registered-servers{$server.name} = [
           $server,    # provided server
@@ -142,27 +157,53 @@ method !unregister-server ( MongoDB::ServerClassType:D $server ) {
 method !start-monitor ( ) {
   # infinite
   Promise.start( {
-    # start first run
-    $!promise-monitor .= start( { self.monitor-work } );
+      $!monitor-timer .= in(0.1);
+note '.= in()';
 
-    # then infinite loop
-    loop {
-
-      # wait for end of thread
-      $!promise-monitor.result;
-
-      # heartbeat can be adjusted with set-heartbeat()
-      my $heartbeat-frequency-sec = $!heartbeat-frequency-ms / 1000.0;
-      trace-message("heart beat frequency: $heartbeat-frequency-sec sec");
-
-      # set new thread to start after some time
-      $!promise-monitor = Promise.at(
-        now + $heartbeat-frequency-sec
-      ).then(
-        { self.monitor-work }
+      # start first run
+      #$!promise-monitor .= start( { self.monitor-work } );
+      $!promise-monitor = $!monitor-timer.promise.then( {
+          self.monitor-work;
+        }
       );
+note '.then()';
+
+      # then infinite loop
+      loop {
+note 'loop';
+
+        # wait for end of thread or when waittime is canceled
+        $!promise-monitor.result;
+        trace-message("monitor heartbeat shortened for new data")
+          if $!monitor-timer.canceled;
+
+        # heartbeat can be adjusted with set-heartbeat() or $!servers-settled
+        # demands shorter cycle using $!settle-frequency-ms
+        my $heartbeat-frequency-sec =
+          ( $!servers-settled ?? $!settle-frequency-ms
+                              !! $!heartbeat-frequency-ms
+          ) / 1000.0;
+#        my $heartbeat-frequency-sec = $!heartbeat-frequency-ms / 1000.0;
+        trace-message("heartbeat frequency: $heartbeat-frequency-sec sec");
+
+  #`{{
+        # set new thread to start after some time
+        $!promise-monitor = Promise.in(
+          $heartbeat-frequency-sec
+        ).then(
+          { self.monitor-work }
+        );
+  }}
+
+        # create the cancelable thread
+        $!monitor-timer .= in($heartbeat-frequency-sec);
+        $!promise-monitor = $!monitor-timer.promise.then( {
+            self.monitor-work;
+          }
+        );
+      }
     }
-  } );
+  );
 }
 
 #-------------------------------------------------------------------------------
@@ -171,6 +212,8 @@ method monitor-work ( ) {
   my Duration $rtt;
   my BSON::Document $doc;
   my Int $weighted-mean-rtt-ms;
+
+  $!servers-settled = True;
 
   # Do forever once it is started
 #    loop {
@@ -189,19 +232,14 @@ method monitor-work ( ) {
         { %!registered-servers{$server-name}:exists; }
       );
 
-      trace-message("Monitoring $server-name");
-      my $server = %rservers{$server-name}[ServerObj];
-
-      trace-message("Monitor is-master request for $server-name");
       # get server info
+      my $server = %rservers{$server-name}[ServerObj];
       ( $doc, $rtt) = $server.raw-query(
-        'admin.$cmd', $!monitor-command, :!authenticate, :timed-query
+      'admin.$cmd', $!monitor-command, :!authenticate, :timed-query
       );
 
-      trace-message(
-        "Monitor is-master request result for $server-name: "
-        ~ ($doc//'-').perl
-      );
+      my Str $doc-text = ($doc // '-').perl;
+      trace-message("is-master request result for $server-name: $doc-text");
 
       # when doc is defined, the request ended properly. the ok field
       # in the doc will tell if the operation is succsessful or not
@@ -238,6 +276,8 @@ method monitor-work ( ) {
       # between it is down.
       else {
         warn-message("no response from server $server.name()");
+        $!servers-settled = False;
+
         $!monitor-data-supplier.emit( {
             :!ok, reason => 'Undefined document', :$server-name
           } # emit data
@@ -258,7 +298,7 @@ method monitor-work ( ) {
              .message ~~ m:s/Failed to connect\: connection refused/ ||
              .message ~~ m:s/Socket not available/ ||
              .message ~~ m:s/Out of range\: attempted to read/ ||
-             .message ~~ m:s/Not enaugh characters left/ {
+             .message ~~ m:s/Not enough characters left/ {
 
           # Failure messages;
           #   No response from server - This can happen when there is some
@@ -279,6 +319,10 @@ method monitor-work ( ) {
       } # CATCH
 }}
     } # for %rservers.keys
+
+    trace-message(
+      "Servers are " ~ ($!servers-settled ?? '' !! 'not yet') ~ 'settled'
+    );
 
 #      my $heartbeat-frequency-ms = $!rw-sem.reader(
 #        'm-loop', {$!heartbeat-frequency-ms}
