@@ -1,5 +1,6 @@
 use v6;
-use lib './lib';
+#use lib './lib';
+use lib '../lib';
 
 use BSON::Document;
 use MongoDB;
@@ -9,7 +10,7 @@ use MongoDB::Collection;
 
 drop-send-to('mongodb');
 #drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Debug));
+modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = "Issue31a.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 

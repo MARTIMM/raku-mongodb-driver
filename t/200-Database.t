@@ -1,5 +1,5 @@
 use v6;
-use lib 't';
+use lib 't', 'lib';
 use Test;
 use Test-support;
 use MongoDB;
