@@ -16,6 +16,8 @@ add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 
 info-message("Test $?FILE start");
 
+my $t0 = now;
+
 my MongoDB::Test-support $ts .= new;
 
 my BSON::Document $req;
@@ -135,6 +137,7 @@ subtest 'Drop a database', {
   }
 }
 
+diag "Time spent: {now - $t0}";
 #-------------------------------------------------------------------------------
 info-message("Test $?FILE stop");
 done-testing();
