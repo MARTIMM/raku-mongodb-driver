@@ -264,7 +264,7 @@ Use zef to install the package.
 
 ## Versions of PERL, MOARVM and MongoDB
 
-This project is tested against the newest perl6 version with Rakudo built on MoarVM implementing Perl v6.*. On Travis-CI however, the latest rakudobrew version is used which might be a little older.
+This project is tested against the newest perl6 version with Rakudo built on MoarVM implementing Perl v6.\*. On Travis-CI however, the latest rakudobrew version is used which might be a little older.
 
 MongoDB server versions are supported from 2.6 and up. Versions lower than this are not supported because of a not completely implemented wire protocol.
 
@@ -273,6 +273,8 @@ MongoDB server versions are supported from 2.6 and up. Versions lower than this 
 * Raku, once called Perl6, is a great language. It is still becoming more mature and is a lovely language. A big thank you!
 * The documentation of Raku is also great, I get all the info I need from there. On top of that, there are great bloggers out there who make things even more clear and provide you with the wildest ideas. I can start naming them but there will be no end to the list and I would certainly miss one or two.
 * Module writers from which I steal code (;-) to use it in my own projects like the Event::Emitter of Tony O'Dell.
+* Looted examples from StackOverflow e.g. [Brad Gilbert](https://stackoverflow.com/questions/52955919/is-it-possible-to-terminate-a-promises-code-block-from-another-promise/52956311#52956311)
+* David Golden, who has pointed me to important documents he has developed together with a MongoDB team. It's about guide lines for server discovery and building up a topology of the servers seeded from the url.
 
 ## AUTHORS
 
