@@ -210,9 +210,54 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 
 * This BSON::Document is now available in the **BSON** package and many assignments can be done using List of Pair. There are also some convenient call interfaces for find and run-command to swallow List of Pair instead of a **BSON::Document**. This will be converted internally into this type.
 
-* Host/port arguments to Client are replaced by using a URI in the format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```. See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/). Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The supported options are;
-  * heartbeatFrequencyMS
-  * replicaSet
+* Host/port arguments to Client are replaced by using a URI in the format ```mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]```. See also the [MongoDB page](https://docs.mongodb.org/v3.0/reference/connection-string/). Client.instance method will only accept uri which will be processed by the Uri class. The default uri will be ```mongodb://``` which means ```localhost:27017```. For your information, the explanation on the mongodb page showed that the hostname is not optional. I felt that there was no reason to make the hostname not optional so in this driver the following is possible: ```mongodb://```, ```mongodb:///?replicaSet=my_rs```, ```mongodb://dbuser:upw@/database``` and ```mongodb://:9875,:456```. A username must be given with a password. This might be changed to have the user provide a password in another way. The  options are ([x] are supported);
+  * Replica options
+    * [x] replicaSet
+  * TLS options
+    * [ ] tls
+    * [ ] ssl
+    * [ ] tlsCertificateKeyFile
+    * [ ] tlsCertificateKeyFilePassword
+    * [ ] tlsCAFile
+    * [ ] tlsAllowInvalidCertificates
+    * [ ] tlsAllowInvalidHostnames
+    * [ ] tlsInsecure
+  * Timeout options
+    * [ ] connectTimeoutMS
+    * [ ] socketTimeoutMS
+  * Compression options
+    * [ ] compressors
+    * [ ] zlibCompressionLevel
+  * Connection pool options
+    * [ ] maxPoolSize
+    * [ ] minPoolSize
+    * [ ] maxIdleTimeMS
+    * [ ] waitQueueMultiple
+    * [ ] waitQueueTimeoutMS
+  * Write concern options
+    * [ ] w
+    * [ ] wtimeoutMS
+    * [ ] journal
+  * Read concern options
+    * [ ] readConcernLevel
+  * Read preference options
+    * [ ] readPreference
+    * [ ] maxStalenessSeconds
+    * [ ] readPreferenceTags
+  * Authentication options
+    * [ ] authSource
+    * [ ] authMechanism
+    * [ ] authMechanismProperties
+    * [ ] gssapiServiceName
+  * Server selection and discovery options
+    * [ ] localThresholdMS
+    * [ ] serverSelectionTimeoutMS
+    * [ ] serverSelectionTryOnce
+    * [x] heartbeatFrequencyMS
+  * Miscellaneous configuration
+    * [ ] appName
+    * [ ] retryWrites
+    * [ ] uuidRepresentation
 
 * Authentication using SCRAM-SHA is implemented.
 
