@@ -85,6 +85,7 @@ class Database {
     --> BSON::Document
   ) {
 
+note "run command doctype";
     my BSON::Document $command .= new: $pairs;
     debug-message("run command {$command.keys[0]}");
 

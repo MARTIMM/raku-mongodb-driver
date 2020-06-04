@@ -21,7 +21,7 @@ has Str $.server-name;
 has PortType $.server-port;
 
 has ClientType $!client;
-has MongoDB::Uri $!uri-obj;
+has MongoDB::Uri $.uri-obj;
 
 has Array[MongoDB::Server::Socket] $!sockets;
 has Bool $!server-is-registered;
@@ -30,7 +30,7 @@ has Bool $!server-is-registered;
 # handling monitoring data.
 has Hash $!server-sts-data;
 has Semaphore::ReadersWriters $!rw-sem;
-has Tap $!server-tap;
+#has Tap $!server-tap;
 
 #-------------------------------------------------------------------------------
 submethod BUILD (
@@ -65,16 +65,107 @@ submethod BUILD (
   # Start monitoring
   my MongoDB::Server::Monitor $m .= instance;
 
-  # emit some events
+  # set the heartbeat frequency
   my MongoDB::ObserverEmitter $event-manager .= new;
   $event-manager.emit(
-    'set heartbeatfrequency ms', $!uri-obj.options<heartbeatFrequencyMS>
+    'set heartbeatfrequency ms',
+    $!uri-obj.options<heartbeatFrequencyMS>
   );
 
+  # observe results from monitor only for this particular server. use the
+  # key generated in the uri object and the servername to prevent other
+  # servers to interprete data not meant for them.
+  $event-manager.subscribe-observer(
+    $!uri-obj.keyed-uri ~ self.name ~ ' monitor data',
+     -> Hash $monitor-data { self!process-monitor-data($monitor-data); }
+  );
+
+  # now we can register a server
   $event-manager.emit( 'register server', self);
   $!server-is-registered = True;
 }
 
+#-------------------------------------------------------------------------------
+method !process-monitor-data ( Hash $monitor-data ) {
+
+  my Bool $is-master = False;
+  my ServerType $server-status = ST-Unknown;
+
+  # test monitor defined boolean field ok
+  if $monitor-data<ok> {
+
+    # used to get a socket and decide on type of authentication
+    my $mdata = $monitor-data<monitor>;
+
+    # test mongod server defined field ok for state of returned document
+    # this is since newer servers return info about servers going down
+    if ?$mdata and $mdata<ok>:exists and $mdata<ok> == 1e0 {
+#note "MData: $monitor-data.perl()";
+      ( $server-status, $is-master) = self!process-status($mdata);
+
+      $!rw-sem.writer( 's-status', {
+          $!server-sts-data = {
+            :status($server-status), :$is-master, :error(''),
+            :max-wire-version($mdata<maxWireVersion>.Int),
+            :min-wire-version($mdata<minWireVersion>.Int),
+            :weighted-mean-rtt-ms($monitor-data<weighted-mean-rtt-ms>),
+          }
+        } # writer block
+      ); # writer
+    } # if $mdata<ok> == 1e0
+
+    else {
+      if ?$mdata and $mdata<ok>:!exists {
+        warn-message("Missing field in doc {$mdata.perl}");
+      }
+
+      else {
+        warn-message("Unknown error: {($mdata // '-').perl}");
+      }
+
+      ( $server-status, $is-master) = ( ST-Unknown, False);
+    }
+  } # if $monitor-data<ok>
+
+  # Server did not respond or returned an error
+  else {
+
+    $!rw-sem.writer( 's-status', {
+        if $monitor-data<reason>:exists {
+          $!server-sts-data<error> = $monitor-data<reason>;
+        }
+
+        else {
+          $!server-sts-data<error> = 'Server did not respond';
+        }
+
+        $!server-sts-data<is-master> = False;
+        $!server-sts-data<status> = ST-Unknown;
+
+        ( $server-status, $is-master) = ( ST-Unknown, False);
+
+      } # writer block
+    ); # writer
+  } # else
+
+  # Set the status with the new value
+  info-message("Server status of {self.name()} is $server-status");
+
+  # Let the client find the topology using all found servers
+  # in the same rhythm as the heartbeat loop of the monitor
+  # (of each server)
+  #$!client.process-topology;
+
+  # the keyed uri is used to notify the proper client, there can be
+  # more than one active
+  my MongoDB::ObserverEmitter $notify-client;
+  $notify-client.emit(
+    $!uri-obj.keyed-uri ~ ' process topology',
+    ( self.name, $server-status, $is-master)
+  );
+}
+
+#`{{
 #-------------------------------------------------------------------------------
 # Server initialization
 method server-init ( ) {
@@ -122,6 +213,8 @@ method server-init ( ) {
             else {
               warn-message("Unknown error: {($mdata // '-').perl}");
             }
+
+            ( $server-status, $is-master) = ( ST-Unknown, False);
           }
         } # if $monitor-data<ok>
 
@@ -140,6 +233,8 @@ method server-init ( ) {
               $!server-sts-data<is-master> = False;
               $!server-sts-data<status> = ST-Unknown;
 
+              ( $server-status, $is-master) = ( ST-Unknown, False);
+
             } # writer block
           ); # writer
         } # else
@@ -150,18 +245,28 @@ method server-init ( ) {
         # Let the client find the topology using all found servers
         # in the same rhythm as the heartbeat loop of the monitor
         # (of each server)
-        $!client.process-topology;
+        #$!client.process-topology;
+
+        # the keyed uri is used to notify the proper client, there can be
+        # more than one active
+        my MongoDB::ObserverEmitter $notify-client;
+        $notify-client.emit(
+          $!uri-obj.keyed-uri ~ ' process topology',
+          ( self.name, $server-status, $is-master)
+        );
 
       } # if $monitor-data<server> eq self.name
     } # tap block
   ); # tap
 }
+}}
 
 #-------------------------------------------------------------------------------
 method !process-status ( BSON::Document $mdata --> List ) {
 
   my Bool $is-master = False;
   my ServerType $server-status = ST-Unknown;
+  my MongoDB::ObserverEmitter $notify-client;
 
   # Shard server
   if $mdata<msg>:exists and $mdata<msg> eq 'isdbgrid' {
@@ -177,12 +282,20 @@ method !process-status ( BSON::Document $mdata --> List ) {
     $is-master = ? $mdata<ismaster>;
     if $is-master {
       $server-status = ST-RSPrimary;
-      $!client.add-servers([|@($mdata<hosts>),]) if $mdata<hosts>:exists;
+      #$!client.add-servers([|@($mdata<hosts>),]) if $mdata<hosts>:exists;
+      $notify-client.emit(
+        $!uri-obj.keyed-uri ~ ' add servers',
+        @($mdata<hosts>)
+      ) if $mdata<hosts>:exists;
     }
 
     elsif ? $mdata<secondary> {
       $server-status = ST-RSSecondary;
-      $!client.add-servers([$mdata<primary>,]) if $mdata<primary>:exists;
+      #$!client.add-servers([$mdata<primary>,]) if $mdata<primary>:exists;
+      $notify-client.emit(
+        $!uri-obj.keyed-uri ~ ' add servers',
+        @($mdata<primary>)
+      ) if $mdata<primary>:exists;
     }
 
     elsif ? $mdata<arbiterOnly> {
@@ -199,7 +312,7 @@ method !process-status ( BSON::Document $mdata --> List ) {
     $is-master = ? $mdata<ismaster>;
   }
 
-  ( $server-status, $is-master);
+  ( $server-status, $is-master)
 }
 
 #-------------------------------------------------------------------------------
@@ -208,6 +321,7 @@ method get-status ( --> Hash ) {
   $!rw-sem.reader( 's-status', { $!server-sts-data } );
 }
 
+#`{{
 #-------------------------------------------------------------------------------
 # Make a tap on the Supply. Use act() for this so we are sure that only this
 # code runs whithout any other parrallel threads.
@@ -216,6 +330,7 @@ method tap-monitor ( |c --> Tap ) {
 
   MongoDB::Server::Monitor.instance.get-supply.tap(|c);
 }
+}}
 
 #-------------------------------------------------------------------------------
 # Search in the array for a closed Socket.
@@ -439,9 +554,9 @@ method name ( --> Str ) {
 # Forced cleanup
 method cleanup ( ) {
 
-  # Its possible that server monitor is not defined when a server is
+  # It's possible that server monitor is not defined when a server is
   # non existent or some other reason.
-  $!server-tap.close if $!server-tap.defined;
+#  $!server-tap.close if $!server-tap.defined;
 
   # Because of race conditions it is possible that Monitor still requests
   # for sockets(via Wire) to get server information. Next variable must be
@@ -449,7 +564,7 @@ method cleanup ( ) {
   # could be started just before this happens. Well anyways, when a socket is
   # returned to Wire for the final act, won't hurt because the mongod server
   # is not dead because of this cleanup. The data retrieved from the server
-  # just not processed anymore and in the next loop of Monitor it will see
+  # will not be processed anymore and in the next loop of Monitor it will see
   # that the server is un-registered.
   $!server-is-registered = False;
   my MongoDB::ObserverEmitter $event-manager .= new;
@@ -469,5 +584,5 @@ method cleanup ( ) {
 
   $!client = Nil;
   $!sockets = Nil;
-  $!server-tap = Nil;
+#  $!server-tap = Nil;
 }

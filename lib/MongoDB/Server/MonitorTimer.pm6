@@ -30,12 +30,19 @@ method cancel ( --> Nil ) {
     $!cancel.cancel;          # cancel the timer
     $!vow.break("cancelled"); # break the Promise
   }
+
+note 'monitor wait cancel, ',
+  $!promise.status ~~ PromiseStatus::Broken, ', ',
+  $!cancel.cancelled;
 }
 
 #-------------------------------------------------------------------------------
 method cancelled ( --> Bool ) {
 
 #  return False unless $!promise.defined;
+note 'monitor wait test cancelled, ',
+  $!promise.status ~~ PromiseStatus::Broken, ', ',
+  $!cancel.cancelled;
 
   # Ignore any concurrency problems by using the Promise
   # as the sole source of truth.
