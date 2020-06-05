@@ -1,14 +1,17 @@
 use v6;
 
+use MongoDB;
 use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
 # Canabalized project Event::Emitter from Tony O'Dell
 # Changes are;
-# * Needed code brought into one class
-# * No threading because we need order in event handling
-# * All objects of this class share the same data
-# * Observers and Providers can be in different threads
+# * Needed code brought into one class.
+# * No threading because we need order in event handling.
+# * All objects of this class share the same data.
+# * Observers and Providers can be in different threads.
+# * Entries are keyed so they can be removed too.
+# * Logging.
 #-------------------------------------------------------------------------------
 unit class MongoDB::ObserverEmitter:auth<github:MARTIMM>;
 
@@ -25,6 +28,8 @@ submethod BUILD {
 
   # only initialize when undefined
   return if $supplier.defined;
+
+  trace-message('First time build');
 
   # first time and only init
   $supplier = Supplier.new;
@@ -48,17 +53,23 @@ submethod BUILD {
 
         # test sub to see if observer must be called
         -> $e {
+          my Bool $select = False;
           given ($e<event>.WHAT) {
 
             # when Regex, test if event from $events is same from $msg
-            when Regex { $msg<event> ~~ $e<event> }
+            when Regex { $select = ($msg<event> ~~ $e<event>).Bool; }
 
             # call user test routine to see if this event must be handled
-            when Callable { $e<event>.($msg<event>); }
+            when Callable { $select = $e<event>.($msg<event>); }
 
             # rest is strait comparison of Str, Int, Num or whatever.
-            default { $e<event> eq $msg<event> }
+            default { $select = $e<event> eq $msg<event>; }
           };
+
+          trace-message( "emit, key: '$e<event-key>'")
+            if $select;
+
+          $select
         }
       );
     }
@@ -67,8 +78,30 @@ submethod BUILD {
 
 #-------------------------------------------------------------------------------
 # subscribe a handler for some event
-method subscribe-observer ( $event, Callable $callable ) {
-  $rw-sem.writer( 'event', { $events.push: %( :$event, :$callable ); } );
+method subscribe-observer (
+  Any:D $event, Callable:D $callable, Str:D :$event-key!
+) {
+  trace-message("subscribe, key: $event-key, event: $event.perl()");
+  $rw-sem.writer(
+    'event', { $events.push: %( :$event, :$callable, :$event-key ); }
+  );
+}
+
+#-------------------------------------------------------------------------------
+# remove a handler for some event. only string typed keys can be removed
+method unsubscribe-observer ( Str:D $event-key ) {
+  trace-message("unsubscribe, key: '$event-key'");
+  my @local-events = $rw-sem.reader( 'event', { (@$events); }).flat;
+
+  loop ( my Int $i = 0; $i < @local-events.elems; $i++ ) {
+    if @local-events[$i]<event-key> ~~ $event-key {
+      @local-events.splice( $i, 1);
+      $rw-sem.writer( 'event', { $events = [|@local-events]; } );
+
+      trace-message("observer removed, key: '$event-key'");
+      last;
+    }
+  }
 }
 
 #-------------------------------------------------------------------------------
