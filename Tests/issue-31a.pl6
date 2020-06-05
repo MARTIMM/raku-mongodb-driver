@@ -9,8 +9,8 @@ use MongoDB::Database;
 use MongoDB::Collection;
 
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = "Issue31a.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 
@@ -29,7 +29,6 @@ sub MAIN( ) {
   $doc = $database.run-command(BSON::Document.new: (ping => 1));
 #  $doc.perl.say;
   say '1st rerun: ', now - $t0;
-
 
   $t0 = now;
   $client .= new(:$uri);
