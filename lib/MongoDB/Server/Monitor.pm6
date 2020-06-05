@@ -64,21 +64,21 @@ submethod BUILD ( ) {
   $event-manager.subscribe-observer(
     'set heartbeatfrequency ms',
     -> Int $heartbeat { self!set-heartbeat($heartbeat) },
-    :event-key<m1>
+    :event-key<heartbeat>
   );
 
   # observe server registration
   $event-manager.subscribe-observer(
     'register server',
     -> MongoDB::ServerClassType:D $server { self!register-server($server) },
-    :event-key<m2>
+    :event-key<register-server>
   );
 
   # observe server un-registration
   $event-manager.subscribe-observer(
     'unregister server',
     -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
-    :event-key<m3>
+    :event-key<unregister-server>
   );
 
   # start the monitor
@@ -125,47 +125,52 @@ method !set-heartbeat ( Int:D $heartbeat-frequency-ms ) {
 method !register-server ( MongoDB::ServerClassType:D $server ) {
 #note "register $server.name()";
 
+  my Bool $exists = $!rw-sem.reader(
+    'm-servers', { %!registered-servers{$server.name}:exists; }
+  );
+
   $!rw-sem.writer( 'm-servers', {
-      if %!registered-servers{$server.name}:exists {
-        warn-message("Server $server.name() already registered");
-      }
-
-      else {
+      unless $exists {
+        # induce a shorter waiting period until all servers are settled again
         $!servers-settled = False;
-        $!monitor-timer.cancel if $!monitor-timer.defined;
 
-        debug-message("Server $server.name() registered");
         %!registered-servers{$server.name} = [
           $server,    # provided server
           0,          # init weighted mean rtt in ms
         ];
-      } # else
+      } # unless server exists
     } # writer block
   ); # writer
+
+  unless $exists {
+    debug-message("Server $server.name() registered");
+
+    # then cancel the monitor wait
+    $!monitor-timer.cancel if $!monitor-timer.defined;
+  }
 }
 
 #-------------------------------------------------------------------------------
 method !unregister-server ( MongoDB::ServerClassType:D $server ) {
 
-  $!rw-sem.writer( 'm-servers', {
-      if %!registered-servers{$server.name}:exists {
-        %!registered-servers{$server.name}:delete;
-        debug-message("Server $server.name() un-registered");
-      }
+  my Bool $exists = $!rw-sem.reader(
+    'm-servers', { %!registered-servers{$server.name}:exists; }
+  );
 
-      else {
-        warn-message("Server $server.name() not registered");
-      } # else
-    } # writer block
-  ); # writer
+  $!rw-sem.writer( 'm-servers', {
+    %!registered-servers{$server.name}:delete if $exists;
+    }
+  );
+
+  debug-message("Server $server.name() un-registered") if $exists;
 }
 
 #-------------------------------------------------------------------------------
 method !start-monitor ( ) {
   # infinite
   Promise.start( {
-      $!monitor-timer .= in(0.1);
-note '.= in()';
+      $!monitor-timer = MongoDB::Server::MonitorTimer.in(0.1);
+#note '.= in()';
 
       # start first run
       #$!promise-monitor .= start( { self.monitor-work } );
@@ -173,27 +178,25 @@ note '.= in()';
           self.monitor-work;
         }
       );
-note '.then()';
+#note '.then()';
 
       # then infinite loop
       loop {
-note 'start loop';
+#note 'start loop';
 
         # wait for end of thread or when waittime is canceled
-#        try {
-          if $!promise-monitor.status ~~ PromiseStatus::Kept {
-            $!promise-monitor.result;
-          }
+        if $!promise-monitor.status ~~ PromiseStatus::Kept {
+          trace-message('wait period finished');
+          $!promise-monitor.result;
+        }
 
-          elsif $!promise-monitor.status ~~ PromiseStatus::Broken {
-            trace-message(
-              'wait period interrupted: ' ~ $!promise-monitor.cause
-            );
-            trace-message("monitor heartbeat shortened for new data");
-          }
-
-#          CATCH {.note};
-#        };
+        elsif $!promise-monitor.status ~~ PromiseStatus::Broken {
+          trace-message(
+            'wait period interrupted: ' ~ $!promise-monitor.cause
+          );
+          trace-message("monitor heartbeat shortened for new data");
+        }
+#note 'end promise';
 
         # heartbeat can be adjusted with set-heartbeat() or $!servers-settled
         # demands shorter cycle using $!settle-frequency-ms
@@ -212,23 +215,34 @@ note 'start loop';
           { self.monitor-work }
         );
   }}
-note "start monitor";
+#my $t0 = now;
+#note "do monitor wait: $heartbeat-frequency-sec sec";
         # create the cancelable thread
-        $!monitor-timer .= in($heartbeat-frequency-sec);
+        $!monitor-timer = MongoDB::Server::MonitorTimer.in(
+          $heartbeat-frequency-sec
+        );
+
+#note "do monitor work";
         $!promise-monitor = $!monitor-timer.promise.then( {
             self.monitor-work;
           }
         );
-note 'next loop';
+
+        await $!promise-monitor;
+#note "after wait: ", now - $t0;
+
+#note 'next loop';
       } # loop
-note 'end loop';
+#note 'end loop';
     }   # Promise code
   );    # Promise.start
-note 'end method';
+#note 'end method';
 }       # method
 
 #-------------------------------------------------------------------------------
 method monitor-work ( ) {
+
+#note "do monitor work";
 
   my Duration $rtt;
   my BSON::Document $doc;
@@ -280,7 +294,7 @@ method monitor-work ( ) {
       );
 
       debug-message(
-        [~] 'Weighted mean RTT: ', %rservers{$server-name}[WMRttMs],
+        [~] 'Weighted mean RTT: ', %rservers{$server-name}[WMRttMs].fmt('%.3f'),
             ' (ms) for server ', $server.name()
       );
 
@@ -318,6 +332,6 @@ method monitor-work ( ) {
   }       # for %rservers.keys
 
   trace-message(
-    "Servers are " ~ ($!servers-settled ?? '' !! 'not yet') ~ ' settled'
+    "Servers are " ~ ($!servers-settled ?? '' !! 'not yet ') ~ 'settled'
   );
 }

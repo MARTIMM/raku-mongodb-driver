@@ -72,7 +72,7 @@ submethod BUILD (
 
   $!servers = %();
 
-  # Initialize mutexes
+  # initialize mutexes
   $!rw-sem .= new;
 #    $!rw-sem.debug = True;
 
@@ -91,10 +91,20 @@ submethod BUILD (
     tag-sets => [BSON::Document.new(),]
   );
 
-  # Parse the uri and get info in $!uri-obj. Fields are protocol, username,
+  # parse the uri and get info in $!uri-obj. fields are protocol, username,
   # password, servers, database and options.
   $!uri = $uri;
   $!uri-obj .= new(:$!uri);
+
+  # start monitoring
+  MongoDB::Server::Monitor.instance;
+
+  # set the heartbeat frequency
+  my MongoDB::ObserverEmitter $event-manager .= new;
+  $event-manager.emit(
+    'set heartbeatfrequency ms',
+    $!uri-obj.options<heartbeatFrequencyMS>
+  );
 
   # the keyed uri is used to notify the proper client, there can be
   # more than one active
@@ -142,7 +152,7 @@ method !process-topology (
 
   # update server data
   self!update-server( $server-name, $server-status, $is-master);
-note "server info updated for $server-name with $server-status, $is-master";
+#note "server info updated for $server-name with $server-status, $is-master";
 
   # find topology
   my TopologyType $topology = TT-Unknown;
@@ -433,8 +443,8 @@ multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
     }
 
     $selected-server = $!rw-sem.reader( 'servers', {
-note "ss0 Servers: ", $!servers.keys;
-note "ss0 Request: $selected-server.name()";
+#note "ss0 Servers: ", $!servers.keys;
+#note "ss0 Request: $selected-server.name()";
         $!servers{$servername}:exists
                 ?? $!servers{$servername}<server>
                 !! MongoDB::Server;
@@ -445,7 +455,7 @@ note "ss0 Request: $selected-server.name()";
     sleep $!uri-obj.options<heartbeatFrequencyMS> / 1000.0;
   } while ((now - $t0) * 1000) < $!uri-obj.options<serverSelectionTimeoutMS>;
 
-  debug-message("Searched for {(now - $t0) * 1000} ms");
+  debug-message("Searched for {((now - $t0) * 1000).fmt('%.3f')} ms");
 
   if ?$selected-server {
     debug-message("Server '$selected-server.name()' selected");
@@ -478,7 +488,7 @@ multi method select-server (
 
   #! Wait until topology is set
   until $!rw-sem.reader( 'topology', { $!topology-set }) {
-note 'wait 0.5';
+#note 'wait 0.5';
     sleep 0.5;
   }
 
@@ -489,8 +499,8 @@ note 'wait 0.5';
     my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
     my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
 
-note "ss1 Servers: ", $servers.keys;
-note "ss1 Topology: $topology";
+#note "ss1 Servers: ", $servers.keys;
+#note "ss1 Topology: $topology";
 
     given $topology {
       when TT-Single {
@@ -579,7 +589,7 @@ note "ss1 Topology: $topology";
 
   } while ((now - $t0) * 1000) < $!uri-obj.options<serverSelectionTimeoutMS>;
 
-  debug-message("Searched for {(now - $t0) * 1000} ms");
+  debug-message("Searched for {((now - $t0) * 1000).fmt('%.3f')} ms");
 
   if ?$selected-server {
     debug-message("Server '$selected-server.name()' selected");
@@ -599,6 +609,9 @@ method !add-servers ( @new-hosts ) {
   trace-message("push @new-hosts[*] on todo list");
 
   for @new-hosts -> Str $server-name is copy {
+
+    # skip if server is added before
+    next if $!servers{$server-name}:exists;
 
     debug-message("Initialize server object for $server-name");
 

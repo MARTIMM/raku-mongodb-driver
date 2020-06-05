@@ -39,11 +39,12 @@ submethod BUILD {
   #$rw-sem.debug = True;
   $rw-sem.add-mutex-names( <event>, :RWPatternType(C-RW-WRITERPRIO));
 
-  # create a subscription
+  # tap into the suply to catch the emitted data. this is somewhere else,
+  # might even be in another thread.
   my Supply $local-supply = $rw-sem.reader( 'event', { $supply; });
   $local-supply.tap(
 
-    # emitting subroutine
+    # provide the data from $msg to the selected observer
     -> $msg {
 
       my @local-events = $rw-sem.reader( 'event', { (@$events); }).flat;
@@ -51,7 +52,7 @@ submethod BUILD {
       # call observer for provided data when test returns True
       $_<callable>.($msg<data>) for @local-events.grep(
 
-        # test sub to see if observer must be called
+        # test sub to see which observer must be called
         -> $e {
           my Bool $select = False;
           given ($e<event>.WHAT) {
@@ -66,8 +67,7 @@ submethod BUILD {
             default { $select = $e<event> eq $msg<event>; }
           };
 
-          trace-message( "emit, key: '$e<event-key>'")
-            if $select;
+          trace-message( "emit, key: '$e<event-key>'") if $select;
 
           $select
         }
@@ -81,7 +81,7 @@ submethod BUILD {
 method subscribe-observer (
   Any:D $event, Callable:D $callable, Str:D :$event-key!
 ) {
-  trace-message("subscribe, key: $event-key, event: $event.perl()");
+  trace-message("subscribe, key: $event-key");
   $rw-sem.writer(
     'event', { $events.push: %( :$event, :$callable, :$event-key ); }
   );
@@ -108,5 +108,7 @@ method unsubscribe-observer ( Str:D $event-key ) {
 # provide data for an event to an observer
 method emit ( $event, $data? = Nil ) {
   my Supplier $local-supplier = $rw-sem.reader( 'event', { $supplier; });
+
+
   $local-supplier.emit: %( :$event, :$data );
 }

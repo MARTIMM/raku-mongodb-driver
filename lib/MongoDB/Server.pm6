@@ -62,15 +62,12 @@ submethod BUILD (
 
   trace-message("Server object for {self.name} initialized");
 
-  # Start monitoring
-  my MongoDB::Server::Monitor $m .= instance;
-
   # set the heartbeat frequency
   my MongoDB::ObserverEmitter $event-manager .= new;
-  $event-manager.emit(
-    'set heartbeatfrequency ms',
-    $!uri-obj.options<heartbeatFrequencyMS>
-  );
+#  $event-manager.emit(
+#    'set heartbeatfrequency ms',
+#    $!uri-obj.options<heartbeatFrequencyMS>
+#  );
 
   # observe results from monitor only for this particular server. use the
   # key generated in the uri object and the servername to prevent other
@@ -82,6 +79,7 @@ submethod BUILD (
   );
 
   # now we can register a server
+#note "Register a server: {self.name()}";
   $event-manager.emit( 'register server', self);
   $!server-is-registered = True;
 }
@@ -285,8 +283,7 @@ method !process-status ( BSON::Document $mdata --> List ) {
       $server-status = ST-RSPrimary;
       #$!client.add-servers([|@($mdata<hosts>),]) if $mdata<hosts>:exists;
       $notify-client.emit(
-        $!uri-obj.keyed-uri ~ ' add servers',
-        @($mdata<hosts>)
+        $!uri-obj.keyed-uri ~ ' add servers', @($mdata<hosts>)
       ) if $mdata<hosts>:exists;
     }
 
@@ -294,8 +291,7 @@ method !process-status ( BSON::Document $mdata --> List ) {
       $server-status = ST-RSSecondary;
       #$!client.add-servers([$mdata<primary>,]) if $mdata<primary>:exists;
       $notify-client.emit(
-        $!uri-obj.keyed-uri ~ ' add servers',
-        @($mdata<primary>)
+        $!uri-obj.keyed-uri ~ ' add servers', @($mdata<primary>)
       ) if $mdata<primary>:exists;
     }
 

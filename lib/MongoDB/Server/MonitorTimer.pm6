@@ -1,5 +1,7 @@
 use v6;
 
+use MongoDB;
+
 # Cancelable promise example from Brad Gilbert at stackoverflow
 # https://stackoverflow.com/questions/52955919/is-it-possible-to-terminate-a-promises-code-block-from-another-promise/52956311#52956311
 #-------------------------------------------------------------------------------
@@ -31,18 +33,26 @@ method cancel ( --> Nil ) {
     $!vow.break("cancelled"); # break the Promise
   }
 
-note 'monitor wait cancel, ',
-  $!promise.status ~~ PromiseStatus::Broken, ', ',
-  $!cancel.cancelled;
+  trace-message(
+    "cancel timer: promise: $!promise.status(), $!cancel.cancelled()"
+  );
+
+#note 'monitor wait cancel, ',
+#  $!promise.status ~~ PromiseStatus::Broken, ', ',
+#  $!cancel.cancelled;
 }
 
 #-------------------------------------------------------------------------------
 method cancelled ( --> Bool ) {
 
 #  return False unless $!promise.defined;
-note 'monitor wait test cancelled, ',
-  $!promise.status ~~ PromiseStatus::Broken, ', ',
-  $!cancel.cancelled;
+#note 'monitor wait test cancelled, ',
+#  $!promise.status ~~ PromiseStatus::Broken, ', ',
+#  $!cancel.cancelled;
+
+  trace-message(
+    "check timer: promise: $!promise.status(), $!cancel.cancelled()"
+  );
 
   # Ignore any concurrency problems by using the Promise
   # as the sole source of truth.
@@ -51,5 +61,6 @@ note 'monitor wait test cancelled, ',
 
 #-------------------------------------------------------------------------------
 method !SET-SELF ( $!promise, $!vow, $!cancel ) {
+  trace-message("set timer: promise: $!vow.promise.status()");
   self
 }
