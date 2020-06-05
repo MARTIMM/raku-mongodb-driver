@@ -63,19 +63,22 @@ submethod BUILD ( ) {
   my MongoDB::ObserverEmitter $event-manager .= new;
   $event-manager.subscribe-observer(
     'set heartbeatfrequency ms',
-    -> Int $heartbeat { self!set-heartbeat($heartbeat) }
+    -> Int $heartbeat { self!set-heartbeat($heartbeat) },
+    :event-key<m1>
   );
 
   # observe server registration
   $event-manager.subscribe-observer(
     'register server',
-    -> MongoDB::ServerClassType:D $server { self!register-server($server) }
+    -> MongoDB::ServerClassType:D $server { self!register-server($server) },
+    :event-key<m2>
   );
 
   # observe server un-registration
   $event-manager.subscribe-observer(
     'unregister server',
-    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) }
+    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
+    :event-key<m3>
   );
 
   # start the monitor
@@ -174,15 +177,23 @@ note '.then()';
 
       # then infinite loop
       loop {
-note 'loop';
+note 'start loop';
 
         # wait for end of thread or when waittime is canceled
-        try {
-          $!promise-monitor.result; CATCH {.note}
-note 'wait period interrupted, ', $!promise-monitor.status;
-        };
-        trace-message("monitor heartbeat shortened for new data")
-          if $!monitor-timer.canceled;
+#        try {
+          if $!promise-monitor.status ~~ PromiseStatus::Kept {
+            $!promise-monitor.result;
+          }
+
+          elsif $!promise-monitor.status ~~ PromiseStatus::Broken {
+            trace-message(
+              'wait period interrupted: ' ~ $!promise-monitor.cause
+            );
+            trace-message("monitor heartbeat shortened for new data");
+          }
+
+#          CATCH {.note};
+#        };
 
         # heartbeat can be adjusted with set-heartbeat() or $!servers-settled
         # demands shorter cycle using $!settle-frequency-ms
@@ -201,13 +212,14 @@ note 'wait period interrupted, ', $!promise-monitor.status;
           { self.monitor-work }
         );
   }}
-
+note "start monitor";
         # create the cancelable thread
         $!monitor-timer .= in($heartbeat-frequency-sec);
         $!promise-monitor = $!monitor-timer.promise.then( {
             self.monitor-work;
           }
         );
+note 'next loop';
       } # loop
 note 'end loop';
     }   # Promise code

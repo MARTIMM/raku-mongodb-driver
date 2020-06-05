@@ -101,12 +101,14 @@ submethod BUILD (
   my MongoDB::ObserverEmitter $e .= new;
   $e.subscribe-observer(
     $!uri-obj.keyed-uri ~ ' process topology',
-    -> List $server-info { self!process-topology(|$server-info); }
+    -> List $server-info { self!process-topology(|$server-info); },
+    :event-key($!uri-obj.keyed-uri ~ ' process topology')
   );
 
   $e.subscribe-observer(
     $!uri-obj.keyed-uri ~ ' add servers',
-    -> @new-hosts { self!add-servers(@new-hosts); }
+    -> @new-hosts { self!add-servers(@new-hosts); },
+    :event-key($!uri-obj.keyed-uri ~ ' add servers')
   );
 
   trace-message("Found {$!uri-obj.servers.elems} servers in uri");
@@ -685,6 +687,11 @@ method cleanup ( ) {
       }
     }
   );
+
+  # unsubscribe observers
+  my MongoDB::ObserverEmitter $e .= new;
+  $e.unsubscribe-observer($!uri-obj.keyed-uri ~ ' process topology');
+  $e.unsubscribe-observer($!uri-obj.keyed-uri ~ ' add servers');
 
   $!servers = Nil;
   $!rw-sem.rm-mutex-names(<servers todo topology>);

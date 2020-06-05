@@ -77,7 +77,8 @@ submethod BUILD (
   # servers to interprete data not meant for them.
   $event-manager.subscribe-observer(
     $!uri-obj.keyed-uri ~ self.name ~ ' monitor data',
-     -> Hash $monitor-data { self!process-monitor-data($monitor-data); }
+    -> Hash $monitor-data { self!process-monitor-data($monitor-data); },
+    :event-key($!uri-obj.keyed-uri ~ self.name ~ ' monitor data')
   );
 
   # now we can register a server
@@ -569,6 +570,9 @@ method cleanup ( ) {
   $!server-is-registered = False;
   my MongoDB::ObserverEmitter $event-manager .= new;
   $event-manager.emit( 'unregister server', self);
+  $event-manager.unsubscribe-observer(
+    $!uri-obj.keyed-uri ~ self.name ~ ' monitor data'
+  );
 
   # Clear all sockets
   $!rw-sem.writer( 's-select', {
