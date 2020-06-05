@@ -9,6 +9,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
     * No threading because we need order in event handling.
     * All objects of this class share the same data.
     * Observers and Providers can be in different threads.
+    * Entries are keyed so they can be removed too.
+  * Add logging to ObserverEmitter.
 
 * 2020-05-28 0.43.10
   * Now that there is a `Build.pm6`, all of the shell script is moved into the build module. This saves us some nasty shell quirks.
