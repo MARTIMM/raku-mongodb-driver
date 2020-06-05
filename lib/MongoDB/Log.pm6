@@ -251,6 +251,7 @@ my Callable $log-code-cf = sub (
   )
 }
 
+#`{{
 #------------------------------------------------------------------------------
 # log code without stack frames
 my Callable $log-code = sub (
@@ -268,6 +269,7 @@ my Callable $log-code = sub (
     :$msg, :$level, :$when,
   )
 }
+}}
 
 #------------------------------------------------------------------------------
 sub trace-message ( Str $msg ) is export {
