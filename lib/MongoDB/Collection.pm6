@@ -87,11 +87,11 @@ class Collection {
 
     my BSON::Document $rc = $read-concern // $!read-concern;
 
-note "Find server doctype";
+#note "Find server doctype";
     my ServerClassType $server = $!database.client.select-server(
       :read-concern($rc)
     );
-note "Server doctype $server.name()";
+#note "Server doctype $server.name()";
 
     unless $server.defined {
       error-message("No server object for query");
