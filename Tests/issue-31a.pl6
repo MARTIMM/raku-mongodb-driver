@@ -13,6 +13,7 @@ drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = "Issue31a.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter MonitorTimer Socket>);
 
 sub MAIN( ) {
 
