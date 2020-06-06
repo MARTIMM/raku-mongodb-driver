@@ -219,6 +219,7 @@ for $collection.find -> BSON::Document $doc {         # iterate over Cursor
 ```
 
 ```plantuml
+scale 0.9
 title "Searching for information in database"
 
 participant UP as "User::Program"
@@ -249,3 +250,30 @@ loop iterate over Cursor object
   Cu -> UP : $document
 end
 ```
+
+# Server discovery and monitoring
+Documentation [found at](https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst)
+
+## Data structures
+
+### Constants
+* [x] clientMinWireVersion and clientMaxWireVersion. Both defined in **MongoDB**.
+
+### Enums
+* [x] TopologyType and ServerType. Both defined in **MongoDB**.
+
+### Topology description
+
+The client's representation of everything it knows about the deployment's topology. Implemented as an **Array** `$topology-description`. Item locations are defined by enum **TopologyDescription**. Defined in **MongoDB::Client**.
+
+* [x] Array $topology-description
+* [x] enum TopologyDescription
+  * [x] Topo-type: a TopologyType enum value.
+  * [ ] Topo-setName: the replica set name. Default null.
+  * [ ] Topo-maxSetVersion: an integer or null. The largest setVersion ever reported by a primary. Default null.
+  * [ ] Topo-maxElectionId: an ObjectId or null. The largest electionId ever reported by a primary. Default null.
+  * [ ] Topo-servers: a set of ServerDescription instances. Default contains one server: "localhost:27017", ServerType Unknown.
+  * [ ] Topo-stale: a boolean for single-threaded clients, whether the topology must be re-scanned. (Not related to maxStalenessSeconds, nor to stale primaries.)
+  * [ ] Topo-compatible: a boolean. False if any server's wire protocol version range is incompatible with the client's. Default true.
+  * [ ] Topo-compatibilityError: a string. The error message if "compatible" is false, otherwise null.
+  * [ ] Topo-logicalSessionTimeoutMinutes: integer or null. Default null. See logical session timeout.
