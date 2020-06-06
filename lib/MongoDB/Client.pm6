@@ -7,7 +7,6 @@ use MongoDB::Uri;
 use MongoDB::Server;
 use MongoDB::Database;
 use MongoDB::Collection;
-#use MongoDB::Wire;
 use MongoDB::Authenticate::Credential;
 use MongoDB::ObserverEmitter;
 
@@ -17,9 +16,13 @@ use Semaphore::ReadersWriters;
 #-------------------------------------------------------------------------------
 unit class MongoDB::Client:auth<github:MARTIMM>;
 
-# topology-set is used to block the server-select() process when topology
-# still needs to be calculated.
-has TopologyType $!topology-type;
+enum TopologyDescription <
+  Topo-type Topo-setName Topo-maxSetVersion
+  Topo-maxElectionId Topo-servers Topo-stale Topo-compatible
+  Topo-compatibilityError Topo-logicalSessionTimeoutMinutes
+>;
+has Array $topology-description = [];
+
 #  has TopologyType $!user-request-topology;
 has Bool $!topology-set;
 
@@ -67,7 +70,7 @@ submethod BUILD (
   Str:D :$uri, BSON::Document :$read-concern,
 ) {
 
-  $!topology-type = TT-NotSet;
+  $topology-description[Topo-type] = TT-NotSet;
   $!topology-set = False;
 
   $!servers = %();
@@ -239,7 +242,7 @@ method !process-topology (
     }
 
     $!rw-sem.writer( 'topology', {
-        $!topology-type = $topology;
+        $topology-description[Topo-type] = $topology;
         $!topology-set = True;
       }
     );
@@ -359,7 +362,7 @@ method process-topology-old ( ) {
     }
 
     $!rw-sem.writer( 'topology', {
-        $!topology-type = $topology;
+        $topology-description[Topo-type] = $topology;
         $!topology-set = True;
       }
     );
@@ -406,7 +409,7 @@ method topology ( --> TopologyType ) {
     sleep 0.5;
   }
 
-  $!rw-sem.reader( 'topology', {$!topology-type});
+  $!rw-sem.reader( 'topology', {$topology-description[Topo-type]});
 }
 
 #-------------------------------------------------------------------------------
@@ -497,7 +500,9 @@ multi method select-server (
 
     my MongoDB::Server @selected-servers = ();
     my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
-    my TopologyType $topology = $!rw-sem.reader( 'topology', {$!topology-type});
+    my TopologyType $topology = $!rw-sem.reader(
+      'topology', {$topology-description[Topo-type]
+    });
 
 #note "ss1 Servers: ", $servers.keys;
 #note "ss1 Topology: $topology";
