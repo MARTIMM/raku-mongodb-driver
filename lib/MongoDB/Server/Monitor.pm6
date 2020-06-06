@@ -24,12 +24,15 @@ has Promise $!promise-monitor;
 #has Supplier $!monitor-data-supplier;
 
 # heartbeat frequency is the normal wait period between ismaster requests.
-# settle frequency is a much shorter period to settle the typology until
+# settle frequency is a much shorter period to settle the topology until
 # everything gets stable. $servers-settled is False when any server has
-# a SS-UNKNOWN state
+# a SS-UNKNOWN state. NO-SERVERS-FREQUENCY-MS is set to a long wait to
+# use when there are no servers registered.
 has Duration $!heartbeat-frequency-ms;
-has Duration $!settle-frequency-ms;
+constant SETTLE-FREQUENCY-MS = Duration.new(5e2);
+constant NO-SERVERS-FREQUENCY-MS = Duration.new(1e6);
 has Bool $!servers-settled;
+has Bool $!no-servers-available;
 
 has BSON::Document $!monitor-command;
 has BSON::Document $!monitor-result;
@@ -43,15 +46,16 @@ has Semaphore::ReadersWriters $!rw-sem;
 #
 submethod BUILD ( ) {
 
-  $!settle-frequency-ms .= new(5e2);
   $!heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
   $!servers-settled = False;
-  debug-message("Monitor sleep time set to $!heartbeat-frequency-ms ms");
+  $!no-servers-available = True;
+
+  debug-message("HeartbeatFrequencyMs set to $!heartbeat-frequency-ms ms");
 
   $!rw-sem .= new;
   #$!rw-sem.debug = True;
   $!rw-sem.add-mutex-names(
-    <m-loop m-servers>, :RWPatternType(C-RW-WRITERPRIO)
+    <m-servers mon-wait-timer>, :RWPatternType(C-RW-WRITERPRIO)
   );
 
   %!registered-servers = %();
@@ -109,13 +113,13 @@ method get-supply ( --> Supply ) {
 #-------------------------------------------------------------------------------
 method !set-heartbeat ( Int:D $heartbeat-frequency-ms ) {
 
-  $!rw-sem.writer( 'm-loop', {
+  $!rw-sem.writer( 'mon-wait-timer', {
       # Don't let looptime become lower than 100 ms
       $!heartbeat-frequency-ms .= new(
         $heartbeat-frequency-ms > 100 ?? $heartbeat-frequency-ms !! 100
       );
       debug-message(
-        "Monitor sleep time modified to $!heartbeat-frequency-ms ms"
+        "heartbeatFrequencyMs modified to $!heartbeat-frequency-ms ms"
       );
     }
   );
@@ -133,6 +137,7 @@ method !register-server ( MongoDB::ServerClassType:D $server ) {
       unless $exists {
         # induce a shorter waiting period until all servers are settled again
         $!servers-settled = False;
+        $!no-servers-available = False;
 
         %!registered-servers{$server.name} = [
           $server,    # provided server
@@ -196,30 +201,37 @@ method !start-monitor ( ) {
           );
           trace-message("monitor heartbeat shortened for new data");
         }
-#note 'end promise';
 
         # heartbeat can be adjusted with set-heartbeat() or $!servers-settled
-        # demands shorter cycle using $!settle-frequency-ms
-        my $heartbeat-frequency-sec =
-          ( $!servers-settled ?? $!settle-frequency-ms
-                              !! $!heartbeat-frequency-ms
-          ) / 1000.0;
-#        my $heartbeat-frequency-sec = $!heartbeat-frequency-ms / 1000.0;
-        trace-message("heartbeat frequency: $heartbeat-frequency-sec sec");
+        # demands shorter cycle using SETTLE-FREQUENCY-MS
+        my $heartbeat-frequency =
+          ( ? $!no-servers-available
+              ?? NO-SERVERS-FREQUENCY-MS
+              !! ( $!servers-settled
+                    ?? $!heartbeat-frequency-ms
+                    !! SETTLE-FREQUENCY-MS
+                 )
+          );
 
-  #`{{
+        trace-message(
+          ($!no-servers-available ?? "no servers available, " !! '') ~
+          ($!servers-settled ?? "servers are settled, " !! '') ~
+          "current monitoring waittime: $heartbeat-frequency ms"
+        );
+
+#`{{
         # set new thread to start after some time
         $!promise-monitor = Promise.in(
           $heartbeat-frequency-sec
         ).then(
           { self.monitor-work }
         );
-  }}
+}}
 #my $t0 = now;
 #note "do monitor wait: $heartbeat-frequency-sec sec";
-        # create the cancelable thread
+        # create the cancelable thread. wait is in seconds
         $!monitor-timer = MongoDB::Server::MonitorTimer.in(
-          $heartbeat-frequency-sec
+          $heartbeat-frequency / 1000.0
         );
 
 #note "do monitor work";
@@ -256,6 +268,11 @@ method monitor-work ( ) {
    'm-servers',
     sub () { %!registered-servers; }
   );
+
+  # check if there are any servers. if not, return
+  $!no-servers-available = ! %rservers.elems;
+  return if $!no-servers-available;
+
 
   trace-message("Servers to monitor: " ~ %rservers.keys.join(', '));
 
