@@ -11,6 +11,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
     * Observers and Providers can be in different threads.
     * Entries are keyed so they can be removed too.
   * Add logging to ObserverEmitter.
+  * Add module **MongoDB::MonitorTimer**.
+  * Add subs `set-filter()`, `reset-filter()` and `clear-filter()` to **MongoDB::Log**. It filters lines from the log on the module name. This is helpful when tracing is used and too many output is generated. However, it will not filter when the message level is a warning, error or fatal. Warnings and errors can be suppressed of all message by using `modify-send-to()` or `add-send-to()`.
 
 * 2020-05-28 0.43.10
   * Now that there is a `Build.pm6`, all of the shell script is moved into the build module. This saves us some nasty shell quirks.
