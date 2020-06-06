@@ -11,7 +11,7 @@ constant SERVER-VERSION2 = '4.0.18';
 #constant SERVER-VERSION2 = '4.2.6';
 
 has Str $!dist-path;
-hs Bool $!on-travis;
+has Bool $!on-travis;
 
 #-------------------------------------------------------------------------------
 # do build stuff to your module which is located at $!dist-path
