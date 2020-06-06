@@ -8,6 +8,9 @@ sub EXPORT { {
     '&drop-send-to'                     => &drop-send-to,
     '&drop-all-send-to'                 => &drop-all-send-to,
 
+    '&set-filter'                       => &set-filter,
+    '&reset-filter'                     => &reset-filter,
+    '&clear-filter'                     => &clear-filter,
 
     '&trace-message'                    => &trace-message,
     '&debug-message'                    => &debug-message,

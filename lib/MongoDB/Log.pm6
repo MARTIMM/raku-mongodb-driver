@@ -318,7 +318,39 @@ my Array $clr-lvls = [
 ];
 
 #------------------------------------------------------------------------------
+my Hash $filter = %();
+sub set-filter ( *@module-names ) is export {
+  for @module-names -> $mn {
+    $filter{$mn} = True;
+  }
+}
+
+sub reset-filter ( ) is export {
+  $filter = %();
+}
+
+sub clear-filter ( *@module-names ) is export {
+  for @module-names -> $mn {
+    $filter{$mn}:delete;
+  }
+}
+
+#------------------------------------------------------------------------------
 my Callable $code = sub ( Hash $m ) {
+
+  # find out from which module. then we can filter it as early as possible.
+  my Str $module = '[ ]';
+  if $m<file> and $m<file> ~~ m/ '(' $<mname> = ( <-[)]>+ ) ')' $/ {
+    $module = $/<mname>.Str;
+    $module = $module.split('::')[*-1] if $module ~~ m/'::'/;
+
+    # return whithout logging when module match, but only when message is
+    # not a warning, error or fatal message.
+    return if $filter{$module}:exists and $sv-lvls[$m<level>] ~~ any(<T D I>);
+
+    # otherwise continue
+    $module = [~] '[', $module, ']';
+  }
 
   my IO::Handle $fh = $m<fh>;
   my Str $fhkey;
@@ -347,13 +379,6 @@ my Callable $code = sub ( Hash $m ) {
   }
   else {
     $dt-str = "$fast-part";
-  }
-
-  my Str $module = '[ ]';
-  if $m<file> and $m<file> ~~ m/ '(' $<mname> = ( <-[)]>+ ) ')' $/ {
-    $module = $/<mname>.Str;
-    $module = $module.split('::')[*-1] if $module ~~ m/'::'/;
-    $module = [~] '[', $module, ']';
   }
 
   $fh.print(
