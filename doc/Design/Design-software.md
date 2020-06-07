@@ -268,12 +268,39 @@ The client's representation of everything it knows about the deployment's topolo
 
 * [x] Array $topology-description
 * [x] enum TopologyDescription
-  * [x] Topo-type: a TopologyType enum value.
+  * [x] Topo-type: a **TopologyType** enum value.
   * [ ] Topo-setName: the replica set name. Default null.
   * [ ] Topo-maxSetVersion: an integer or null. The largest setVersion ever reported by a primary. Default null.
   * [ ] Topo-maxElectionId: an ObjectId or null. The largest electionId ever reported by a primary. Default null.
-  * [ ] Topo-servers: a set of ServerDescription instances. Default contains one server: "localhost:27017", ServerType Unknown.
+  * [ ] Topo-servers: a set of ServerDescription instances. Default is empty [1].
   * [ ] Topo-stale: a boolean for single-threaded clients, whether the topology must be re-scanned. (Not related to maxStalenessSeconds, nor to stale primaries.)
   * [ ] Topo-compatible: a boolean. False if any server's wire protocol version range is incompatible with the client's. Default true.
   * [ ] Topo-compatibilityError: a string. The error message if "compatible" is false, otherwise null.
   * [ ] Topo-logicalSessionTimeoutMinutes: integer or null. Default null. See logical session timeout.
+
+**_Notes_**
+  1) SDAM says that default is a localhost with port 27017. Here I differ because it will be set after parsing the uri.
+
+### Server description
+
+The client's view of a single server, based on the most recent ismaster outcome. Implemented as an **Array** `$server-description`. Item locations are defined by enum **ServerDescription**. Defined in **MongoDB::Server**.
+
+* [ ] Array $server-description
+* [ ] enum ServerDescription
+  * [ ] Srv-address: the hostname or IP, and the port number, that the client Srv-connects to. Note that this is not the server's ismaster.me field, in the case that the server reports an address different from the address the client uses.
+  * [ ] Srv-error: information about the last error related to this server. Default null.
+  * [ ] Srv-roundTripTime: the duration of the ismaster call. Default null.
+  * [ ] Srv-lastWriteDate: a 64-bit BSON datetime or null. The "lastWriteDate" from the server's most recent ismaster response.
+  * [ ] Srv-opTime: an opTime or null. An opaque value representing the position in the oplog of the most recently seen write. Default null. (Only mongos and shard servers record this field when monitoring config servers as replica sets, at least until drivers allow applications to use readConcern "afterOptime".)
+  * [ ] Srv-type: a ServerType enum value. Default Unknown.
+  * [ ] Srv-minWireVersion, maxWireVersion: the wire protocol version range supported by the server. Both default to 0. Use min and maxWireVersion only to determine compatibility.
+  * [ ] Srv-me: The hostname or IP, and the port number, that this server was configured with in the replica set. Default null.
+  * [ ] Srv-hosts, passives, arbiters: Sets of addresses. This server's opinion of the replica set's members, if any. These hostnames are normalized to lower-case. Default empty. The client monitors all three types of servers in a replica set.
+  * [ ] Srv-tags: map from string to string. Default empty.
+  * [ ] Srv-setName: string or null. Default null.
+  * [ ] Srv-setVersion: integer or null. Default null.
+  * [ ] Srv-electionId: an ObjectId, if this is a MongoDB 2.6+ replica set member that believes it is primary. See using setVersion and electionId to detect stale primaries. Default null.
+  * [ ] Srv-primary: an address. This server's opinion of who the primary is. Default null.
+  * [ ] Srv-lastUpdateTime: when this server was last checked. Default "infinity ago".
+  * [ ] Srv-logicalSessionTimeoutMinutes: integer or null. Default null.
+  * [ ] Srv-topologyVersion: A topologyVersion or null. Default null. The "topologyVersion" from the server's most recent ismaster response or State Change Error.

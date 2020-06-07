@@ -15,7 +15,7 @@ has Bool $!on-travis;
 
 #-------------------------------------------------------------------------------
 # do build stuff to your module which is located at $!dist-path
-method build( Str $!dist-path ) {
+method build( Str $!dist-path --> Int ) {
 
   # in the download script. normally set when on travis-ci.
   #%*ENV<TRAVIS_BUILD_DIR> = $!dist-path unless %*ENV<TRAVIS_BUILD_DIR>:exists;
