@@ -26,8 +26,8 @@ install:
 #  - zef --debug --/test install Config::TOML
 
 #  - zef --/test --depsonly install .
-  - zef --/test --debug --depsonly install .
-  - zef build .
+  - zef --/test -v --debug --depsonly install .
+  - zef --debug -v build .
 
 # Cannot use the mongod service because the version is too low (2.4.12)
 #services:
