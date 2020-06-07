@@ -25,7 +25,9 @@ method build( Str $!dist-path ) {
   # check if installing on Travis or for a user. in the last case only
   # one version needs to be installed to save download and install time.
   self.download(SERVER-VERSION1);
-  self.download(SERVER-VERSION2) unless $!on-travis;
+  self.download(SERVER-VERSION2) if $!on-travis;
+
+  1;
 }
 
 #-------------------------------------------------------------------------------
