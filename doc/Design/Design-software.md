@@ -293,9 +293,12 @@ The client's view of a single server, based on the most recent ismaster outcome.
   * [ ] Srv-lastWriteDate: a 64-bit BSON datetime or null. The "lastWriteDate" from the server's most recent ismaster response.
   * [ ] Srv-opTime: an opTime or null. An opaque value representing the position in the oplog of the most recently seen write. Default null. (Only mongos and shard servers record this field when monitoring config servers as replica sets, at least until drivers allow applications to use readConcern "afterOptime".)
   * [ ] Srv-type: a ServerType enum value. Default Unknown.
-  * [ ] Srv-minWireVersion, maxWireVersion: the wire protocol version range supported by the server. Both default to 0. Use min and maxWireVersion only to determine compatibility.
+  * [ ] Srv-minWireVersion and
+  * [ ] Srv-maxWireVersion: the wire protocol version range supported by the server. Both default to 0. Use min and maxWireVersion only to determine compatibility.
   * [ ] Srv-me: The hostname or IP, and the port number, that this server was configured with in the replica set. Default null.
-  * [ ] Srv-hosts, passives, arbiters: Sets of addresses. This server's opinion of the replica set's members, if any. These hostnames are normalized to lower-case. Default empty. The client monitors all three types of servers in a replica set.
+  * [ ] Srv-hosts and
+  * [ ] Srv-passives and
+  * [ ] Srv-arbiters: Sets of addresses. This server's opinion of the replica set's members, if any. These hostnames are normalized to lower-case. Default empty. The client monitors all three types of servers in a replica set.
   * [ ] Srv-tags: map from string to string. Default empty.
   * [ ] Srv-setName: string or null. Default null.
   * [ ] Srv-setVersion: integer or null. Default null.

@@ -16,7 +16,16 @@ use Auth::SCRAM;
 #-------------------------------------------------------------------------------
 unit class MongoDB::Server:auth<github:MARTIMM>;
 
-# Used by Socket
+enum ServerDescription <
+  Srv-address Srv-error Srv-roundTripTime Srv-lastWriteDate Srv-opTime
+  Srv-type Srv-minWireVersion, Srv-maxWireVersion Srv-me Srv-hosts
+  Srv-passives Srv-arbiters Srv-tags Srv-setName Srv-setVersion
+  Srv-electionId Srv-primary Srv-lastUpdateTime
+  Srv-logicalSessionTimeoutMinutes Srv-topologyVersion
+>;
+has Array $server-description = [];
+
+# name and port is separated for use by Socket.
 has Str $.server-name;
 has PortType $.server-port;
 
@@ -26,7 +35,7 @@ has MongoDB::Uri $.uri-obj;
 has Array[MongoDB::Server::Socket] $!sockets;
 has Bool $!server-is-registered;
 
-# Server status data. Must be protected by a semaphore because of a thread
+# server status data. Must be protected by a semaphore because of a thread
 # handling monitoring data.
 has Hash $!server-sts-data;
 has Semaphore::ReadersWriters $!rw-sem;
@@ -49,14 +58,14 @@ submethod BUILD (
   $!sockets = Array[MongoDB::Server::Socket].new;
   $!server-is-registered = False;
 
-  # Save name and port of the server. Servername and port are always
+  # save name and port of the server. Servername and port are always
   # 'hostname:port' format, even when ipv6. The port number is always
   # present at this point, extracting it from the end from the spec.
   my Int $port = $!server-port = [$server-name.split(':')].pop.Int;
   $!server-name = $server-name;
   $!server-name ~~ s/ ':' $port $//;
 
-  # Remove the brackets if they are there.
+  # Remove the brackets if they are there. ipv6 addresses have them.
   $!server-name ~~ s/^ '[' //;
   $!server-name ~~ s/ ']' $//;
 
@@ -532,14 +541,18 @@ method name ( --> Str ) {
 
   my Str $name = $!server-name // '-';
   my Str $port = "$!server-port" // '-';
+
+  # check for undefined name and/or port
   if $name eq '-' or $port eq '-' {
     $name = '-:-';
   }
 
+  # check for ipv6 addresses
   elsif $name ~~ / ':' / {
     $name = [~] '[', $name, ']:', $port;
   }
 
+  # ipv4 and domainnames are printed the same
   else {
     $name = [~] $name , ':', $port;
   }
