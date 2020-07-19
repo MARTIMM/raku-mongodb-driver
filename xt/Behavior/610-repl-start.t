@@ -11,6 +11,9 @@ use MongoDB::MDBConfig;
 
 use BSON::Document;
 
+note "use of select-server changed";
+=finish
+
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
