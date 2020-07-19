@@ -5,6 +5,52 @@ use MongoDB;
 #-------------------------------------------------------------------------------
 unit class MongoDB::Server::Socket:auth<github:MARTIMM>;
 
+my MongoDB::Server::Socket $instance;
+
+has Hash $!socket-info;
+
+#-------------------------------------------------------------------------------
+submethod BUILD ( ) {
+  $!socket-info = {};
+}
+
+#-------------------------------------------------------------------------------
+method new ( ) { !!! }
+
+#-------------------------------------------------------------------------------
+method instance ( --> MongoDB::Server::Socket ) {
+  $instance = self.bless unless $instance;
+
+  $instance
+}
+
+#-------------------------------------------------------------------------------
+method add-socket ( Str $host, Int $port ) {
+
+  my IO::Socket::INET $sock;
+  try {
+    $sock .= new( :$host, :$port);
+    CATCH {
+      default {
+        # Retry for ipv6
+        $sock .= new( :$host, :$port, :family(PF_INET6));
+      }
+    }
+  }
+
+  if ?$sock {
+    $!socket-info<> = [ $sock, $host, $port, $*THREAD.id()];
+  }
+}
+
+
+
+
+=finish
+
+#-------------------------------------------------------------------------------
+unit class MongoDB::Server::Socket:auth<github:MARTIMM>;
+
 has IO::Socket::INET $!sock;
 has Int $.thread-id;
 has Int $.time-last-used;
@@ -115,13 +161,16 @@ method close-on-fail ( ) {
 }
 
 #-------------------------------------------------------------------------------
-method cleanup ( --> Int ) {
+method cleanup ( ) {
 
   # Close can have exceptions
   try {
     if $!sock.defined {
       $!sock.close;
       $!sock = Nil;
+      trace-message(
+        "socket cleaned for $!server.name() in thread $!thread-id"
+      );
     }
 
     else {
@@ -135,6 +184,4 @@ method cleanup ( --> Int ) {
       $!is-open = False;
     }
   }
-
-  $!thread-id
 }

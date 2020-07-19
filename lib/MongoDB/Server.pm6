@@ -284,8 +284,7 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
     next unless $socket.defined;
 
-    if $socket.thread-id == $*THREAD.id()
-       and $socket.server.name eq self.name {
+    if $socket.thread-id == $*THREAD.id() and $socket.server.name eq self.name {
 
       $found-socket = $socket;
       trace-message("Socket found for {self.name}");
@@ -295,7 +294,7 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
   }
 
   # If none is found insert a new Socket in the array
-  if not $found-socket.defined {
+  unless $found-socket.defined {
 
     # search for an empty slot
     my Bool $slot-found = False;
@@ -319,12 +318,12 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
   $!rw-sem.writer( 's-select', {$!sockets = $skts;});
 
-#TODO (from sockets) Sockets must initiate a handshake procedure when socket is opened. Perhaps
-#  not needed because the monitor is keeping touch and known the type of the
-#  server which is communicated to the Server and Client object
+#TODO (from sockets) Sockets must initiate a handshake procedure when socket
+# is opened. Perhaps not needed because the monitor is keeping touch and known
+# the type of the server which is communicated to the Server and Client object
 #TODO When authentication is needed it must be done on every opened socket
-
 #TODO check must be made on autenticate flag only and determined from server
+
   # We can only authenticate when all 3 data are True and when the socket is
   # created.
   if $created-anew and $authenticate {
@@ -489,8 +488,6 @@ method cleanup ( ) {
   $!rw-sem.writer( 's-select', {
       for @$!sockets -> $socket {
         next unless ?$socket;
-        $socket.cleanup;
-        trace-message("socket cleaned for $socket.server.name() in thread $socket.thread-id()");
       }
     }
   );
