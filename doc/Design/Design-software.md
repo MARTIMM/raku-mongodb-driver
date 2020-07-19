@@ -157,9 +157,20 @@ Database -> Application : $document
 
 ```
 
-## Class usages from users point of view
+#### Server - Socket interaction
+scale 0.8
 
-The user can use the classes in one of the two ways. First there is the `run-command` method in the `MongoDB::Database` class. You can almost do all things with it. Second is the use of `find` in `MongoDB::Collection` to do searches. it returns a `Cursor` object from where you can retrieve the returned documents.
+```plantuml
+
+class Server
+class Socket <<singleton>> {
+  $servers
+}
+
+Server - Socket
+
+```
+
 
 ### Using MongoDB::Database.run-command
 
