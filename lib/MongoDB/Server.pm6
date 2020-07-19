@@ -29,8 +29,7 @@ has Array $server-description = [];
 has Str $.server-name;
 has PortType $.server-port;
 
-has ClientType $!client;
-has MongoDB::Uri $.uri-obj;
+has ClientType $.client;
 
 has Array[MongoDB::Server::Socket] $!sockets;
 has Bool $!server-is-registered;
@@ -41,10 +40,11 @@ has Hash $!server-sts-data;
 has Semaphore::ReadersWriters $!rw-sem;
 #has Tap $!server-tap;
 
+# part of key for observer keys
+has Str $!client-key;
+has Str $!server-key;
 #-------------------------------------------------------------------------------
-submethod BUILD (
-  ClientType:D :$!client, Str:D :$server-name, MongoDB::Uri:D :$!uri-obj
-) {
+submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
 
   # server status is unsetled
   $!server-sts-data = { :status(ST-Unknown), :!is-master, :error('') };
@@ -73,18 +73,16 @@ submethod BUILD (
 
   # set the heartbeat frequency
   my MongoDB::ObserverEmitter $event-manager .= new;
-#  $event-manager.emit(
-#    'set heartbeatfrequency ms',
-#    $!uri-obj.options<heartbeatFrequencyMS>
-#  );
 
   # observe results from monitor only for this particular server. use the
   # key generated in the uri object and the servername to prevent other
   # servers to interprete data not meant for them.
+  $!client-key = $!client.uri-obj.keyed-uri;
+  $!server-key = $!client.uri-obj.keyed-uri ~ self.name;
   $event-manager.subscribe-observer(
-    $!uri-obj.keyed-uri ~ self.name ~ ' monitor data',
+    $!server-key ~ ' monitor data',
     -> Hash $monitor-data { self!process-monitor-data($monitor-data); },
-    :event-key($!uri-obj.keyed-uri ~ self.name ~ ' monitor data')
+    :event-key($!server-key ~ ' monitor data')
   );
 
   # now we can register a server
@@ -168,106 +166,10 @@ method !process-monitor-data ( Hash $monitor-data ) {
   # more than one active
   my MongoDB::ObserverEmitter $notify-client;
   $notify-client.emit(
-    $!uri-obj.keyed-uri ~ ' process topology',
+    $!client-key ~ ' process topology',
     ( self.name, $server-status, $is-master)
   );
 }
-
-#`{{
-#-------------------------------------------------------------------------------
-# Server initialization
-method server-init ( ) {
-
-  # Tap into monitor data
-  $!server-tap = self.tap-monitor( -> Hash $monitor-data {
-
-#note "\n$*THREAD.id() In server, data from Monitor: ", ($monitor-data // {}).perl;
-
-      # See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#parsing-an-ismaster-response
-      if $monitor-data<server-name> eq self.name {
-#        try {
-
-        my Bool $is-master = False;
-        my ServerType $server-status = ST-Unknown;
-
-        # test monitor defined boolean field ok
-        if $monitor-data<ok> {
-
-          # used to get a socket and decide on type of authentication
-          my $mdata = $monitor-data<monitor>;
-
-          # test mongod server defined field ok for state of returned document
-          # this is since newer servers return info about servers going down
-          if ?$mdata and $mdata<ok>:exists and $mdata<ok> == 1e0 {
-#note "MData: $monitor-data.perl()";
-            ( $server-status, $is-master) = self!process-status($mdata);
-
-            $!rw-sem.writer( 's-status', {
-                $!server-sts-data = {
-                  :status($server-status), :$is-master, :error(''),
-                  :max-wire-version($mdata<maxWireVersion>.Int),
-                  :min-wire-version($mdata<minWireVersion>.Int),
-                  :weighted-mean-rtt-ms($monitor-data<weighted-mean-rtt-ms>),
-                }
-              } # writer block
-            ); # writer
-          } # if $mdata<ok> == 1e0
-
-          else {
-            if ?$mdata and $mdata<ok>:!exists {
-              warn-message("Missing field in doc {$mdata.perl}");
-            }
-
-            else {
-              warn-message("Unknown error: {($mdata // '-').perl}");
-            }
-
-            ( $server-status, $is-master) = ( ST-Unknown, False);
-          }
-        } # if $monitor-data<ok>
-
-        # Server did not respond or returned an error
-        else {
-
-          $!rw-sem.writer( 's-status', {
-              if $monitor-data<reason>:exists {
-                $!server-sts-data<error> = $monitor-data<reason>;
-              }
-
-              else {
-                $!server-sts-data<error> = 'Server did not respond';
-              }
-
-              $!server-sts-data<is-master> = False;
-              $!server-sts-data<status> = ST-Unknown;
-
-              ( $server-status, $is-master) = ( ST-Unknown, False);
-
-            } # writer block
-          ); # writer
-        } # else
-
-        # Set the status with the new value
-        info-message("Server status of {self.name()} is $server-status");
-
-        # Let the client find the topology using all found servers
-        # in the same rhythm as the heartbeat loop of the monitor
-        # (of each server)
-        #$!client.process-topology;
-
-        # the keyed uri is used to notify the proper client, there can be
-        # more than one active
-        my MongoDB::ObserverEmitter $notify-client;
-        $notify-client.emit(
-          $!uri-obj.keyed-uri ~ ' process topology',
-          ( self.name, $server-status, $is-master)
-        );
-
-      } # if $monitor-data<server> eq self.name
-    } # tap block
-  ); # tap
-}
-}}
 
 #-------------------------------------------------------------------------------
 method !process-status ( BSON::Document $mdata --> List ) {
@@ -292,7 +194,7 @@ method !process-status ( BSON::Document $mdata --> List ) {
       $server-status = ST-RSPrimary;
       #$!client.add-servers([|@($mdata<hosts>),]) if $mdata<hosts>:exists;
       $notify-client.emit(
-        $!uri-obj.keyed-uri ~ ' add servers', @($mdata<hosts>)
+        $!client-key ~ ' add servers', @($mdata<hosts>)
       ) if $mdata<hosts>:exists;
     }
 
@@ -300,7 +202,7 @@ method !process-status ( BSON::Document $mdata --> List ) {
       $server-status = ST-RSSecondary;
       #$!client.add-servers([$mdata<primary>,]) if $mdata<primary>:exists;
       $notify-client.emit(
-        $!uri-obj.keyed-uri ~ ' add servers', @($mdata<primary>)
+        $!client-key ~ ' add servers', @($mdata<primary>)
       ) if $mdata<primary>:exists;
     }
 
@@ -426,7 +328,9 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
   # We can only authenticate when all 3 data are True and when the socket is
   # created.
   if $created-anew and $authenticate {
-    my MongoDB::Authenticate::Credential $credential = $!uri-obj.credential;
+    my MongoDB::Authenticate::Credential $credential =
+      $!client.uri-obj.credential;
+
     if ?$credential.username and ?$credential.password {
 
       # get authentication mechanism
@@ -578,10 +482,8 @@ method cleanup ( ) {
   # that the server is un-registered.
   $!server-is-registered = False;
   my MongoDB::ObserverEmitter $event-manager .= new;
+  $event-manager.unsubscribe-observer($!server-key ~ ' monitor data');
   $event-manager.emit( 'unregister server', self);
-  $event-manager.unsubscribe-observer(
-    $!uri-obj.keyed-uri ~ self.name ~ ' monitor data'
-  );
 
   # Clear all sockets
   $!rw-sem.writer( 's-select', {

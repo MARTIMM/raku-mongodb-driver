@@ -78,7 +78,7 @@ submethod BUILD ( ) {
     :event-key<register-server>
   );
 
-  # observe server un-registration
+  # observe server deregistration
   $event-manager.subscribe-observer(
     'unregister server',
     -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
@@ -98,6 +98,7 @@ method new ( ) { !!! }
 #-------------------------------------------------------------------------------
 method instance ( --> MongoDB::Server::Monitor ) {
 
+  # initialize only once
   $singleton-instance //= self.bless;
   $singleton-instance
 }
@@ -316,7 +317,7 @@ method monitor-work ( ) {
       );
 
       $monitor-data.emit(
-        %!registered-servers{$server-name}[ServerObj].uri-obj.keyed-uri ~
+        %!registered-servers{$server-name}[ServerObj].client.uri-obj.keyed-uri ~
         $server-name ~ ' monitor data', {
           :ok, :monitor($doc<documents>[0]),  # :$server-name,
           :weighted-mean-rtt-ms(%rservers{$server-name}[WMRttMs])
@@ -336,7 +337,7 @@ method monitor-work ( ) {
       $!servers-settled = False;
 
       $monitor-data.emit(
-        %!registered-servers{$server-name}[ServerObj].uri-obj.keyed-uri ~
+        %!registered-servers{$server-name}[ServerObj].client.uri-obj.keyed-uri ~
         $server-name ~ ' monitor data', {
           :!ok, :reason('Undefined document') #, :$server-name
         }

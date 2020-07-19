@@ -34,7 +34,7 @@ has Hash $!servers;
 has Semaphore::ReadersWriters $!rw-sem;
 
 has Str $!uri;
-has MongoDB::Uri $.uri-obj;
+has MongoDB::Uri $.uri-obj; # readable for several modules
 
 has BSON::Document $.read-concern;
 has Str $!Replicaset;
@@ -99,10 +99,11 @@ submethod BUILD (
   $!uri = $uri;
   $!uri-obj .= new(:$!uri);
 
-  # start monitoring
+  # start monitoring in a separate thread
   MongoDB::Server::Monitor.instance;
 
-  # set the heartbeat frequency
+  # set the heartbeat frequency by emitting the value found in the URI
+  # to the monitor thread
   my MongoDB::ObserverEmitter $event-manager .= new;
   $event-manager.emit(
     'set heartbeatfrequency ms',
@@ -110,35 +111,33 @@ submethod BUILD (
   );
 
   # the keyed uri is used to notify the proper client, there can be
-  # more than one active
-  my MongoDB::ObserverEmitter $e .= new;
-  $e.subscribe-observer(
+  # more than one active. here, this client receives the data from a server
+  # in a List to be processed by process-topology().
+  $event-manager.subscribe-observer(
     $!uri-obj.keyed-uri ~ ' process topology',
     -> List $server-info { self!process-topology(|$server-info); },
     :event-key($!uri-obj.keyed-uri ~ ' process topology')
   );
 
-  $e.subscribe-observer(
+  # this client gets new host information from the server. it is
+  # possible that hosts are processed before.
+  $event-manager.subscribe-observer(
     $!uri-obj.keyed-uri ~ ' add servers',
     -> @new-hosts { self!add-servers(@new-hosts); },
     :event-key($!uri-obj.keyed-uri ~ ' add servers')
   );
 
+  # Setup todo list with servers to be processed, Safety net not needed
+  # because threads are not yet started.
   trace-message("Found {$!uri-obj.servers.elems} servers in uri");
-  # Setup todo list with servers to be processed, Safety net not needed yet
-  # because threads are not started.
   for @($!uri-obj.servers) -> Hash $server-data {
     my Str $server-name = "$server-data<host>:$server-data<port>";
-    debug-message("Initialize server object for $server-name");
 
     # create Server object
+    debug-message("Initialize server object for $server-name");
     my MongoDB::Server $server .= new(
-      :client(self), :$server-name, :$!uri-obj
+      :client(self), :$server-name#, :$!uri-obj
     );
-
-    # and start server monitoring
-#    $server.server-init;
-    #$!servers{$server-name} = $server;
 
     # set name same as server has made it
     $server-name = $server.name();
@@ -146,7 +145,7 @@ submethod BUILD (
       :server($server), :status(TT-Unknown), :!ismaster
     );
   }
-} # method
+}
 
 #-------------------------------------------------------------------------------
 method !process-topology (
@@ -428,6 +427,7 @@ method topology ( --> TopologyType ) {
 # - Goto Step #2
 #-------------------------------------------------------------------------------
 
+#`{{
 #-------------------------------------------------------------------------------
 # Request specific servername
 multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
@@ -470,7 +470,7 @@ multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
 
   $selected-server;
 }
-
+}}
 
 #TODO pod doc
 #TODO use read/write concern for selection
@@ -478,7 +478,8 @@ multi method select-server ( Str:D :$servername! --> MongoDB::Server ) {
 
 #-------------------------------------------------------------------------------
 # Read/write concern selection
-multi method select-server (
+#multi method select-server (
+method select-server (
   BSON::Document :$read-concern is copy
   --> MongoDB::Server
 ) {
@@ -622,7 +623,7 @@ method !add-servers ( @new-hosts ) {
 
     # create Server object
     my MongoDB::Server $server .= new(
-      :client(self), :$server-name, :$!uri-obj
+      :client(self), :$server-name#, :$!uri-obj
     );
 
     # and start server monitoring

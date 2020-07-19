@@ -36,16 +36,13 @@ class Database {
   # after inserting data
   #
   method collection (
-    Str:D $name,
-    BSON::Document :$read-concern
+    Str:D $name, BSON::Document :$read-concern
     --> MongoDB::Collection ) {
 
     $!read-concern =
       $read-concern.defined ?? $read-concern !! $!read-concern;
 
-    return MongoDB::Collection.new(
-      :database(self), :name($name), :$read-concern
-    );
+    return MongoDB::Collection.new( :database(self), :$name, :$read-concern);
   }
 
   #-----------------------------------------------------------------------------

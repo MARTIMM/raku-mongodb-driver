@@ -17,7 +17,7 @@ set-filter(|<ObserverEmitter MonitorTimer Socket>);
 
 info-message("Test $?FILE start");
 
-my $t0 = now;
+#my $t0 = now;
 
 my MongoDB::Test-support $ts .= new;
 
@@ -138,7 +138,7 @@ subtest 'Drop a database', {
   }
 }
 
-diag "Time spent: {now - $t0}";
+#diag "Time spent: {now - $t0}";
 #-------------------------------------------------------------------------------
 info-message("Test $?FILE stop");
 done-testing();
