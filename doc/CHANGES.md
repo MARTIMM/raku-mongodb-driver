@@ -2,6 +2,9 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
+* 2020-07-18 0.43.12
+  * Cleaning up and some redesigning according to behavior documents from MongoDB.
+
 * 2020-06-02 0.43.11
   * New class **MongoDB::ObserverEmitter** which is a canabalized project Event::Emitter from Tony O'Dell.
     Changes to his classes are;
