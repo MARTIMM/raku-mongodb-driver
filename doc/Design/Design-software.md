@@ -9,151 +9,151 @@ Me, on the other hand, and later people who take over the project, need some dia
 
 ## Users class view of the package
 
-First a class diagram where the obvious classes are noted.
+First a class diagram where the obvious classes are noted. Most of the time when `.run-command()` is called on a **Database**, the **Application** doesn't need direct access to a **Collection**. It is only used when`.find()` is needed.
 
 ```plantuml
-class UP as "User::Program"
+class Application
 
-class Cl as "Client" {
-}
-
-class Da as "Database" {
-}
-
-class Co as "Collection" {
-}
-
-class Cu as "Cursor" {
-}
-
+class Client
+class Database
+class Collection
+class Cursor
+class Server
 'class W as "Wire" {}
 
-'class S as "Server" {}
+Application *--> Client
+Client *- Server
+Application *--> Database
+Client <-- Database
+Database *- Collection
+Client <-- Collection
+'Collection --> W
+Collection *-- Cursor
 
-
-UP *--> Cl
-'Cl *--> S
-'S --> Cl
-Da -> Cl
-Co -> Da
-'Co --> W
-'W -> S
-
-Cl <- Cu
-'S <-- Cu
+'Server <-- Cursor
+'W -> Server
 
 ```
 
-## Activity of client
-
-Diagram shows that there is one process monitoring all servers. This is a singleton class. The results are returned using an event like system.
-
-```plantuml
-
-(*) -->[URL] "new Client"
-
-if "server?" then
-  --> [yes] "new Server"
-  --> ===SBegin===
-  --> "background\ndiscovery"
-  --> ===SEnd===
-  --> if "next\nserver?" then
-        --> [yes] "new Server"
-      else
-        --> [no] (*)
-      endif
-
-  "new Server" --> [server\nip] ===SMon===
-  --> "Monitor\nserver"
-  if "kill monitor\nprocess" then
-    ---> [no] "Monitor\nserver"
-  else
-    --> [yes] ===BMon===
-    --> (*)
-  endif
-
-else
-  -->[no] (*)
-endif
-
-(*) -->[URL] "other\nnew Client"
-if "server?" then
-  --> [yes] "other\nnew Server"
-  --> ===S2Begin===
-  --> "other background\ndiscovery"
-  --> ===S2End===
-  '--> (*)
-  --> if "next\nserver?" then
-        --> [yes] "other\nnew Server"
-      else
-        --> [no] (*)
-      endif
-
-  "other\nnew Server" --> [server\nip] ===SMon===
-  '--> [no] "Monitor\nserver"
-
-else
-  -->[no] (*)
-endif
-```
 
 #### Client work
 ```plantuml
-state server
-server : create Server\nwith ip addr
+scale 0.8
 
-state url
-url : process\nurl
+skinparam sequence {
+'  LifeLineBorderColor blue
+  LifeLineBackgroundColor #fff
+}
 
-[*] -> url
-url -> server : ip
-server -> [*]
+participant Application
+activate Application
+
+participant Client
+
+Application -> Client: Client.new(:$uri)
+activate Client
+
+box "never\nending" #efffff
+  participant Monitor
+end box
+
+Client -> Monitor ++: Monitor.instance()
+'Monitor -> Monitor --: Monitor
+deactivate Monitor
+Monitor -> Monitor ++ #A9DCDF:
+note right
+  Monitor started in thread and runs for all
+  servers. Monitor ends when application ends.
+end note
+
+Client -> Monitor ++ : emit heartbeatfrequency
+Monitor -> Client --: done
+
+Client -> Server1 ++: Server.new(...)
+Server1 -> Monitor ++: emit register server
+Monitor -> Server1 --: Done
+
+Monitor -> Server1 ++ #A9DCDF: emit monitor data
+
+Server1 -> Client ++ #A9DCDF: emit add servers
+  note right
+    Servers can get other server
+    names from the is-master info.
+  end note
+
+  Client -> Server2 ++ #A9DCDF: Server.new(...)
+  Server2 -> Monitor ++ #A9DCDF: emit register server
+  Monitor -> Server2 --: Done
+  Monitor -> Server2 ++ #A9DCDF: emit monitor data
+  note right
+    Server2 acts like server1
+    only shown here for thread.
+  end note
+
+Client -> Server1 --: done
+Server1 -> Client ++ #A9DCDF: emit process topology
+Client -> Server1 --: done
+deactivate Server1
+
+Server2 -> Client ++ #A9DCDF: emit add servers
+Client -> Server2 --: done
+Server2 -> Client ++ #A9DCDF: emit process topology
+Client -> Server2 --: done
+deactivate Server2
+
+
+Application -> Client: .cleanup()
+Client -> Server1: .cleanup()
+Server1 -> Monitor ++: emit unregister server
+Monitor -> Server1 --: done
+Server1 -> Client: done
+destroy Server1
+
+Client -> Server2: .cleanup()
+Server2 -> Monitor ++ #A9DCDF: emit unregister server
+Monitor -> Server2 -- #A9DCDF: done
+Server2 -> Client: done
+destroy Server2
+
+destroy Client
 ```
 
-#### Server work
-```plantuml
-state d <<fork>>
-state dj <<join>>
-
-state "server state" as sts
-state init
-init : store ip
-
-[*] -> init
-
-init --> monitor
-monitor : provide monitor\n with ip addr
-monitor --> [*]
-
-init --> d
-d --> discovery
-discovery : contact server
-discovery --> sts
-sts : store state
-sts --> dj
-
-dj -> [*]
-```
-
+#### Using run-command to insert, update etc"
 
 ```plantuml
-title "Using run-command to insert, update etc"
+scale 0.8
 
-participant UP as "User::Program"
-participant Cl as "Client"
-participant Da as "Database"
-'participant Co as "Collection"
+skinparam sequence {
+'  LifeLineBorderColor blue
+  LifeLineBackgroundColor #fff
+}
 
-UP -> Cl : Client.new(:$uri)
-activate Cl
-Cl -> UP : $client
-UP -> Cl : $client.database(:$name)
-Cl -> Da : Database.new(:$name)
-activate Da
-Da -> Cl : $database
-Cl -> UP : $database
-UP -> Da : $database.run-command($command)
-Da -> UP : $document
+participant Application
+activate Application
+
+participant Client
+participant Database
+participant Collection
+
+Application -> Client : Client.new(:$uri)
+activate Client
+'Client -> Application : $client
+Application -> Client : $client.database(:$name)
+Client -> Database : Database.new(:$name)
+activate Database
+'Database -> Client : $database
+'Client -> Application : $database
+Application -> Database : $database.run-command($command)
+
+Database -> Collection ++: Collection.new(...)
+Database -> Collection: .find($command)
+Collection -> Client ++: select-server
+Client -> Collection --: Server
+Collection -> Cursor ++:
+Cursor -> Database --: Document
+deactivate Collection
+
+Database -> Application : $document
 
 ```
 
