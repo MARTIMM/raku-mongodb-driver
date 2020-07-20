@@ -14,7 +14,7 @@ drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = "t/Log/300-Collection.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter MonitorTimer Socket>);
+set-filter(|<ObserverEmitter Timer Socket>);
 
 info-message("Test $?FILE start");
 
