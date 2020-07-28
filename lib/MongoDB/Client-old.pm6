@@ -5,7 +5,6 @@ use v6;
 use MongoDB;
 use MongoDB::Uri;
 use MongoDB::ServerPool::Server;
-use MongoDB::ServerPool;
 use MongoDB::Server::Monitor;
 use MongoDB::Database;
 use MongoDB::Collection;
@@ -18,7 +17,12 @@ use Semaphore::ReadersWriters;
 #-------------------------------------------------------------------------------
 unit class MongoDB::Client:auth<github:MARTIMM>;
 
-has Array $!topology-description = [];
+enum TopologyDescription <
+  Topo-type Topo-setName Topo-maxSetVersion
+  Topo-maxElectionId Topo-servers Topo-stale Topo-compatible
+  Topo-compatibilityError Topo-logicalSessionTimeoutMinutes
+>;
+has Array $topology-description = [];
 
 #  has TopologyType $!user-request-topology;
 has Bool $!topology-set;
@@ -26,7 +30,7 @@ has Bool $!topology-set;
 # Store all found servers here. key is the name of the server which is
 # the server address/ip and its port number. This should be unique. The
 # data is a Hash of Hashes.
-#has Hash $!servers;
+has Hash $!servers;
 
 has Semaphore::ReadersWriters $!rw-sem;
 
@@ -37,7 +41,7 @@ has BSON::Document $.read-concern;
 has Str $!Replicaset;
 
 #  has Promise $!background-discovery;
-#has Bool $!repeat-discovery-loop;
+has Bool $!repeat-discovery-loop;
 
 # Only for single threaded implementations according to mongodb documents
 # has Bool $!server-selection-try-once = False;
@@ -67,10 +71,10 @@ submethod BUILD (
   Str:D :$!uri, BSON::Document :$read-concern
 ) {
 
-  $!topology-description[Topo-type] = TT-NotSet;
+  $topology-description[Topo-type] = TT-NotSet;
   $!topology-set = False;
 
-#  $!servers = %();
+  $!servers = %();
 
   # initialize mutexes
   $!rw-sem .= new;
@@ -112,7 +116,7 @@ submethod BUILD (
   # in a List to be processed by process-topology().
   $event-manager.subscribe-observer(
     $!uri-obj.keyed-uri ~ ' process topology',
-    -> List $server-data { self!process-topology(|$server-data); },
+    -> List $server-info { self!process-topology(|$server-info); },
     :event-key($!uri-obj.keyed-uri ~ ' process topology')
   );
 
@@ -135,55 +139,42 @@ submethod BUILD (
 #    my MongoDB::Server $server .= new(
 #      :client(self), :$server-name#, :$!uri-obj
 #    );
-
-    my MongoDB::ServerPool $server-pool .= instance;
-    $server-pool.add-server(
-      $!uri-obj.keyed-uri, $server-data<host>, $server-data<port>,
-      :status(TT-Unknown), :!ismaster
+    my MongoDB::ServerPool::Server $server .= new(
+      :client-key($!uri-obj.keyed-uri), :host($server-data<host>),
+      :port($server-data<port>)
     );
 
     # set name same as server has made it
-    #$server-name = $server.name();
-    #$!servers{$server-name} = %(
-    #  :server($server), :status(TT-Unknown), :!ismaster
-    #);
+    $server-name = $server.name();
+    $!servers{$server-name} = %(
+      :server($server), :status(TT-Unknown), :!ismaster
+    );
   }
 }
 
 #-------------------------------------------------------------------------------
 method !process-topology (
-  Str $new-server-name, ServerType $server-status, Bool $is-master
+  Str $server-name, ServerType $server-status, Bool $is-master
 ) {
+
   # update server data
-  self!update-server( $new-server-name, $server-status, $is-master);
-note "server info updated for $new-server-name with $server-status, $is-master";
+  self!update-server( $server-name, $server-status, $is-master);
+note "server info updated for $server-name with $server-status, $is-master";
 
   # find topology
   my TopologyType $topology = TT-Unknown;
-#  my Hash $servers = $!rw-sem.reader( 'servers', { $!servers.clone; });
+  my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone;});
   my Int $servers-count = 0;
 
   my Bool $found-standalone = False;
   my Bool $found-sharded = False;
   my Bool $found-replica = False;
 
-  my MongoDB::ServerPool $server-pool .= instance;
-  for @($server-pool.get-server-names($!uri-obj.keyed-uri)) -> $server-name {
-#  for $servers.keys -> $server-name {
+  for $servers.keys -> $server-name {
     $servers-count++;
-note "server: $server-name, $servers-count";
-
-my Hash $server-data;
-try {
+note "server $server-name";
     # check status of server
-#    given $servers{$server-name}<status> {
-    $server-data = $server-pool.get-server-data(
-      $!uri-obj.keyed-uri, $server-name
-    );
-CATCH {.note;}
-}
-note "sd: ", $server-data.perl;
-    given $server-data<status> {
+    given $servers{$server-name}<status> {
       when ST-Standalone {
 #        $servers-count++;
 
@@ -255,7 +246,7 @@ note "sd: ", $server-data.perl;
     }
 
     $!rw-sem.writer( 'topology', {
-        $!topology-description[Topo-type] = $topology;
+        $topology-description[Topo-type] = $topology;
         $!topology-set = True;
       }
     );
@@ -269,10 +260,11 @@ method !update-server (
   Str $server-name, ServerType $server-status, Bool $is-master
 ) {
 
-  my MongoDB::ServerPool $server-pool .= instance;
-  $server-pool.modify-server-data(
-    $!uri-obj.keyed-uri, $server-name,
-    :status($server-status), :ismaster($is-master)
+  $!rw-sem.writer(
+    'servers', {
+      $!servers{$server-name}<status> = $server-status;
+      $!servers{$server-name}<ismaster> = $is-master;
+    }
   );
 }
 
@@ -374,7 +366,7 @@ method process-topology-old ( ) {
     }
 
     $!rw-sem.writer( 'topology', {
-        $!topology-description[Topo-type] = $topology;
+        $topology-description[Topo-type] = $topology;
         $!topology-set = True;
       }
     );
@@ -384,14 +376,12 @@ method process-topology-old ( ) {
 }
 }}
 
-#`{{ not used?
 #-------------------------------------------------------------------------------
 # Return number of servers
 method nbr-servers ( --> Int ) {
 
   $!rw-sem.reader( 'servers', {$!servers.elems;});
 }
-}}
 
 #-------------------------------------------------------------------------------
 # Get the server status
@@ -402,7 +392,6 @@ method server-status ( Str:D $server-name --> ServerType ) {
     sleep 0.5;
   }
 
-#`{{
   my Hash $h = $!rw-sem.reader(
     'servers', {
     my $x = $!servers{$server-name}:exists
@@ -412,13 +401,7 @@ method server-status ( Str:D $server-name --> ServerType ) {
   });
 
   my ServerType $sts = $h<status> // ST-Unknown;
-}}
-
-  my MongoDB::ServerPool $server-pool .= instance;
-  my ServerType $sts = $server-pool.get-server-data(
-    $!uri-obj.keyed-uri, $server-name
-  )<status> // ST-Unknown;
-note "server-status: '$server-name', $sts";
+#    debug-message("server-status: '$server-name', $sts");
   $sts;
 }
 
@@ -430,7 +413,7 @@ method topology ( --> TopologyType ) {
     sleep 0.5;
   }
 
-  $!rw-sem.reader( 'topology', {$!topology-description[Topo-type]});
+  $!rw-sem.reader( 'topology', {$topology-description[Topo-type]});
 }
 
 #-------------------------------------------------------------------------------
@@ -497,31 +480,7 @@ multi method select-server ( Str:D :$servername! --> MongoDB::ServerPool::Server
 #TODO pod doc
 #TODO use read/write concern for selection
 #TODO must break loop when nothing is found
-#-------------------------------------------------------------------------------
-# Read/write concern selection
-#multi method select-server (
-method select-server (
-  BSON::Document :$read-concern
-  --> MongoDB::ServerPool::Server
-) {
 
-  #! Wait until topology is set
-  until $!rw-sem.reader( 'topology', { $!topology-set }) {
-note "wait 0.5: $*THREAD.id()";
-    sleep 0.5;
-  }
-
-  my Array $topology-description = $!rw-sem.reader(
-    'topology', { $!topology-description }
-  );
-
-  my MongoDB::ServerPool $server-pool .= instance;
-  $server-pool.select-server(
-    $read-concern, $!uri-obj.keyed-uri, $topology-description, $!uri-obj
-  )
-}
-
-#`{{
 #-------------------------------------------------------------------------------
 # Read/write concern selection
 #multi method select-server (
@@ -548,7 +507,7 @@ note "wait 0.5: $*THREAD.id()";
     my MongoDB::ServerPool::Server @selected-servers = ();
     my Hash $servers = $!rw-sem.reader( 'servers', {$!servers.clone});
     my TopologyType $topology = $!rw-sem.reader(
-      'topology', {$!topology-description[Topo-type]
+      'topology', {$topology-description[Topo-type]
     });
 
 note "ss1 Servers: ", $servers.keys;
@@ -653,7 +612,6 @@ note "ss1 Topology: $topology";
 
   $selected-server;
 }
-}}
 
 #-------------------------------------------------------------------------------
 # Add server to todo list.
@@ -661,14 +619,8 @@ method !add-servers ( @new-hosts ) {
 
   trace-message("push @new-hosts[*] on todo list");
 
-  my MongoDB::ServerPool $server-pool .= instance;
   for @new-hosts -> Str $server-name is copy {
 
-    $server-pool.add-server(
-      $!uri-obj.keyed-uri, $server-name, :status(TT-Unknown), :!ismaster
-    );
-
-#`{{
     # skip if server is added before
     next if $!servers{$server-name}:exists;
 
@@ -688,7 +640,6 @@ method !add-servers ( @new-hosts ) {
     $!servers{$server-name} = %(
       :server($server), :status(TT-Unknown), :!ismaster
     );
-}}
   }
 }
 
@@ -738,26 +689,18 @@ method cleanup ( ) {
   # some timing to see if this cleanup can be improved
   my Instant $t0 = now;
 
-  my MongoDB::ObserverEmitter $e .= new;
-  $e.unsubscribe-observer($!uri-obj.keyed-uri ~ ' process topology');
-  $e.unsubscribe-observer($!uri-obj.keyed-uri ~ ' add servers');
-
   # stop loop and wait for exit
-  #if $!repeat-discovery-loop {
-  #  $!repeat-discovery-loop = False;
+  if $!repeat-discovery-loop {
+    $!repeat-discovery-loop = False;
 #      $!background-discovery.result;
-  #}
+  }
 
   # Remove all servers concurrently. Shouldn't be many per client.
-  my MongoDB::ServerPool $server-pool .= instance;
-  $server-pool.cleanup($!uri-obj.keyed-uri);
-
-#`{{
   $!rw-sem.writer(
     'servers', {
 
-      for $!servers.values -> Hash $server-data {
-        my MongoDB::ServerPool::Server $server = $server-data<server>;
+      for $!servers.values -> Hash $server-info {
+        my MongoDB::ServerPool::Server $server = $server-info<server>;
         if $server.defined {
           # Stop monitoring on server
           $server.cleanup;
@@ -768,10 +711,13 @@ method cleanup ( ) {
       }
     }
   );
-}}
-  # unsubscribe observers
 
-#  $!servers = Nil;
+  # unsubscribe observers
+  my MongoDB::ObserverEmitter $e .= new;
+  $e.unsubscribe-observer($!uri-obj.keyed-uri ~ ' process topology');
+  $e.unsubscribe-observer($!uri-obj.keyed-uri ~ ' add servers');
+
+  $!servers = Nil;
   $!rw-sem.rm-mutex-names(<servers todo topology>);
   debug-message("Client destroyed after {(now - $t0)} sec");
 }

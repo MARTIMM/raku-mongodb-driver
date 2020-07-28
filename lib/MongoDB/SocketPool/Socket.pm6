@@ -22,7 +22,7 @@ use MongoDB;
 #use Auth::SCRAM;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Server::Socket:auth<github:MARTIMM>;
+unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
 
 has IO::Socket::INET $!socket;
 has Bool $!is-open;
@@ -33,7 +33,7 @@ has Instant $!time-last-used;
 #has Int $.thread-id;
 #  has Bool $!must-authenticate;
 
-
+#`{{
 #TODO deprecate
 has MongoDB::ServerClassType $.server;
 
@@ -61,11 +61,10 @@ multi submethod BUILD ( MongoDB::ServerClassType:D :$!server ) {
   $!is-open = True;
   $!time-last-used = now;
 };
-
+}}
 #-------------------------------------------------------------------------------
-multi submethod BUILD (
-  Str:D :$host, Int:D :$port    #, MongoDB::Client :$!client,
-) {
+#multi
+submethod BUILD ( Str:D :$host, Int:D :$port ) {
   trace-message("open socket $host, $port");
 
   try {

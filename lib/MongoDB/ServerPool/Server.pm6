@@ -1,10 +1,12 @@
 use v6;
 
 use MongoDB;
-use MongoDB::Uri;
 use MongoDB::Wire;
+#use MongoDB::Client;
+use MongoDB::Uri;
 use MongoDB::Server::Monitor;
-use MongoDB::Server::Socket;
+use MongoDB::SocketPool;
+use MongoDB::SocketPool::Socket;
 use MongoDB::Authenticate::Credential;
 use MongoDB::Authenticate::Scram;
 use MongoDB::ObserverEmitter;
@@ -14,38 +16,65 @@ use Semaphore::ReadersWriters;
 use Auth::SCRAM;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Server:auth<github:MARTIMM>;
+unit class MongoDB::ServerPool::Server:auth<github:MARTIMM>;
 
-enum ServerDescription <
-  Srv-address Srv-error Srv-roundTripTime Srv-lastWriteDate Srv-opTime
-  Srv-type Srv-minWireVersion, Srv-maxWireVersion Srv-me Srv-hosts
-  Srv-passives Srv-arbiters Srv-tags Srv-setName Srv-setVersion
-  Srv-electionId Srv-primary Srv-lastUpdateTime
-  Srv-logicalSessionTimeoutMinutes Srv-topologyVersion
->;
+#-------------------------------------------------------------------------------
 has Array $server-description = [];
 
 # name and port is separated for use by Socket.
-has Str $.server-name;
+has Str $!server-name;
 has PortType $.server-port;
 
-has ClientType $.client;
+has Str $.host;
+has Int $.port;
 
-has Array[MongoDB::Server::Socket] $!sockets;
+#has Array[MongoDB::SocketPool::Socket] $!sockets;
 has Bool $!server-is-registered;
 
 # server status data. Must be protected by a semaphore because of a thread
 # handling monitoring data.
 has Hash $!server-sts-data;
 has Semaphore::ReadersWriters $!rw-sem;
-#has Tap $!server-tap;
+
+#has MongoDB::Client $.client;
 
 # part of key for observer keys
-has Str $!client-key;
-has Str $!server-key;
+has Str $.client-key;
+has Str $.server-key;
+
 
 #-------------------------------------------------------------------------------
-submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
+multi submethod BUILD (
+  Str:D :$!client-key, Str:D :$server-name!
+) {
+
+  if $server-name ~~ m/ $<ip6addr> = ('[' .*? ']') / {
+    my $h = $!host = $/<ip6addr>.Str;
+    $!port = $server-name;
+    $!port ~~ s/$h ':'//;
+  }
+
+  else {
+    ( $!host, $!port) = $server-name.split(':');
+    $!port //= 27017;
+  }
+
+  self!init();
+}
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+multi submethod BUILD (
+  Str:D :$!client-key, Str:D :$!host!, Int :$!port = 27017
+) {
+
+  self!init();
+}
+
+
+#-------------------------------------------------------------------------------
+method !init ( ) {
+
+  trace-message("Server $!host on $!port initialization");
 
   # server status is unsetled
   $!server-sts-data = { :status(ST-Unknown), :!is-master, :error('') };
@@ -56,9 +85,10 @@ submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
     <s-select s-status>, :RWPatternType(C-RW-WRITERPRIO)
   );
 
-  $!sockets = Array[MongoDB::Server::Socket].new;
+  #$!sockets = Array[MongoDB::SocketPool::Socket].new;
   $!server-is-registered = False;
 
+#`{{
   # save name and port of the server. Servername and port are always
   # 'hostname:port' format, even when ipv6. The port number is always
   # present at this point, extracting it from the end from the spec.
@@ -69,6 +99,7 @@ submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
   # Remove the brackets if they are there. ipv6 addresses have them.
   $!server-name ~~ s/^ '[' //;
   $!server-name ~~ s/ ']' $//;
+}}
 
   trace-message("Server object for {self.name} initialized");
 
@@ -78,8 +109,7 @@ submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
   # observe results from monitor only for this particular server. use the
   # key generated in the uri object and the servername to prevent other
   # servers to interprete data not meant for them.
-  $!client-key = $!client.uri-obj.keyed-uri;
-  $!server-key = $!client.uri-obj.keyed-uri ~ self.name;
+  $!server-key = $!client-key ~ self.name;
   $event-manager.subscribe-observer(
     $!server-key ~ ' monitor data',
     -> Hash $monitor-data { self!process-monitor-data($monitor-data); },
@@ -87,7 +117,7 @@ submethod BUILD ( ClientType:D :$!client, Str:D :$server-name ) {
   );
 
   # now we can register a server
-#note "Register a server: {self.name()}";
+note "Register a server: {self.name()}";
   $event-manager.emit( 'register server', self);
   $!server-is-registered = True;
 }
@@ -107,6 +137,7 @@ method !process-monitor-data ( Hash $monitor-data ) {
     # test mongod server defined field ok for state of returned document
     # this is since newer servers return info about servers going down
     if ?$mdata and $mdata<ok>:exists and $mdata<ok> == 1e0 {
+
 #note "MData: $monitor-data.perl()";
       ( $server-status, $is-master) = self!process-status($mdata);
 
@@ -193,7 +224,6 @@ method !process-status ( BSON::Document $mdata --> List ) {
     $is-master = ? $mdata<ismaster>;
     if $is-master {
       $server-status = ST-RSPrimary;
-      #$!client.add-servers([|@($mdata<hosts>),]) if $mdata<hosts>:exists;
       $notify-client.emit(
         $!client-key ~ ' add servers', @($mdata<hosts>)
       ) if $mdata<hosts>:exists;
@@ -201,7 +231,6 @@ method !process-status ( BSON::Document $mdata --> List ) {
 
     elsif ? $mdata<secondary> {
       $server-status = ST-RSSecondary;
-      #$!client.add-servers([$mdata<primary>,]) if $mdata<primary>:exists;
       $notify-client.emit(
         $!client-key ~ ' add servers', @($mdata<primary>)
       ) if $mdata<primary>:exists;
@@ -224,11 +253,13 @@ method !process-status ( BSON::Document $mdata --> List ) {
   ( $server-status, $is-master)
 }
 
+#`{{
 #-------------------------------------------------------------------------------
 method get-status ( --> Hash ) {
 
   $!rw-sem.reader( 's-status', { $!server-sts-data } );
 }
+}}
 
 #`{{
 #-------------------------------------------------------------------------------
@@ -250,22 +281,35 @@ method tap-monitor ( |c --> Tap ) {
 # When a new socket is opened and it fails, it will not be stored because the
 # thrown exception is catched in Wire where the call is done. This also means
 # that calling new must be done outside any semaphore locks
+method get-socket (
+  Bool :$authenticate = True --> MongoDB::SocketPool::Socket
+) {
+note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
-method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
+  my MongoDB::SocketPool $socket-pool .= instance;
+  $socket-pool.get-socket( self.host, self.port
+    #, Str :$username, Str :$password
+  );
+}
+
+#`{{
+method get-socket (
+  Bool :$authenticate = True --> MongoDB::SocketPool::Socket
+) {
 
   # If server is not registered then the server is cleaned up
-  return MongoDB::Server::Socket unless $!server-is-registered;
+  return MongoDB::SocketPool::Socket unless $!server-is-registered;
 
   # Use return value to see if authentication is needed.
   my Bool $created-anew = False;
 
-#note "$*THREAD.id() Get sock, authenticate = $authenticate";
+note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
   # Get a free socket entry
-  my MongoDB::Server::Socket $found-socket;
+  my MongoDB::SocketPool::Socket $found-socket;
 
   # Check all sockets first if timed out
-  my Array[MongoDB::Server::Socket] $skts = $!rw-sem.reader(
+  my Array[MongoDB::SocketPool::Socket] $skts = $!rw-sem.reader(
     's-select', { $!sockets; }
   );
 
@@ -275,7 +319,7 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
     next unless $socket.defined;
 
     unless $socket.check-open {
-      $socket = MongoDB::Server::Socket;
+      $socket = MongoDB::SocketPool::Socket;
       trace-message("Socket cleared for {self.name}");
     }
   }
@@ -302,7 +346,7 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
     my Bool $slot-found = False;
     for @$skts -> $socket is rw {
       if not $socket.defined {
-        $found-socket = $socket .= new(:server(self));
+        $found-socket = $socket .= new( :$!host, :$!port); #(:server(self));
         $created-anew = True;
         $slot-found = True;
         trace-message("New socket inserted for {self.name}");
@@ -311,7 +355,7 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
     # Or, when no empty slot id found, add the socket to the end
     if not $slot-found {
-      $found-socket .= new(:server(self));
+      $found-socket .= new( :$!host, :$!port); #(:server(self));
       $created-anew = True;
       $!sockets.push($found-socket);
       trace-message("New socket created for {self.name}");
@@ -320,8 +364,9 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
 
   $!rw-sem.writer( 's-select', {$!sockets = $skts;});
 
+#`{{
 #TODO (from sockets) Sockets must initiate a handshake procedure when socket
-# is opened. Perhaps not needed because the monitor is keeping touch and known
+# is opened. Perhaps not needed because the monitor is keeping touch and knows
 # the type of the server which is communicated to the Server and Client object
 #TODO When authentication is needed it must be done on every opened socket
 #TODO check must be made on autenticate flag only and determined from server
@@ -394,16 +439,18 @@ method get-socket ( Bool :$authenticate = True --> MongoDB::Server::Socket ) {
       } # given $auth-mechanism
     } # if ?$credential.username and ?$credential.password
   } # if $created-anew and $authenticate
+}}
 
   # Return a usable socket which is opened and authenticated upon if needed.
   $found-socket;
 }
+}}
 
 #-------------------------------------------------------------------------------
 multi method raw-query (
   Str:D $full-collection-name, BSON::Document:D $query,
   Int :$number-to-skip = 0, Int :$number-to-return = 1,
-  Bool :$authenticate = True, Bool :$timed-query!
+  Bool :$authenticate = True, Bool :$time-query = False
   --> List
 ) {
 
@@ -413,15 +460,17 @@ multi method raw-query (
   my BSON::Document $doc;
   my Duration $rtt;
 
-  ( $doc, $rtt) = MongoDB::Wire.new.timed-query(
+  my MongoDB::Wire $w .= new;
+  ( $doc, $rtt) = $w.query(
     $full-collection-name, $query,
     :$number-to-skip, :$number-to-return,
-    :server(self), :$authenticate
+    :server(self), :$authenticate, :$time-query
   );
 
   ( $doc, $rtt // Duration.new(0));
 }
 
+#`{{
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 multi method raw-query (
   Str:D $full-collection-name, BSON::Document:D $query,
@@ -437,13 +486,15 @@ multi method raw-query (
   MongoDB::Wire.new.query(
     $full-collection-name, $query,
     :$number-to-skip, :$number-to-return,
-    :server(self), :$authenticate
+    :server(self), :$authenticate, :!time-query
   );
 }
+}}
 
 #-------------------------------------------------------------------------------
 method name ( --> Str ) {
 
+#`{{
   my Str $name = $!server-name // '-';
   my Str $port = "$!server-port" // '-';
 
@@ -460,6 +511,19 @@ method name ( --> Str ) {
   # ipv4 and domainnames are printed the same
   else {
     $name = [~] $name , ':', $port;
+  }
+}}
+
+  my Str $name;
+
+  # check for ipv6 addresses
+  if $!host ~~ / ':' / {
+    $name = [~] '[', $!host, ']:', $!port;
+  }
+
+  # ipv4 and domainnames are printed the same
+  else {
+    $name = [~] $!host , ':', $!port;
   }
 
   $name
@@ -487,16 +551,19 @@ method cleanup ( ) {
   $event-manager.emit( 'unregister server', self);
 
   # Clear all sockets
+  my MongoDB::SocketPool $socket-pool .= instance;
+  $socket-pool.cleanup(:all);
+#`{{
   $!rw-sem.writer( 's-select', {
       for @$!sockets -> $socket {
         next unless ?$socket;
       }
     }
   );
-
+}}
   trace-message("Sockets cleared");
 
-  $!client = Nil;
-  $!sockets = Nil;
+#  $!client = Nil;
+#  $!sockets = Nil;
 #  $!server-tap = Nil;
 }
