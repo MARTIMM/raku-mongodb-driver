@@ -3,7 +3,7 @@ use v6;
 use MongoDB;
 use MongoDB::ObserverEmitter;
 use MongoDB::Server::Socket;
-use MongoDB::Server::MonitorTimer;
+use MongoDB::Timer;
 use BSON;
 use BSON::Document;
 use Semaphore::ReadersWriters;
@@ -36,7 +36,7 @@ has Bool $!no-servers-available;
 
 has BSON::Document $!monitor-command;
 has BSON::Document $!monitor-result;
-has MongoDB::Server::MonitorTimer $!monitor-timer;
+has MongoDB::Timer $!monitor-timer;
 
 has Semaphore::ReadersWriters $!rw-sem;
 
@@ -74,14 +74,16 @@ submethod BUILD ( ) {
   # observe server registration
   $event-manager.subscribe-observer(
     'register server',
-    -> MongoDB::ServerClassType:D $server { self!register-server($server) },
+#    -> MongoDB::ServerClassType:D $server { self!register-server($server) },
+    -> $server { self!register-server($server) },
     :event-key<register-server>
   );
 
   # observe server deregistration
   $event-manager.subscribe-observer(
     'unregister server',
-    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
+#    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
+    -> $server { self!unregister-server($server) },
     :event-key<unregister-server>
   );
 
@@ -127,12 +129,13 @@ method !set-heartbeat ( Int:D $heartbeat-frequency-ms ) {
 }
 
 #-------------------------------------------------------------------------------
-method !register-server ( MongoDB::ServerClassType:D $server ) {
-#note "register $server.name()";
+#method !register-server ( MongoDB::ServerClassType:D $server ) {
+method !register-server ( $server ) {
 
   my Bool $exists = $!rw-sem.reader(
     'm-servers', { %!registered-servers{$server.name}:exists; }
   );
+#note "register $server.name(), e = $exists";
 
   $!rw-sem.writer( 'm-servers', {
       unless $exists {
@@ -157,7 +160,8 @@ method !register-server ( MongoDB::ServerClassType:D $server ) {
 }
 
 #-------------------------------------------------------------------------------
-method !unregister-server ( MongoDB::ServerClassType:D $server ) {
+#method !unregister-server ( MongoDB::ServerClassType:D $server ) {
+method !unregister-server ( $server ) {
 
   my Bool $exists = $!rw-sem.reader(
     'm-servers', { %!registered-servers{$server.name}:exists; }
@@ -175,10 +179,10 @@ method !unregister-server ( MongoDB::ServerClassType:D $server ) {
 method !start-monitor ( ) {
   # infinite
   Promise.start( {
-      $!monitor-timer = MongoDB::Server::MonitorTimer.in(0.1);
+      $!monitor-timer = MongoDB::Timer.in(0.1);
 #note '.= in()';
 
-      # start first run
+      # start first run. should start after 0.1 sec from previous statement.
       #$!promise-monitor .= start( { self.monitor-work } );
       $!promise-monitor = $!monitor-timer.promise.then( {
           self.monitor-work;
@@ -198,9 +202,9 @@ method !start-monitor ( ) {
 
         elsif $!promise-monitor.status ~~ PromiseStatus::Broken {
           trace-message(
-            'wait period interrupted: ' ~ $!promise-monitor.cause
+            'wait period interrupted: ' ~ $!promise-monitor.cause~
+            "monitor heartbeat shortened for new data"
           );
-          trace-message("monitor heartbeat shortened for new data");
         }
 
         # heartbeat can be adjusted with set-heartbeat() or $!servers-settled
@@ -228,13 +232,14 @@ method !start-monitor ( ) {
           { self.monitor-work }
         );
 }}
-#my $t0 = now;
+my $t0 = now;
 #note "do monitor wait: $heartbeat-frequency-sec sec";
         # create the cancelable thread. wait is in seconds
-        $!monitor-timer = MongoDB::Server::MonitorTimer.in(
+        $!monitor-timer = MongoDB::Timer.in(
           $heartbeat-frequency / 1000.0
         );
 
+try {
 #note "do monitor work";
         $!promise-monitor = $!monitor-timer.promise.then( {
             self.monitor-work;
@@ -242,9 +247,10 @@ method !start-monitor ( ) {
         );
 
         await $!promise-monitor;
-#note "after wait: ", now - $t0;
-
-#note 'next loop';
+note "after wait: ", now - $t0;
+CATCH { .note }
+}
+note 'next loop';
       } # loop
 #note 'end loop';
     }   # Promise code
@@ -274,11 +280,11 @@ method monitor-work ( ) {
   $!no-servers-available = ! %rservers.elems;
   return if $!no-servers-available;
 
-
+  # loop through all registerd servers
   trace-message("Servers to monitor: " ~ %rservers.keys.join(', '));
-
   for %rservers.keys -> $server-name {
-    # Last check if server is still registered
+
+    # last check if server is still registered
     next unless $!rw-sem.reader(
       'm-servers',
       { %!registered-servers{$server-name}:exists; }
@@ -287,7 +293,7 @@ method monitor-work ( ) {
     # get server info
     my $server = %rservers{$server-name}[ServerObj];
     ( $doc, $rtt) = $server.raw-query(
-    'admin.$cmd', $!monitor-command, :!authenticate, :timed-query
+      'admin.$cmd', $!monitor-command, :!authenticate, :time-query
     );
 
     my Str $doc-text = ($doc // '-').perl;
@@ -302,12 +308,10 @@ method monitor-work ( ) {
         0.2 * $rtt * 1000 + 0.8 * %rservers{$server-name}[WMRttMs]
       );
 
-      # set new value of waiten mean rtt if the server is still registered
+      # set new value of wait mean rtt if the server is still registered
       $!rw-sem.writer( 'm-servers', {
-          if %!registered-servers{$server-name}:exists {
-            %!registered-servers{$server-name}[WMRttMs] =
-              %rservers{$server-name}[WMRttMs];
-          }
+          %!registered-servers{$server-name}[WMRttMs] =
+            %rservers{$server-name}[WMRttMs];
         }
       );
 
@@ -316,13 +320,15 @@ method monitor-work ( ) {
             ' (ms) for server ', $server.name()
       );
 
+note 'emit to ', %!registered-servers{$server-name}[ServerObj].server-key ~ ' monitor data';
+
       $monitor-data.emit(
-        %!registered-servers{$server-name}[ServerObj].client.uri-obj.keyed-uri ~
-        $server-name ~ ' monitor data', {
+        %!registered-servers{$server-name}[ServerObj].server-key ~ ' monitor data', {
           :ok, :monitor($doc<documents>[0]),  # :$server-name,
           :weighted-mean-rtt-ms(%rservers{$server-name}[WMRttMs])
-        }
-      );
+        } # emit data
+      );  # emit
+
 #      $!monitor-data-supplier.emit( {
 #          :ok, :monitor($doc<documents>[0]), :$server-name,
 #          :weighted-mean-rtt-ms(%rservers{$server-name}[WMRttMs])
