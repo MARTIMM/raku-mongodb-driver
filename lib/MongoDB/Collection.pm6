@@ -48,7 +48,8 @@ class Collection {
        $read-concern.defined ?? BSON::Document.new: $read-concern
                              !! $!read-concern;
 
-    my ServerClassType $server = $!database.client.select-server(
+    #my ServerClassType $server = $!database.client.select-server(
+    my $server = $!database.client.select-server(
       :read-concern($rc)
     );
 
@@ -59,7 +60,7 @@ class Collection {
 
     my BSON::Document $cr .= new: $criteria;
     my BSON::Document $pr .= new: $projection;
-    my BSON::Document $server-reply = MongoDB::Wire.new.query(
+    ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
       $!full-collection-name, $cr, $pr, :@flags, :$number-to-skip,
       :$number-to-return, :$server
     );
@@ -88,7 +89,8 @@ class Collection {
     my BSON::Document $rc = $read-concern // $!read-concern;
 
 #note "Find server doctype";
-    my ServerClassType $server = $!database.client.select-server(
+    #my ServerClassType $server = $!database.client.select-server(
+    my $server = $!database.client.select-server(
       :read-concern($rc)
     );
 #note "Server doctype $server.name()";
@@ -98,7 +100,7 @@ class Collection {
       return MongoDB::Cursor;
     }
 
-    my BSON::Document $server-reply = MongoDB::Wire.new.query(
+    ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
       $!full-collection-name, $criteria, $projection, :@flags,
       :$number-to-skip, :$number-to-return, :$server
     );

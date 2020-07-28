@@ -29,7 +29,8 @@ class Cursor does Iterable {
   # Support for the newer BSON::Document
   multi submethod BUILD (
     MongoDB::CollectionType:D :$collection!, BSON::Document:D :$server-reply!,
-    ServerClassType:D :$server!, Int :$number-to-return = 0
+#    ServerClassType:D :$server!, Int :$number-to-return = 0
+    Any:D :$server!, Int :$number-to-return = 0
   ) {
 
     $!client = $collection.database.client;
@@ -55,6 +56,7 @@ class Cursor does Iterable {
     trace-message("Cursor set for @!documents.elems() documents (type 1)");
   }
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # This can be set with data received from a command e.g. listDatabases
   multi submethod BUILD (
     MongoDB::ClientType:D :$client!, BSON::Document:D :$cursor-doc!,
