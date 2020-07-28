@@ -2,7 +2,8 @@ use v6;
 use MongoDB;
 use MongoDB::Authenticate::Credential;
 use URI::Escape;
-use Base64;
+#use Base64;
+use OpenSSL::Digest;
 
 #TODO Add possibility of DNS Seedlist: https://docs.mongodb.com/manual/reference/connection-string/#dns-seedlist-connection-format
 #-------------------------------------------------------------------------------
@@ -17,6 +18,9 @@ has MongoDB::Authenticate::Credential $.credential handles <
 
 # a unique (hopefully) key generated from the uri string.
 has Str $.keyed-uri;
+
+# original uri for other purposes perhaps
+has Str $.uri;
 
 #-------------------------------------------------------------------------------
 my $uri-grammar = grammar {
@@ -109,15 +113,15 @@ my $uri-actions = class {
 }
 
 #-------------------------------------------------------------------------------
-submethod BUILD (Str :$uri) {
+submethod BUILD ( Str :$!uri ) {
 
   my $key-string = '';
 
   my $actions = $uri-actions.new;
   my $grammar = $uri-grammar.new;
 
-  trace-message("parse '$uri'");
-  my Match $m = $grammar.parse( $uri, :$actions, :rule<URI>);
+  trace-message("parse '$!uri'");
+  my Match $m = $grammar.parse( $!uri, :$actions, :rule<URI>);
 
   # if parse is ok
   if ? $m {
@@ -163,11 +167,12 @@ submethod BUILD (Str :$uri) {
     $key-string ~= $actions.uname ~ $actions.pword;
 
     # generate a key string from the uri data
-    $!keyed-uri = encode-base64( $key-string, :str);
+#    $!keyed-uri = encode-base64( $key-string, :str);
+    $!keyed-uri = sha1("$!uri {now}".encode)>>.fmt('%02X').join;
   }
 
   # parser failure
   else {
-    return fatal-message("Parsing error in url '$uri'");
+    return fatal-message("Parsing error in url '$!uri'");
   }
 }
