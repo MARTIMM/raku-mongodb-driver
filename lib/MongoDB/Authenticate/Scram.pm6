@@ -18,11 +18,15 @@ class Authenticate::Scram {
   has Int $!conversation-id;
 
   #-----------------------------------------------------------------------------
-  submethod BUILD ( ClientType:D :$client, Str :$db-name ) {
+  # deprecated?
+  multi submethod BUILD ( ClientType:D :$client, Str :$db-name ) {
 
     $!client = $client;
     $!database = $!client.database(?$db-name ?? $db-name !! 'admin' );
   }
+
+  #-----------------------------------------------------------------------------
+  multi submethod BUILD ( $!database ) { }
 
   #-----------------------------------------------------------------------------
   # send client first message to server and return server response
