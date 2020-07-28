@@ -2,6 +2,13 @@
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
+* 2020-07-20 0.43.13
+  * Change **MongoDB::Server::Socket** module. This should improve Server, Socket, Wire and Monitor.
+    * Add module **MongoDB::Server::SocketPool**. This will take away some administration from **MongoDB::Server**.
+    * Move authentication to **MongoDB::Server::Socket** for the same reason.
+    * Introduce `connectTimeoutMS` and `socketTimeoutMS` from the mongodb design documents and URI specification.
+  * rename **MongoDB::Server::MonitorTimer** into **MongoDB::Timer**.
+
 * 2020-07-18 0.43.12
   * Cleaning up and some redesigning according to behavior documents from MongoDB.
 
@@ -14,7 +21,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
     * Observers and Providers can be in different threads.
     * Entries are keyed so they can be removed too.
   * Add logging to ObserverEmitter.
-  * Add module **MongoDB::MonitorTimer**.
+  * Add module **MongoDB::Server::MonitorTimer**.
   * Add subs `set-filter()`, `reset-filter()` and `clear-filter()` to **MongoDB::Log**. It filters lines from the log on the module name. This is helpful when tracing is used and too many output is generated. However, it will not filter when the message level is a warning, error or fatal. Warnings and errors can be suppressed of all message by using `modify-send-to()` or `add-send-to()`.
 
 * 2020-05-28 0.43.10
