@@ -30,28 +30,43 @@ unit package MongoDB:auth<github:MARTIMM>;
 constant SERVER-VERSION1 is export = '4.0.5';
 constant SERVER-VERSION2 is export = '4.0.18';
 
+
+#------------------------------------------------------------------------------
+# Wire versions, TopologyType, ServerType, TopologyDescription and
+# ServerDescription are described here: https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 #------------------------------------------------------------------------------
 # wire versions
-# See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
 constant clientMinWireVersion is export = 0;
 constant clientMaxWireVersion is export = 7;
 
 #------------------------------------------------------------------------------
-# Client object topology types
-# See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
-
+# topology types
 enum TopologyType is export <
   TT-Single TT-ReplicaSetNoPrimary TT-ReplicaSetWithPrimary
   TT-Sharded TT-Unknown TT-NotSet
 >;
 
 #------------------------------------------------------------------------------
-# Status values of a Server.object
-# See also https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#data-structures
+enum TopologyDescription is export <
+  Topo-type Topo-setName Topo-maxSetVersion
+  Topo-maxElectionId Topo-servers Topo-stale Topo-compatible
+  Topo-compatibilityError Topo-logicalSessionTimeoutMinutes
+>;
 
+#------------------------------------------------------------------------------
+# Status values of a Server.object
 enum ServerType is export <
   ST-Standalone ST-Mongos ST-PossiblePrimary ST-RSPrimary ST-RSSecondary
   ST-RSArbiter ST-RSOther ST-RSGhost ST-Unknown
+>;
+
+#------------------------------------------------------------------------------
+enum ServerDescription is export <
+  Srv-address Srv-error Srv-roundTripTime Srv-lastWriteDate Srv-opTime
+  Srv-type Srv-minWireVersion, Srv-maxWireVersion Srv-me Srv-hosts
+  Srv-passives Srv-arbiters Srv-tags Srv-setName Srv-setVersion
+  Srv-electionId Srv-primary Srv-lastUpdateTime
+  Srv-logicalSessionTimeoutMinutes Srv-topologyVersion
 >;
 
 #------------------------------------------------------------------------------
@@ -90,7 +105,7 @@ enum ResponseFlags is export (
 
 #------------------------------------------------------------------------------
 # Socket values
-constant MAX-SOCKET-UNUSED-OPEN is export = 900; # Quarter of an hour unused
+constant MAX-SOCKET-UNUSED-OPEN is export = 300; # 5 minutes unused
 
 #------------------------------------------------------------------------------
 # Server defaults
