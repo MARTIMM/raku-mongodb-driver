@@ -9,10 +9,10 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-my $handle = "t/Log/200-Database.log".IO.open( :mode<wo>, :create, :truncate);
-add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+#my $handle = "t/Log/200-Database.log".IO.open( :mode<wo>, :create, :truncate);
+#add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 #set-filter(|<ObserverEmitter Timer Socket>);
 #set-filter(|<ObserverEmitter>);
 
