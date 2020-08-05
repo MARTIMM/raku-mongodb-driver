@@ -99,7 +99,7 @@ method query (
 
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
-#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
+note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
       $!socket.close-on-fail if $!socket.defined;
 
       # Fatal messages from the program elsewhere
@@ -123,12 +123,14 @@ method query (
 
       # If not one of the above errors, rethrow the error after showing
       default {
-        .note;
-        .rethrow;
+        fatal-message($server.name ~ ': ' ~ .message);
+#        .note;
+#        .rethrow;
       }
     }
   }
 
+#note "rtt: $round-trip-time, ", Duration.new(0);
   return ( $result, $time-query ?? $round-trip-time !! Duration.new(0));
 }
 

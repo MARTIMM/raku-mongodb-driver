@@ -21,12 +21,12 @@ unit class MongoDB::ServerPool::Server:auth<github:MARTIMM>;
 #-------------------------------------------------------------------------------
 has Array $server-description = [];
 
-# name and port is separated for use by Socket.
-has Str $!server-name;
-has PortType $.server-port;
-
+## name and port is separated for use by Socket.
 has Str $.host;
 has Int $.port;
+
+has Str $.name;
+#has PortType $.server-port;
 
 #has Array[MongoDB::SocketPool::Socket] $!sockets;
 has Bool $!server-is-registered;
@@ -39,14 +39,11 @@ has Semaphore::ReadersWriters $!rw-sem;
 #has MongoDB::Client $.client;
 
 # part of key for observer keys
-has Str $.client-key;
-has Str $.server-key;
-
+#has Str $.client-key;
+#has Str $.server-key;
 
 #-------------------------------------------------------------------------------
-multi submethod BUILD (
-  Str:D :$!client-key, Str:D :$server-name!
-) {
+multi submethod BUILD ( Str:D :$server-name! ) {
 
   if $server-name ~~ m/ $<ip6addr> = ('[' .*? ']') / {
     my $h = $!host = $/<ip6addr>.Str;
@@ -55,17 +52,17 @@ multi submethod BUILD (
   }
 
   else {
-    ( $!host, $!port) = $server-name.split(':');
-    $!port //= 27017;
+    ( $!host, $!port ) = map(
+      -> $h, $p { ($h, ($p //= 27017).Int) }, $server-name.split(':')
+    )[0];
+#    $!port //= 27017;
   }
 
   self!init();
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-multi submethod BUILD (
-  Str:D :$!client-key, Str:D :$!host!, Int :$!port = 27017
-) {
+multi submethod BUILD ( Str:D :$!host!, Int :$!port = 27017 ) {
 
   self!init();
 }
@@ -100,8 +97,9 @@ method !init ( ) {
   $!server-name ~~ s/^ '[' //;
   $!server-name ~~ s/ ']' $//;
 }}
+  $!name = self!set-server-name;
 
-  trace-message("Server object for {self.name} initialized");
+  trace-message("Server object for $!name initialized");
 
   # set the heartbeat frequency
   my MongoDB::ObserverEmitter $event-manager .= new;
@@ -109,15 +107,15 @@ method !init ( ) {
   # observe results from monitor only for this particular server. use the
   # key generated in the uri object and the servername to prevent other
   # servers to interprete data not meant for them.
-  $!server-key = $!client-key ~ self.name;
+#  $!server-key = $!client-key ~ $!name;
   $event-manager.subscribe-observer(
-    $!server-key ~ ' monitor data',
+    $!name ~ ' monitor data',
     -> Hash $monitor-data { self!process-monitor-data($monitor-data); },
-    :event-key($!server-key ~ ' monitor data')
+    :event-key($!name ~ ' monitor data')
   );
 
   # now we can register a server
-note "Register a server: {self.name()}";
+#note "Register a server: $!name";
   $event-manager.emit( 'register server', self);
   $!server-is-registered = True;
 }
@@ -187,7 +185,7 @@ method !process-monitor-data ( Hash $monitor-data ) {
   } # else
 
   # Set the status with the new value
-  info-message("Server status of {self.name()} is $server-status");
+  info-message("Server status of $!name is $server-status");
 
   # Let the client find the topology using all found servers
   # in the same rhythm as the heartbeat loop of the monitor
@@ -198,8 +196,7 @@ method !process-monitor-data ( Hash $monitor-data ) {
   # more than one active
   my MongoDB::ObserverEmitter $notify-client;
   $notify-client.emit(
-    $!client-key ~ ' process topology',
-    ( self.name, $server-status, $is-master)
+    $!name ~ ' process topology', ( $!name, $server-status, $is-master)
   );
 }
 
@@ -225,14 +222,14 @@ method !process-status ( BSON::Document $mdata --> List ) {
     if $is-master {
       $server-status = ST-RSPrimary;
       $notify-client.emit(
-        $!client-key ~ ' add servers', @($mdata<hosts>)
+        $!name ~ ' add servers', @($mdata<hosts>)
       ) if $mdata<hosts>:exists;
     }
 
     elsif ? $mdata<secondary> {
       $server-status = ST-RSSecondary;
       $notify-client.emit(
-        $!client-key ~ ' add servers', @($mdata<primary>)
+        $!name ~ ' add servers', @($mdata<primary>)
       ) if $mdata<primary>:exists;
     }
 
@@ -284,7 +281,7 @@ method tap-monitor ( |c --> Tap ) {
 method get-socket (
   Bool :$authenticate = True --> MongoDB::SocketPool::Socket
 ) {
-note "$*THREAD.id() Get sock, authenticate = $authenticate";
+#note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
   my MongoDB::SocketPool $socket-pool .= instance;
   $socket-pool.get-socket( self.host, self.port
@@ -320,7 +317,7 @@ note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
     unless $socket.check-open {
       $socket = MongoDB::SocketPool::Socket;
-      trace-message("Socket cleared for {self.name}");
+      trace-message("Socket cleared for {$!name}");
     }
   }
 
@@ -329,11 +326,11 @@ note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
     next unless $socket.defined;
 
-    #if $socket.thread-id == $*THREAD.id() and $socket.server.name eq self.name {
-    if $socket.server.name eq self.name {
+    #if $socket.thread-id == $*THREAD.id() and $socket.server.name eq $!name {
+    if $socket.server.name eq $!name {
 
       $found-socket = $socket;
-      trace-message("Socket found for {self.name}");
+      trace-message("Socket found for $!name");
 
       last;
     }
@@ -349,7 +346,7 @@ note "$*THREAD.id() Get sock, authenticate = $authenticate";
         $found-socket = $socket .= new( :$!host, :$!port); #(:server(self));
         $created-anew = True;
         $slot-found = True;
-        trace-message("New socket inserted for {self.name}");
+        trace-message("New socket inserted for $!name");
       }
     }
 
@@ -358,7 +355,7 @@ note "$*THREAD.id() Get sock, authenticate = $authenticate";
       $found-socket .= new( :$!host, :$!port); #(:server(self));
       $created-anew = True;
       $!sockets.push($found-socket);
-      trace-message("New socket created for {self.name}");
+      trace-message("New socket created for $!name");
     }
   }
 
@@ -455,7 +452,7 @@ multi method raw-query (
 ) {
 
   # Be sure the server is still active
-  return ( BSON::Document, 0) unless $!server-is-registered;
+  return ( BSON::Document, Duration.new(0)) unless $!server-is-registered;
 
   my BSON::Document $doc;
   my Duration $rtt;
@@ -467,7 +464,7 @@ multi method raw-query (
     :server(self), :$authenticate, :$time-query
   );
 
-  ( $doc, $rtt // Duration.new(0));
+  ( $doc, $rtt);
 }
 
 #`{{
@@ -481,7 +478,7 @@ multi method raw-query (
   # Be sure the server is still active
   return BSON::Document unless $!server-is-registered;
 
-  debug-message("server directed query on collection $full-collection-name on server {self.name}");
+  debug-message("server directed query on collection $full-collection-name on server $!name");
 
   MongoDB::Wire.new.query(
     $full-collection-name, $query,
@@ -492,7 +489,7 @@ multi method raw-query (
 }}
 
 #-------------------------------------------------------------------------------
-method name ( --> Str ) {
+method !set-server-name ( --> Str ) {
 
 #`{{
   my Str $name = $!server-name // '-';
@@ -547,7 +544,7 @@ method cleanup ( ) {
   # that the server is un-registered.
   $!server-is-registered = False;
   my MongoDB::ObserverEmitter $event-manager .= new;
-  $event-manager.unsubscribe-observer($!server-key ~ ' monitor data');
+  $event-manager.unsubscribe-observer($!name ~ ' monitor data');
   $event-manager.emit( 'unregister server', self);
 
   # Clear all sockets

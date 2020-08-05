@@ -56,7 +56,6 @@ submethod BUILD {
         -> $e {
           my Bool $select = False;
           given ($e<event>.WHAT) {
-
             # when Regex, test if event from $events is same from $msg
             when Regex { $select = ($msg<event> ~~ $e<event>).Bool; }
 
