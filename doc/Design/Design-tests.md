@@ -34,9 +34,9 @@ There are several types of tests according to the wikipedia article [software te
 * More complex operations such as index juggling, mapping and information gathering.
 
 ### Behavior and stress tests
-* **MongoDB::Client** and **MongoDB::Server** as well as **MongoDB::Monitor** behavior accessing mongodb servers when a URI is provided.
+* **MongoDB::Client** and **MongoDB::ServerPool::Server** as well as **MongoDB::Monitor** behavior accessing mongodb servers when a URI is provided.
 * Driver behavior when a server goes down, starts up or changes state.
-* Topology and server states a driver can be in. These are held in the **MongoDB::Client** and **MongoDB::Server** objects.
+* Topology and server states a driver can be in. These are held in the **MongoDB::Client** and **MongoDB::ServerPool::Server** objects.
 * Behavior tests are done against servers of different versions.
 
 ### Other tests

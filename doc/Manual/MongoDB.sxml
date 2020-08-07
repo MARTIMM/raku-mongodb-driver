@@ -191,7 +191,7 @@ $!d5b.article [
   $sect1 [
     $title [Implementation]
     $para [
-      A short description of what happens when a user instantiates a MongoDB::Client object providing it with a URI. The Client object parses the URI for server names. These are used by the Client to instantiate a MongoDB::Server object. The server object instantiates a MongoDB::Monitor object to keep contact with the server and to process any changes when they appear. The Monitor object informs the Server object to set the Server state. The Client object will then use the Server states to define the topology of that group of servers.
+      A short description of what happens when a user instantiates a MongoDB::Client object providing it with a URI. The Client object parses the URI for server names. These are used by the Client to instantiate a MongoDB::ServerPool::Server object. The server object instantiates a MongoDB::Monitor object to keep contact with the server and to process any changes when they appear. The Monitor object informs the Server object to set the Server state. The Client object will then use the Server states to define the topology of that group of servers.
     ]
     $para [
       Conflicts can happen when servers defined in the URI not belong together in a group. For example a replica server and a standalone server can not be taken together in one URI because both servers can accept commands to change data. The Client object cannot guess to which of the servers the command must be send to. In such cases the topology is set to $emphasis[MongoDB::TT-Unknown] which will block any operation.
@@ -200,7 +200,7 @@ $!d5b.article [
     $sect2 [
       $title [Server states]
       $para [
-        Server states are situations in which a server can be. The server is queried regularly with a so called $emphasis[ismaster] command. The result of this command is processed to see what kind of server we are dealing with. Based on these results the $emphasis[MongoDB::Server] object sets a state which is displayed in the table below.
+        Server states are situations in which a server can be. The server is queried regularly with a so called $emphasis[ismaster] command. The result of this command is processed to see what kind of server we are dealing with. Based on these results the $emphasis[MongoDB::ServerPool::Server] object sets a state which is displayed in the table below.
       ]
 
       $para [
@@ -537,7 +537,7 @@ $!d5b.article [
     ]
 
     $sect2 [
-      $title [MongoDB::Server]
+      $title [MongoDB::ServerPool::Server]
       $para [
 
       ]
