@@ -147,7 +147,10 @@ submethod BUILD (
 
       # create Server object
       my MongoDB::ServerPool $server-pool .= instance;
-      $server-pool.add-server( $server-name, :status(ST-Unknown), :!ismaster);
+      $server-pool.add-server(
+        $!uri-obj.keyed-uri, $server-name, $!uri-obj,
+        :status(ST-Unknown), :!ismaster
+      );
 
       $!observed-servers{$server-name} = True;
     }
@@ -525,7 +528,7 @@ method select-server (
 #note "topo: ", $topology-description.perl;
 
   my MongoDB::ServerPool $server-pool .= instance;
-  $server-pool.select-server( $read-concern, $!uri-obj, $!observed-servers)
+  $server-pool.select-server( $read-concern, $!uri-obj.keyed-uri);
 }
 
 #`{{
@@ -701,7 +704,10 @@ method !add-servers ( @new-hosts ) {
 #    );
 
       # create Server object
-      $server-pool.add-server( $server-name, :status(ST-Unknown), :!ismaster);
+      $server-pool.add-server(
+        $!uri-obj.keyed-uri, $server-name, $!uri-obj,
+        :status(ST-Unknown), :!ismaster
+      );
 
       $!observed-servers{$server-name} = True;
     }

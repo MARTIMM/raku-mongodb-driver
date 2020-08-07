@@ -9,19 +9,21 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 has Str $.name;
-has ClientType $.client;
+#has ClientType $.client;
+has Str $.client-key;
 has BSON::Document $.read-concern;
 has MongoDB::Collection $!cmd-collection;
 
 #-----------------------------------------------------------------------------
 submethod BUILD (
-  ClientType:D :$!client!, Str:D :$name, BSON::Document :$read-concern
+  ClientType:D :$client!, Str:D :$name, BSON::Document :$read-concern
 ) {
 
-  $!read-concern = $read-concern // $!client.read-concern;
+  $!read-concern = $read-concern // $client.read-concern;
 
   self!set-name($name);
 #    $!client = $client;
+  $!client-key = $client.uri-obj.keyed-uri;
 
   debug-message("create database $name");
 

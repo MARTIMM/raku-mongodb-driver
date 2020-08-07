@@ -7,28 +7,28 @@ use BSON::Document;
 use MongoDB;
 use MongoDB::Wire;
 use MongoDB::Cursor;
+use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
 class Collection {
 
-  has DatabaseType $.database;
+#  has DatabaseType $.database;
   has Str $.name;
   has Str $.full-collection-name;
+  has Str $.client-key;
   has BSON::Document $.read-concern;
 
   #-----------------------------------------------------------------------------
   submethod BUILD (
-    DatabaseType:D :$database,
-    Str:D :$name,
-    BSON::Document :$read-concern
+    DatabaseType:D :$database, Str:D :$!name, BSON::Document :$!read-concern
   ) {
 
-    $!read-concern = $read-concern // $database.read-concern;
+    $!read-concern //= $database.read-concern;
 
-    $!database = $database;
-    self!set-name($name) if ?$name;
+    $!client-key = $database.client-key;
+    $!full-collection-name = [~] $database.name, '.', $!name;
 
-    debug-message("create collection $database.name()\.$name");
+    debug-message("create collection $!full-collection-name");
   }
 
   #-----------------------------------------------------------------------------
@@ -49,9 +49,8 @@ class Collection {
                              !! $!read-concern;
 
     #my ServerClassType $server = $!database.client.select-server(
-    my $server = $!database.client.select-server(
-      :read-concern($rc)
-    );
+    my MongoDB::ServerPool $server-pool .= instance;
+    my $server = $server-pool.select-server( $rc, $!client-key);
 
     unless $server.defined {
       error-message("No server object for query");
@@ -90,9 +89,11 @@ class Collection {
 
 #note "Find server doctype";
     #my ServerClassType $server = $!database.client.select-server(
-    my $server = $!database.client.select-server(
-      :read-concern($rc)
-    );
+#    my $server = $!database.client.select-server(
+#      :read-concern($rc)
+#    );
+    my MongoDB::ServerPool $server-pool .= instance;
+    my $server = $server-pool.select-server( $rc, $!client-key);
 #note "Server doctype $server.name()";
 
     unless $server.defined {
@@ -116,6 +117,7 @@ class Collection {
     );
   }
 
+#`{{
   #-----------------------------------------------------------------------------
   # Set the name of the collection. Used by command collection to set
   # collection name to '$cmd'. There are several other names starting with
@@ -137,14 +139,17 @@ class Collection {
     self!set-full-collection-name;
   }
 
+
   #-----------------------------------------------------------------------------
   # Helper to set full collection name in cases that the name of the database
   # isn't available at BUILD time
-  method !set-full-collection-name ( ) {
+  method !set-full-collection-name ( $!database ) {
 
-    return unless !?$!full-collection-name and ?$!database.name and ?$!name;
+#??    return unless ! $!full-collection-name and ?$!database.name and ?$!name;
     $!full-collection-name = [~] $!database.name, '.', $!name;
   }
+}}
+
 }
 
 

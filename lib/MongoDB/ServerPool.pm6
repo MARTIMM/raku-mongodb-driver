@@ -24,18 +24,26 @@ use OpenSSL::Digest;
 #-------------------------------------------------------------------------------
 my MongoDB::ServerPool $instance;
 
-#enum ServerPoolInfo < ServerObject ClientKey ServerPoolKey ServerData >;
-enum ServerPoolInfo < RefCount ServerObject ServerData >;
+# Servers are stored using two hashes. One to store clients which the server
+# provides and one to store the server. The key of the client is provided by
+# the client itself as is the server key in the form of a server name
+# 'server:port' which is unique. Several clients can set a server but the
+# server is only created once. Cleaning up is done using the client key. The
+# method checks if the server is used by other clients before removing the
+# server. When done the client is also removed from its hash.
 
-# hash key is 'server:port' string which should be unique and cannot belong
-# to multiple topologies.
+#enum ServerPoolInfo < RefCount ServerObject ServerData >;
+enum ServerPoolInfo < ServerObject ServerData UriObject >;
+
+has Hash $!clients-of-servers;
 has Hash $!servers-in-pool;
 
 has Semaphore::ReadersWriters $!rw-sem;
 
 #-------------------------------------------------------------------------------
 submethod BUILD ( ) {
-  $!servers-in-pool = {};
+  $!servers-in-pool = %();
+  $!clients-of-servers = %();
 
   $!rw-sem .= new;
   #$!rw-sem.debug = True;
@@ -64,67 +72,57 @@ method instance ( --> MongoDB::ServerPool ) {
 }
 
 #-------------------------------------------------------------------------------
-multi method add-server (
-  Str:D $server-name, *%server-data
-) {
-  if $!rw-sem.reader(
-    'server-info', { $!servers-in-pool{$server-name}:!exists }
-  ) {
-    my MongoDB::ServerPool::Server $s .= new(:$server-name);
-    self.add-server( $s, |%server-data);
-  }
-
-  else {
-    trace-message("$server-name already added");
-    $!servers-in-pool{$server-name}[RefCount]++;
-  }
-}
-
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-multi method add-server (
-  Str:D $host, Int $port = 27017, *%server-data
-) {
-  my Str $server-name = $host ~~ /':'/ ?? "[$host]:$port" !! "$host:$port";
-  if $!rw-sem.reader(
-    'server-info', { $!servers-in-pool{$server-name}:!exists }
-  ) {
-    my MongoDB::ServerPool::Server $s .= new( :$host, :$port);
-    self.add-server( $s, |%server-data);
-  }
-
-  else {
-    trace-message("$server-name already added");
-    $!servers-in-pool{$server-name}[RefCount]++;
-  }
-}
-
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-multi method add-server (
-  MongoDB::ServerPool::Server:D $server, *%server-data
+#multi method add-server (
+method add-server (
+  Str:D $client-key, Str:D $server-name, MongoDB::Uri $uri-obj, *%server-data
 ) {
 
-  my Str $server-name = $server.name;
-  %server-data //= %();
-
+  # set client info
   $!rw-sem.writer( 'server-info', {
-      if $!servers-in-pool{$server-name}:exists {
-        trace-message("$server-name already added");
-        $!servers-in-pool{$server-name}[RefCount]++;
-      }
+      # check if client exists, if not, init
+      $!clients-of-servers{$client-key} = %()
+        unless $!clients-of-servers{$client-key}:exists;
 
-      else {
-
-        trace-message("$server-name added");
-
-        # Keep order: ServerObject, ServerData from enum ServerPoolInfo.
-        # %server-data must be set like this otherwise modify immutable
-        # value error later on.
-        $!servers-in-pool{$server-name} = [
-          0, $server, %(|%server-data)
-        ];
-      }
+      # add server to this client
+      $!clients-of-servers{$client-key}{$server-name} = True;
     } # writer block
   ); # writer
+
+  if $!rw-sem.reader(
+    'server-info', { $!servers-in-pool{$server-name}:exists }
+  ) {
+
+    trace-message("$server-name already added");
+#    $!servers-in-pool{$server-name}[RefCount]++;
+  }
+
+  else {
+
+    %server-data //= %();
+
+    $!rw-sem.writer( 'server-info', {
+
+        if $!servers-in-pool{$server-name}:exists {
+          trace-message("$server-name already added");
+#          $!servers-in-pool{$server-name}[RefCount]++;
+        }
+
+        else {
+
+          my MongoDB::ServerPool::Server $server .= new(:$server-name);
+
+          # Keep order: ServerObject, ServerData, UriObject from enum
+          # ServerPoolInfo. %server-data must be set like this otherwise
+          # modify immutable value error later on.
+          $!servers-in-pool{$server-name} = [
+            $server, %(|%server-data), $uri-obj
+          ];
+
+          trace-message("$server-name added");
+        }
+      } # writer block
+    ); # writer
+  }
 }
 
 #-------------------------------------------------------------------------------
@@ -208,9 +206,20 @@ method get-server-names ( --> Array ) {
 
 #-------------------------------------------------------------------------------
 method select-server (
-  BSON::Document $read-concern, MongoDB::Uri $uri-obj, Hash $selectable-servers
+  BSON::Document $read-concern, Str $client-key
   --> MongoDB::ServerPool::Server
 ) {
+
+  # get server names belonging to this client
+  my Hash $selectable-servers =
+    $!rw-sem.reader( 'server-info', { $!clients-of-servers{$client-key} } );
+
+  my Hash $servers-in-pool =
+    $!rw-sem.reader( 'server-info', { $!servers-in-pool } );
+
+  # the uri object can be applied to all servers delevered by the client
+  my MongoDB::Uri $uri-obj =
+    $servers-in-pool{$selectable-servers.kv[0]}[UriObject];
 
   my Str $selected-server;
 
@@ -220,7 +229,7 @@ method select-server (
   # find suitable servers by topology type and operation type
   repeat {
 
-    my Hash $servers-in-pool = $!rw-sem.reader( 'server-info', {
+    $servers-in-pool = $!rw-sem.reader( 'server-info', {
         $!servers-in-pool
       }
     );
@@ -312,7 +321,7 @@ method select-server (
     # else wait for status and topology updates
     #TODO synchronize with monitor times
 #    sleep $uri-obj.options<heartbeatFrequencyMS> / 1000.0;
-    sleep 0.3;
+    sleep 0.2;
 
   #TODO synchronize with serverSelectionTimeoutMS
   } while ((now - $t0) * 1000) < $uri-obj.options<serverSelectionTimeoutMS>;
@@ -331,12 +340,39 @@ method select-server (
 }
 
 #-------------------------------------------------------------------------------
-method cleanup ( $server-name ) {
+method cleanup ( Str:D $client-key ) {
+
+  # get server names of this client while removing the client
+  my Hash $client-data = $!rw-sem.writer( 'server-info', {
+       $!clients-of-servers{$client-key}:delete;
+    }
+  );
+
+  my @servers = $client-data.keys;
+
+  # skim through rest of the clients to gather used servernames
+  my @other-servers = ();
+  my $clients-of-servers =
+    $!rw-sem.reader( 'server-info', { $!clients-of-servers; });
+
+  # get servernames and make the list with unique entries
+  for $clients-of-servers.kv -> Str $client-key, Hash $servers {
+    @other-servers.push: $servers.keys;
+  }
+  @other-servers .= unique;
+
+  # test the list against the removed clients server list and remove any server
+  # name found with the other clients.
+  my Int $idx;
+  for @other-servers -> $osrvr {
+    @servers.splice( $idx, 1) if $idx = @servers.first( $osrvr, :k);
+  }
 
   $!rw-sem.writer( 'server-info', {
-      if $!servers-in-pool{$server-name}:exists {
-        $!servers-in-pool{$server-name}[RefCount]--;
-        if $!servers-in-pool{$server-name}[RefCount] == 0 {
+      # now we can remove the servers which are not in use by other clients
+      for @servers -> $server-name {
+        # check if the name is still there, can be removed behind my back
+        if $!servers-in-pool{$server-name}:exists {
           $!servers-in-pool{$server-name}[ServerObject].cleanup;
           $!servers-in-pool{$server-name}:delete;
         }
@@ -344,8 +380,6 @@ method cleanup ( $server-name ) {
     }
   );
 }
-
-
 
 =finish
 #-------------------------------------------------------------------------------

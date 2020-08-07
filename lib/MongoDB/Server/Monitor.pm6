@@ -337,7 +337,8 @@ method monitor-work ( ) {
           :ok, :monitor($doc<documents>[0]),  # :$server-name,
           :weighted-mean-rtt-ms(%rservers{$server-name}[WMRttMs])
         } # emit data
-      );  # emit
+      ) if %registered-servers{$server-name}[ServerObj].defined;  # emit
+      # ^^^ keep testing, other thread may have been in deleting process
 
 #      $!monitor-data-supplier.emit( {
 #          :ok, :monitor($doc<documents>[0]), :$server-name,
@@ -357,7 +358,9 @@ method monitor-work ( ) {
           ' monitor data', {
             :!ok, :reason('Undefined document') #, :$server-name
           }
-      );
+      ) if %registered-servers{$server-name}[ServerObj].defined;
+      # ^^^ keep testing, other thread may have been in deleting process
+
 #      $!monitor-data-supplier.emit( %(
 #          :!ok, reason => 'Undefined document', :$server-name
 #        ) # emit data

@@ -3,6 +3,7 @@ use BSON::Document;
 use MongoDB;
 use MongoDB::Header;
 use MongoDB::Wire;
+use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
@@ -10,7 +11,8 @@ unit package MongoDB:auth<github:MARTIMM>;
 #-------------------------------------------------------------------------------
 class Cursor does Iterable {
 
-  has $.client;
+#  has $.client;
+  has Str $!client-key;
   has $.full-collection-name;
 
   # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
@@ -33,7 +35,8 @@ class Cursor does Iterable {
     Any:D :$server!, Int :$number-to-return = 0
   ) {
 
-    $!client = $collection.database.client;
+#    $!client = $collection.database.client;
+    $!client-key = $collection.client-key;
     $!full-collection-name = $collection.full-collection-name;
 
     # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
@@ -63,7 +66,8 @@ class Cursor does Iterable {
     BSON::Document :$read-concern, Int :$number-to-return = 0
   ) {
 
-    $!client = $client;
+#    $!client = $client;
+    $!client-key = $client.uri-obj.keyed-uri;
     $!full-collection-name = $cursor-doc<ns>;
     my MongoDB::Header $header .= new;
 
@@ -75,7 +79,9 @@ class Cursor does Iterable {
     #
     $!id = $header.encode-cursor-id($cursor-doc<id>);
     if [+] @$!id {
-      $!server = $!client.select-server(:$read-concern);
+#      $!server = $!client.select-server(:$read-concern);
+      my MongoDB::ServerPool $server-pool .= instance;
+      $!server = $server-pool.select-server( $read-concern, $!client-key);
     }
 
     else {
