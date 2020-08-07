@@ -5,7 +5,7 @@ use v6;
 use MongoDB;
 use MongoDB::Client;
 #use MongoDB::Database;
-use MongoDB::Server;
+use MongoDB::ServerPool::Server;
 use MongoDB::Server::Control;
 use MongoDB::MDBConfig;
 use MongoDB::HL::Users;
@@ -92,7 +92,7 @@ sub get-server-state (
     print "server state of $connection is $state\n";
 
     note "\nGet server object";
-    my MongoDB::Server $server = $client.select-server;
+    my MongoDB::ServerPool::Server $server = $client.select-server;
     note "Select database admin";
 #    my MongoDB::Database $database = $client.database('admin');
     note "Get master data";

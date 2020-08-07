@@ -5,7 +5,7 @@ use v6;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
-use MongoDB::Server;
+#use MongoDB::ServerPool::Server;
 use MongoDB::Server::Control;
 use MongoDB::HL::Users;
 use BSON::Document;
@@ -134,7 +134,7 @@ sub check-convert-replicaset (
   my MongoDB::Client $c1 .= new(
     :uri("mongodb://192.168.0.253:$port1/?replicaSet=MetaLibrary")
   );
-  my MongoDB::Server $s1 = $c1.select-server;
+  my MongoDB::ServerPool::Server $s1 = $c1.select-server;
 
   my $s1-state = $c1.server-status("192.168.0.253:$port1");
   info-message("server state of 192.168.0.253:$port1 is $s1-state");

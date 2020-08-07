@@ -8,11 +8,11 @@ use MongoDB::Database;
 use MongoDB::Collection;
 
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = "Issue31a.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter MonitorTimer Socket>);
+#set-filter(|<ObserverEmitter Timer Socket>);
 
 sub MAIN( ) {
 
