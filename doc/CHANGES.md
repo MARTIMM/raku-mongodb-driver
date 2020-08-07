@@ -7,7 +7,9 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
     * Add module **MongoDB::Server::SocketPool**. This will take away some administration from **MongoDB::Server**.
     * Move authentication to **MongoDB::Server::Socket** for the same reason.
     * Introduce `connectTimeoutMS` and `socketTimeoutMS` from the mongodb design documents and URI specification.
-  * rename **MongoDB::Server::MonitorTimer** into **MongoDB::Timer**.
+  * Rename **MongoDB::Server::MonitorTimer** into **MongoDB::Timer**.
+  * Remove dependency on Client class. Use a client key string instead which is sufficient enough to get a server.
+  * Temporary inhibiting authentication.
 
 * 2020-07-18 0.43.12
   * Cleaning up and some redesigning according to behavior documents from MongoDB.
