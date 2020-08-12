@@ -115,6 +115,9 @@ my $uri-actions = class {
 #-------------------------------------------------------------------------------
 submethod BUILD ( Str :$!uri ) {
 
+  $!servers = [];
+  $!options = %();
+
   my $key-string = '';
 
   my $actions = $uri-actions.new;
@@ -126,7 +129,6 @@ submethod BUILD ( Str :$!uri ) {
   # if parse is ok
   if ? $m {
     # get all server names and ports
-    $!servers = [];
     if $actions.host-ports.elems {
       for @($actions.host-ports) -> $hp {
         $key-string ~= "$hp<host>:$hp<port>";
