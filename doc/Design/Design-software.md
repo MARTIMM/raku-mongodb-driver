@@ -23,22 +23,33 @@ There are several documents written by a group of people specially for the devel
 
 ### Notes about Clients and Servers
 
-* A **Server** in a topology can never be in any other kind of topology. This means that a **Client** object which started the build of a topology using some URI always end up with the same set of **Server**'s belonging to that topology. The URI's can be different although may not contradict.
+* A **Server** in a topology can never be in any other kind of topology. This means that a **Client** object which started the build of a topology using some URI always end up with the same set of **Server**'s belonging to that topology. The **Uri**'s can be different although may not contradict.
 
 * A replicaset must always have replica info in the URI. The other topology types like standalone and sharded do not have extra info in the URI.
 
-* Clients add the servers to the **ServerPool**. The client must provide a key so that the **ServerPool** can see which servers can be removed if there are no other clients are using those servers.
+* A **Client** adds the servers found in the **Uri** to the **ServerPool** using a server name. This name is a `host:port` string. The **ServerPool** creates the server. The client must provide a key so that the **ServerPool** can see which servers can be removed if there are no other clients using those servers.
 
-* Monitor keeps a set of servers to monitor. This is a set which can belong to several to different topologies. When there is a server pool, the monitor could get the servers from there to monitor.
+* A **Server** registers itself to the **Monitor** to get status information about the `mongod` server. Part of this info is sent to its corresponding **Client** to calculate its topology.
 
-* Where does authentication take place when it is needed? Close to the I/O in **Socket**? In the **ServerPool** where more information is available? In the **Client**?
+* **Monitor** keeps a set of **Server** objects to monitor. This is a set which can belong to several different topologies. Monitor knows about them when they are registered by the server.
 
-#### Steps to generate a key to store the server in a serverpool
+* Where does authentication take place when it is needed? Close to the I/O in **Socket**? In the **ServerPool** where more information is available?
 
-* Client creates client key
-* Client creates uri object from provided uri string
-* For each server from this uri object
-....
+* **Server** objects can have more opened sockets to control connections with or without authentication and also with different credentials if authenticated.
+  * A **Socket** can do authentication on `.new()`.
+  * **SocketPool** does the administration in `.get-socket()`. It creates a new **Socket** when the combination of parameters is not yet available.
+
+#### 2020-08-10 New client with same topology and server set
+* Old client still lives. Servers not destroyed
+* New client initializes and finds one server in uri.
+* Serverpool gets servername to store but sees same already in pool.
+* Client is notified so it can take measures. Tries to calculate topology.
+* Client misses some info (in this case a replica primary server).
+* Monitor just finished previous polling servers and sees that servers are settled and waits for heartbeatfrequency = 10 sec.
+* In the mean time the run command is started and Wire needs a server. The `.select-server()` is called and sees that the client does not have its topology ready so it has to wait.
+* After the heartbeatfrequency wait, Monitor revisits the servers and sends data to the server and server sends data to the client.
+* Client can now finish the topology.
+* Select server returns a server and Wire can finish the requested task.
 
 #### Other thing to improve
 How to get a server and socket
@@ -132,7 +143,7 @@ box "never\nending" #efffff
 end box
 
 Client -> Monitor ++: Monitor.instance()
-Monitor -> Monitor --: Monitor
+'Monitor -> Monitor --: Monitor
 deactivate Monitor
 Monitor -> Monitor ++ #A9DCDF:
 note right
