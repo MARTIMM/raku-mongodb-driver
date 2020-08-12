@@ -138,7 +138,7 @@ subset ClientType is export where .^name eq 'MongoDB::Client';
 subset DatabaseType is export where .^name eq 'MongoDB::Database';
 subset CollectionType is export where .^name eq 'MongoDB::Collection';
 #subset ServerClassType is export where .^name eq 'MongoDB::Server';
-subset SocketType is export where .^name eq 'MongoDB::Server::Socket';
+#subset SocketType is export where .^name eq 'MongoDB::Server::Socket';
 
 #------------------------------------------------------------------------------
 #signal(Signal::SIGTERM).tap: {say "Hi"; die "Stopped by user"};
