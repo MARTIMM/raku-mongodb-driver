@@ -17,6 +17,7 @@ unit class MongoDB::ObserverEmitter:auth<github:MARTIMM>;
 
 # make events and supply global to the Emitter objects
 my Array $events;
+my Hash $event-keys;
 my Supplier $supplier;
 my Supply $supply;
 
@@ -30,6 +31,9 @@ submethod BUILD {
   return if $supplier.defined;
 
   trace-message('First time build');
+
+  $events = [];
+  $event-keys = %();
 
   # first time and only init
   $supplier = Supplier.new;
@@ -46,6 +50,7 @@ submethod BUILD {
 
     # provide the data from $msg to the selected observer
     -> $msg {
+#trace-message("process '$msg<event>.perl()'");
 
       my @local-events = $rw-sem.reader( 'event', { (@$events); }).flat;
 
@@ -54,8 +59,10 @@ submethod BUILD {
 
         # test sub to see which observer must be called
         -> $e {
+#trace-message("  ~~ $e<event>.perl()");
+
           my Bool $select = False;
-          given ($e<event>.WHAT) {
+          given $e<event> {
             # when Regex, test if event from $events is same from $msg
             when Regex { $select = ($msg<event> ~~ $e<event>).Bool; }
 
@@ -66,7 +73,8 @@ submethod BUILD {
             default { $select = $e<event> eq $msg<event>; }
           };
 
-          trace-message( "emit, key: '$e<event-key>'") if $select;
+          trace-message("emit event '$e<event>' to key '$e<event-key>'")
+            if $select;
 
           $select
         }
@@ -80,18 +88,60 @@ submethod BUILD {
 method subscribe-observer (
   Any:D $event, Callable:D $callable, Str:D :$event-key!
 ) {
-  trace-message("subscribe, key: $event-key");
-  $rw-sem.writer(
-    'event', { $events.push: %( :$event, :$callable, :$event-key ); }
-  );
+  if $rw-sem.reader( 'event', { $event-keys{$event-key}:exists; } ) {
+    trace-message("observer key '$event-key' already in use");
+  }
+
+  else {
+    trace-message("observer key '$event-key' added");
+    $rw-sem.writer(
+      'event', {
+        $event-keys{$event-key} = $events.elems;
+        $events.push: %( :$event, :$callable, :$event-key );
+#trace-message("sub ev0: $event-keys.values.sort()");
+      }
+    );
+  }
+}
+
+#-------------------------------------------------------------------------------
+method check-subscription ( Str:D $event-key --> Bool ) {
+  $rw-sem.reader( 'event', { $event-keys{$event-key}:exists; } );
 }
 
 #-------------------------------------------------------------------------------
 # remove a handler for some event. only string typed keys can be removed
 method unsubscribe-observer ( Str:D $event-key ) {
-  trace-message("unsubscribe, key: '$event-key'");
-  my @local-events = $rw-sem.reader( 'event', { (@$events); }).flat;
 
+
+#  my @local-events = $rw-sem.reader( 'event', { (@$events); }).flat;
+#  my Hash $local-keys = $rw-sem.reader( 'event', { $event-keys; });
+
+  if $rw-sem.reader( 'event', { $event-keys{$event-key}:exists; } ) {
+    $rw-sem.writer( 'event', {
+        # get index to entr and remove entry
+        my Int $idx = $event-keys{$event-key}:delete;
+#trace-message("usb ev0: $event-key, $idx, $events[$idx]<event-key>");
+#trace-message("usb ev1: $event-keys.values.sort()");
+        $events.splice( $idx, 1);
+
+        # and adjust indices to entries below this one
+        for $event-keys.keys -> $evk {
+#trace-message("adjust index: $evk, $event-keys{$evk}") if $event-keys{$evk} > $idx;
+          $event-keys{$evk}-- if $event-keys{$evk} > $idx;
+        }
+#trace-message("usb ev3: $event-keys.values.sort()");
+      }
+    );
+
+    trace-message("observer removed, key: '$event-key'");
+  }
+
+  else {
+    trace-message("observer key $event-key not found");
+  }
+
+#`{{
   loop ( my Int $i = 0; $i < @local-events.elems; $i++ ) {
     if @local-events[$i]<event-key> ~~ $event-key {
       @local-events.splice( $i, 1);
@@ -101,13 +151,13 @@ method unsubscribe-observer ( Str:D $event-key ) {
       last;
     }
   }
+}}
 }
 
 #-------------------------------------------------------------------------------
 # provide data for an event to an observer
 method emit ( $event, $data? = Nil ) {
   my Supplier $local-supplier = $rw-sem.reader( 'event', { $supplier; });
-
 
   $local-supplier.emit: %( :$event, :$data );
 }
