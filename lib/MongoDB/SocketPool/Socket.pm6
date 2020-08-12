@@ -71,6 +71,8 @@ submethod BUILD ( Str:D :$host, Int:D :$port ) {
     $!socket .= new( :$host, :$port);
     CATCH {
       default {
+        trace-message('open socket to $host, $port AF-INET: ' ~ .message);
+
         # Retry for ipv6, throws when fails
         $!socket .= new( :$host, :$port, :family(PF_INET6));
       }
