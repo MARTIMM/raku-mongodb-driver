@@ -151,51 +151,106 @@ method !unregister-server ( $server ) {
 #-------------------------------------------------------------------------------
 method !start-monitor ( ) {
 
+  $heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
+  $servers-settled = False;
+  $no-servers-available = True;
+
+  debug-message("HeartbeatFrequencyMs set to $heartbeat-frequency-ms ms");
+
+  $rw-sem .= new;
+  #$rw-sem.debug = True;
+  $rw-sem.add-mutex-names(
+    <m-servers mon-wait-timer>, :RWPatternType(C-RW-WRITERPRIO)
+  );
+
+  %registered-servers = %();
+
+  $monitor-command .= new: (isMaster => 1);
+
+  # observe heartbeat changes
+  my MongoDB::ObserverEmitter $event-manager .= new;
+  $event-manager.subscribe-observer(
+    'set heartbeatfrequency ms',
+    -> Int $heartbeat { self!set-heartbeat($heartbeat) },
+    :event-key<heartbeat>
+  );
+
+  # observe server registration
+  $event-manager.subscribe-observer(
+    'register server',
+#    -> MongoDB::ServerClassType:D $server { self!register-server($server) },
+    -> $server { self!register-server($server) },
+    :event-key<register-server>
+  );
+
+  # observe server deregistration
+  $event-manager.subscribe-observer(
+    'unregister server',
+#    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
+    -> $server { self!unregister-server($server) },
+    :event-key<unregister-server>
+  );
+
+try {
+  # set the code aside the main thread
+  Promise.start( {
+      # set a short starting time
+      $monitor-timer = MongoDB::Timer.in(0.1);
+      loop {
+
+        # start first run. should start after 0.1 sec from previous statement.
+        #$promise-monitor .= start( { self.monitor-work } );
+        $promise-monitor = $monitor-timer.promise.then( {
+            self.monitor-work;
+          }
+        );
+
+        await $promise-monitor;
+
+        # wait for end of thread or when waittime is canceled
+        if $promise-monitor.status ~~ PromiseStatus::Kept {
+          trace-message('wait period finished');
+#          $promise-monitor.result;
+        }
+
+        elsif $promise-monitor.status ~~ PromiseStatus::Broken {
+          trace-message(
+            'wait period interrupted: ' ~ $promise-monitor.cause ~
+            "monitor heartbeat shortened for new data"
+          );
+        }
+
+        # heartbeat can be adjusted with set-heartbeat() or $servers-settled
+        # demands shorter cycle using SETTLE-FREQUENCY-MS
+        my $heartbeat-frequency =
+          ( ? $no-servers-available
+              ?? NO-SERVERS-FREQUENCY-MS
+              !! ( $servers-settled
+                    ?? $heartbeat-frequency-ms
+                    !! SETTLE-FREQUENCY-MS
+                 )
+          );
+
+        trace-message(
+          ($no-servers-available ?? "no servers available, " !! '') ~
+          ($servers-settled ?? "servers are settled, " !! '') ~
+          "current monitoring waittime: $heartbeat-frequency ms"
+        );
+
+        # create the cancelable thread. wait is in seconds
+        $monitor-timer = MongoDB::Timer.in(
+          $heartbeat-frequency / 1000.0
+        );
+      } # loop
+    }   # Promise code
+  );    # Promise.start
+CATCH {.note;}
+}
+
+
+#`{{
   # infinite
   Promise.start( {
-
-      $heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
-      $servers-settled = False;
-      $no-servers-available = True;
-
-      debug-message("HeartbeatFrequencyMs set to $heartbeat-frequency-ms ms");
-
-      $rw-sem .= new;
-      #$rw-sem.debug = True;
-      $rw-sem.add-mutex-names(
-        <m-servers mon-wait-timer>, :RWPatternType(C-RW-WRITERPRIO)
-      );
-
-      %registered-servers = %();
-
-      $monitor-command .= new: (isMaster => 1);
-
-      # observe heartbeat changes
-      my MongoDB::ObserverEmitter $event-manager .= new;
-      $event-manager.subscribe-observer(
-        'set heartbeatfrequency ms',
-        -> Int $heartbeat { self!set-heartbeat($heartbeat) },
-        :event-key<heartbeat>
-      );
-
-      # observe server registration
-      $event-manager.subscribe-observer(
-        'register server',
-#    -> MongoDB::ServerClassType:D $server { self!register-server($server) },
-        -> $server { self!register-server($server) },
-        :event-key<register-server>
-      );
-
-      # observe server deregistration
-      $event-manager.subscribe-observer(
-        'unregister server',
-#    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
-        -> $server { self!unregister-server($server) },
-        :event-key<unregister-server>
-      );
-
-
-
       $monitor-timer = MongoDB::Timer.in(0.1);
 
       # start first run. should start after 0.1 sec from previous statement.
@@ -243,18 +298,20 @@ method !start-monitor ( ) {
           $heartbeat-frequency / 1000.0
         );
 
-try {
         $promise-monitor = $monitor-timer.promise.then( {
+#try {
             self.monitor-work;
+#CATCH { .note }
+#}
           }
         );
 
         await $promise-monitor;
-CATCH { .note }
-}
+#trace-message("Promise: $promise-monitor.status()");
       } # loop
     }   # Promise code
   );    # Promise.start
+}}
 }       # method
 
 #-------------------------------------------------------------------------------
@@ -284,17 +341,15 @@ method monitor-work ( ) {
   trace-message("Servers to monitor: " ~ %rservers.keys.join(', '));
   for %rservers.keys -> $server-name {
 
-#note "monitor-work server $server-name";
+#note "monitor-work server $server-name, ", %rservers.perl;
 
-    # last check if server is still registered
+    # last check if server is still registered in original structure
     next unless $rw-sem.reader(
-      'm-servers',
-      {
-        ( %rservers{$server-name}:exists and
-          %rservers{$server-name}[ServerObj].defined;
-        )
-      }
-    );
+        'm-servers',
+        { %registered-servers{$server-name}:exists and
+          %registered-servers{$server-name}[ServerObj].defined;
+        }
+      );
 
     # get server info
     my $server = %rservers{$server-name}[ServerObj];
@@ -302,12 +357,17 @@ method monitor-work ( ) {
       'admin.$cmd', $monitor-command, :!authenticate, :time-query
     );
 
+
     my Str $doc-text = ($doc // '-').perl;
     trace-message("is-master request result for $server-name: $doc-text");
 
     # when doc is defined, the request ended properly. the ok field
     # in the doc will tell if the operation is succsessful or not
     if $doc.defined {
+
+#note "Use: %registered-servers.perl()";
+#note 'emit to ',%rservers{$server-name}[ServerObj].name ~ ' monitor data';
+
       # Calculation of mean Return Trip Time. See also
       # https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#calculation-of-average-round-trip-times
       %rservers{$server-name}[WMRttMs] = Duration.new(
@@ -327,16 +387,13 @@ method monitor-work ( ) {
             ' (ms) for server ', $server.name()
       );
 
-#note "Use: %registered-servers.perl()";
-#note 'emit to ',%rservers{$server-name}[ServerObj].name ~ ' monitor data';
-
       $monitor-data.emit(
         %registered-servers{$server-name}[ServerObj].name ~
-          ' monitor data', {
+          ' monitor data', %(
 
-          :ok, :monitor($doc<documents>[0]),  # :$server-name,
+          :ok($doc<documents>[0]<ok>), :monitor($doc<documents>[0]),  # :$server-name,
           :weighted-mean-rtt-ms(%rservers{$server-name}[WMRttMs])
-        } # emit data
+        ) # emit data
       ) if %registered-servers{$server-name}[ServerObj].defined;  # emit
       # ^^^ keep testing, other thread may have been in deleting process
 

@@ -32,10 +32,14 @@ my MongoDB::ServerPool $instance;
 # method checks if the server is used by other clients before removing the
 # server. When done the client is also removed from its hash.
 
+#TODO all data should go to the server do not save it here!!
 #enum ServerPoolInfo < RefCount ServerObject ServerData >;
-enum ServerPoolInfo < ServerObject ServerData UriObject >;
+#enum ServerPoolInfo < ServerObject ServerData UriObject >;
 
+# %( :client-id(Bool), ... )
 has Hash $!clients-of-servers;
+
+# %( :server-name($server-object), ... )
 has Hash $!servers-in-pool;
 
 has Semaphore::ReadersWriters $!rw-sem;
@@ -47,14 +51,15 @@ submethod BUILD ( ) {
 
   $!rw-sem .= new;
   #$!rw-sem.debug = True;
-  $!rw-sem.add-mutex-names( <server-info>, :RWPatternType(C-RW-WRITERPRIO));
+  $!rw-sem.add-mutex-names(
+    < server-info client-info >, :RWPatternType(C-RW-WRITERPRIO));
   trace-message("ServerPool created");
 
   my MongoDB::ObserverEmitter $e .= new;
   $e.subscribe-observer(
     'topology-server',
     -> %topo-info {
-      self.modify-server-data(
+      self.set-server-data(
         %topo-info<server-name>, :topology(%topo-info<topology>)
       );
     },
@@ -75,58 +80,59 @@ method instance ( --> MongoDB::ServerPool ) {
 #multi method add-server (
 method add-server (
   Str:D $client-key, Str:D $server-name, MongoDB::Uri $uri-obj, *%server-data
+  --> Bool
 ) {
 
+  # assume we must create a new server
+  my Bool $created-anew = False;
+
+  # check if server was created before. if not create one and store in pool
+  unless $!rw-sem.reader(
+    'server-info', { $!servers-in-pool{$server-name}:exists }
+  ) {
+
+    %server-data //= %();
+
+    my MongoDB::ServerPool::Server $server .= new(:$server-name);
+    $!rw-sem.writer( 'server-info', {
+
+        # Keep order: [ ServerObject, ServerData, UriObject] from enum
+        # ServerPoolInfo. %server-data must be set like this otherwise
+        # modify immutable value error later on.
+        $!servers-in-pool{$server-name} = $server;
+        $server.set-server-data( :$uri-obj, |%server-data);
+
+        trace-message("$server-name added");
+        $created-anew = True;
+      } # writer block
+    ); # writer
+  }
+
   # set client info
-  $!rw-sem.writer( 'server-info', {
+  $!rw-sem.writer( 'client-info', {
       # check if client exists, if not, init
       $!clients-of-servers{$client-key} = %()
         unless $!clients-of-servers{$client-key}:exists;
 
-      # add server to this client
-      $!clients-of-servers{$client-key}{$server-name} = True;
-    } # writer block
-  ); # writer
+      # check if done before
+      if $!clients-of-servers{$client-key}{$server-name}:exists {
+        trace-message("$server-name already added for client $client-key");
+      }
 
-  if $!rw-sem.reader(
-    'server-info', { $!servers-in-pool{$server-name}:exists }
-  ) {
+      else {
+        # add server to this client
+        $!clients-of-servers{$client-key}{$server-name} = True;
+        trace-message("Add $server-name for client $client-key");
+      }
+    }
+  );
 
-    trace-message("$server-name already added");
-#    $!servers-in-pool{$server-name}[RefCount]++;
-  }
-
-  else {
-
-    %server-data //= %();
-
-    $!rw-sem.writer( 'server-info', {
-
-        if $!servers-in-pool{$server-name}:exists {
-          trace-message("$server-name already added");
-#          $!servers-in-pool{$server-name}[RefCount]++;
-        }
-
-        else {
-
-          my MongoDB::ServerPool::Server $server .= new(:$server-name);
-
-          # Keep order: ServerObject, ServerData, UriObject from enum
-          # ServerPoolInfo. %server-data must be set like this otherwise
-          # modify immutable value error later on.
-          $!servers-in-pool{$server-name} = [
-            $server, %(|%server-data), $uri-obj
-          ];
-
-          trace-message("$server-name added");
-        }
-      } # writer block
-    ); # writer
-  }
+  $created-anew
 }
 
+#`{{
 #-------------------------------------------------------------------------------
-multi method modify-server-data (
+multi method set-server-data (
   MongoDB::ServerPool::Server:D $server, *%server-data
 ) {
 
@@ -144,25 +150,22 @@ multi method modify-server-data (
     ); # writer
   }
 }
+}}
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-multi method modify-server-data ( Str $server-name, *%server-data ) {
+method set-server-data ( Str $server-name, *%server-data ) {
 
-  if $!rw-sem.reader( 'server-info', {$!servers-in-pool{$server-name}:exists}) {
-
-    $!rw-sem.writer( 'server-info', {
-        if $!servers-in-pool{$server-name}:exists {
-          for %server-data.kv -> $k, $v {
-            $!servers-in-pool{$server-name}[ServerData]{$k} = $v;
-          }
-        }
-      } # writer block
-    ); # writer
-
-    trace-message("$server-name data modified: %server-data.perl()");
-  }
+  # use reader because locally it's reading servers in pool. the server
+  # protects using a writer
+  $!rw-sem.reader( 'server-info', {
+      if $!servers-in-pool{$server-name}:exists {
+        $!servers-in-pool{$server-name}.set-server-data(|%server-data);
+      }
+    }
+  );
 }
 
+#`{{
 #-------------------------------------------------------------------------------
 multi method get-server-data (
   MongoDB::ServerPool::Server:D $server --> Hash
@@ -181,27 +184,42 @@ multi method get-server-data (
 
   $result
 }
+}}
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-multi method get-server-data ( Str:D $server-name --> Hash ) {
+method get-server-data ( Str:D $server-name, *@items --> Any ) {
 
   my Hash $result = %();
 
-  if $!rw-sem.reader( 'server-info', {$!servers-in-pool{$server-name}:exists}) {
+  $!rw-sem.reader( 'server-info', {
+      if $!servers-in-pool{$server-name}:exists {
 
-    $result = $!rw-sem.reader( 'server-info', {
-        $!servers-in-pool{$server-name}[ServerData]
+        my $r = $!servers-in-pool{$server-name}.get-server-data(|@items);
+note "r: $*THREAD.id(), ", $r.WHAT;
+if $r ~~ Promise {
+  note "r: ", $r.status;
+  note "r: ", $r.result;
+}
+$result = $r;
       }
-    )
-  }
+    }
+  );
 
   $result
 }
 
 #-------------------------------------------------------------------------------
-method get-server-names ( --> Array ) {
+method get-server-names ( Str:D $client-key --> List ) {
 
-  [$!servers-in-pool.keys];
+
+  |$!rw-sem.reader( 'client-info', {
+      trace-message(
+        "client '$client-key', $!clients-of-servers{$client-key}.keys()"
+      );
+
+      $!clients-of-servers{$client-key}.keys
+    }
+  )
 }
 
 #-------------------------------------------------------------------------------
@@ -209,17 +227,23 @@ method select-server (
   BSON::Document $read-concern, Str $client-key
   --> MongoDB::ServerPool::Server
 ) {
-
   # get server names belonging to this client
   my Hash $selectable-servers =
-    $!rw-sem.reader( 'server-info', { $!clients-of-servers{$client-key} } );
+    $!rw-sem.reader( 'client-info', { $!clients-of-servers{$client-key} } );
 
   my Hash $servers-in-pool =
     $!rw-sem.reader( 'server-info', { $!servers-in-pool } );
 
-  # the uri object can be applied to all servers delevered by the client
-  my MongoDB::Uri $uri-obj =
-    $servers-in-pool{$selectable-servers.kv[0]}[UriObject];
+  # the uri object can be applied to all servers delivered by the client
+  my MongoDB::Uri $uri-obj;
+  my $o =
+    $servers-in-pool{$selectable-servers.kv[0]}.get-server-data('uri-obj');
+note "o: $*THREAD.id(), ", $o.WHAT;
+if $o ~~ Promise {
+note "o: ", $o.status;
+note "o: ", $o.result;
+}
+$uri-obj = $o;
 
   my Str $selected-server;
 
@@ -235,10 +259,12 @@ method select-server (
     );
 
     my Str @selected-servers = ();
-    for $servers-in-pool.keys -> $server-name {
+    for $servers-in-pool.keys -> Str $server-name {
       next unless $selectable-servers{$server-name}:exists;
 
-      my Hash $sdata = $servers-in-pool{$server-name}[ServerData];
+      my Hash $sdata = $servers-in-pool{$server-name}.get-server-data(
+        <topology status>
+      );
       my TopologyType $topology = $sdata<topology> // TT-NotSet;
 
 #note "ss1 Servers: ", $servers-in-pool.keys,join(', ');
@@ -294,18 +320,23 @@ method select-server (
         my Duration $min-rtt-ms .= new(1_000_000_000);
 
         # get minimum rtt from server measurements
-        for @selected-servers -> Str $sname {
-          my Hash $sdata = $servers-in-pool{$sname}[ServerData];
-          $min-rtt-ms = $sdata<weighted-mean-rtt-ms>
-            if $min-rtt-ms > $sdata<weighted-mean-rtt-ms>;
+        for @selected-servers -> Str $server-name {
+          my $wm-rtt-ms = $servers-in-pool{$server-name}.get-server-data(
+            <weighted-mean-rtt-ms>
+          );
+#          my Hash $sdata = $servers-in-pool{$server-name}[ServerData];
+          $min-rtt-ms = $wm-rtt-ms if $min-rtt-ms > $wm-rtt-ms;
         }
 
         # select those servers falling in the window defined by the
         # minimum round trip time and minimum rtt plus a treshold
-        for @selected-servers -> Str $sname {
-          my Hash $sdata = $servers-in-pool{$sname};
-          $slctd-svrs.push: $sname
-            if $sdata<weighted-mean-rtt-ms> <= (
+        for @selected-servers -> Str $server-name {
+          my $wm-rtt-ms = $servers-in-pool{$server-name}.get-server-data(
+            <weighted-mean-rtt-ms>
+          );
+#          my Hash $sdata = $servers-in-pool{$server-name};
+          $slctd-svrs.push: $server-name
+            if $wm-rtt-ms <= (
               $min-rtt-ms + $uri-obj.options<localThresholdMS>
             );
         }
@@ -336,49 +367,57 @@ method select-server (
     warn-message("No suitable server selected");
   }
 
-  $!servers-in-pool{$selected-server}[ServerObject];
+  $!servers-in-pool{$selected-server};
 }
 
 #-------------------------------------------------------------------------------
 method cleanup ( Str:D $client-key ) {
 
   # get server names of this client while removing the client
-  my Hash $client-data = $!rw-sem.writer( 'server-info', {
-       $!clients-of-servers{$client-key}:delete;
-    }
+  my Hash $client-data = $!rw-sem.reader(
+    'client-info', { $!clients-of-servers{$client-key}:delete; }
   );
 
   my @servers = $client-data.keys;
+  trace-message("cleanup for client $client-key: $client-data.keys()");
 
   # skim through rest of the clients to gather used servernames
   my @other-servers = ();
-  my $clients-of-servers =
-    $!rw-sem.reader( 'server-info', { $!clients-of-servers; });
 
-  # get servernames and make the list with unique entries
-  for $clients-of-servers.kv -> Str $client-key, Hash $servers {
-    @other-servers.push: $servers.keys;
-  }
+  $!rw-sem.reader( 'client-info', {
+      # get servernames and make the list with unique entries
+      for $!clients-of-servers.kv -> Str $client-key, Hash $servers {
+        @other-servers.push: $servers.keys;
+      }
+    } # reader code
+  );  # reader
+
   @other-servers .= unique;
 
-  # test the list against the removed clients server list and remove any server
-  # name found with the other clients.
+  # test the list against the removed clients server list and remove any
+  # server name found with the other clients.
   my Int $idx;
   for @other-servers -> $osrvr {
     @servers.splice( $idx, 1) if $idx = @servers.first( $osrvr, :k);
   }
 
-  $!rw-sem.writer( 'server-info', {
-      # now we can remove the servers which are not in use by other clients
-      for @servers -> $server-name {
-        # check if the name is still there, can be removed behind my back
-        if $!servers-in-pool{$server-name}:exists {
-          $!servers-in-pool{$server-name}[ServerObject].cleanup;
-          $!servers-in-pool{$server-name}:delete;
-        }
-      }
+  # now we can remove the servers which are not in use by other clients
+  for @servers -> $server-name {
+    trace-message("cleanup server $server-name");
+
+    # check if the name is still there, can be removed behind my back
+    if $!rw-sem.reader(
+      'server-info', {$!servers-in-pool{$server-name}:exists; }
+    ) {
+      my $server = $!rw-sem.writer(
+        'server-info', {$!servers-in-pool{$server-name}:delete;}
+      );
+
+      $server.cleanup;
     }
-  );
+  }
+
+trace-message("leftover: " ~ $!servers-in-pool.perl);
 }
 
 =finish

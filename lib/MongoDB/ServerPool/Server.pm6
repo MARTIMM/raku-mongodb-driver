@@ -19,21 +19,17 @@ use Auth::SCRAM;
 unit class MongoDB::ServerPool::Server:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
-has Array $server-description = [];
+#has Array $server-description = [];
 
 ## name and port is separated for use by Socket.
 has Str $.host;
 has Int $.port;
-
 has Str $.name;
-#has PortType $.server-port;
-
-#has Array[MongoDB::SocketPool::Socket] $!sockets;
 has Bool $!server-is-registered;
 
 # server status data. Must be protected by a semaphore because of a thread
 # handling monitoring data.
-has Hash $!server-sts-data;
+has Hash $!server-data;
 has Semaphore::ReadersWriters $!rw-sem;
 
 #has MongoDB::Client $.client;
@@ -55,7 +51,6 @@ multi submethod BUILD ( Str:D :$server-name! ) {
     ( $!host, $!port ) = map(
       -> $h, $p { ($h, ($p //= 27017).Int) }, $server-name.split(':')
     )[0];
-#    $!port //= 27017;
   }
 
   self!init();
@@ -71,18 +66,17 @@ multi submethod BUILD ( Str:D :$!host!, Int :$!port = 27017 ) {
 #-------------------------------------------------------------------------------
 method !init ( ) {
 
-  trace-message("Server $!host on $!port initialization");
+#  trace-message("Server $!host on $!port initialization");
 
   # server status is unsetled
-  $!server-sts-data = { :status(ST-Unknown), :!is-master, :error('') };
+  $!server-data = { :status(ST-Unknown), :!is-master, :error('') };
 
   $!rw-sem .= new;
-#    $!rw-sem.debug = True;
+  #$!rw-sem.debug = True;
   $!rw-sem.add-mutex-names(
     <s-select s-status>, :RWPatternType(C-RW-WRITERPRIO)
   );
 
-  #$!sockets = Array[MongoDB::SocketPool::Socket].new;
   $!server-is-registered = False;
 
 #`{{
@@ -123,10 +117,13 @@ method !init ( ) {
 #-------------------------------------------------------------------------------
 method !process-monitor-data ( Hash $monitor-data ) {
 
+#note 'pmd: ', $monitor-data.perl;
+
   my Bool $is-master = False;
   my ServerType $server-status = ST-Unknown;
 
-  # test monitor defined boolean field ok
+  # test monitor result. when the doc is not ok, the doc contains
+  # failure information
   if $monitor-data<ok> {
 
     # used to get a socket and decide on type of authentication
@@ -140,7 +137,7 @@ method !process-monitor-data ( Hash $monitor-data ) {
       ( $server-status, $is-master) = self!process-status($mdata);
 
       $!rw-sem.writer( 's-status', {
-          $!server-sts-data = {
+          $!server-data = {
             :status($server-status), :$is-master, :error(''),
             :max-wire-version($mdata<maxWireVersion>.Int),
             :min-wire-version($mdata<minWireVersion>.Int),
@@ -168,15 +165,15 @@ method !process-monitor-data ( Hash $monitor-data ) {
 
     $!rw-sem.writer( 's-status', {
         if $monitor-data<reason>:exists {
-          $!server-sts-data<error> = $monitor-data<reason>;
+          $!server-data<error> = $monitor-data<reason>;
         }
 
         else {
-          $!server-sts-data<error> = 'Server did not respond';
+          $!server-data<error> = 'Server did not respond';
         }
 
-        $!server-sts-data<is-master> = False;
-        $!server-sts-data<status> = ST-Unknown;
+        $!server-data<is-master> = False;
+        $!server-data<status> = ST-Unknown;
 
         ( $server-status, $is-master) = ( ST-Unknown, False);
 
@@ -250,13 +247,57 @@ method !process-status ( BSON::Document $mdata --> List ) {
   ( $server-status, $is-master)
 }
 
-#`{{
 #-------------------------------------------------------------------------------
-method get-status ( --> Hash ) {
+# if 0 items, return all data in a Hash
+# if one item, return value of item
+# if more items, return items and values in a Hash
+method get-server-data ( *@items --> Any ) {
 
-  $!rw-sem.reader( 's-status', { $!server-sts-data } );
-}
+  my Any $data = $!rw-sem.reader( 's-status', {
+      if @items.elems == 0 {
+        $data = $!server-data;
+        trace-message("$!host:$!port return all data: $data.perl()");
+      }
+
+      elsif @items.elems == 1 {
+        $data = $!server-data{@items[0]};
+        trace-message(
+          "$!host:$!port return data item: @items[0], $data.perl()"
+        );
+      }
+
+      else {
+        $data = %(|(@items Z=> $!server-data{@items}).grep({.value}));
+        trace-message(
+          "$!host:$!port return data items: @items.perl(), $data.perl()"
+        );
+      }
+#`{{
+      for @items -> $item {
+        if $!server-data{$item}:exists {
+          $data{$item} = $!server-data{$item};
+        }
+
+        else {
+          warn-message("item $item not found in server data");
+        }
+      }
 }}
+    }
+  );
+
+  $data
+}
+
+#-------------------------------------------------------------------------------
+method set-server-data ( *%items ) {
+
+  $!rw-sem.writer( 's-status', {
+      $!server-data = %( |$!server-data, |%items);
+      trace-message("$!host:$!port data modified: $!server-data.perl()");
+    }
+  );
+}
 
 #`{{
 #-------------------------------------------------------------------------------
@@ -281,7 +322,7 @@ method tap-monitor ( |c --> Tap ) {
 method get-socket (
   Bool :$authenticate = True --> MongoDB::SocketPool::Socket
 ) {
-#note "$*THREAD.id() Get sock, authenticate = $authenticate";
+  trace-message( "Get socket, authenticate = $authenticate");
 
   my MongoDB::SocketPool $socket-pool .= instance;
   $socket-pool.get-socket( self.host, self.port
@@ -380,7 +421,7 @@ note "$*THREAD.id() Get sock, authenticate = $authenticate";
       my Str $auth-mechanism = $credential.auth-mechanism;
       if not $auth-mechanism {
         my Int $max-version = $!rw-sem.reader(
-          's-status', {$!server-sts-data<max-wire-version>}
+          's-status', {$!server-data<max-wire-version>}
         );
         $auth-mechanism = $max-version < 3 ?? 'MONGODB-CR' !! 'SCRAM-SHA-1';
         trace-message("Wire version is $max-version");
@@ -549,7 +590,8 @@ method cleanup ( ) {
 
   # Clear all sockets
   my MongoDB::SocketPool $socket-pool .= instance;
-  $socket-pool.cleanup(:all);
+#  $socket-pool.cleanup(:all);
+  $socket-pool.cleanup( $!host, $!port);
 #`{{
   $!rw-sem.writer( 's-select', {
       for @$!sockets -> $socket {

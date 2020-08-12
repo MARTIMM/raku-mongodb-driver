@@ -26,16 +26,27 @@ use MongoDB;
 #use MongoDB::ServerPool::Server;
 use MongoDB::SocketPool::Socket;
 
+use Semaphore::ReadersWriters;
+
 #-------------------------------------------------------------------------------
 unit class MongoDB::SocketPool:auth<github:MARTIMM>;
 
 my MongoDB::SocketPool $instance;
 
+# servers can have more opened sockets to control connections with or without
+# authentication and also with different credentials if authenticated.
 has Hash $!socket-info;
+
+has Semaphore::ReadersWriters $!rw-sem;
 
 #-------------------------------------------------------------------------------
 submethod BUILD ( ) {
+  trace-message("socket pool initialized");
   $!socket-info = {};
+
+  $!rw-sem .= new;
+  #$rw-sem.debug = True;
+  $!rw-sem.add-mutex-names( <socketpool>, :RWPatternType(C-RW-WRITERPRIO));
 }
 
 #-------------------------------------------------------------------------------
@@ -65,19 +76,30 @@ method get-socket (
   --> MongoDB::SocketPool::Socket
 ) {
 
+#next info shows that sockets have become thread save
+#trace-message("get-socket: $host, $port $*THREAD.id()");
+
   my MongoDB::SocketPool::Socket $socket;
-  my Int $thread-id = $*THREAD.id();
+#  my Int $thread-id = $*THREAD.id();
 
-  if $!socket-info{"$host $port $*THREAD.id()"}:exists {
-    $socket = $!socket-info{"$host $port $*THREAD.id()"}<socket>;
-  }
+  $!rw-sem.writer( 'socketpool', {
 
-  else {
-    $socket .= new( :$host, :$port);
-    $!socket-info{"$host $port $*THREAD.id()"} = %(
-      :$socket, :$username, :$password
-    ) if ?$socket;
-  }
+    #  if $!socket-info{"$host $port $*THREAD.id()"}:exists {
+      if $!socket-info{"$host $port"}:exists {
+    #    $socket = $!socket-info{"$host $port $*THREAD.id()"}<socket>;
+        $socket = $!socket-info{"$host $port"}<socket>;
+      }
+
+      else {
+        $socket .= new( :$host, :$port);
+        trace-message("socket created for server $host:$port");
+    #    $!socket-info{"$host $port $*THREAD.id()"} = %(
+        $!socket-info{"$host $port"} = %(
+          :$socket, :$username, :$password
+        ) if ?$socket;
+      }
+    }
+  );
 
   $socket
 }
@@ -86,11 +108,25 @@ method get-socket (
 # close and remove a socket belonging to the server on the current thread
 multi method cleanup ( Str $host, Int $port ) {
 
-  my Int $thread-id = $*THREAD.id();
+#  my Int $thread-id = $*THREAD.id();
+#note "$host, $port, ", $!socket-info.perl;
+
+#`{{
   if $!socket-info{"$host $port $thread-id"}:exists {
+    trace-message("cleanup socket for server $host:$port");
     $!socket-info{"$host $port $thread-id"}<socket>.close;
     $!socket-info{"$host $port $thread-id"}:delete;
   }
+}}
+
+  $!rw-sem.writer( 'socketpool', {
+      if $!socket-info{"$host $port"}:exists {
+        trace-message("cleanup socket for server $host:$port");
+        $!socket-info{"$host $port"}<socket>.close;
+        $!socket-info{"$host $port"}:delete;
+      }
+    }
+  );
 }
 
 #-------------------------------------------------------------------------------
@@ -98,10 +134,10 @@ multi method cleanup ( Str $host, Int $port ) {
 multi method cleanup ( :$all! ) {
 
   for $!socket-info.keys -> $socket-pool-item {
-    if $socket-pool-item ~~ m/ "$*THREAD.id()" $/ {
+#    if $socket-pool-item ~~ m/ "$*THREAD.id()" $/ {
       $!socket-info{$socket-pool-item}<socket>.close;
       $!socket-info{$socket-pool-item}:delete;
-    }
+#    }
   }
 }
 
