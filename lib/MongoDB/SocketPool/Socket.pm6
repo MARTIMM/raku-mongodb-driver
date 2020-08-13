@@ -25,7 +25,7 @@ use MongoDB;
 unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
 
 has IO::Socket::INET $!socket;
-has Bool $!is-open;
+has Bool $.is-open;
 has Instant $!time-last-used;
 
 #has MongoDB::Authenticate::Credential $!credential;

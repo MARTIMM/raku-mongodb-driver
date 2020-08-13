@@ -160,10 +160,12 @@ submethod BUILD (
 
     # this client gets new host information from the server. it is
     # possible that hosts are processed before.
-    if !$server-pool.add-server(
-        $!uri-obj.keyed-uri, $server-name, $!uri-obj,
-        :status(ST-Unknown), :!ismaster
-      ) {
+    my Bool $created = $server-pool.add-server(
+        $!uri-obj.keyed-uri, $server-name, #$!uri-obj,
+#        :status(ST-Unknown), :!ismaster
+    );
+    $server-pool.set-server-data( $server-name, :$!uri-obj);
+    unless $created {
 trace-message("Server $server-name already there, try to find topology");
       self!process-topology( $server-name, ServerType, Bool);
     }
@@ -212,7 +214,7 @@ method !process-topology (
 #  my @server-list = |($server-pool.get-server-names($!uri-obj.keyed-uri));
 #trace-message("client '$!uri-obj.keyed-obj()'");
 
-  for $server-pool.get-server-names($!uri-obj.keyed-uri) -> $server-name {
+  for @($server-pool.get-server-names($!uri-obj.keyed-uri)) -> $server-name {
 #  for $servers.keys -> $server-name {
     $servers-count++;
 
@@ -295,12 +297,8 @@ method !process-topology (
     );
   }
 
-  # send topology info to the ServerPool to store with the server
-  my MongoDB::ObserverEmitter $e .= new;
-  $e.emit(
-    'topology-server',
-    %( :$topology, :server-name($new-server-name))
-  );
+  # set topology info in ServerPool to store with the server
+  $server-pool.set-server-data( $new-server-name, :$topology);
 
   info-message("Client '$!uri-obj.keyed-uri()' topology is $topology");
 }
@@ -721,12 +719,13 @@ try {
 
     # create Server object, if server already existed, get the
     # info from server immediately
-    if !$server-pool.add-server(
-      $!uri-obj.keyed-uri, $server-name, $!uri-obj,
-      :status(ST-Unknown), :!ismaster
-    ) {
+    my Bool $created = $server-pool.add-server(
+      $!uri-obj.keyed-uri, $server-name
+    );
+    $server-pool.set-server-data( $server-name, :$!uri-obj);
+    unless $created {
 trace-message("Server $server-name already there, try to find topology");
-      self!process-topology( $server-name, ServerType, Bool);
+#      self!process-topology( $server-name, ServerType, Bool);
     }
   }
 CATCH {.note;}
@@ -781,7 +780,7 @@ method cleanup ( ) {
 
   my MongoDB::ServerPool $server-pool .= instance;
   my MongoDB::ObserverEmitter $e .= new;
-  for $server-pool.get-server-names($!uri-obj.keyed-uri) -> Str $sname {
+  for @($server-pool.get-server-names($!uri-obj.keyed-uri)) -> Str $sname {
     $e.unsubscribe-observer("$!uri-obj.keyed-uri() $sname process topology");
     $e.unsubscribe-observer("$!uri-obj.keyed-uri() $sname add servers");
   }

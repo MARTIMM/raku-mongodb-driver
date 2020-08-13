@@ -1,3 +1,5 @@
+#TL:1:MongoDB::ServerPool::Server:
+
 use v6;
 
 use MongoDB;
@@ -19,26 +21,26 @@ use Auth::SCRAM;
 unit class MongoDB::ServerPool::Server:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
-#has Array $server-description = [];
-
-## name and port is separated for use by Socket.
+## name and port is kept separated for use by Socket.
+#TM:1:host():
 has Str $.host;
+
+#TM:1:port():
 has Int $.port;
+
+#TM:1:name():
 has Str $.name;
-has Bool $!server-is-registered;
+
+#TM:1:server-is-registered():
+has Bool $.server-is-registered;
 
 # server status data. Must be protected by a semaphore because of a thread
 # handling monitoring data.
 has Hash $!server-data;
 has Semaphore::ReadersWriters $!rw-sem;
 
-#has MongoDB::Client $.client;
-
-# part of key for observer keys
-#has Str $.client-key;
-#has Str $.server-key;
-
 #-------------------------------------------------------------------------------
+#TM:1:new(:$server-name)
 multi submethod BUILD ( Str:D :$server-name! ) {
 
   if $server-name ~~ m/ $<ip6addr> = ('[' .*? ']') / {
@@ -57,11 +59,11 @@ multi submethod BUILD ( Str:D :$server-name! ) {
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#TM:1:new(:host,:port)
 multi submethod BUILD ( Str:D :$!host!, Int :$!port = 27017 ) {
 
   self!init();
 }
-
 
 #-------------------------------------------------------------------------------
 method !init ( ) {
@@ -69,7 +71,7 @@ method !init ( ) {
 #  trace-message("Server $!host on $!port initialization");
 
   # server status is unsetled
-  $!server-data = { :status(ST-Unknown), :!is-master, :error('') };
+  $!server-data = %( :status(ST-Unknown), :!is-master, :error('') );
 
   $!rw-sem .= new;
   #$!rw-sem.debug = True;
@@ -137,12 +139,12 @@ method !process-monitor-data ( Hash $monitor-data ) {
       ( $server-status, $is-master) = self!process-status($mdata);
 
       $!rw-sem.writer( 's-status', {
-          $!server-data = {
+          $!server-data = %(
             :status($server-status), :$is-master, :error(''),
             :max-wire-version($mdata<maxWireVersion>.Int),
             :min-wire-version($mdata<minWireVersion>.Int),
             :weighted-mean-rtt-ms($monitor-data<weighted-mean-rtt-ms>),
-          }
+          )
         } # writer block
       ); # writer
     } # if $mdata<ok> == 1e0
@@ -248,55 +250,49 @@ method !process-status ( BSON::Document $mdata --> List ) {
 }
 
 #-------------------------------------------------------------------------------
+#TM:1:get-data():
 # if 0 items, return all data in a Hash
 # if one item, return value of item
 # if more items, return items and values in a Hash
-method get-server-data ( *@items --> Any ) {
+method get-data ( *@items --> Any ) {
 
-  my Any $data = $!rw-sem.reader( 's-status', {
-      if @items.elems == 0 {
-        $data = $!server-data;
-        trace-message("$!host:$!port return all data: $data.perl()");
-      }
+#note "its: @items.perl()";
+  my Any $data;
 
-      elsif @items.elems == 1 {
-        $data = $!server-data{@items[0]};
-        trace-message(
-          "$!host:$!port return data item: @items[0], $data.perl()"
-        );
-      }
+  if @items.elems == 0 {
+    $data = $!rw-sem.reader( 's-status', {$!server-data});
+    trace-message("$!host:$!port return all data: $data.perl()");
+  }
 
-      else {
-        $data = %(|(@items Z=> $!server-data{@items}).grep({.value}));
-        trace-message(
-          "$!host:$!port return data items: @items.perl(), $data.perl()"
-        );
-      }
-#`{{
-      for @items -> $item {
-        if $!server-data{$item}:exists {
-          $data{$item} = $!server-data{$item};
-        }
+  elsif @items.elems == 1 {
+    $data = $!rw-sem.reader( 's-status', {$!server-data{@items[0]}});
+    trace-message(
+      "$!host:$!port return data item: @items[0], $data.perl()"
+    );
+  }
 
-        else {
-          warn-message("item $item not found in server data");
-        }
-      }
-}}
-    }
-  );
+  else {
+    my $sd = $!rw-sem.reader( 's-status', {$!server-data{@items}});
+
+    $data = %(%(@items Z=> @$sd).grep({.value.defined}));
+    trace-message(
+      "$!host:$!port return data items: @items.perl(), $data.perl()"
+    );
+  }
 
   $data
 }
 
 #-------------------------------------------------------------------------------
-method set-server-data ( *%items ) {
+#TM:1:set-data():
+method set-data ( *%items ) {
 
-  $!rw-sem.writer( 's-status', {
+  my $sd = $!rw-sem.writer( 's-status', {
       $!server-data = %( |$!server-data, |%items);
-      trace-message("$!host:$!port data modified: $!server-data.perl()");
     }
   );
+
+  trace-message("$!host:$!port data modified: $sd.perl()");
 }
 
 #`{{

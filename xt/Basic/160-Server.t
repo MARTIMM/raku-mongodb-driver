@@ -43,10 +43,29 @@ subtest "Server creation", {
   isa-ok $server, MongoDB::ServerPool::Server,
     '.new( :client-key, :host, :port)';
   is $server.name, "$host:$port", '.name() = ' ~ $server.name();
-sleep(5);
-note $server.get-status.perl;
+  is $server.host, $host, '.host() = ' ~ $server.host();
+  is $server.port, $port, '.port() = ' ~ $server.port();
+  ok $server.server-is-registered, '.server-is-registered()';
 }
 
+#-------------------------------------------------------------------------------
+subtest "Server manipulations", {
+  is $server.get-data('status'), ST-Unknown, '.get-data() one item';
+  my $h = $server.get-data(<status is-master non-exist-item>);
+  is $h.keys.elems, 2, '.get-data() 2 items';
+  is-deeply $h, %(:status(ST-Unknown), :!is-master), '.get-data() data';
+
+  $server.set-data( :new-item1(10) :new-item2(11));
+  is $server.get-data('new-item1'), 10, '.set-data()';
+  $h = $server.get-data;
+  is $h.keys.elems, 5, '.get-data() all items';
+}
+
+#-------------------------------------------------------------------------------
+subtest "Socket manipulations", {
+  my MongoDB::SocketPool::Socket $socket = $server.get-socket(:!authenticate);
+  isa-ok $socket, MongoDB::SocketPool::Socket;
+}
 
 #`{{
 #-------------------------------------------------------------------------------

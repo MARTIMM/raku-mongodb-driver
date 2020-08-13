@@ -198,6 +198,8 @@ try {
       $monitor-timer = MongoDB::Timer.in(0.1);
       loop {
 
+ENTER trace-message("promise loop begin");
+
         # start first run. should start after 0.1 sec from previous statement.
         #$promise-monitor .= start( { self.monitor-work } );
         $promise-monitor = $monitor-timer.promise.then( {
@@ -209,8 +211,9 @@ try {
 
         # wait for end of thread or when waittime is canceled
         if $promise-monitor.status ~~ PromiseStatus::Kept {
-          trace-message('wait period finished');
-#          $promise-monitor.result;
+          trace-message(
+            "wait period finished, result: {$promise-monitor.result // '-'}"
+          );
         }
 
         elsif $promise-monitor.status ~~ PromiseStatus::Broken {
@@ -238,9 +241,9 @@ try {
         );
 
         # create the cancelable thread. wait is in seconds
-        $monitor-timer = MongoDB::Timer.in(
-          $heartbeat-frequency / 1000.0
-        );
+        $monitor-timer = MongoDB::Timer.in( $heartbeat-frequency / 1000.0 );
+
+NEXT trace-message("promise loop end");
       } # loop
     }   # Promise code
   );    # Promise.start
