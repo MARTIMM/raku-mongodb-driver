@@ -9,10 +9,10 @@ use BSON;
 use BSON::Document;
 
 use MongoDB;
-use MongoDB::Server::Socket;
 use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Header;
+use MongoDB::SocketPool::Socket;
 
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
@@ -33,13 +33,13 @@ my Hash $clients = $ts.create-clients;
 my Str $host = $clients<s1>.uri-obj.servers[0]<host>;
 my Int $port = $clients<s1>.uri-obj.servers[0]<port>.Int;
 
-my MongoDB::Server::Socket $socket;
+my MongoDB::SocketPool::Socket $socket;
 my BSON::Document $monitor-command .= new: (isMaster => 1);
 
 #-------------------------------------------------------------------------------
 subtest "Socket creation", {
   $socket .= new( :$host, :$port);
-  isa-ok $socket, MongoDB::Server::Socket, '.new( :host, :port)';
+  isa-ok $socket, MongoDB::SocketPool::Socket, '.new( :host, :port)';
 }
 
 #-------------------------------------------------------------------------------

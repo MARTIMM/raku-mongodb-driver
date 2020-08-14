@@ -4,11 +4,16 @@ use v6;
 
 =head1 MongoDB::SocketPool
 
-B<MongoDB::SocketPool> provides a way to get a socket from a pool of sockets using a hostname and portnumber. Also a thread id is stored to prevent problems reading or writing to sockets created in another thread. Other information stored here is authentication and timeout information.
+B<MongoDB::SocketPool> provides a way to get a socket from a pool of sockets using a hostname and portnumber.
 
-Its purpose is to reuse sockets whithout reconnectiing all the time. The entries are checked regularly to see if they are still used.
+Its purpose is to reuse sockets whithout reconnectiing all the time and authenticating when needed.
 
 Exceptions are thrown when opening a socket fails.
+
+Several sockets must possibly be created for one server. The purpose of this is to;
+
+=item Distinguish between several client objects.
+=item With or without authentication for several credentials and mechanisms.
 
 =head2 Example
 
@@ -24,6 +29,7 @@ $sockets.cleanup( 'localhost', 27017);
 #-------------------------------------------------------------------------------
 use MongoDB;
 #use MongoDB::ServerPool::Server;
+use MongoDB::Uri;
 use MongoDB::SocketPool::Socket;
 
 use Semaphore::ReadersWriters;
@@ -34,7 +40,14 @@ unit class MongoDB::SocketPool:auth<github:MARTIMM>;
 my MongoDB::SocketPool $instance;
 
 # servers can have more opened sockets to control connections with or without
-# authentication and also with different credentials if authenticated.
+# authentication and with different credentials if authenticated. And different
+# clients using the same servers. There is only one set of credentials per uri.
+# if there is no authentication, username is set to an empty string and uri
+# will not be set.
+
+# ?? $!socket-info{client-key}{host port}{username}<socket> = socket
+# ?? $!socket-info{client-key}{host port}{username}<uri> = uri-obj
+# $!socket-info{client-key}{host port}{username} = socket
 has Hash $!socket-info;
 
 has Semaphore::ReadersWriters $!rw-sem;
@@ -72,7 +85,8 @@ method instance ( --> MongoDB::SocketPool ) {
 
 #multi
 method get-socket (
-  Str $host, Int $port, Str :$username, Str :$password
+  Str:D $client-key, Str:D $host, Int:D $port, MongoDB::Uri $uri-obj?
+  # Str :$username, Str :$password
   --> MongoDB::SocketPool::Socket
 ) {
 
@@ -82,62 +96,65 @@ method get-socket (
   my MongoDB::SocketPool::Socket $socket;
 #  my Int $thread-id = $*THREAD.id();
 
+  my Str $username = $uri-obj ?? $uri-obj.credentials.username !! '';
   $!rw-sem.writer( 'socketpool', {
-
-    #  if $!socket-info{"$host $port $*THREAD.id()"}:exists {
-      if $!socket-info{"$host $port"}:exists {
-    #    $socket = $!socket-info{"$host $port $*THREAD.id()"}<socket>;
-        $socket = $!socket-info{"$host $port"}<socket>;
-      }
-
-      else {
-        $socket .= new( :$host, :$port);
-        trace-message("socket created for server $host:$port");
-    #    $!socket-info{"$host $port $*THREAD.id()"} = %(
-        $!socket-info{"$host $port"} = %(
-          :$socket, :$username, :$password
-        ) if ?$socket;
-      }
+      $!socket-info{$client-key} = %() unless $!socket-info{$client-key}:exists;
+      $!socket-info{$client-key}{"$host $port"} = %()
+        unless $!socket-info{$client-key}{"$host $port"}:exists;
     }
   );
+
+  if $!rw-sem.reader( 'socketpool', {
+      $!socket-info{$client-key}{"$host $port"}{$username}:exists; }
+  ) {
+    $socket = $!socket-info{$client-key}{"$host $port"}{$username};
+  }
+
+  else {
+    if ? $username {
+      $socket .= new( :$host, :$port, :$uri-obj);
+    }
+
+    else {
+      $socket .= new( :$host, :$port);
+    }
+
+    if $socket {
+      trace-message("socket created for server $host:$port");
+      $!rw-sem.writer( 'socketpool', {
+          $!socket-info{$client-key}{"$host $port"}{$username} = $socket;
+#          $!socket-info{$client-key}{"$host $port"}{$username}<socket> = $socket;
+#          $!socket-info{$client-key}{"$host $port"}{$username}<uri> = $uri-obj;
+        }
+      );
+    }
+  }
 
   $socket
 }
 
 #-------------------------------------------------------------------------------
 # close and remove a socket belonging to the server on the current thread
-multi method cleanup ( Str $host, Int $port ) {
+method cleanup ( Str $client-key ) {
 
-#  my Int $thread-id = $*THREAD.id();
-#note "$host, $port, ", $!socket-info.perl;
-
-#`{{
-  if $!socket-info{"$host $port $thread-id"}:exists {
-    trace-message("cleanup socket for server $host:$port");
-    $!socket-info{"$host $port $thread-id"}<socket>.close;
-    $!socket-info{"$host $port $thread-id"}:delete;
-  }
-}}
-
-  $!rw-sem.writer( 'socketpool', {
-      if $!socket-info{"$host $port"}:exists {
-        trace-message("cleanup socket for server $host:$port");
-        $!socket-info{"$host $port"}<socket>.close;
-        $!socket-info{"$host $port"}:delete;
-      }
+  my Hash $si-cl = $!rw-sem.writer( 'socketpool', {
+      $!socket-info{$client-key}:delete // %();
     }
   );
-}
 
-#-------------------------------------------------------------------------------
-# close and remove all sockets belonging to the current thread
-multi method cleanup ( :$all! ) {
+  for $si-cl.keys -> $host-port {
+    for $si-cl{$host-port}.keys -> $un {
+      my $s = $si-cl{$host-port}{$un};
+      $s.close;
 
-  for $!socket-info.keys -> $socket-pool-item {
-#    if $socket-pool-item ~~ m/ "$*THREAD.id()" $/ {
-      $!socket-info{$socket-pool-item}<socket>.close;
-      $!socket-info{$socket-pool-item}:delete;
-#    }
+      if ? $un {
+        trace-message("cleanup socket for server $host-port and user $un");
+      }
+
+      else {
+        trace-message("cleanup socket for server $host-port");
+      }
+    }
   }
 }
 

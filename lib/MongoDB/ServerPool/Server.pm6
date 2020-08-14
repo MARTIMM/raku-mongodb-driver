@@ -308,7 +308,7 @@ method tap-monitor ( |c --> Tap ) {
 
 #-------------------------------------------------------------------------------
 # Search in the array for a closed Socket.
-# By default authentiction is needed when user/password info is found in the
+# By default authentication is needed when user/password info is found in the
 # uri data. Monitor however, does not need this and therefore monitor is
 # using raw-query with :!authenticate.
 
@@ -564,8 +564,8 @@ method !set-server-name ( --> Str ) {
 }
 
 #-------------------------------------------------------------------------------
-# Forced cleanup
-method cleanup ( ) {
+# Forced cleanup on behalf of the client
+method cleanup ( Str $client-key ) {
 
   # It's possible that server monitor is not defined when a server is
   # non existent or some other reason.
@@ -587,7 +587,7 @@ method cleanup ( ) {
   # Clear all sockets
   my MongoDB::SocketPool $socket-pool .= instance;
 #  $socket-pool.cleanup(:all);
-  $socket-pool.cleanup( $!host, $!port);
+  $socket-pool.cleanup($client-key);
 #`{{
   $!rw-sem.writer( 's-select', {
       for @$!sockets -> $socket {

@@ -25,7 +25,7 @@ There are several documents written by a group of people specially for the devel
 
 * A **Server** in a topology can never be in any other kind of topology. This means that a **Client** object which started the build of a topology using some URI always end up with the same set of **Server**'s belonging to that topology. The **Uri**'s can be different although may not contradict.
 
-* A replicaset must always have replica info in the URI. The other topology types like standalone and sharded do not have extra info in the URI.
+* A replicaset must always have replica info in the **Uri**. The other topology types like standalone and sharded do not have extra info in the URI.
 
 * A **Client** adds the servers found in the **Uri** to the **ServerPool** using a server name. This name is a `host:port` string. The **ServerPool** creates the server. The client must provide a key so that the **ServerPool** can see which servers can be removed if there are no other clients using those servers.
 
@@ -35,9 +35,11 @@ There are several documents written by a group of people specially for the devel
 
 * Where does authentication take place when it is needed? Close to the I/O in **Socket**? In the **ServerPool** where more information is available?
 
-* **Server** objects can have more opened sockets to control connections with or without authentication and also with different credentials if authenticated.
+* **Server** objects can have more opened sockets to control connections with or without authentication and also with different credentials if authenticated. Alo distinguish between several client objects.
   * A **Socket** can do authentication on `.new()`.
   * **SocketPool** does the administration in `.get-socket()`. It creates a new **Socket** when the combination of parameters is not yet available.
+
+* There is only one set of credentials per uri.
 
 #### 2020-08-10 New client with same topology and server set
 * Old client still lives. Servers not destroyed

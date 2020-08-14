@@ -1,3 +1,5 @@
+#TL:1:MongoDB::Server::Socket
+
 use v6;
 #-------------------------------------------------------------------------------
 =begin pod
@@ -12,23 +14,26 @@ Exceptions are thrown when operations on a socket fails.
 
 #-------------------------------------------------------------------------------
 use MongoDB;
-#use MongoDB::Authenticate::Credential;
-#use MongoDB::Authenticate::Scram;
+use MongoDB::Authenticate::Credential;
+use MongoDB::Authenticate::Scram;
 #use MongoDB::Client;
 #use MongoDB::Database;
+use MongoDB::Uri;
 
-#use BSON::Document;
+use BSON::Document;
 #use Semaphore::ReadersWriters;
-#use Auth::SCRAM;
+use Auth::SCRAM;
 
 #-------------------------------------------------------------------------------
 unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
 
 has IO::Socket::INET $!socket;
-has Bool $.is-open;
+has Bool $!is-open;
 has Instant $!time-last-used;
 
-#has MongoDB::Authenticate::Credential $!credential;
+#has MongoDB::Uri $!uri-obj;
+
+#has MongoDB::Authenticate::Credential $credential;
 
 #has Int $.thread-id;
 #  has Bool $!must-authenticate;
@@ -62,16 +67,18 @@ multi submethod BUILD ( MongoDB::ServerClassType:D :$!server ) {
   $!time-last-used = now;
 };
 }}
+
 #-------------------------------------------------------------------------------
 #multi
-submethod BUILD ( Str:D :$host, Int:D :$port ) {
-  trace-message("open socket $host, $port");
+submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj? ) {
+
+  trace-message("open socket $host, $port, authenticate: " ~ $uri-obj.defined);
 
   try {
     $!socket .= new( :$host, :$port);
     CATCH {
       default {
-        trace-message('open socket to $host, $port AF-INET: ' ~ .message);
+        trace-message('open socket to $host, $port, PF-INET: ' ~ .message);
 
         # Retry for ipv6, throws when fails
         $!socket .= new( :$host, :$port, :family(PF_INET6));
@@ -83,13 +90,11 @@ submethod BUILD ( Str:D :$host, Int:D :$port ) {
   $!is-open = True;
   $!time-last-used = now;
 
-#`{{
-  # if credentials are defined, try to authenticate
-  unless self!authenticate {
-    $!socket.close;
-    $!is-open = False;
+  # authenticate if object exists.
+  if $uri-obj.defined {
+    # if credentials are defined, try to authenticate
+    self.close unless self!authenticate($uri-obj);
   }
-}}
 }
 
 #-------------------------------------------------------------------------------
@@ -99,21 +104,25 @@ submethod DESTROY ( ) {
   $!socket.close if $!is-open;
 }
 
-#`{{
 #-------------------------------------------------------------------------------
-method !authenticate ( --> Bool ) {
+method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
 
-  my Bool $ok = True;
-  $!credential =  $!client.
+  # assume failure
+  my Bool $authenticated-ok = False;
 
-  if $!credential.defined and ? $!credential.username and
-     ? $!credential.password
-  {
+  my MongoDB::Authenticate::Credential $credential = $uri-obj.credential;
+
+  # this socket is for a server which is controlled by a client which has given
+  # the uri object. the client has its key from this uri object.
+  my Str $client-key = $uri-obj.keyed-uri;
+
+  # username and password should be defined and non empty
+  if ? $credential.username and ? $credential.password {
 
     # get authentication mechanism
-    my Str $auth-mechanism = $!credential.auth-mechanism // 'SCRAM-SHA-1';
+    my Str $auth-mechanism = $credential.auth-mechanism // 'SCRAM-SHA-1';
 
-    $!credential.auth-mechanism(:$auth-mechanism);
+#    $credential.auth-mechanism(:$auth-mechanism);
 
     given $auth-mechanism {
 
@@ -121,59 +130,71 @@ method !authenticate ( --> Bool ) {
       when 'SCRAM-SHA-1' {
 
 #        my MongoDB::Authenticate::Scram $client-object .= new(
-#          :$!client, :db-name($!credential.auth-source)
+#          :$!client, :db-name($credential.auth-source)
 #        );
         my MongoDB::Authenticate::Scram $client-object .= new(
-          MongoDB::Database.new(:name($!credential.auth-source // 'admin'))
+          MongoDB::Database.new(:name($credential.auth-source))
         );
 
         my Auth::SCRAM $sc .= new(
-          :username($!credential.username),
-          :password($!credential.password),
+          :username($credential.username),
+          :password($credential.password),
           :$client-object,
         );
 
         my $error = $sc.start-scram;
         if ?$error {
-          fatal-message("Authentication fail for $!credential.username(): $error");
+          error-message(
+            "Authentication fail for $credential.username(): $error"
+          );
         }
 
         else {
-          trace-message("$!credential.username() authenticated");
+          trace-message("$credential.username() authenticated");
+          $authenticated-ok = True;
         }
       }
 
       # since version 4.*
       when 'SCRAM-SHA-256' {
-
+        warn-message(
+          "Authentication mechanism 'SCRAM-SHA-256' is not yet supported"
+        );
       }
 
       # removed from version 4.*. will not be supported!!
       when 'MONGODB-CR' {
-
+        warn-message(
+          "Authentication mechanism 'MONGODB-CR' will not be supported"
+        );
       }
 
       when 'MONGODB-X509' {
-
+        warn-message(
+          "Authentication mechanism 'MONGODB-X509' is not yet supported"
+        );
       }
 
       # Kerberos
       when 'GSSAPI' {
-
+        warn-message(
+          "Authentication mechanism 'GSSAPI' is not yet supported"
+        );
       }
 
       # LDAP SASL
       when 'PLAIN' {
-
+        warn-message(
+          "Authentication mechanism 'PLAIN' is not yet supported"
+        );
       }
 
     } # given $auth-mechanism
   } # if ?$credential.username and ?$credential.password
 
 
-  $ok
+  $authenticated-ok
 }
-}}
 
 #-------------------------------------------------------------------------------
 method check-open ( --> Bool ) {

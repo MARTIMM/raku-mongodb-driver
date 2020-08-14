@@ -269,7 +269,7 @@ method select-server (
     # done when a suitable server is found
     last if $selected-server.defined;
 
-#`{{
+##`{{
     # pick first server to get uri object. options are the same for all
     # servers belonging to the client-id
     $uri-obj = $servers-in-pool{
@@ -283,7 +283,7 @@ method select-server (
       last
         unless ((now - $t0) * 1000) < $uri-obj.options<serverSelectionTimeoutMS>;
     }
-}}
+#}}
 
     # wait for some arbitrary short period
     sleep 0.1;
@@ -338,16 +338,11 @@ method cleanup ( Str:D $client-key ) {
   for @servers -> $server-name {
     trace-message("cleanup server $server-name");
 
-    # check if the name is still there, can be removed behind my back
-    if $!rw-sem.reader(
-      'server-info', {$!servers-in-pool{$server-name}:exists; }
-    ) {
-      my $server = $!rw-sem.writer(
-        'server-info', {$!servers-in-pool{$server-name}:delete;}
-      );
+    my $server = $!rw-sem.writer(
+      'server-info', {$!servers-in-pool{$server-name}:delete;}
+    );
 
-      $server.cleanup;
-    }
+    $server.cleanup($client-key) if $server.defined;
   }
 
 trace-message("leftover: " ~ $!servers-in-pool.perl);

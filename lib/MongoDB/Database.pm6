@@ -9,23 +9,35 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 has Str $.name;
-#has ClientType $.client;
 has Str $.client-key;
 has BSON::Document $.read-concern;
 has MongoDB::Collection $!cmd-collection;
 
 #-----------------------------------------------------------------------------
-submethod BUILD (
+multi submethod BUILD (
   ClientType:D :$client!, Str:D :$name, BSON::Document :$read-concern
 ) {
 
   $!read-concern = $read-concern // $client.read-concern;
 
   self!set-name($name);
-#    $!client = $client;
   $!client-key = $client.uri-obj.keyed-uri;
 
-  debug-message("create database $name");
+  debug-message("create database $name using client object");
+
+  # Create a collection $cmd to be used with run-command()
+  $!cmd-collection = self.collection( '$cmd', :$read-concern);
+}
+
+#-----------------------------------------------------------------------------
+multi submethod BUILD (
+  Str :$!client-key!, Str:D :$name, BSON::Document :$read-concern
+) {
+
+  $!read-concern = $read-concern // BSON::Document.new;
+
+  self!set-name($name);
+  debug-message("create database $name using client key");
 
   # Create a collection $cmd to be used with run-command()
   $!cmd-collection = self.collection( '$cmd', :$read-concern);

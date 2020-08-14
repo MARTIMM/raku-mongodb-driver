@@ -157,7 +157,8 @@ submethod BUILD ( Str :$!uri ) {
       ( $!options<heartbeatFrequencyMS> // MongoDB::C-HEARTBEATFREQUENCYMS ).Int;
 
     my Str $auth-mechanism = $!options<authMechanism> // '';
-    my Str $auth-mechanism-properties = $!options<authMechanismProperties> // '';
+    my Str $auth-mechanism-properties =
+      $!options<authMechanismProperties> // '';
     my Str $auth-source = $actions.dtbs // $!options<authSource> // 'admin';
 
     # get username and password, database and some of
