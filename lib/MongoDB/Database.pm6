@@ -4,24 +4,25 @@ use v6;
 unit class MongoDB::Database:auth<github:MARTIMM>;
 
 use MongoDB;
+use MongoDB::Uri;
 use MongoDB::Collection;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
 has Str $.name;
-has Str $.client-key;
+has MongoDB::Uri $!uri-obj;
 has BSON::Document $.read-concern;
 has MongoDB::Collection $!cmd-collection;
 
 #-----------------------------------------------------------------------------
-multi submethod BUILD (
-  ClientType:D :$client!, Str:D :$name, BSON::Document :$read-concern
+submethod BUILD (
+  MongoDB::Uri :$!uri-obj, Str:D :$name, BSON::Document :$read-concern
 ) {
 
-  $!read-concern = $read-concern // $client.read-concern;
+  $!read-concern = $read-concern // BSON::Document.new;
 
   self!set-name($name);
-  $!client-key = $client.uri-obj.keyed-uri;
+  #$!client-key = $client.uri-obj.client-key;
 
   debug-message("create database $name using client object");
 
@@ -29,6 +30,7 @@ multi submethod BUILD (
   $!cmd-collection = self.collection( '$cmd', :$read-concern);
 }
 
+#`{{
 #-----------------------------------------------------------------------------
 multi submethod BUILD (
   Str :$!client-key!, Str:D :$name, BSON::Document :$read-concern
@@ -42,6 +44,7 @@ multi submethod BUILD (
   # Create a collection $cmd to be used with run-command()
   $!cmd-collection = self.collection( '$cmd', :$read-concern);
 }
+}}
 
 #-----------------------------------------------------------------------------
 # Select a collection. When it is new it comes into existence only
@@ -54,7 +57,9 @@ method collection (
   $!read-concern =
     $read-concern.defined ?? $read-concern !! $!read-concern;
 
-  return MongoDB::Collection.new( :database(self), :$name, :$read-concern);
+  return MongoDB::Collection.new(
+    :database(self), :$name, :$read-concern, :$!uri-obj
+  );
 }
 
 #-----------------------------------------------------------------------------

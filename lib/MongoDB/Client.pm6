@@ -9,7 +9,6 @@ use MongoDB::ServerPool;
 use MongoDB::Server::Monitor;
 use MongoDB::Database;
 use MongoDB::Collection;
-use MongoDB::Authenticate::Credential;
 use MongoDB::ObserverEmitter;
 
 use BSON::Document;
@@ -130,14 +129,14 @@ submethod BUILD (
     my Str $server-name = "$server-data<host>:$server-data<port>";
 
     if !$event-manager.check-subscription(
-      "$!uri-obj.keyed-uri() $server-name process topology"
+      "$!uri-obj.client-key() $server-name process topology"
     ) {
       # this client receives the data from a server in a List to be
       # processed by process-topology().
       $event-manager.subscribe-observer(
         $server-name ~ ' process topology',
         -> List $server-data { self!process-topology(|$server-data); },
-        :event-key("$!uri-obj.keyed-uri() $server-name process topology")
+        :event-key("$!uri-obj.client-key() $server-name process topology")
       );
 
       # this client gets new host information from the server. it is
@@ -145,7 +144,7 @@ submethod BUILD (
       $event-manager.subscribe-observer(
         $server-name ~ ' add servers',
         -> @new-hosts { self!add-servers(@new-hosts); },
-        :event-key("$!uri-obj.keyed-uri() $server-name add servers")
+        :event-key("$!uri-obj.client-key() $server-name add servers")
       );
     }
 
@@ -161,7 +160,7 @@ submethod BUILD (
     # this client gets new host information from the server. it is
     # possible that hosts are processed before.
     my Bool $created = $server-pool.add-server(
-        $!uri-obj.keyed-uri, $server-name, #$!uri-obj,
+        $!uri-obj.client-key, $server-name, #$!uri-obj,
 #        :status(ST-Unknown), :!ismaster
     );
     $server-pool.set-server-data( $server-name, :$!uri-obj);
@@ -193,7 +192,7 @@ method !process-topology (
 
   if $server-status.defined and $is-master.defined {
     $server-pool.set-server-data(
-      $new-server-name, :status($server-status), :ismaster($is-master)
+      $new-server-name, :status($server-status), :$is-master
     );
     trace-message("server info updated for $new-server-name with $server-status, $is-master");
   }
@@ -211,10 +210,10 @@ method !process-topology (
   my Bool $found-sharded = False;
   my Bool $found-replica = False;
 
-#  my @server-list = |($server-pool.get-server-names($!uri-obj.keyed-uri));
+#  my @server-list = |($server-pool.get-server-names($!uri-obj.client-key));
 #trace-message("client '$!uri-obj.keyed-obj()'");
 
-  for @($server-pool.get-server-names($!uri-obj.keyed-uri)) -> $server-name {
+  for @($server-pool.get-server-names($!uri-obj.client-key)) -> $server-name {
 #  for $servers.keys -> $server-name {
     $servers-count++;
 
@@ -300,7 +299,7 @@ method !process-topology (
   # set topology info in ServerPool to store with the server
   $server-pool.set-server-data( $new-server-name, :$topology);
 
-  info-message("Client '$!uri-obj.keyed-uri()' topology is $topology");
+  info-message("Client '$!uri-obj.client-key()' topology is $topology");
 }
 
 #`{{
@@ -543,7 +542,7 @@ method select-server (
 #note "topo: ", $topology-description.perl;
 
   my MongoDB::ServerPool $server-pool .= instance;
-  $server-pool.select-server( $read-concern, $!uri-obj.keyed-uri);
+  $server-pool.select-server( $read-concern, $!uri-obj.client-key);
 }
 
 #`{{
@@ -698,14 +697,14 @@ try {
 #    unless $!observed-servers{$server-name} {
 
     if !$event-manager.check-subscription(
-      "$!uri-obj.keyed-uri() $server-name process topology"
+      "$!uri-obj.client-key() $server-name process topology"
     ) {
       # this client receives the data from a server in a List to be processed by
       # process-topology().
       $event-manager.subscribe-observer(
         $server-name ~ ' process topology',
         -> List $server-data { self!process-topology(|$server-data); },
-        :event-key("$!uri-obj.keyed-uri() $server-name process topology")
+        :event-key("$!uri-obj.client-key() $server-name process topology")
       );
 
       # this client gets new host information from the server. it is
@@ -713,14 +712,14 @@ try {
       $event-manager.subscribe-observer(
         $server-name ~ ' add servers',
         -> @new-hosts { self!add-servers(@new-hosts); },
-        :event-key("$!uri-obj.keyed-uri() $server-name add servers")
+        :event-key("$!uri-obj.client-key() $server-name add servers")
       );
     }
 
     # create Server object, if server already existed, get the
     # info from server immediately
     my Bool $created = $server-pool.add-server(
-      $!uri-obj.keyed-uri, $server-name
+      $!uri-obj.client-key, $server-name
     );
     $server-pool.set-server-data( $server-name, :$!uri-obj);
     unless $created {
@@ -741,7 +740,7 @@ method database (
   my BSON::Document $rc =
      $read-concern.defined ?? $read-concern !! $!read-concern;
 
-  MongoDB::Database.new( :client(self), :name($name), :read-concern($rc));
+  MongoDB::Database.new( :$!uri-obj, :name($name), :read-concern($rc));
 }
 
 #-------------------------------------------------------------------------------
@@ -757,12 +756,10 @@ method collection (
   ( my $db-name, my $cll-name) = $full-collection-name.split( '.', 2);
 
   my MongoDB::Database $db .= new(
-    :client(self),
-    :name($db-name),
-    :read-concern($rc)
+    :$!uri-obj, :name($db-name), :read-concern($rc)
   );
 
-  return $db.collection( $cll-name, :read-concern($rc));
+  return $db.collection( :$!uri-obj, $cll-name, :read-concern($rc));
 }
 
 #-------------------------------------------------------------------------------
@@ -780,9 +777,9 @@ method cleanup ( ) {
 
   my MongoDB::ServerPool $server-pool .= instance;
   my MongoDB::ObserverEmitter $e .= new;
-  for @($server-pool.get-server-names($!uri-obj.keyed-uri)) -> Str $sname {
-    $e.unsubscribe-observer("$!uri-obj.keyed-uri() $sname process topology");
-    $e.unsubscribe-observer("$!uri-obj.keyed-uri() $sname add servers");
+  for @($server-pool.get-server-names($!uri-obj.client-key)) -> Str $sname {
+    $e.unsubscribe-observer("$!uri-obj.client-key() $sname process topology");
+    $e.unsubscribe-observer("$!uri-obj.client-key() $sname add servers");
   }
 
   # stop loop and wait for exit
@@ -792,7 +789,7 @@ method cleanup ( ) {
   #}
 
   # Remove all servers concurrently. Shouldn't be many per client.
-  $server-pool.cleanup($!uri-obj.keyed-uri);
+  $server-pool.cleanup($!uri-obj.client-key);
 
 #`{{
   $!rw-sem.writer(
