@@ -18,18 +18,20 @@ use MongoDB::SocketPool::Socket;
 my MongoDB::Test-support $ts .= new;
 
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Info));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Info));
 my $handle = "xt/Log/140-Socket.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-#set-filter(|<ObserverEmitter Timer Socket>);
+set-filter(|<ObserverEmitter Timer Client Monitor>);
 
 info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
 my Hash $clients = $ts.create-clients;
-#note $clients<s1>.uri-obj.servers[0];
+#diag $clients.perl; #<s1>.uri-obj.servers[0];
+#diag $clients<s1>.uri-obj.servers.elems;
 
+my $uri-obj = $clients<s1>.uri-obj;
 my Str $host = $clients<s1>.uri-obj.servers[0]<host>;
 my Int $port = $clients<s1>.uri-obj.servers[0]<port>.Int;
 
@@ -38,8 +40,9 @@ my BSON::Document $monitor-command .= new: (isMaster => 1);
 
 #-------------------------------------------------------------------------------
 subtest "Socket creation", {
-  $socket .= new( :$host, :$port);
-  isa-ok $socket, MongoDB::SocketPool::Socket, '.new( :host, :port)';
+  $socket .= new( :$host, :$port, :$uri-obj);
+  isa-ok $socket, MongoDB::SocketPool::Socket, '.new( :host, :port, :uri-obj)';
+  ok $socket.check-open, '.check-open()';
 }
 
 #-------------------------------------------------------------------------------
@@ -58,12 +61,18 @@ subtest "Socket manipulations", {
   is $result<number-returned>, 1, '.send() / .receive-check()';
   is $result<documents>[0]<ok>, 1, 'document is ok';
 
-  ok $socket.check-open, '.check-open()';
+  $socket.close;
+  nok $socket.check-open, '.close()';
 
-  my MongoDB::Client $client = $clients{$clients.keys[0]};
-  my MongoDB::Database $database = $client.database('test');
+#  my MongoDB::Client $client = $clients{$clients.keys[0]};
+#  my MongoDB::Database $database = $client.database('test');
 
 #note $result.perl;
+}
+
+#-------------------------------------------------------------------------------
+subtest "Authentication", {
+  ok True, 'TODO test authentication';
 }
 
 #-------------------------------------------------------------------------------
