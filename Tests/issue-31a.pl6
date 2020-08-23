@@ -27,7 +27,7 @@ sub MAIN( ) {
   my MongoDB::Database $database = $client.database('Library');
   my $doc = $database.run-command(BSON::Document.new: (ping => 1));
 #  $doc.perl.say;
-  say '1st run:   ', now - $t0;
+  say "\n1st run:   ", now - $t0;
   trace-message("end 1st run");
 
 #$client.cleanup;
@@ -60,6 +60,7 @@ sub MAIN( ) {
 #}
 #=finish
 
+#sleep 1;
 
   trace-message("start 3rd run");
   $t0 = now;
