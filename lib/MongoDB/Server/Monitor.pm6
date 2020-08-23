@@ -1,9 +1,12 @@
+#TL:1:MongoDB::Server::Monitor:
+
 use v6;
 
 #use MongoDB::ServerPool::Server;
-use MongoDB;
-use MongoDB::ObserverEmitter;
 #use MongoDB::Server::Socket;
+use MongoDB;
+use MongoDB::Wire;
+use MongoDB::ObserverEmitter;
 use MongoDB::Timer;
 
 use BSON;
@@ -20,7 +23,7 @@ my MongoDB::Server::Monitor $singleton-instance;
 # server data of registered servers, an array each entry. its key must be a
 # combination of the client and server keys because servers can be duplicated
 # in the serverpool.
-enum SERVERDATA < ServerObj WMRttMs ClientKey ServerKey >;
+enum SERVERDATA < ServerObj WMRttMs >;
 my %registered-servers;
 
 # Variables to control infinite monitoring actions
@@ -46,9 +49,9 @@ my MongoDB::Timer $monitor-timer;
 my Semaphore::ReadersWriters $rw-sem;
 
 #-------------------------------------------------------------------------------
+#tm:1:bless():instance()
 # Call before monitor-server to set the $!server object!
 # Inheriting from Supplier prevents use of proper BUILD
-#
 submethod BUILD ( ) {
 
   # start the monitor
@@ -58,10 +61,12 @@ submethod BUILD ( ) {
 }
 
 #-------------------------------------------------------------------------------
+#tm:1:new():
 # Prevent calling new(). Must use instance()
 method new ( ) { !!! }
 
 #-------------------------------------------------------------------------------
+#tm:1:instance():
 method instance ( --> MongoDB::Server::Monitor ) {
 
   # initialize only once
@@ -139,11 +144,7 @@ method !unregister-server ( $server ) {
   );
 
   if $exists {
-    $rw-sem.writer( 'm-servers', {
-      %registered-servers{$server-name}:delete;
-      }
-    );
-
+    $rw-sem.writer( 'm-servers', { %registered-servers{$server-name}:delete; });
     debug-message("Server $server-name un-registered");
   }
 }
@@ -198,7 +199,7 @@ try {
       $monitor-timer = MongoDB::Timer.in(0.1);
       loop {
 
-ENTER trace-message("promise loop begin");
+#ENTER trace-message("promise loop begin");
 
         # start first run. should start after 0.1 sec from previous statement.
         #$promise-monitor .= start( { self.monitor-work } );
@@ -243,7 +244,7 @@ ENTER trace-message("promise loop begin");
         # create the cancelable thread. wait is in seconds
         $monitor-timer = MongoDB::Timer.in( $heartbeat-frequency / 1000.0 );
 
-NEXT trace-message("promise loop end");
+#NEXT trace-message("promise loop end");
       } # loop
     }   # Promise code
   );    # Promise.start
@@ -344,7 +345,7 @@ method monitor-work ( ) {
   trace-message("Servers to monitor: " ~ %rservers.keys.join(', '));
   for %rservers.keys -> $server-name {
 
-#note "monitor-work server $server-name, ", %rservers.perl;
+trace-message("monitor-work server $server-name, %registered-servers.perl()");
 
     # last check if server is still registered in original structure
     next unless $rw-sem.reader(
@@ -356,9 +357,7 @@ method monitor-work ( ) {
 
     # get server info
     my $server = %rservers{$server-name}[ServerObj];
-    ( $doc, $rtt) = $server.raw-query(
-      'admin.$cmd', $monitor-command, :!authenticate, :time-query
-    );
+    ( $doc, $rtt) = self.raw-query($server);
 
 
     my Str $doc-text = ($doc // '-').perl;
@@ -431,4 +430,23 @@ method monitor-work ( ) {
   trace-message(
     "Servers are " ~ ($servers-settled ?? '' !! 'not yet ') ~ 'settled'
   );
+}
+
+#-------------------------------------------------------------------------------
+multi method raw-query ( $server --> List ) {
+
+  my BSON::Document $doc;
+  my Duration $rtt;
+
+  my MongoDB::Uri $uri-obj .= new(:uri("mongodb://$server.name()"));
+
+  my MongoDB::Wire $w .= new;
+  ( $doc, $rtt) = $w.query(
+    'admin.$cmd', $monitor-command,
+    :number-to-skip(0), :number-to-return(1),
+    :$server, :!authenticate, :time-query
+  );
+trace-message("result raw query to server $server.name(): $doc.perl()");
+
+  ( $doc, $rtt);
 }

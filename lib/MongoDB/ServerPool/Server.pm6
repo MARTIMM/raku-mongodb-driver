@@ -3,19 +3,19 @@
 use v6;
 
 use MongoDB;
-use MongoDB::Wire;
+#use MongoDB::Wire;
 #use MongoDB::Client;
 use MongoDB::Uri;
-use MongoDB::Server::Monitor;
+#use MongoDB::Server::Monitor;
 use MongoDB::SocketPool;
 use MongoDB::SocketPool::Socket;
-use MongoDB::Authenticate::Credential;
-use MongoDB::Authenticate::Scram;
+#use MongoDB::Authenticate::Credential;
+#use MongoDB::Authenticate::Scram;
 use MongoDB::ObserverEmitter;
 
 use BSON::Document;
 use Semaphore::ReadersWriters;
-use Auth::SCRAM;
+#use Auth::SCRAM;
 
 #-------------------------------------------------------------------------------
 unit class MongoDB::ServerPool::Server:auth<github:MARTIMM>;
@@ -316,14 +316,13 @@ method tap-monitor ( |c --> Tap ) {
 # thrown exception is catched in Wire where the call is done. This also means
 # that calling new must be done outside any semaphore locks
 method get-socket (
-  Bool :$authenticate = True --> MongoDB::SocketPool::Socket
+  MongoDB::Uri :$uri-obj, Bool :$authenticate = True
+  --> MongoDB::SocketPool::Socket
 ) {
-  trace-message( "Get socket, authenticate = $authenticate");
+  trace-message("Get socket, authenticate = $authenticate");
 
   my MongoDB::SocketPool $socket-pool .= instance;
-  $socket-pool.get-socket( self.host, self.port
-    #, Str :$username, Str :$password
-  );
+  $socket-pool.get-socket( self.host, self.port, :$uri-obj);
 }
 
 #`{{
@@ -477,51 +476,6 @@ note "$*THREAD.id() Get sock, authenticate = $authenticate";
 
   # Return a usable socket which is opened and authenticated upon if needed.
   $found-socket;
-}
-}}
-
-#-------------------------------------------------------------------------------
-multi method raw-query (
-  Str:D $full-collection-name, BSON::Document:D $query,
-  Int :$number-to-skip = 0, Int :$number-to-return = 1,
-  Bool :$authenticate = True, Bool :$time-query = False
-  --> List
-) {
-
-  # Be sure the server is still active
-  return ( BSON::Document, Duration.new(0)) unless $!server-is-registered;
-
-  my BSON::Document $doc;
-  my Duration $rtt;
-
-  my MongoDB::Wire $w .= new;
-  ( $doc, $rtt) = $w.query(
-    $full-collection-name, $query,
-    :$number-to-skip, :$number-to-return,
-    :server(self), :$authenticate, :$time-query
-  );
-
-  ( $doc, $rtt);
-}
-
-#`{{
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-multi method raw-query (
-  Str:D $full-collection-name, BSON::Document:D $query,
-  Int :$number-to-skip = 0, Int :$number-to-return = 1,
-  Bool :$authenticate = True
-  --> BSON::Document
-) {
-  # Be sure the server is still active
-  return BSON::Document unless $!server-is-registered;
-
-  debug-message("server directed query on collection $full-collection-name on server $!name");
-
-  MongoDB::Wire.new.query(
-    $full-collection-name, $query,
-    :$number-to-skip, :$number-to-return,
-    :server(self), :$authenticate, :!time-query
-  );
 }
 }}
 
