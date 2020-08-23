@@ -1,3 +1,4 @@
+#TL:1:MongoDB::SocketPool:
 use v6;
 #-------------------------------------------------------------------------------
 =begin pod
@@ -52,6 +53,7 @@ has Hash $!socket-info;
 has Semaphore::ReadersWriters $!rw-sem;
 
 #-------------------------------------------------------------------------------
+#tm:1:BUILD:
 submethod BUILD ( ) {
   trace-message("socket pool initialized");
   $!socket-info = {};
@@ -59,14 +61,14 @@ submethod BUILD ( ) {
   $!rw-sem .= new;
   #$rw-sem.debug = True;
   $!rw-sem.add-mutex-names( <socketpool>, :RWPatternType(C-RW-WRITERPRIO));
-
-
 }
 
 #-------------------------------------------------------------------------------
+#tm:1:new:
 method new ( ) { !!! }
 
 #-------------------------------------------------------------------------------
+#tm:1:instance():
 method instance ( --> MongoDB::SocketPool ) {
   $instance = self.bless unless $instance;
 
@@ -74,17 +76,10 @@ method instance ( --> MongoDB::SocketPool ) {
 }
 
 #-------------------------------------------------------------------------------
+#tm:1:get-socket:
 # Getting a socket will return an opened socket. It will first search for an
 # existing one, if not found creates a new and stores it with the current
 # thread id.
-#multi method get-socket (
-#  MongoDB::ServerPool::Server:D $server, Str :$username, Str :$password
-#  --> IO::Socket::INET
-#) {
-#  self.get-socket( $server.host, $server.port, $username, $password);
-#}
-
-#multi
 method get-socket (
   Str:D $host, Int:D $port, MongoDB::Uri :$uri-obj
   --> MongoDB::SocketPool::Socket
@@ -161,8 +156,6 @@ method get-socket (
       trace-message("socket created for server $host:$port");
       $!rw-sem.writer( 'socketpool', {
           $!socket-info{$client-key}{"$host $port"}{$username} = $socket;
-#          $!socket-info{$client-key}{"$host $port"}{$username}<socket> = $socket;
-#          $!socket-info{$client-key}{"$host $port"}{$username}<uri> = $uri-obj;
         }
       );
     }
@@ -172,8 +165,11 @@ method get-socket (
 }
 
 #-------------------------------------------------------------------------------
+#tm:1:cleanup:
 # close and remove a socket belonging to the server on the current thread
-method cleanup ( Str $client-key ) {
+method cleanup ( Str $client-key --> Bool ) {
+
+  my Bool $cleanup-done = False;
 
   my Hash $si-cl = $!rw-sem.writer( 'socketpool', {
       $!socket-info{$client-key}:delete // %();
@@ -184,6 +180,7 @@ method cleanup ( Str $client-key ) {
     for $si-cl{$host-port}.keys -> $un {
       my $s = $si-cl{$host-port}{$un};
       $s.close;
+      $cleanup-done = True;
 
       if ? $un {
         trace-message("cleanup socket for server $host-port and user $un");
@@ -194,6 +191,8 @@ method cleanup ( Str $client-key ) {
       }
     }
   }
+
+  $cleanup-done
 }
 
 #-------------------------------------------------------------------------------
