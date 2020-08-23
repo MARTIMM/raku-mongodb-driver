@@ -17,7 +17,7 @@ has MongoDB::Authenticate::Credential $.credential handles <
     >;
 
 # a unique (hopefully) key generated from the uri string.
-has Str $.keyed-uri;
+has Str $.client-key;
 
 # original uri for other purposes perhaps
 has Str $.uri;
@@ -170,8 +170,8 @@ submethod BUILD ( Str :$!uri ) {
     $key-string ~= $actions.uname ~ $actions.pword;
 
     # generate a key string from the uri data
-#    $!keyed-uri = encode-base64( $key-string, :str);
-    $!keyed-uri = sha1("$!uri {now}".encode)>>.fmt('%02X').join;
+#    $!client-key = encode-base64( $key-string, :str);
+    $!client-key = sha1("$!uri {now}".encode)>>.fmt('%02X').join;
   }
 
   # parser failure
