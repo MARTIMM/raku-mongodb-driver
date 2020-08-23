@@ -1,156 +1,202 @@
 use v6;
 
-#-------------------------------------------------------------------------------
-unit package MongoDB:auth<github:MARTIMM>;
-
 use BSON::Document;
 use MongoDB;
+use MongoDB::Uri;
 use MongoDB::Wire;
 use MongoDB::Cursor;
-use MongoDB::ServerPool;
+#use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
-class Collection {
+unit class MongoDB::Collection:auth<github:MARTIMM>;
 
-#  has DatabaseType $.database;
-  has Str $.name;
-  has Str $.full-collection-name;
-  has Str $.client-key;
-  has BSON::Document $.read-concern;
+#has DatabaseType $.database;
+has Str $.name;
+has Str $.full-collection-name;
+has MongoDB::Uri $!uri-obj;
+has BSON::Document $.read-concern;
 
-  #-----------------------------------------------------------------------------
-  submethod BUILD (
-    DatabaseType:D :$database, Str:D :$!name, BSON::Document :$!read-concern
-  ) {
+#-----------------------------------------------------------------------------
+submethod BUILD (
+  MongoDB::Uri :$!uri-obj, DatabaseType:D :$database,
+  Str:D :$!name, BSON::Document :$!read-concern
+) {
 
-    $!read-concern //= $database.read-concern;
+  $!read-concern //= $database.read-concern;
+  $!full-collection-name = [~] $database.name, '.', $!name;
 
-    $!client-key = $database.client-key;
-    $!full-collection-name = [~] $database.name, '.', $!name;
+  debug-message("create collection $!full-collection-name");
+}
 
-    debug-message("create collection $!full-collection-name");
+#-----------------------------------------------------------------------------
+# Find record in a collection. One of the few left to use the wire protocol.
+#
+# Method using Pair.
+multi method find (
+  List :$criteria where all(@$criteria) ~~ Pair = (),
+  List :$projection where all(@$projection) ~~ Pair = (),
+  Int :$number-to-skip = 0, Int :$number-to-return = 0,
+  QueryFindFlags :@flags = Array[QueryFindFlags].new,
+  List :$read-concern
+  --> MongoDB::Cursor
+) {
+
+  my BSON::Document $rc =
+     $read-concern.defined ?? BSON::Document.new: $read-concern
+                           !! $!read-concern;
+
+  #my ServerClassType $server = $!database.client.select-server(
+#    my MongoDB::ServerPool $server-pool .= instance;
+#    my $server = $server-pool.select-server( $rc, $!client-key);
+
+#    unless $server.defined {
+#      error-message("No server object for query");
+#      return MongoDB::Cursor;
+#    }
+
+  my BSON::Document $cr .= new: $criteria;
+  my BSON::Document $pr .= new: $projection;
+  ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
+    $!full-collection-name, $cr, $pr, :@flags, :$number-to-skip,
+    :$number-to-return, :$!uri-obj
+  );
+
+  unless $server-reply.defined {
+    error-message("No server reply on query");
+    return MongoDB::Cursor;
   }
 
-  #-----------------------------------------------------------------------------
-  # Find record in a collection. One of the few left to use the wire protocol.
-  #
-  # Method using Pair.
-  multi method find (
-    List :$criteria where all(@$criteria) ~~ Pair = (),
-    List :$projection where all(@$projection) ~~ Pair = (),
-    Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    QueryFindFlags :@flags = Array[QueryFindFlags].new,
-    List :$read-concern
-    --> MongoDB::Cursor
-  ) {
+  return MongoDB::Cursor.new(
+    :collection(self), :$server-reply,
+#    :$server,
+    :$number-to-return
+  );
+}
 
-    my BSON::Document $rc =
-       $read-concern.defined ?? BSON::Document.new: $read-concern
-                             !! $!read-concern;
+# Find record in a collection using a BSON::Document
+multi method find (
+  BSON::Document :$criteria = BSON::Document.new,
+  BSON::Document :$projection?,
+  Int :$number-to-skip = 0, Int :$number-to-return = 0,
+  QueryFindFlags :@flags = Array[QueryFindFlags].new,
+  BSON::Document :$read-concern
+  --> MongoDB::Cursor
+) {
 
-    #my ServerClassType $server = $!database.client.select-server(
-    my MongoDB::ServerPool $server-pool .= instance;
-    my $server = $server-pool.select-server( $rc, $!client-key);
-
-    unless $server.defined {
-      error-message("No server object for query");
-      return MongoDB::Cursor;
-    }
-
-    my BSON::Document $cr .= new: $criteria;
-    my BSON::Document $pr .= new: $projection;
-    ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
-      $!full-collection-name, $cr, $pr, :@flags, :$number-to-skip,
-      :$number-to-return, :$server
-    );
-
-    unless $server-reply.defined {
-      error-message("No server reply on query");
-      return MongoDB::Cursor;
-    }
-
-    return MongoDB::Cursor.new(
-      :collection(self), :$server-reply,
-      :$server, :$number-to-return
-    );
-  }
-
-  # Find record in a collection using a BSON::Document
-  multi method find (
-    BSON::Document :$criteria = BSON::Document.new,
-    BSON::Document :$projection?,
-    Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    QueryFindFlags :@flags = Array[QueryFindFlags].new,
-    BSON::Document :$read-concern
-    --> MongoDB::Cursor
-  ) {
-
-    my BSON::Document $rc = $read-concern // $!read-concern;
+  my BSON::Document $rc = $read-concern // $!read-concern;
 
 #note "Find server doctype";
-    #my ServerClassType $server = $!database.client.select-server(
+  #my ServerClassType $server = $!database.client.select-server(
 #    my $server = $!database.client.select-server(
 #      :read-concern($rc)
 #    );
-    my MongoDB::ServerPool $server-pool .= instance;
-    my $server = $server-pool.select-server( $rc, $!client-key);
+#    my MongoDB::ServerPool $server-pool .= instance;
+#    my $server = $server-pool.select-server( $rc, $!client-key);
 #note "Server doctype $server.name()";
 
-    unless $server.defined {
-      error-message("No server object for query");
-      return MongoDB::Cursor;
-    }
+#    unless $server.defined {
+#      error-message("No server object for query");
+#      return MongoDB::Cursor;
+#    }
 
-    ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
-      $!full-collection-name, $criteria, $projection, :@flags,
-      :$number-to-skip, :$number-to-return, :$server
-    );
+  ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
+    $!full-collection-name, $criteria, $projection, :@flags,
+    :$number-to-skip, :$number-to-return, :$!uri-obj
+  );
 
-    unless $server-reply.defined {
-      error-message("No server reply on query");
-      return MongoDB::Cursor;
-    }
-
-    return MongoDB::Cursor.new(
-      :collection(self), :$server-reply,
-      :$server, :$number-to-return
-    );
+  unless $server-reply.defined {
+    error-message("No server reply on query");
+    return MongoDB::Cursor;
   }
 
-#`{{
-  #-----------------------------------------------------------------------------
-  # Set the name of the collection. Used by command collection to set
-  # collection name to '$cmd'. There are several other names starting with
-  # 'system.'.
-  method !set-name ( Str:D $name ) {
+  return MongoDB::Cursor.new(
+    :collection(self), :$server-reply,
+#    :$server,
+    :$number-to-return, :$!uri-obj
+  );
+}
 
-    # Check for the CommandCll because of $name is $cmd
+#`{{
+#-------------------------------------------------------------------------------
+multi method raw-query (
+  Str:D $full-collection-name, BSON::Document:D $query,
+  Int :$number-to-skip = 0, Int :$number-to-return = 1,
+  Bool :$authenticate = True, Bool :$time-query = False
+  --> List
+) {
+
+  # Be sure the server is still active
+  return ( BSON::Document, Duration.new(0)) unless $!server-is-registered;
+
+  my BSON::Document $doc;
+  my Duration $rtt;
+
+  my MongoDB::Wire $w .= new;
+  ( $doc, $rtt) = $w.query(
+    $full-collection-name, $query,
+    :$number-to-skip, :$number-to-return,
+    :server(self), :$authenticate, :$time-query
+  );
+
+  ( $doc, $rtt);
+}
+}}
+
+#`{{
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+multi method raw-query (
+Str:D $full-collection-name, BSON::Document:D $query,
+Int :$number-to-skip = 0, Int :$number-to-return = 1,
+Bool :$authenticate = True
+--> BSON::Document
+) {
+# Be sure the server is still active
+return BSON::Document unless $!server-is-registered;
+
+debug-message("server directed query on collection $full-collection-name on server $!name");
+
+MongoDB::Wire.new.query(
+  $full-collection-name, $query,
+  :$number-to-skip, :$number-to-return,
+  :server(self), :$authenticate, :!time-query
+);
+}
+}}
+
+#`{{
+#-----------------------------------------------------------------------------
+# Set the name of the collection. Used by command collection to set
+# collection name to '$cmd'. There are several other names starting with
+# 'system.'.
+method !set-name ( Str:D $name ) {
+
+  # Check for the CommandCll because of $name is $cmd
 #      unless self.^name eq 'MongoDB::CommandCll' {
 
-      # This should be possible: 'admin.$cmd' which is used by run-command
-      # https://docs.mongodb.org/manual/reference/limits/
-      #
+    # This should be possible: 'admin.$cmd' which is used by run-command
+    # https://docs.mongodb.org/manual/reference/limits/
+    #
 #        if $name !~~ m/^ <[_ A..Z a..z]> <[\w _ \-]>* $/ {
 #          return error-message("Illegal collection name: '$name'");
 #        }
 #      }
 
-    $!name = $name;
-    self!set-full-collection-name;
-  }
+  $!name = $name;
+  self!set-full-collection-name;
+}
 
 
-  #-----------------------------------------------------------------------------
-  # Helper to set full collection name in cases that the name of the database
-  # isn't available at BUILD time
-  method !set-full-collection-name ( $!database ) {
+#-----------------------------------------------------------------------------
+# Helper to set full collection name in cases that the name of the database
+# isn't available at BUILD time
+method !set-full-collection-name ( $!database ) {
 
 #??    return unless ! $!full-collection-name and ?$!database.name and ?$!name;
-    $!full-collection-name = [~] $!database.name, '.', $!name;
-  }
+  $!full-collection-name = [~] $!database.name, '.', $!name;
+}
 }}
 
-}
+
 
 
 

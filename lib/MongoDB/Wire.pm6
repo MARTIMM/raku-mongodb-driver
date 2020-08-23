@@ -5,10 +5,13 @@ use BSON::Document;
 
 use MongoDB;
 use MongoDB::Header;
+use MongoDB::Uri;
+
+# use 'require' to break circular dependency
+#use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
 unit class MongoDB::Wire:auth<github:MARTIMM>;
-
 
 #  has ServerClassType $!server;
 #has SocketType $!socket;
@@ -37,11 +40,10 @@ method query (
   Str:D $full-collection-name,
   BSON::Document:D $qdoc, BSON::Document $projection?,
   QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
-  Int :$number-to-return,
+  Int :$number-to-return, MongoDB::Uri :$uri-obj,
 #   ServerClassType :$server,
-    :$server,
-    Bool :$authenticate = True,
-  Bool :$time-query = False
+  :$server is copy,
+  Bool :$authenticate = True, Bool :$time-query = False
 
   --> List #BSON::Document
 ) {
@@ -63,8 +65,19 @@ method query (
       :$flags, :$number-to-skip, :$number-to-return
     );
 
-    $!socket = $server.get-socket(:$authenticate);
-    if ! $!socket {
+#    my MongoDB::ServerPool $server-pool .= instance;
+    require ::('MongoDB::ServerPool');
+    $server = ::('MongoDB::ServerPool').instance.select-server(
+      BSON::Document.new, $uri-obj.client-key
+    ) unless $server.defined;
+
+    unless $server.defined {
+      error-message("No server object for query");
+      return ( BSON::Document, Duration.new(0));
+    }
+
+    $!socket = $server.get-socket( :$uri-obj, :$authenticate);
+    unless $!socket {
       warn-message("server {$server.name} cleaned up");
       return ( BSON::Document, Duration.new(0));
     }
@@ -99,8 +112,10 @@ method query (
 
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
-note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
-      $!socket.close-on-fail if $!socket.defined;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
+.note;
+
+      $!socket.close if $!socket.defined;
 
       # Fatal messages from the program elsewhere
       when X::MongoDB {
@@ -136,9 +151,9 @@ note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
 
 #-----------------------------------------------------------------------------
 method get-more (
-  $cursor, Int :$number-to-return,
+  $cursor, Int :$number-to-return, MongoDB::Uri :$uri-obj,
 #  ServerClassType:D :$server # where .^name eq 'MongoDB::Server'
-  Any:D :$server # where .^name eq 'MongoDB::Server'
+#  Any:D :$server # where .^name eq 'MongoDB::Server'
   --> BSON::Document
 ) {
 
@@ -147,6 +162,16 @@ method get-more (
   my BSON::Document $result;
 
   try {
+    require ::('MongoDB::ServerPool');
+    my $server-pool = ::('MongoDB::ServerPool').instance;
+    my $server = $server-pool.select-server(
+      BSON::Document.new, $uri-obj.client-key
+    );
+
+    unless $server.defined {
+      error-message("No server object for query");
+      return ( BSON::Document, Duration.new(0));
+    }
 
     ( my Buf $encoded-get-more, my Int $request-id) = $header.encode-get-more(
       $cursor.full-collection-name, $cursor.id, :$number-to-return
@@ -166,7 +191,6 @@ method get-more (
 
     # Receive remaining response bytes from socket. Prefix it with the already
     # read bytes and decode. Return the resulting document.
-    #
     my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
     $result = $header.decode-reply($server-reply);
 
@@ -180,7 +204,7 @@ method get-more (
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
 #note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
-      $!socket.close-on-fail if $!socket.defined;
+      $!socket.close if $!socket.defined;
 
       # Fatal messages from the program
       when X::MongoDB {
@@ -214,7 +238,9 @@ method get-more (
 
 #-----------------------------------------------------------------------------
 #method kill-cursors ( @cursors where .elems > 0, ServerClassType:D :$server! ) {
-method kill-cursors ( @cursors where .elems > 0, Any:D :$server! ) {
+method kill-cursors ( @cursors where .elems > 0, MongoDB::Uri :$uri-obj,
+#, Any:D :$server!
+) {
 
 #    $!server = $server;
   my MongoDB::Header $header .= new;
@@ -227,6 +253,18 @@ method kill-cursors ( @cursors where .elems > 0, Any:D :$server! ) {
 
   # Kill the cursors if found any
   try {
+    require ::('MongoDB::ServerPool');
+    my $server-pool = ::('MongoDB::ServerPool').instance;
+#    my MongoDB::ServerPool $server-pool .= instance;
+    my $server = $server-pool.select-server(
+      BSON::Document.new, $uri-obj.client-key
+    );
+
+    unless $server.defined {
+      error-message("No server object for query");
+      return ( BSON::Document, Duration.new(0));
+    }
+
     fatal-message("No server available") unless $server.defined;
     $!socket = $server.get-socket;
     if ! $!socket.defined {
@@ -245,7 +283,7 @@ method kill-cursors ( @cursors where .elems > 0, Any:D :$server! ) {
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
 #note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
-      $!socket.close-on-fail if $!socket.defined;
+      $!socket.close if $!socket.defined;
 
       # Fatal messages from the program
       when X::MongoDB {

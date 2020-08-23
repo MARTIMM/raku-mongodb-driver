@@ -12,45 +12,45 @@ unit package MongoDB:auth<github:MARTIMM>;
 class Cursor does Iterable {
 
 #  has $.client;
-  has Str $!client-key;
-  has $.full-collection-name;
+#  has Str $!client-key;
+#  has $.full-collection-name;
+  has $!uri-obj;
 
   # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
   # no documents on the server or the cursor is killed.
-  #
   has Buf $.id;
 
   # Batch of documents in last response
   has @!documents;
 
-  has $!server;
-
+#  has $!server;
   has $!number-to-return;
 
   #-----------------------------------------------------------------------------
   # Support for the newer BSON::Document
   multi submethod BUILD (
-    MongoDB::CollectionType:D :$collection!, BSON::Document:D :$server-reply!,
+    MongoDB::Uri:D :$!uri-obj!, BSON::Document:D :$server-reply!,
 #    ServerClassType:D :$server!, Int :$number-to-return = 0
-    Any:D :$server!, Int :$number-to-return = 0
+#    Any:D :$server!,
+    Int :$number-to-return = 0
   ) {
 
 #    $!client = $collection.database.client;
-    $!client-key = $collection.client-key;
-    $!full-collection-name = $collection.full-collection-name;
+#    $!client-key = $collection.client-key;
+#    $!full-collection-name = $collection.full-collection-name;
 
     # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
     # batches left on the server to retrieve. Documents may be present in
     # this reply.
     #
     $!id = $server-reply<cursor-id>;
-    if [+] @($server-reply<cursor-id>) {
-      $!server = $server;
-    }
+#    if [+] @($server-reply<cursor-id>) {
+#      $!server = $server;
+#    }
 
-    else {
-      $!server = Nil;
-    }
+#    else {
+#      $!server = Nil;
+#    }
 
     # Get documents from the reply.
     @!documents = $server-reply<documents>.list;
@@ -67,8 +67,9 @@ class Cursor does Iterable {
   ) {
 
 #    $!client = $client;
-    $!client-key = $client.uri-obj.keyed-uri;
-    $!full-collection-name = $cursor-doc<ns>;
+#    $!client-key = $client.uri-obj.client-key;
+#    $!full-collection-name = $cursor-doc<ns>;
+    $!uri-obj = $client.uri-obj;
     my MongoDB::Header $header .= new;
 
     my BSON::Document $rc = $read-concern // $client.read-concern;
@@ -78,15 +79,15 @@ class Cursor does Iterable {
     # this reply.
     #
     $!id = $header.encode-cursor-id($cursor-doc<id>);
-    if [+] @$!id {
+#    if [+] @$!id {
 #      $!server = $!client.select-server(:$read-concern);
-      my MongoDB::ServerPool $server-pool .= instance;
-      $!server = $server-pool.select-server( $read-concern, $!client-key);
-    }
+#      my MongoDB::ServerPool $server-pool .= instance;
+#      $!server = $server-pool.select-server( $read-concern, $!client-key);
+#    }
 
-    else {
-      $!server = Nil;
-    }
+#    else {
+#      $!server = Nil;
+#    }
 
     # Get documents from the reply.
     @!documents = @($cursor-doc<firstBatch>);
@@ -125,7 +126,7 @@ class Cursor does Iterable {
 
       # Request next batch of documents
       my BSON::Document $server-reply =
-        MongoDB::Wire.new.get-more( self, :$!server, :$!number-to-return);
+        MongoDB::Wire.new.get-more( self, :$!number-to-return);
 
       if $server-reply.defined {
 
@@ -133,9 +134,9 @@ class Cursor does Iterable {
         # documents to fetch.
         #
         $!id = $server-reply<cursor-id>;
-        unless [+] @$!id {
-          $!server = Nil;
-        }
+#        unless [+] @$!id {
+#          $!server = Nil;
+#        }
 
         # Get documents
         @!documents = $server-reply<documents>.list;
@@ -162,12 +163,11 @@ class Cursor does Iterable {
 
     # Invalidate cursor on database only if id is valid
     if [+] @$.id {
-      MongoDB::Wire.new.kill-cursors( (self,), :$!server);
+      MongoDB::Wire.new.kill-cursors( (self,));
       trace-message("Cursor killed");
 
       # Invalidate cursor id with 8 0x00 bytes
       $!id = Buf.new(0x00 xx 8);
-      $!server = Nil;
     }
 
     else {

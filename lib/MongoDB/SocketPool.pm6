@@ -28,7 +28,6 @@ $sockets.cleanup( 'localhost', 27017);
 
 #-------------------------------------------------------------------------------
 use MongoDB;
-#use MongoDB::ServerPool::Server;
 use MongoDB::Uri;
 use MongoDB::SocketPool::Socket;
 
@@ -60,6 +59,8 @@ submethod BUILD ( ) {
   $!rw-sem .= new;
   #$rw-sem.debug = True;
   $!rw-sem.add-mutex-names( <socketpool>, :RWPatternType(C-RW-WRITERPRIO));
+
+
 }
 
 #-------------------------------------------------------------------------------
@@ -85,20 +86,57 @@ method instance ( --> MongoDB::SocketPool ) {
 
 #multi
 method get-socket (
-  Str:D $client-key, Str:D $host, Int:D $port, MongoDB::Uri $uri-obj?
-  # Str :$username, Str :$password
+  Str:D $host, Int:D $port, MongoDB::Uri :$uri-obj
   --> MongoDB::SocketPool::Socket
 ) {
+
+  my MongoDB::SocketPool::Socket $socket;
+  my Str $client-key;
+  my Str $username;
+#`{{
+  state Int $cleanup-count = 1;
+
+  # every ten times a cleanup check is done on all ports. get-socket is called
+  # regularly from Monitor.
+  if $cleanup-count > 10 {
+    $cleanup-count = 0;
+
+    my Hash $si = $!rw-sem.writer( 'socketpool', { $!socket-info; });
+
+    for $si.keys -> $client {
+      for $si{$client}.keys -> $host-port {
+        for $si{$client}{$host-port}.keys -> $un {
+          my $s = $si{$client}{$host-port}{$un};
+          $si{$client}{$host-port}{$un}:delete unless $s.check-open;
+        }
+      }
+    }
+  }
+  $cleanup-count++;
+}}
+  if $uri-obj.defined {
+    $client-key = $uri-obj.client-key;
+    $username = $uri-obj.credential.username;
+  }
+
+  # no uri object - client key must be generated and mostly comes from
+  # monitor which does not get a uri object because it does its checks
+  # for all servers from several clients whithout authenticating.
+  else {
+    $client-key = '__MONITOR__CLIENT_KEY__';
+    $username = '';
+  }
+
 
 #next info shows that sockets have become thread save
 #trace-message("get-socket: $host, $port $*THREAD.id()");
 
-  my MongoDB::SocketPool::Socket $socket;
 #  my Int $thread-id = $*THREAD.id();
 
-  my Str $username = $uri-obj ?? $uri-obj.credentials.username !! '';
   $!rw-sem.writer( 'socketpool', {
-      $!socket-info{$client-key} = %() unless $!socket-info{$client-key}:exists;
+      $!socket-info{$client-key} = %()
+        unless $!socket-info{$client-key}:exists;
+
       $!socket-info{$client-key}{"$host $port"} = %()
         unless $!socket-info{$client-key}{"$host $port"}:exists;
     }
