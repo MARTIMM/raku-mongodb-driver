@@ -24,7 +24,7 @@ drop-send-to('screen');
 my $handle = "xt/Log/160-Server.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 #set-filter(|<ObserverEmitter Timer Socket>);
-set-filter(|<Timer Socket>);
+set-filter(|<Timer Monitor Client >);
 
 info-message("Test $?FILE start");
 
@@ -33,13 +33,14 @@ my MongoDB::Test-support $ts .= new;
 my Hash $clients = $ts.create-clients;
 my Str $host = $clients<s1>.uri-obj.servers[0]<host>;
 my Int $port = $clients<s1>.uri-obj.servers[0]<port>.Int;
-my Str $client-key = sha256("s1 $host $port".encode)>>.fmt('%02X').join;
+#my Str $client-key = sha256("s1 $host $port".encode)>>.fmt('%02X').join;
 
 my MongoDB::ServerPool::Server $server;
 
 #-------------------------------------------------------------------------------
 subtest "Server creation", {
-  $server .= new( :$client-key, :$host, :$port);
+#  $server .= new( :$client-key, :$host, :$port);
+  $server .= new( :$host, :$port);
   isa-ok $server, MongoDB::ServerPool::Server,
     '.new( :client-key, :host, :port)';
   is $server.name, "$host:$port", '.name() = ' ~ $server.name();
