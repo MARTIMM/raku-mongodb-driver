@@ -300,7 +300,13 @@ method select-server (
   }
 
 #  $!servers-in-pool{$selected-server};
-  $!rw-sem.reader( 'server-info', { $!servers-in-pool{$selected-server}; });
+  if $selected-server.defined {
+    $!rw-sem.reader( 'server-info', { $!servers-in-pool{$selected-server}; })
+  }
+
+  else {
+    MongoDB::ServerPool::Server
+  }
 }
 
 #-------------------------------------------------------------------------------
