@@ -54,6 +54,46 @@ my Semaphore::ReadersWriters $rw-sem;
 # Inheriting from Supplier prevents use of proper BUILD
 submethod BUILD ( ) {
 
+  $heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
+  $servers-settled = False;
+  $no-servers-available = True;
+
+#  debug-message("HeartbeatFrequencyMs set to $heartbeat-frequency-ms ms");
+
+  $rw-sem .= new;
+  #$rw-sem.debug = True;
+  $rw-sem.add-mutex-names(
+    <m-servers mon-wait-timer>, :RWPatternType(C-RW-WRITERPRIO)
+  );
+
+  %registered-servers = %();
+
+  $monitor-command .= new: (isMaster => 1);
+
+  # observe heartbeat changes
+  my MongoDB::ObserverEmitter $event-manager .= new;
+  $event-manager.subscribe-observer(
+    'set heartbeatfrequency ms',
+    -> Int $heartbeat { self!set-heartbeat($heartbeat) },
+    :event-key<heartbeat>
+  );
+
+  # observe server registration
+  $event-manager.subscribe-observer(
+    'register server',
+#    -> MongoDB::ServerClassType:D $server { self!register-server($server) },
+    -> $server { self!register-server($server) },
+    :event-key<register-server>
+  );
+
+  # observe server deregistration
+  $event-manager.subscribe-observer(
+    'unregister server',
+#    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
+    -> $server { self!unregister-server($server) },
+    :event-key<unregister-server>
+  );
+
   # start the monitor
   debug-message("Start monitoring");
   self!start-monitor;
@@ -110,7 +150,15 @@ method !register-server (
   );
 
   if $exists {
+    # check if its object is still there. removing a server seems to go wrong
+    # sometimes when cleanup of registered servers which might get registered
+    # again in parallel, all from different threads.
     info-message("$server-name exists");
+    $rw-sem.writer( 'm-servers', {
+        %registered-servers{$server-name}[ServerObj] = $server
+          unless %registered-servers{$server-name}[ServerObj].defined;
+      }
+    );
   }
 
   else {
@@ -139,58 +187,18 @@ method !register-server (
 method !unregister-server ( $server ) {
 
   my Str $server-name = $server.name;
-  my Bool $exists = $rw-sem.reader(
-    'm-servers', { %registered-servers{$server-name}:exists; }
-  );
+#  my Bool $exists = $rw-sem.reader(
+#    'm-servers', { %registered-servers{$server-name}:exists; }
+#  );
 
-  if $exists {
+#  if $exists {
     $rw-sem.writer( 'm-servers', { %registered-servers{$server-name}:delete; });
     debug-message("Server $server-name un-registered");
-  }
+#  }
 }
 
 #-------------------------------------------------------------------------------
 method !start-monitor ( ) {
-
-  $heartbeat-frequency-ms .= new(MongoDB::C-HEARTBEATFREQUENCYMS);
-  $servers-settled = False;
-  $no-servers-available = True;
-
-  debug-message("HeartbeatFrequencyMs set to $heartbeat-frequency-ms ms");
-
-  $rw-sem .= new;
-  #$rw-sem.debug = True;
-  $rw-sem.add-mutex-names(
-    <m-servers mon-wait-timer>, :RWPatternType(C-RW-WRITERPRIO)
-  );
-
-  %registered-servers = %();
-
-  $monitor-command .= new: (isMaster => 1);
-
-  # observe heartbeat changes
-  my MongoDB::ObserverEmitter $event-manager .= new;
-  $event-manager.subscribe-observer(
-    'set heartbeatfrequency ms',
-    -> Int $heartbeat { self!set-heartbeat($heartbeat) },
-    :event-key<heartbeat>
-  );
-
-  # observe server registration
-  $event-manager.subscribe-observer(
-    'register server',
-#    -> MongoDB::ServerClassType:D $server { self!register-server($server) },
-    -> $server { self!register-server($server) },
-    :event-key<register-server>
-  );
-
-  # observe server deregistration
-  $event-manager.subscribe-observer(
-    'unregister server',
-#    -> MongoDB::ServerClassType:D $server { self!unregister-server($server) },
-    -> $server { self!unregister-server($server) },
-    :event-key<unregister-server>
-  );
 
 try {
   # set the code aside the main thread
@@ -213,13 +221,13 @@ try {
         # wait for end of thread or when waittime is canceled
         if $promise-monitor.status ~~ PromiseStatus::Kept {
           trace-message(
-            "wait period finished, result: {$promise-monitor.result // '-'}"
+            "wait period finished, result: {$promise-monitor.result() // '-'}"
           );
         }
 
         elsif $promise-monitor.status ~~ PromiseStatus::Broken {
           trace-message(
-            'wait period interrupted: ' ~ $promise-monitor.cause ~
+            "wait period interrupted: $promise-monitor.cause(), " ~
             "monitor heartbeat shortened for new data"
           );
         }
