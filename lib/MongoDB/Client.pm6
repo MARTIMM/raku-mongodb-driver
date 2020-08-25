@@ -766,8 +766,7 @@ method collection (
 # Forced cleanup
 #
 # cleanup cannot be done in separate thread because everything must be cleaned
-# up before other tasks are performed. the client inserts new data while
-# removing them here. the last subtest of 110-client failed because of this.
+# up before other tasks are performed.
 method cleanup ( ) {
 
   $!cleanup-started = True;
