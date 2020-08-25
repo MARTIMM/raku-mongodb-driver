@@ -323,6 +323,6 @@ method cleanup ( Str $client-key ) {
 
   # Clear all sockets
   my MongoDB::SocketPool $socket-pool .= instance;
-  $socket-pool.cleanup($client-key);
-  trace-message("Sockets cleared");
+  $socket-pool.cleanup( $client-key, $!name);
+  trace-message("Sockets cleared for $client-key");
 }

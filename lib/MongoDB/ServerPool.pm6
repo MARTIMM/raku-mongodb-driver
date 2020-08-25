@@ -95,7 +95,7 @@ method add-server ( Str:D $client-key, Str:D $server-name --> Bool ) {
     }
   );
 
-  # check if done before
+  # check if client already had this server added
   if $!rw-sem.reader(
     'client-info', { $!clients-of-servers{$client-key}{$server-name}:exists; }
   ) {
@@ -342,13 +342,13 @@ method cleanup ( Str:D $client-key ) {
 
   # now we can remove the servers which are not in use by other clients
   for @servers -> $server-name {
-    trace-message("cleanup server $server-name");
 
     my $server = $!rw-sem.writer(
       'server-info', {$!servers-in-pool{$server-name}:delete;}
     );
 
     $server.cleanup($client-key) if $server.defined;
+    trace-message("cleaned up server $server-name");
   }
 
 trace-message("leftover: " ~ $!servers-in-pool.perl);
