@@ -99,10 +99,10 @@ method get-socket (
     my Hash $si = $!rw-sem.writer( 'socketpool', { $!socket-info; });
 
     for $si.keys -> $client {
-      for $si{$client}.keys -> $host-port {
-        for $si{$client}{$host-port}.keys -> $un {
-          my $s = $si{$client}{$host-port}{$un};
-          $si{$client}{$host-port}{$un}:delete unless $s.check-open;
+      for $si{$client}.keys -> $server-name {
+        for $si{$client}{$server-name}.keys -> $un {
+          my $s = $si{$client}{$server-name}{$un};
+          $si{$client}{$server-name}{$un}:delete unless $s.check-open;
         }
       }
     }
@@ -167,30 +167,30 @@ method get-socket (
 #-------------------------------------------------------------------------------
 #tm:1:cleanup:
 # close and remove a socket belonging to the server on the current thread
-method cleanup ( Str $client-key --> Bool ) {
+method cleanup ( Str $client-key, Str $server-name --> Bool ) {
 
   my Bool $cleanup-done = False;
 
-  my Hash $si-cl = $!rw-sem.writer( 'socketpool', {
-      $!socket-info{$client-key}:delete // %();
+  my Hash $si-cl-srv = $!rw-sem.writer( 'socketpool', {
+      $!socket-info{$client-key}{$server-name}:delete // %();
     }
   );
 
-  for $si-cl.keys -> $host-port {
-    for $si-cl{$host-port}.keys -> $un {
-      my $s = $si-cl{$host-port}{$un};
+#  for $si-cl.keys -> $server-name {
+    for $si-cl-srv.keys -> $un {
+      my $s = $si-cl-srv{$un};
       $s.close;
       $cleanup-done = True;
 
       if ? $un {
-        trace-message("cleanup socket for server $host-port and user $un");
+        trace-message("cleanup socket for server $server-name and user $un");
       }
 
       else {
-        trace-message("cleanup socket for server $host-port");
+        trace-message("cleanup socket for server $server-name");
       }
     }
-  }
+#  }
 
   $cleanup-done
 }
