@@ -163,8 +163,9 @@ submethod BUILD (
         $!uri-obj.client-key, $server-name, #$!uri-obj,
 #        :status(ST-Unknown), :!ismaster
     );
-    $server-pool.set-server-data( $server-name, :$!uri-obj);
+
     unless $created {
+      $server-pool.set-server-data( $server-name, :$!uri-obj);
 trace-message("Server $server-name already there, try to find topology");
       self!process-topology( $server-name, ServerType, Bool);
     }
@@ -721,8 +722,8 @@ try {
     my Bool $created = $server-pool.add-server(
       $!uri-obj.client-key, $server-name
     );
-    $server-pool.set-server-data( $server-name, :$!uri-obj);
     unless $created {
+      $server-pool.set-server-data( $server-name, :$!uri-obj);
 trace-message("Server $server-name already there, try to find topology");
 #      self!process-topology( $server-name, ServerType, Bool);
     }
