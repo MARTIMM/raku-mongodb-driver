@@ -1,0 +1,104 @@
+# https://jekyllrb.com/docs/configuration/default/
+# For technical reasons, this file is *NOT* reloaded automatically when you
+# use 'bundle exec jekyll serve'. If you change this file, please restart
+# the server process.
+
+# These are used to personalize your new site. If you look in the HTML
+# files, you can access them with {{ site.title }}, {{ site.email }}, and
+# so on. You can create any custom variable you would like, and they will
+# be accessible via {{ site.myvariable }}.
+
+## ----- [ defaults set by jekyll ] -----
+## Where things are
+#source              : .
+#destination         : ./_site
+#collections_dir     : .
+#plugins_dir         : _plugins # takes an array of strings and loads plugins in that order
+#layouts_dir         : _layouts
+#data_dir            : _data
+#includes_dir        : _includes
+#sass:
+#  sass_dir: _sass
+#collections:
+#  posts:
+#    output          : true
+
+## Handling Reading
+#safe                : false
+#include             : [".htaccess"]
+#exclude             : ["Gemfile", "Gemfile.lock", "node_modules", "vendor/bundle/", "vendor/cache/", "vendor/gems/", "vendor/ruby/"]
+#keep_files          : [".git", ".svn"]
+#encoding            : "utf-8"
+#markdown_ext        : "markdown,mkdown,mkdn,mkd,md"
+#strict_front_matter : false
+
+## Filtering Content
+#show_drafts         : null
+#limit_posts         : 0
+#future              : false
+#unpublished         : false
+
+## Plugins
+#whitelist           : []
+#plugins             : []
+
+## Conversion
+#markdown            : kramdown
+#highlighter         : rouge
+#lsi                 : false
+#excerpt_separator   : "\n\n"
+#incremental         : false
+
+## Serving
+#detach              : false
+#port                : 4000
+#host                : 127.0.0.1
+#baseurl             : "" # does not include hostname
+#show_dir_listing    : false
+
+## Outputting
+#permalink           : date
+#paginate_path       : /page:num
+#timezone            : null
+
+#quiet               : false
+#verbose             : false
+#defaults            : []
+
+#liquid:
+#  error_mode        : warn
+#  strict_filters    : false
+#  strict_variables  : false
+
+## Markdown Processors
+#kramdown:
+#  auto_ids          : true
+#  entity_output     : as_char
+#  toc_levels        : [1, 2, 3, 4, 5, 6]
+#  smart_quotes      : lsquo,rsquo,ldquo,rdquo
+#  input             : GFM
+#  hard_wrap         : false
+#  footnote_nr       : 1
+#  show_warnings     : false
+## ----- [ end of defaults ] -----
+
+## ----- [ your settings ] -----
+title: MongoDB Driver
+description: A Raku driver to use a mongodb database
+email: mt1957@gmail.com
+github_username: MARTIMM
+
+#url: "https://martimm.github.io"
+port: 4001
+baseurl: "/mongodb"
+
+# https://jekyllrb.com/docs/configuration/front-matter-defaults/
+#defaults:
+#  -
+#    scope:
+#      path: "content-docs/reference/Gtk3"
+#    values:
+#      layout: reference-page
+#      title: References to the Gtk3 package modules
+#      nav_menu: references-nav
+#      sidebar_menu: references-gtk3-sidebar

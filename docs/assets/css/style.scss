@@ -1,0 +1,522 @@
+---
+---
+@import "jekyll-theme-tactile";
+
+$menu-bgcolor:              #9696bf;
+$menu-bgcolor-active:       #e6e6ef;
+$menu-border-color-active:  #777;
+$menu-border-color:         #ddd;
+$menu-border-width:         2px;
+
+// default link color       #d5000d
+$menu-color-toplevel:       #e58080;
+$menu-color-object:         #a04500;
+$menu-color-widget:         #f54045;
+$menu-color-interface:      #bf00bf;
+$menu-color-boxed:          #00afaf;
+$menu-color-standalone:     #80bf00;
+
+$title-color:               #deffff;
+$title-color-border:        #008080;
+
+$code-color:                #46465f;
+
+$border-color:              #bbb;
+$border-width:              4px;
+
+$menu-text-font-size: 15px;
+$sbar-text-font-size: 13px;
+$sbarhdr-text-font-size: 15px;
+$text-font-size: 16px;
+$code-font-size: 12px;
+$text-strong-font-weight: lighter;
+
+body {
+  line-height: 1.1;
+}
+
+header {
+  padding-top: 0px;
+  padding-bottom: 15px;
+}
+
+header h1 {
+  font-family: 'Chivo', 'Helvetica Neue', Helvetica, Arial, serif;
+  font-size: 23pt;
+  font-weight: bold;
+  letter-spacing: -1px;
+//  line-height: 1.2;
+}
+
+.XL-h1-size {
+  font-family: 'Chivo', 'Helvetica Neue', Helvetica, Arial, serif;
+  font-size: 23pt;
+  font-weight: bold;
+  letter-spacing: -1px;
+//  font-size: 30px;
+
+  text-shadow: 0px 0px 15px white;
+//  margin: 0 0 5px 0;
+//  color: $title-color;
+
+  // https://css-tricks.com/adding-stroke-to-web-text/
+  -webkit-text-fill-color: $title-color;
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: $title-color-border;
+}
+
+img.header-image {
+  width:  80px;
+  height: 84px;
+  margin: 3px 5px 0 5px;
+
+  border-radius: 50%;
+  border: 3px solid $title-color;
+}
+
+header nav {
+  padding: 5px 0 0 0;
+
+/*  Must be improved
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+*/
+
+  height: 30px;
+
+  a {
+    float: left;
+    padding: 0 4px 0 4px;
+    margin-right: 2px;
+    border-radius: 5px;
+    line-height: 1.5;
+  }
+
+  a:hover:not(.active) {
+    background-color: #eee;
+  }
+
+  .active {
+    background-color: $menu-bgcolor-active;
+    border: $menu-border-width solid $menu-border-color-active;
+  }
+
+  .inactive {
+    border: $menu-border-width solid $menu-border-color;
+  }
+
+/*
+  .float-right {
+    float: right;
+  }
+*/
+}
+
+.float-right {
+  float: right;
+}
+
+header hr {
+  padding: 0;
+  margin: 0 0 0.5em 0;
+  border: 2px solid $menu-bgcolor;
+  border-radius: 5px;
+  width: 100%;
+}
+
+h1 {
+  font-size: 23px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  color: #d53030;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #d5000d;
+}
+
+h4 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #d5000d;
+}
+
+h5 {
+  font-size: 14px;
+  color: #d5000d;
+}
+
+h6 {
+  font-size: 12px;
+  color: #d5000d;
+}
+
+em, strong {
+  color: #8e280e;
+}
+
+
+div.inner {
+  width: 95%;
+}
+
+div.highlight, div.highlighter-rouge, pre {
+  border-radius: $border-width;
+}
+
+pre {
+  padding: 10px;
+  background-color: $code-color;
+  border: $border-width solid $border-color;
+}
+
+
+table td {
+  text-align: left;
+}
+
+/*
+table.rouge-table {
+  max-height: 200px;
+  overflow: auto
+}
+*/
+
+pre code {
+  background-color: $code-color;
+  //line-height: 0.9;
+  margin: 0;
+}
+
+code {
+  background-color: transparent;
+  color: #8e280e;
+  font-size: $code-font-size;
+}
+
+div.release-notes {
+/*
+  overflow: scroll;
+  height: 300px;
+*/
+}
+
+#reference-container {
+  width: 100%;
+  margin: auto;
+}
+
+#reference-content {
+  width: 74%;
+  display: inline-block;
+  vertical-align: top;
+  margin: 0 0 0 20px;
+  height: auto;
+}
+
+#sidebar-container {
+  padding: 0;
+  width: 22%;
+  height: 100%;
+}
+
+ul {
+  li {
+//    list-style-position: inside;
+//    list-style: disc;
+    list-style-type: square;
+    padding-left: 15px;
+    margin-left: 15px;
+
+    li {
+      list-style-type: circle;
+    }
+  }
+
+  .task-list-item {
+    list-style: none;
+    padding-left: 0px;
+    margin-left: 0px;
+
+    li {
+      margin-left: 20px;
+    }
+  }
+}
+
+ol li {
+  list-style-position: inside;
+  list-style: decimal;
+  padding-left: 3px;
+}
+
+.sidebar {
+  float: left;
+  border: 1px solid #aaa;
+  width: 100%;
+//  height: 100%;
+  border-radius: 5px;
+  padding-top: 5px;
+  margin-bottom: 5px;
+  font-size: $sbar-text-font-size;
+
+  strong {
+    padding-left: 7px;
+    margin: 10px 0 0 0;
+    font-size: $sbarhdr-text-font-size;
+  }
+
+  hr {
+    padding: 0;
+    border: 2px solid $menu-bgcolor;
+    border-radius: 5px;
+    width: 90%;
+    margin: auto;
+    margin-bottom: 4px;
+  }
+
+  hr.small {
+    padding: 0;
+    border: 0px solid $menu-bgcolor;
+    border-radius: 0px;
+    width: 100%;
+    margin: auto;
+    margin-bottom: 4px;
+  }
+
+  ul.sidebar-list {
+    margin: 0;
+    padding: 0 5px 0 5px;
+
+    li {
+      list-style-type: none;
+      list-style: none;
+      margin-bottom: 3px;
+      margin-left: 0;
+      padding: 0 0 0 4px;
+      line-height: 1.6;
+
+      a {
+        display: block;
+        width: 100%;
+//        font-size: $sbar-text-font-size;
+      }
+
+      a:hover {
+        background-color: #eee;
+      }
+
+      div.module-url {
+        float: left;
+      }
+
+      div.module-state {
+        float: right;
+      }
+    }
+/*
+    li.active {
+      background-color: $menu-bgcolor-active;
+    }
+*/
+
+    li.toplevel a {
+      font-weight: bolder;
+      color: $menu-color-toplevel;
+      line-height: 1.1;
+    }
+
+    li.interface a {
+      font-weight: bolder;
+      color: $menu-color-interface;
+      line-height: 1.1;
+    }
+
+    li.widget a {
+      font-weight: bolder;
+      color: $menu-color-widget;
+      line-height: 1.1;
+    }
+
+    li.boxed a {
+      font-weight: bolder;
+      color: $menu-color-boxed;
+      line-height: 1.1;
+    }
+
+    li.object a {
+      font-weight: bolder;
+      color: $menu-color-object;
+      line-height: 1.1;
+    }
+
+    li.standalone a {
+      font-weight: bolder;
+      color: $menu-color-standalone;
+      line-height: 1.1;
+    }
+  }
+}
+
+
+.tooltiptext strong {
+//  color: #8e280e;
+  color: #afffff; //#fff;
+}
+
+// From w3schools
+ /* Tooltip container */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  //border-bottom: 1px dotted black;
+   /* If you want dots under the hoverable text */
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: rgba( 60, 60, 60, 0.8); //transparent; //#555;
+  color: #afffff; //#fff;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 100, 100, 0.8);
+  padding: 5px 0;
+  border-radius: 6px;
+
+  /* Position the tooltip text */
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+
+  /* Fade in tooltip */
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+/* Tooltip arrow */
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+p {
+  margin-bottom: 10px;
+  font-size: $text-font-size;
+
+  strong {
+    font-weight: $text-strong-font-weight;
+  }
+}
+
+#reference-page {
+  overflow-y: scroll;
+//  height: 200px;
+}
+
+// Adding 'Contents' headline to the TOC
+#category {
+//  height: 200px;
+//  overflow-y: scroll;
+
+//  border: 1px solid #aaa;
+//  border-radius: 5px;
+  padding: 1.5em;
+
+  a {
+    font-size: 14px;
+  }
+}
+
+#content {
+//  margin: 1em 0 0.5em 0;
+//  height: 500px;
+//  overflow-y: scroll;
+
+//  border: 1px solid #aaa;
+//  border-radius: 5px;
+  padding: 1.5em;
+
+  //position: fixed;
+  //bottom: 5px;
+}
+
+// so that the line numbers are not selectable
+@mixin unselectable() {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+@mixin opacity($opacity) {
+  opacity: $opacity;
+  $opacity-ie: $opacity * 100;
+  filter: alpha(opacity=$opacity-ie); //IE8
+}
+
+// having a lineno-container made it easier to style line number
+// code blocks without impacting normal code blocks
+.lineno-container > figure > pre {
+  padding: 0px;
+}
+
+.highlight {
+//  height: 20em;
+//  overflow: scroll;
+
+  pre.lineno {
+    //@include opacity(0.6);
+    text-align: right;
+  }
+
+  .lineno {
+    @include unselectable();
+  }
+
+  .gutter {
+  }
+
+  pre {
+    border: none;
+    pre {
+      text-align: left;
+      margin-bottom: 0px;
+    }
+  }
+}
+
+table th {
+  font-weight: bold;
+}
+
+.highlight table, .highlight td {
+  border: none;
+}

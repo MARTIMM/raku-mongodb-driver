@@ -1,0 +1,47 @@
+# https://jekyllrb.com/tutorials/navigation/
+
+- bar_title: "About"
+  bar_menu:
+  - title: "About"
+    url: "/content-docs/About/about.html"
+  - title: "Change log"
+    url: "/content-docs/About/release-notes.html"
+
+#  - title: "Gnome::GDK3"
+#  - title: "Gnome::Gio"
+#  - title: "Gnome::Glib"
+#  - title: "Gnome::GObject"
+#  - title: "Native setup In Gnome::N"
+#  - title: "Test setup In Gnome::T"
+#  - title: "Gnome::Pango"
+#  - title: "Gnome::Cairo"
+
+#- bar_title: "Traveling Projects"
+#  bar_menu:
+#  - title: "Hiking Companion"
+#  - title: "Sultans Trail"
+#  - title: "Sufi Trail"
+#  - title: "Walking Around Haarlem"
+#  - title: "Walking Around Heilo"
+
+#- bar_title: "Other Projects"
+#  bar_menu:
+#  - title: "Config::DataLang::Refine"
+#  - title: "MongoDB"
+#  - title: "BSON"
+#  - title: "PKCS5"
+#  - title: "Pod::Render"
+#  - title: "QAManager"
+#  - title: "Library"
+#  - title: "Semaphore::ReadersWriters"
+#  - title: "Tinky::Hash"
+#  - title: "Unicode::PRECIS"
+#  - title: "XML::Actions"
+#  - title: ""
+
+
+#- bar_title: "This site"
+#  bar_menu:
+#  - title: "About"
+#  - title: "Change log"
+#    url: "/content-docs/about/change-log.html"
