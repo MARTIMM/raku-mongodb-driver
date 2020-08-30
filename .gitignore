@@ -12,5 +12,11 @@ t/Appveyor/*
 *.mlog
 .precomp
 */.precomp
+**/.precomp/*
 *.zargo~
 ~*
+.bundle/*
+Gemfile*
+Old*
+**/vendor/*
+**/_site
