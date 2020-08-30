@@ -4,7 +4,7 @@
 
 ## Notes
 * There are some problems installing the package while testing is turned on. Please use `zef --/test install MongoDB` for the moment. One example cause can be that VPN is used locally. Some of the tests using ipv6 localhost addresses like mongodb://[::1]:56014 failed.
-* While I had promised to support mongod versions 2.*, I've seen that version 2.6 is deprecated as of April 07, 2016 (Blog date from [here](https://www.mongodb.com/blog/post/mongodb-2-6-end-of-life)). That's already a long time ago. So I wanted to pull back my promises and only support the latest few versions of which the latest is already 4.0. Please take a note from here: [support policy mongo servers](https://www.mongodb.com/support-policy).
+* While I had promised to support mongod versions 2.\*, I've seen that version 2.6 is deprecated as of April 07, 2016 (Blog date from [here](https://www.mongodb.com/blog/post/mongodb-2-6-end-of-life)). That's already a long time ago. So I wanted to pull back my promises and only support the latest few versions of which the latest is already 4.0. Please take a note from here: [support policy mongo servers](https://www.mongodb.com/support-policy).
 * To narrow the support to just a few server versions will also slim down the driver software instead of having to test for all quirks and exceptions from older versions.
 * MONGODB-CR authentication will not be implemented anymore. This method was deprecated since 3.6 and removed from 4.0.
 
