@@ -4,13 +4,22 @@ title: MongoDB Driver
 nav_menu: default-nav
 #sidebar_menu: main-sidebar
 ---
+
+<script type="text/javascript"
+        src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js">
+</script>
+<p id="new-label"></p>
+
+# ![Leaf](images/logo_32x32.png) MongoDB Driver
+
+[![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
+
 # Project MongoDB Driver
 
 ## Notes
-* There are some problems installing the package while testing is turned on. Please use `zef --/test install MongoDB` for the moment. One example cause can be that VPN is used locally. Some of the tests using ipv6 localhost addresses like mongodb://[::1]:56014 failed.
 * While I had promised to support mongod versions 2.\*, I've seen that version 2.6 is deprecated as of April 07, 2016 (Blog date from [here](https://www.mongodb.com/blog/post/mongodb-2-6-end-of-life)). That's already a long time ago. So I wanted to pull back my promises and only support the latest few versions of which the latest is already 4.0. Please take a note from here: [support policy mongo servers](https://www.mongodb.com/support-policy).
 * To narrow the support to just a few server versions will also slim down the driver software instead of having to test for all quirks and exceptions from older versions.
-* MONGODB-CR authentication will not be implemented anymore. This method was deprecated since 3.6 and removed from 4.0.
+* MONGODB-CR authentication will not be implemented anymore. This method was deprecated since 3.6 and removed from 4.0. This method is deprecated because of security issues.
 
 ## Synopsis
 
@@ -333,3 +342,38 @@ Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
 ## Contributors
 
 Dan Zwell (lefth on github)
+
+<!-- Run scripts after loading the page. Html is displayed by Jekyll -->
+<!--script>
+//  var labels = $("svg");
+//alert("l: " + labels);
+
+var jqxhr = $.ajax( {
+    type: "POST",
+    url: "http://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master",
+    crossDomain: true,
+    dataType: "xml",
+    //context: document.body,
+    error: function ( xhr, error, errorThrown) {
+      $( "#new-label" ).append(xhr.status);
+    }
+  }
+);
+
+jqxhr.done( function(svgdata) {
+    alert(svgdata);
+    $( "#new-label" ).append(svgdata);
+  }
+);
+
+jqxhr.fail( function() {
+//    alert("fail");
+    $( "#new-label" ).append(" fail ");
+  }
+);
+
+jqxhr.always( function() {
+//    alert("always");
+  }
+);
+</script-->
