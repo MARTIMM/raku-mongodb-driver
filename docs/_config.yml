@@ -84,7 +84,7 @@
 
 ## ----- [ your settings ] -----
 title: MongoDB Driver
-description: A Raku driver to use a mongodb database
+description: A Raku driver for a mongodb database
 email: mt1957@gmail.com
 github_username: MARTIMM
 
