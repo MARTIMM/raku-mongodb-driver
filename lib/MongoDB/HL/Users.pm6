@@ -1,4 +1,7 @@
+#tl:1:MongoDB::HL::Users:
+
 use v6;
+
 use OpenSSL::Digest;
 use MongoDB;
 use MongoDB::Database;
@@ -8,384 +11,394 @@ use Unicode::PRECIS::Identifier::UsernameCasePreserved;
 use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<hgithub:MARTIMM>;
+unit class MongoDB::HL::Users:auth<hgithub:MARTIMM>;
 
-#-----------------------------------------------------------------------------
-#
-class MongoDB::HL::Users {
+#tm:0:database:
+has MongoDB::Database $.database;
 
-  has MongoDB::Database $.database;
-  has Int $.min-un-length = MongoDB::C-PW-MIN-UN-LEN;
-  has Int $.min-pw-length = MongoDB::C-PW-MIN-PW-LEN;
-  has Int $.pw-attribs-code = MongoDB::C-PW-LOWERCASE;
+#tm:1:min-un-length:
+has Int $.min-un-length = MongoDB::C-PW-MIN-UN-LEN;
 
-  #---------------------------------------------------------------------------
-  submethod BUILD ( MongoDB::Database :$database ) {
+#tm:0:min-pw-length:
+has Int $.min-pw-length = MongoDB::C-PW-MIN-PW-LEN;
+
+#tm:0:pw-attribs-code:
+has Int $.pw-attribs-code = MongoDB::C-PW-OTHER-CHARS;
+
+#-------------------------------------------------------------------------------
+#tm:1:new:
+submethod BUILD ( MongoDB::Database :$database ) {
 
 #TODO validate name
-    $!database = $database;
+  $!database = $database;
+}
+
+#-------------------------------------------------------------------------------
+#tm:1:set-pw-security:
+method set-pw-security (
+  Int:D :$min-un-length where $_ >= 2,
+  Int:D :$min-pw-length where $_ >= 6,
+  Int :$pw-attribs = MongoDB::C-PW-OTHER-CHARS
+) {
+
+  given $pw-attribs {
+    when MongoDB::C-PW-LOWERCASE {
+      $!min-pw-length = $min-pw-length // 10;
+    }
+
+    when MongoDB::C-PW-UPPERCASE {
+      $!min-pw-length = $min-pw-length // 10;
+    }
+
+    when MongoDB::C-PW-NUMBERS {
+      $!min-pw-length = $min-pw-length // 8;
+    }
+
+    when MongoDB::C-PW-OTHER-CHARS {
+      $!min-pw-length = $min-pw-length // 6;
+    }
+
+    default {
+      $!min-pw-length = $min-pw-length // 6;
+    }
   }
 
-  #---------------------------------------------------------------------------
-  method set-pw-security (
-    Int:D :$min-un-length where $_ >= 2,
-    Int:D :$min-pw-length where $_ >= 2,
-    Int :$pw_attribs = MongoDB::C-PW-LOWERCASE
-  ) {
+  $!pw-attribs-code = $pw-attribs;
+  $!min-un-length = $min-un-length;
+}
 
-    given $pw_attribs {
+#-------------------------------------------------------------------------------
+# Create a user in the mongodb authentication database
+#tm:1:create-user:
+method create-user (
+  Str:D $user, Str:D $password,
+  List :$custom-data, Array :$roles,
+#      Int :timeout($wtimeout)
+  --> BSON::Document
+) {
+
+  # Check if username is too short
+  if $user.chars < $!min-un-length {
+    fatal-message("Username too short, must be >= $!min-un-length");
+  }
+
+  # Check if password is too short
+  #
+  elsif $password.chars < $!min-pw-length {
+    fatal-message("Password too short, must be >= $!min-pw-length");
+  }
+
+  # Check if password answers to rule given by attribute code
+  #
+  else {
+    my Bool $pw-ok = False;
+    given $!pw-attribs-code {
       when MongoDB::C-PW-LOWERCASE {
-        $!min-pw-length = $min-pw-length // 2;
+        $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
       }
 
       when MongoDB::C-PW-UPPERCASE {
-        $!min-pw-length = $min-pw-length // 2;
+        $pw-ok = (
+          $password ~~ m/ <[a..z]> / and
+          $password ~~ m/ <[A..Z]> /
+        ).Bool;
       }
 
       when MongoDB::C-PW-NUMBERS {
-        $!min-pw-length = $min-pw-length // 3;
+        $pw-ok = (
+          $password ~~ m/ <[a..z]> / and
+          $password ~~ m/ <[A..Z]> / and
+          $password ~~ m/ \d /
+        ).Bool;
       }
 
       when MongoDB::C-PW-OTHER-CHARS {
-        $!min-pw-length = $min-pw-length // 4;
-      }
-
-      default {
-        $!min-pw-length = $min-pw-length // 2;
+        $pw-ok = (
+          $password ~~ m/ <[a..z]> / and
+          $password ~~ m/ <[A..Z]> / and
+          $password ~~ m/ \d / and
+          $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
+        ).Bool;
       }
     }
 
-    $!pw-attribs-code = $pw_attribs;
-    $!min-un-length = $min-un-length;
+    fatal-message("Password does not have the right properties")
+      unless $pw-ok;
   }
-
-  #---------------------------------------------------------------------------
-  # Create a user in the mongodb authentication database
-  #
-  method create-user (
-    Str:D $user, Str:D $password,
-    List :$custom-data, Array :$roles,
-#      Int :timeout($wtimeout)
-    --> BSON::Document
-  ) {
-    # Check if username is too short
-    #
-    if $user.chars < $!min-un-length {
-      fatal-message("Username too short, must be >= $!min-un-length");
-    }
-
-    # Check if password is too short
-    #
-    elsif $password.chars < $!min-pw-length {
-      fatal-message("Password too short, must be >= $!min-pw-length");
-    }
-
-    # Check if password answers to rule given by attribute code
-    #
-    else {
-      my Bool $pw-ok = False;
-      given $!pw-attribs-code {
-        when MongoDB::C-PW-LOWERCASE {
-          $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
-        }
-
-        when MongoDB::C-PW-UPPERCASE {
-          $pw-ok = (
-            $password ~~ m/ <[a..z]> / and
-            $password ~~ m/ <[A..Z]> /
-          ).Bool;
-        }
-
-        when MongoDB::C-PW-NUMBERS {
-          $pw-ok = (
-            $password ~~ m/ <[a..z]> / and
-            $password ~~ m/ <[A..Z]> / and
-            $password ~~ m/ \d /
-          ).Bool;
-        }
-
-        when MongoDB::C-PW-OTHER-CHARS {
-          $pw-ok = (
-            $password ~~ m/ <[a..z]> / and
-            $password ~~ m/ <[A..Z]> / and
-            $password ~~ m/ \d / and
-            $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
-          ).Bool;
-        }
-      }
-
-      fatal-message("Password does not have the right properties")
-        unless $pw-ok;
-    }
 
 #TODO normalization done here or on server? assume on server.
 #`{{}}
-    # Normalize username and password
-    my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
-    my TestValue $tv-un = $upi-ucp.prepare($user);
-    fatal-message("Username $user not accepted") if $tv-un ~~ Bool;
-    info-message("Username '$user' accepted as '$tv-un'");
+  # Normalize username and password
+  my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
+  my TestValue $tv-un = $upi-ucp.prepare($user);
+  fatal-message("Username $user not accepted") if $tv-un ~~ Bool;
+  info-message("Username '$user' accepted as '$tv-un'");
 
-    my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
-    my TestValue $tv-pw = $upf-os.prepare($password);
-    fatal-message("Password not accepted") if $tv-pw ~~ Bool;
-    info-message("Password accepted");
+  my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
+  my TestValue $tv-pw = $upf-os.prepare($password);
+  fatal-message("Password not accepted") if $tv-pw ~~ Bool;
+  info-message("Password accepted");
 
-    # Create user where digestPassword is set false
-    my BSON::Document $req .= new: (
-      createUser => $user,
-      pwd => md5(([~] $tv-un, ':mongo:', $tv-pw).encode)>>.fmt('%02x').join(''),
-      digestPassword => False
-    );
+  # Create user where digestPassword is set false
+  my BSON::Document $req .= new: (
+    createUser => $user,
+#      pwd => md5(([~] $tv-un, ':mongo:', $tv-pw).encode)>>.fmt('%02x').join(''),
+    pwd => $tv-pw,
+#      digestPassword => False
+  );
 
 #`{{
-    # Create user where digestPassword is set false
-    my BSON::Document $req .= new: (
-      createUser => $user,
-      pwd => md5(([~] $user, ':mongo:', $password).encode)>>.fmt('%02x').join(''),
-      digestPassword => False
-    );
+  # Create user where digestPassword is set false
+  my BSON::Document $req .= new: (
+    createUser => $user,
+    pwd => md5(([~] $user, ':mongo:', $password).encode)>>.fmt('%02x').join(''),
+    digestPassword => False
+  );
 }}
-    $req<roles> = $roles if ?$roles;
-    $req<customData> = $custom-data if ?$custom-data;
+  $req<roles> = $roles if ?$roles;
+  $req<customData> = $custom-data if ?$custom-data;
 #      $req<writeConcern> = ( :j, :$wtimeout) if ?$wtimeout;
 
-    return $!database.run-command($req);
-  }
+#note "request: ", $req.perl;
+  return $!database.run-command($req);
+}
 
-  #---------------------------------------------------------------------------
-  #
-  method update-user (
-    Str:D $user, Str :$password,
-    :$custom-data, Array :$roles,
+#-------------------------------------------------------------------------------
+#tm:1:update-user:
+method update-user (
+  Str:D $user, Str :$password,
+  :$custom-data, Array :$roles,
 #      Int :timeout($wtimeout)
-    --> BSON::Document
-  ) {
+  --> BSON::Document
+) {
 
-    my BSON::Document $req .= new: (
-      updateUser => $user,
-      digestPassword => True
-    );
+  my BSON::Document $req .= new: (
+    updateUser => $user,
+    digestPassword => True
+  );
 
-    if ?$password {
-      if $password.chars < $!min-pw-length {
-        fatal-message(
-          "Password too short, must be >= $!min-pw-length",
-          oper-data => $password,
-          collection-ns => $!database.name
-        );
+  if ?$password {
+    if $password.chars < $!min-pw-length {
+      fatal-message(
+        "Password too short, must be >= $!min-pw-length",
+        oper-data => $password,
+        collection-ns => $!database.name
+      );
+    }
+
+    my Bool $pw-ok = False;
+    given $!pw-attribs-code {
+      when MongoDB::C-PW-LOWERCASE {
+        $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
       }
 
-      my Bool $pw-ok = False;
-      given $!pw-attribs-code {
-        when MongoDB::C-PW-LOWERCASE {
-          $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
-        }
-
-        when MongoDB::C-PW-UPPERCASE {
-          $pw-ok = (
-            $password ~~ m/ <[a..z]> / and
-            $password ~~ m/ <[A..Z]> /
-          ).Bool;
-        }
-
-        when MongoDB::C-PW-NUMBERS {
-          $pw-ok = (
-            $password ~~ m/ <[a..z]> / and
-            $password ~~ m/ <[A..Z]> / and
-            $password ~~ m/ \d /
-          ).Bool;
-        }
-
-        when MongoDB::C-PW-OTHER-CHARS {
-          $pw-ok = (
-            $password ~~ m/ <[a..z]> / and
-            $password ~~ m/ <[A..Z]> / and
-            $password ~~ m/ \d / and
-            $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
-          ).Bool;
-        }
+      when MongoDB::C-PW-UPPERCASE {
+        $pw-ok = (
+          $password ~~ m/ <[a..z]> / and
+          $password ~~ m/ <[A..Z]> /
+        ).Bool;
       }
 
-      if $pw-ok {
-
-#TODO normalization done here or on server? assume on server.
-#`{{
-        # Normalize username and password
-        my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
-        my TestValue $tv-un = $upi-ucp.prepare($user);
-        fatal-message("Username $user not accepted") if $tv-un ~~ Bool;
-        info-message("Username '$user' accepted as '$tv-un'");
-
-        my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
-        my TestValue $tv-pw = $upf-os.prepare($password);
-        fatal-message("Password not accepted") if $tv-un ~~ Bool;
-        info-message("Password accepted");
-
-        $req<pwd> = (Digest::MD5.md5_hex([~] $tv-un, ':mongo:', $tv-pw));
-}}
-        $req<pwd> = md5(([~] $user, ':mongo:', $password).encode)>>.fmt('%02x').join('');
+      when MongoDB::C-PW-NUMBERS {
+        $pw-ok = (
+          $password ~~ m/ <[a..z]> / and
+          $password ~~ m/ <[A..Z]> / and
+          $password ~~ m/ \d /
+        ).Bool;
       }
 
-      else {
-        fatal-message(
-          "Password does not have the proper elements",
-          oper-data => $password,
-          collection-ns => $!database.name
-        );
+      when MongoDB::C-PW-OTHER-CHARS {
+        $pw-ok = (
+          $password ~~ m/ <[a..z]> / and
+          $password ~~ m/ <[A..Z]> / and
+          $password ~~ m/ \d / and
+          $password ~~ m/ <[`~!@\#\$%^&*()\-_=+[{\]};:\'\"\\\|,<.>\/\?]> /
+        ).Bool;
       }
     }
 
-#      $req<writeConcern> = ( :j, :$wtimeout) if ?$wtimeout;
-    $req<roles> = $roles if ?$roles;
-    $req<customData> = $custom-data if ?$custom-data;
-    return $!database.run-command($req);
+    if $pw-ok {
+
+#TODO normalization done here or on server? assume on server.
+#`{{
+      # Normalize username and password
+      my Unicode::PRECIS::Identifier::UsernameCasePreserved $upi-ucp .= new;
+      my TestValue $tv-un = $upi-ucp.prepare($user);
+      fatal-message("Username $user not accepted") if $tv-un ~~ Bool;
+      info-message("Username '$user' accepted as '$tv-un'");
+
+      my Unicode::PRECIS::FreeForm::OpaqueString $upf-os .= new;
+      my TestValue $tv-pw = $upf-os.prepare($password);
+      fatal-message("Password not accepted") if $tv-un ~~ Bool;
+      info-message("Password accepted");
+
+      $req<pwd> = (Digest::MD5.md5_hex([~] $tv-un, ':mongo:', $tv-pw));
+}}
+      $req<pwd> = md5(([~] $user, ':mongo:', $password).encode)>>.fmt('%02x').join('');
+    }
+
+    else {
+      fatal-message(
+        "Password does not have the proper elements",
+        oper-data => $password,
+        collection-ns => $!database.name
+      );
+    }
   }
+
+#      $req<writeConcern> = ( :j, :$wtimeout) if ?$wtimeout;
+  $req<roles> = $roles if ?$roles;
+  $req<customData> = $custom-data if ?$custom-data;
+  return $!database.run-command($req);
 }
 
 
 
+
 =finish
+
+#TODO install below routines again and test
+
 #`{{
 
-    #---------------------------------------------------------------------------
-    #
-    method drop-user ( Str:D :$user, Int :timeout($wtimeout) --> Hash ) {
+  #---------------------------------------------------------------------------
+  #
+  method drop-user ( Str:D :$user, Int :timeout($wtimeout) --> Hash ) {
 
-      my Pair @req = dropUser => $user;
-      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
+    my Pair @req = dropUser => $user;
+    @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        warn-message(
-          $doc<errmsg>,
-          oper-data => @req.perl,
-          collection-ns => $!database.name
-        );
-      }
-
-      # Return its value of the status document
-      #
-      return $doc;
+    my Hash $doc = $!database.run-command(@req);
+    if $doc<ok>.Bool == False {
+      warn-message(
+        $doc<errmsg>,
+        oper-data => @req.perl,
+        collection-ns => $!database.name
+      );
     }
 
-    #---------------------------------------------------------------------------
+    # Return its value of the status document
     #
-    method drop-all-users-from-database ( Int :timeout($wtimeout) --> Hash ) {
+    return $doc;
+  }
 
-      my Pair @req = dropAllUsersFromDatabase => 1;
-      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
+  #---------------------------------------------------------------------------
+  #
+  method drop-all-users-from-database ( Int :timeout($wtimeout) --> Hash ) {
 
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        warn-message(
-          $doc<errmsg>,
-          oper-data => @req.perl,
-          collection-ns => $!database.name
-        );
-      }
+    my Pair @req = dropAllUsersFromDatabase => 1;
+    @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      # Return its value of the status document
-      #
-      return $doc;
+    my Hash $doc = $!database.run-command(@req);
+    if $doc<ok>.Bool == False {
+      warn-message(
+        $doc<errmsg>,
+        oper-data => @req.perl,
+        collection-ns => $!database.name
+      );
     }
 
-    #---------------------------------------------------------------------------
+    # Return its value of the status document
     #
-    method grant-roles-to-user (
-      Str:D :$user, Array:D :$roles, Int :timeout($wtimeout)
-      --> Hash
-    ) {
+    return $doc;
+  }
 
-      my Pair @req = grantRolesToUser => $user;
-      @req.push: (:$roles) if ?$roles;
-      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
+  #---------------------------------------------------------------------------
+  #
+  method grant-roles-to-user (
+    Str:D :$user, Array:D :$roles, Int :timeout($wtimeout)
+    --> Hash
+  ) {
 
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        warn-message(
-          $doc<errmsg>,
-          oper-data => @req.perl,
-          collection-ns => $!database.name
-        );
-      }
+    my Pair @req = grantRolesToUser => $user;
+    @req.push: (:$roles) if ?$roles;
+    @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      # Return its value of the status document
-      #
-      return $doc;
+    my Hash $doc = $!database.run-command(@req);
+    if $doc<ok>.Bool == False {
+      warn-message(
+        $doc<errmsg>,
+        oper-data => @req.perl,
+        collection-ns => $!database.name
+      );
     }
 
-    #---------------------------------------------------------------------------
+    # Return its value of the status document
     #
-    method revoke-roles-from-user (
-      Str:D :$user, Array:D :$roles, Int :timeout($wtimeout)
-      --> Hash
-    ) {
+    return $doc;
+  }
 
-      my Pair @req = :revokeRolesFromUser($user);
-      @req.push: (:$roles) if ?$roles;
-      @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
+  #---------------------------------------------------------------------------
+  #
+  method revoke-roles-from-user (
+    Str:D :$user, Array:D :$roles, Int :timeout($wtimeout)
+    --> Hash
+  ) {
 
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        warn-message(
-          $doc<errmsg>,
-          oper-data => @req.perl,
-          collection-ns => $!database.name
-        );
-      }
+    my Pair @req = :revokeRolesFromUser($user);
+    @req.push: (:$roles) if ?$roles;
+    @req.push: (:writeConcern({ :j, :$wtimeout})) if ?$wtimeout;
 
-      # Return its value of the status document
-      #
-      return $doc;
+    my Hash $doc = $!database.run-command(@req);
+    if $doc<ok>.Bool == False {
+      warn-message(
+        $doc<errmsg>,
+        oper-data => @req.perl,
+        collection-ns => $!database.name
+      );
     }
 
-    #---------------------------------------------------------------------------
+    # Return its value of the status document
     #
-    method users-info (
-      Str:D :$user,
-      Bool :$show-credentials,
-      Bool :$show-privileges,
-      Str :$database
-      --> Hash
-    ) {
+    return $doc;
+  }
 
-      my Pair @req = :usersInfo({ :$user, :db($database // $!database.name)});
-      @req.push: (:showCredentials) if ?$show-credentials;
-      @req.push: (:showPrivileges) if ?$show-privileges;
+  #---------------------------------------------------------------------------
+  #
+  method users-info (
+    Str:D :$user,
+    Bool :$show-credentials,
+    Bool :$show-privileges,
+    Str :$database
+    --> Hash
+  ) {
 
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        warn-message(
-          $doc<errmsg>,
-          oper-data => @req.perl,
-          collection-ns => $database // $!database.name
-        );
-      }
+    my Pair @req = :usersInfo({ :$user, :db($database // $!database.name)});
+    @req.push: (:showCredentials) if ?$show-credentials;
+    @req.push: (:showPrivileges) if ?$show-privileges;
 
-      # Return its value of the status document
-      #
-      return $doc;
+    my Hash $doc = $!database.run-command(@req);
+    if $doc<ok>.Bool == False {
+      warn-message(
+        $doc<errmsg>,
+        oper-data => @req.perl,
+        collection-ns => $database // $!database.name
+      );
     }
 
-    #---------------------------------------------------------------------------
+    # Return its value of the status document
     #
-    method get-users ( --> Hash ) {
+    return $doc;
+  }
 
-      my Pair @req = usersInfo => 1;
+  #---------------------------------------------------------------------------
+  #
+  method get-users ( --> Hash ) {
 
-      my Hash $doc = $!database.run-command(@req);
-      if $doc<ok>.Bool == False {
-        warn-message(
-          $doc<errmsg>,
-          oper-data => @req.perl,
-          collection-ns => $!database.name
-        );
-      }
+    my Pair @req = usersInfo => 1;
 
-      # Return its value of the status document
-      #
-      return $doc;
+    my Hash $doc = $!database.run-command(@req);
+    if $doc<ok>.Bool == False {
+      warn-message(
+        $doc<errmsg>,
+        oper-data => @req.perl,
+        collection-ns => $!database.name
+      );
     }
+
+    # Return its value of the status document
+    #
+    return $doc;
+  }
 
 }}
