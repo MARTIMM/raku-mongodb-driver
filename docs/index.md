@@ -5,12 +5,10 @@ nav_menu: default-nav
 #sidebar_menu: main-sidebar
 ---
 
-<script type="text/javascript"
+<!-- script type="text/javascript"
         src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js">
 </script>
-<p id="new-label"></p>
-
-# ![Leaf](images/logo_32x32.png) MongoDB Driver
+<p id="new-label"></p -->
 
 [![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
@@ -344,36 +342,75 @@ Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
 Dan Zwell (lefth on github)
 
 <!-- Run scripts after loading the page. Html is displayed by Jekyll -->
-<!--script>
-//  var labels = $("svg");
-//alert("l: " + labels);
+<!-- script>
+$(document).ready( function() {
+    fetch(
+      "https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master", {
+        method: 'POST',     // *GET, POST, PUT, DELETE, etc.
+        mode: 'cors',       // no-cors, *cors, same-origin
+        cache: 'no-cache',  // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'omit', // include, *same-origin, omit
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'image/svg+xml'
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        //body: JSON.stringify(data) // body data type must match "Content-Type" header
+      }
+    ).then( response => {
+        if ( !response.ok ) {
+          throw new Error('Network response was not ok');
+        }
+        return response.blob();
+      }
+    ).then( myBlob => {
+        myImage.src = URL.createObjectURL(myBlob);
+      }
+    ).catch( error => {
+        console.error(
+          'There has been a problem with your fetch operation:', error
+        );
+      }
+    );
 
-var jqxhr = $.ajax( {
-    type: "POST",
-    url: "http://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master",
-    crossDomain: true,
-    dataType: "xml",
-    //context: document.body,
-    error: function ( xhr, error, errorThrown) {
-      $( "#new-label" ).append(xhr.status);
-    }
+/*
+    var jqxhr = $.ajax( {
+        type: "POST",
+        url: "https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master",
+        crossDomain: true,
+        //dataType: "xml",
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          //'Content-Type': 'image/svg+xml'
+        },
+        accept: 'image/svg+xml',
+        context: document.body,
+        error: function ( xhr, error, errorThrown) {
+          //alert('error');
+          $( "#new-label" ).append(xhr.status);
+        },
+      }
+    );
+
+    jqxhr.done( function(svgdata) {
+        alert(svgdata);
+        $( "#new-label" ).append(svgdata);
+      }
+    );
+
+    jqxhr.fail( function() {
+        //alert("fail");
+        $( "#new-label" ).append(" fail ");
+      }
+    );
+
+    jqxhr.always( function() {
+        //alert("always");
+      }
+    );
+*/
   }
 );
-
-jqxhr.done( function(svgdata) {
-    alert(svgdata);
-    $( "#new-label" ).append(svgdata);
-  }
-);
-
-jqxhr.fail( function() {
-//    alert("fail");
-    $( "#new-label" ).append(" fail ");
-  }
-);
-
-jqxhr.always( function() {
-//    alert("always");
-  }
-);
-</script-->
+</script -->
