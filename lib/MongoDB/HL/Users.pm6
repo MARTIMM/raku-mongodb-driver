@@ -13,16 +13,16 @@ use Unicode::PRECIS::FreeForm::OpaqueString;
 #-------------------------------------------------------------------------------
 unit class MongoDB::HL::Users:auth<hgithub:MARTIMM>;
 
-#tm:0:database:
+#tm:1:database:
 has MongoDB::Database $.database;
 
 #tm:1:min-un-length:
 has Int $.min-un-length = MongoDB::C-PW-MIN-UN-LEN;
 
-#tm:0:min-pw-length:
+#tm:1:min-pw-length:
 has Int $.min-pw-length = MongoDB::C-PW-MIN-PW-LEN;
 
-#tm:0:pw-attribs:
+#tm:1:pw-attribs:
 has Int $.pw-attribs = MongoDB::C-PW-OTHER-CHARS;
 
 #-------------------------------------------------------------------------------
