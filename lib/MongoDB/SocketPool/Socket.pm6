@@ -16,6 +16,7 @@ Exceptions are thrown when operations on a socket fails.
 use MongoDB;
 use MongoDB::Authenticate::Credential;
 use MongoDB::Authenticate::Scram;
+use MongoDB::Database;
 use MongoDB::Uri;
 
 use BSON::Document;
@@ -33,6 +34,13 @@ has Semaphore::ReadersWriters $!rw-sem;
 #-------------------------------------------------------------------------------
 #tm:1:new():
 submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj? ) {
+
+  # initialize mutexes
+  $!rw-sem .= new;
+#    $!rw-sem.debug = True;
+
+  # protect $!socket and $!time-last-used. $!is-open is protected using 'socket'
+  $!rw-sem.add-mutex-names( <socket time>, :RWPatternType(C-RW-WRITERPRIO));
 
   trace-message("open socket $host, $port, authenticate: " ~ $uri-obj.defined);
 
@@ -56,13 +64,6 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj? ) {
   if $uri-obj.defined {
     self.close unless self!authenticate($uri-obj);
   }
-
-  # initialize mutexes
-  $!rw-sem .= new;
-#    $!rw-sem.debug = True;
-
-  # protect $!socket and $!time-last-used. $!is-open is protected using 'socket'
-  $!rw-sem.add-mutex-names( <socket time>, :RWPatternType(C-RW-WRITERPRIO));
 }
 
 #-------------------------------------------------------------------------------
@@ -90,9 +91,13 @@ method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
 
   # username and password should be defined and non empty
   if ? $credential.username and ? $credential.password {
+note "cred: $credential.username(), $credential.password()";
 
     # get authentication mechanism
-    my Str $auth-mechanism = $credential.auth-mechanism // 'SCRAM-SHA-1';
+    my Str $auth-mechanism = ?$credential.auth-mechanism
+                             ?? $credential.auth-mechanism
+                             !! 'SCRAM-SHA-1';
+note "mech: $auth-mechanism", ;
 
 #    $credential.auth-mechanism(:$auth-mechanism);
 

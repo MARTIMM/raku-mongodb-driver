@@ -32,8 +32,9 @@ my $uri-grammar = grammar {
 
   token server-section { <username-password>? <server-list>? }
 
+  # username and password cannot have chars '@:'
   token username-password {
-    $<username>=<[\w\d%-]>+ ':' $<password>=<[\w\d%-]>+ '@'
+    $<username>=<-[:@]>+ ':' $<password>=<-[:@]>+ '@'
   }
 
   token server-list { <host-port> [ ',' <host-port> ]* }
