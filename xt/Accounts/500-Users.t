@@ -19,11 +19,8 @@ add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 set-filter(|<ObserverEmitter Timer Monitor Uri>);
 #set-filter(|< Timer Socket SocketPool >);
 
-#`{{
-set-logfile($*OUT);
-set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
-}}
+#-------------------------------------------------------------------------------
 
 my MongoDB::Test-support $ts .= new;
 
@@ -224,9 +221,8 @@ subtest 'account info and drop all users', {
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 $database.run-command: (dropDatabase => 1,);
 
-info-message("Test $?FILE start");
+info-message("Test $?FILE stop");
 done-testing();
 exit(0);

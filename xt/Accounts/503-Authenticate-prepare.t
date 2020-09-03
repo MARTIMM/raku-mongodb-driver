@@ -9,9 +9,18 @@ use MongoDB::HL::Users;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = "xt/Log/503-Authenticate-prep.log".IO.open(
+  :mode<wo>, :create, :truncate
+);
+add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Monitor Uri>);
+#set-filter(|< Timer Socket SocketPool >);
+
 info-message("Test $?FILE start");
+#-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
@@ -52,7 +61,7 @@ $database.run-command: (dropAllUsersFromDatabase => 1,);
 #   ],
 # ))
 #
-subtest {
+subtest "User account preparation", {
   $users.set-pw-security(
     :min-un-length(10),
     :min-pw-length(8),
@@ -81,15 +90,15 @@ subtest {
   ok $doc<ok>, 'User Dondersteen created';
 
   $doc = $database.run-command: (usersInfo => 1,);
-  is $doc<users>.elems, 2, '2 users defined';
-  is $doc<users>[0]<user>, 'site-admin', 'User site-admin';
-  is $doc<users>[1]<user>, 'Dondersteen', 'User Dondersteen';
+note $doc.perl;
 
-}, "User account preparation";
+  is $doc<users>.elems, 2, '2 users defined';
+  is $doc<users>[0]<user>, any(<site-admin Dondersteen>), $doc<users>[0]<user>;
+  is $doc<users>[0]<user>, any(<site-admin Dondersteen>), $doc<users>[1]<user>;
+}
 
 #-------------------------------------------------------------------------------
 # Cleanup and close
-#
 info-message("Test $?FILE stop");
 done-testing();
 exit(0);
