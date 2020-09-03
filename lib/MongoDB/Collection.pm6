@@ -69,7 +69,7 @@ multi method find (
   return MongoDB::Cursor.new(
     :collection(self), :$server-reply,
 #    :$server,
-    :$number-to-return
+    :$number-to-return, :$!uri-obj
   );
 }
 
