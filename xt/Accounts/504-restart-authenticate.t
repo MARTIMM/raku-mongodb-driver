@@ -85,7 +85,6 @@ subtest 'dry run',  {
 
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
-#`{{
 my BSON::Document $user-credentials;
 
 sub restart-to-authenticate( ) {
@@ -114,7 +113,6 @@ sub restart-to-authenticate( ) {
 
   $client.cleanup;
 };
-}}
 
 #`{{
 #-------------------------------------------------------------------------------

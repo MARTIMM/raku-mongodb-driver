@@ -37,7 +37,7 @@ my MongoDB::Cursor $cursor;
 
 $database.run-command: (drop => $collection.name,);
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 subtest "Several inserts", {
 
   # Add records
@@ -89,7 +89,7 @@ subtest "Several inserts", {
   is $doc<n>, 1, "1 record of name('Di D')";
 };
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Drop current collection twice
 subtest 'drop collection two times', {
 
@@ -112,7 +112,7 @@ subtest 'drop collection two times', {
   }
 };
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 $client.cleanup;
 done-testing();
 
@@ -122,7 +122,7 @@ done-testing();
 
 =finish
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Create using illegal collection name
 try {
   $database.create-collection('abc-def and a space');
@@ -133,7 +133,7 @@ try {
   }
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Drop collection and create one explicitly with some parameters
 #$collection.drop;
 $database.create-collection( 'cl1', :capped, :size(1000));
@@ -148,7 +148,7 @@ for ^200 -> $i, $j {
 my MongoDB::Cursor $cursor = $collection.find();
 isnt $cursor.count, 100, 'Less than 100 records in collection';
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Drop collection and create one explicitly with other parameters
 $collection.drop;
 $database.create-collection( 'cl1', :capped, :size(1000), :max(10));
@@ -163,7 +163,7 @@ for ^200 -> $i, $j {
 $cursor = $collection.find();
 is $cursor.count, 10, 'Only 10 records in collection';
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Cleanup
 $req .= new: ( dropDatabase => 1 );
 $doc = $database.run-command($req);

@@ -19,7 +19,7 @@ use Base64;
 drop-send-to('mongodb');
 #drop-send-to('screen');
 modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-my $handle = "xt/Log/506-restart-normal.log".IO.open(
+my $handle = "xt/Log/550-restart-normal.log".IO.open(
   :mode<wo>, :create, :truncate
 );
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));

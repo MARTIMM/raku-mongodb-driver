@@ -1,5 +1,5 @@
 use v6.c;
-use lib 't';
+use lib 't'; #, '../Auth-SCRAM/lib';
 
 use Test;
 use Test-support;
@@ -19,14 +19,16 @@ use Base64;
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-my $handle = "xt/Log/505-scram-login.log".IO.open(
+my $handle = "xt/Log/510-scram-login.log".IO.open(
   :mode<wo>, :create, :truncate
 );
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter Timer Monitor Uri>);
+#set-filter(|<ObserverEmitter Timer Monitor Uri>);
 #set-filter(|< Timer Socket SocketPool >);
 
 info-message("Test $?FILE start");
+
+my MongoDB::Test-support $ts .= new;
 
 #-------------------------------------------------------------------------------
 # Example from https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst
@@ -52,11 +54,13 @@ class MyClientDryRun {
     'v=UMWeI25JD1yNYZRMpZ4VHvhZ9e0=';
   }
 
-  method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
+#  method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
+  method mangle-password ( Str:D :$username, Str:D :$password --> Str ) {
 
     my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
-    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-    Buf.new($md5-mdb-hashed-pw.encode);
+#    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
+#    Buf.new($md5-mdb-hashed-pw.encode);
+    md5($mdb-hashed-pw).>>.fmt('%02x').join;
   }
 
   method error ( Str:D $message --> Str ) {
@@ -78,10 +82,9 @@ subtest 'dry run',  {
   $sc.c-nonce = 'fyko+d2lbbFgONRv9qkxdawL';
 
   $sc.start-scram;
-
 };
 
-
+#`{{
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
 my BSON::Document $user-credentials;
@@ -121,16 +124,12 @@ sub restart-to-normal( ) {
   ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
   ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
 }
+}}
 
 #-------------------------------------------------------------------------------
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Debug);
-info-message("Test $?FILE start");
+#restart-to-normal;
+#restart-to-authenticate;
 
-restart-to-normal;
-restart-to-authenticate;
-
-#set-exception-process-level(MongoDB::Severity::Trace);
 
 class MyClientMDB {
 
@@ -161,7 +160,7 @@ class MyClientMDB {
       flunk "$doc<code>, $doc<errmsg>";
       done-testing;
 
-      restart-to-normal;
+#      restart-to-normal;
       exit(1);
     }
 
@@ -190,7 +189,7 @@ class MyClientMDB {
       flunk "$doc<code>, $doc<errmsg>";
       done-testing;
 
-      restart-to-normal;
+#      restart-to-normal;
       exit(1);
     }
 
@@ -202,15 +201,17 @@ class MyClientMDB {
   }
 
   #-----------------------------------------------------------------------------
-  method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
+#  method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
+  method mangle-password ( Str:D :$username, Str:D :$password --> Str ) {
 
     my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
-    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-    Buf.new($md5-mdb-hashed-pw.encode);
+#    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
+#    Buf.new($md5-mdb-hashed-pw.encode);
+    md5($mdb-hashed-pw).>>.fmt('%02x').join;
   }
 
   #-----------------------------------------------------------------------------
-  method clean-up ( ) {
+  method cleanup ( ) {
 
     # Some extra chit-chat
     my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
@@ -225,7 +226,7 @@ class MyClientMDB {
       flunk "$doc<code>, $doc<errmsg>";
       done-testing;
 
-      restart-to-normal;
+#      restart-to-normal;
       exit(1);
     }
 
@@ -243,20 +244,33 @@ class MyClientMDB {
   }
 }
 
-subtest {
+#-------------------------------------------------------------------------------
+subtest 'Mongodb login',  {
 
+  my Str $username = 'dondersteen';
+  my Str $password = 'w!tDo3jeDan';
   my Auth::SCRAM $sc .= new(
-    :username<Dondersteen>,
-    :password<w@tD8jeDan>,
-    :client-object(MyClientMDB.new),
+    :$username, :$password, :client-object(MyClientMDB.new)
   );
 
   $sc.start-scram;
 
-}, 'Mongodb login';
+
+  # Need to clear object because it receives a role which will
+  # cause a failure in the next init
+  $sc = Nil;
+
+  $username = 'site-admin';
+  $password = 'B3n!Hurry';
+  $sc .= new(
+    :$username, :$password, :client-object(MyClientMDB.new)
+  );
+
+  $sc.start-scram;
+};
 
 #-------------------------------------------------------------------------------
 # Cleanup
-restart-to-normal;
+#restart-to-normal;
 info-message("Test $?FILE stop");
 done-testing();

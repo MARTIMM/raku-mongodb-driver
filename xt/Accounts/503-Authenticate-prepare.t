@@ -61,25 +61,28 @@ $database.run-command: (dropAllUsersFromDatabase => 1,);
 #   ],
 # ))
 #
+my Str $name-user = 'dondersteen';
+my Str $pw-user = 'w!tDo3jeDan';
+
+my Str $name-admin = 'site-admin';
+my Str $pw-admin = 'B3n!Hurry';
+
 subtest "User account preparation", {
   $users.set-pw-security(
     :min-un-length(10),
     :min-pw-length(8),
     :pw_attribs(C-PW-OTHER-CHARS)
-#    :pw_attribs(C-PW-LOWERCASE)
   );
 
   $doc = $users.create-user(
-    'site-admin', 'B3n@Hurry',
-#    'site-admin', 'B3nHurry',
+    $name-admin, $pw-admin,
     :custom-data((user-type => 'site-admin'),),
     :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
   );
-  ok $doc<ok>, 'User site-admin created';
+  ok $doc<ok>, "User $name-admin created";
 
   $doc = $users.create-user(
-    'Dondersteen', 'w@tD8jeDan',
-#    'Dondersteen', 'watDo3jeDan',
+    $name-user, $pw-user,
     :custom-data(
         license => 'to_kill',
         user-type => 'database-test-admin'
@@ -87,14 +90,14 @@ subtest "User account preparation", {
     :roles([(role => 'readWrite', db => 'test'),])
   );
 
-  ok $doc<ok>, 'User Dondersteen created';
+  ok $doc<ok>, "User $name-user created";
 
   $doc = $database.run-command: (usersInfo => 1,);
-note $doc.perl;
+#note $doc.perl;
 
   is $doc<users>.elems, 2, '2 users defined';
-  is $doc<users>[0]<user>, any(<site-admin Dondersteen>), $doc<users>[0]<user>;
-  is $doc<users>[0]<user>, any(<site-admin Dondersteen>), $doc<users>[1]<user>;
+  is $doc<users>[0]<user>, any( $name-user, $name-admin), $doc<users>[0]<user>;
+  is $doc<users>[0]<user>, any( $name-user, $name-admin), $doc<users>[1]<user>;
 }
 
 #-------------------------------------------------------------------------------
