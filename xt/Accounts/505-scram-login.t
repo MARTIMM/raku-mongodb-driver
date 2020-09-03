@@ -16,11 +16,16 @@ use OpenSSL::Digest;
 use Base64;
 
 #-------------------------------------------------------------------------------
-#my MongoDB::Test-support $ts .= new;
-#my BSON::Document $user-credentials;
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = "xt/Log/505-scram-login.log".IO.open(
+  :mode<wo>, :create, :truncate
+);
+add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Monitor Uri>);
+#set-filter(|< Timer Socket SocketPool >);
 
-#set-logfile($*OUT);
-#set-exception-process-level(MongoDB::Severity::Trace);
 info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
@@ -60,7 +65,8 @@ class MyClientDryRun {
   }
 }
 
-subtest {
+#-------------------------------------------------------------------------------
+subtest 'dry run',  {
 
   my Auth::SCRAM $sc .= new(
     :username<user>,
@@ -73,10 +79,10 @@ subtest {
 
   $sc.start-scram;
 
-}, 'dry run';
+};
 
 
-#---------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
 my BSON::Document $user-credentials;
 
@@ -107,7 +113,7 @@ sub restart-to-authenticate( ) {
   $client.cleanup;
 };
 
-#---------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 sub restart-to-normal( ) {
 
 #  set-exception-process-level(MongoDB::Severity::Warn);
@@ -251,7 +257,6 @@ subtest {
 
 #-------------------------------------------------------------------------------
 # Cleanup
-#
 restart-to-normal;
 info-message("Test $?FILE stop");
 done-testing();
