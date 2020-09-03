@@ -8,6 +8,8 @@ layout: sidebar
 # Release notes
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
+#### 2020-09-03 0.43.14
+* Change username and parseword parse in **MongoDB::Uri**. Characters ':' and '@' cannot be used.
 
 #### 2020-07-20 0.43.13
 * Change **MongoDB::Server::Socket** module. This should improve Server, Socket, Wire and Monitor.
