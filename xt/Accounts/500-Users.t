@@ -39,29 +39,15 @@ $database.run-command: (dropDatabase => 1,);
 $database.run-command: (dropAllUsersFromDatabase => 1,);
 
 #-------------------------------------------------------------------------------
-subtest {
-  dies-ok( {
-      $doc = $users.create-user(
-        'mt', 'mt++',
-        :custom-data((license => 'to_kill'),),
-        :roles(['readWrite'])
-      );
-    },
-    'username too short, current length = ' ~ $users.min-un-length
-  );
-
-  dies-ok( {
-      $users.set-pw-security(
-        :min-un-length(4), :min-pw-length(4),
-        :pw-attribs(MongoDB::C-PW-LOWERCASE)
-      );
-    },
-    'password security is too meak'
-  );
-
+subtest "Test user management", {
   $users.set-pw-security(
     :min-un-length(6), :min-pw-length(10), :pw-attribs(MongoDB::C-PW-LOWERCASE)
   );
+
+  is $users.database.name, 'test', '.database()';
+  is $users.min-un-length, 6, '.min-un-length()';
+  is $users.min-pw-length, 10, '.min-pw-length()';
+  is $users.pw-attribs, MongoDB::C-PW-LOWERCASE, '.pw-attribs()';
 
   $doc = $users.create-user(
     $username, $password,
@@ -89,38 +75,42 @@ if $doc<ok> == 0 {
   $doc = $database.run-command: (dropUser => $username,);
   is $doc<ok>, 1, "User $username deleted";
 
-}, "Test user management";
+};
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest "Test username and password checks", {
   $users.set-pw-security(
     :min-un-length(5),
     :min-pw-length(6),
     :pw_attribs(C-PW-OTHER-CHARS)
   );
 
-  try {
-    $doc = $users.create-user(
-      'mt', 'mt++',
-      :custom-data((license => 'to_kill'),),
-      :roles(['readWrite'])
-    );
+  dies-ok( {
+      $doc = $users.create-user(
+        'mt', 'mt++',
+        :custom-data((license => 'to_kill'),),
+        :roles(['readWrite'])
+      )
+    }, 'Username too short'
+  );
 
-    CATCH {
-      when X::MongoDB {
-        ok .message ~~ m:s/Username too 'short,' must be '>= 5'/,
-           'Username too short';
-      }
-    }
-  }
+  dies-ok( {
+      $users.set-pw-security(
+        :min-un-length(4), :min-pw-length(4),
+        :pw-attribs(MongoDB::C-PW-LOWERCASE)
+      );
+    },
+    'password security is too meak'
+  );
+
 
   dies-ok( {
       $doc = $users.create-user(
         'mt-and-another-few-chars', 'mt++',
         :custom-data((license => 'to_kill'),),
         :roles(['readWrite'])
-      ), "Password too short"
-    }
+      );
+    }, "Password too short"
   );
 
   dies-ok( {
@@ -128,8 +118,8 @@ subtest {
         'mt-and-another-few-chars', 'mt++tdt',
         :custom-data((license => 'to_kill'),),
         :roles(['readWrite'])
-      ), 'Password does not have the right properties'
-    }
+      );
+    }, 'Password does not have the right properties'
   );
 
   $doc = $users.create-user(
@@ -143,10 +133,10 @@ subtest {
   $doc = $database.run-command: (dropUser => 'mt-and-another-few-chars',);
   ok $doc<ok>, 'User mt-and-another-few-chars deleted';
 
-}, "Test username and password checks";
+};
 
 #-------------------------------------------------------------------------------
-subtest {
+subtest 'account info and drop all users', {
   $password = 'pw-01At';
   $users.set-pw-security( :min-un-length(2), :min-pw-length(6));
   $doc = $users.create-user(
@@ -230,7 +220,7 @@ subtest {
   $doc = $database.run-command: (usersInfo => 1,);
   is $doc<users>.elems, 0, 'No users in database';
 
-}, 'account info and drop all users';
+};
 
 #-------------------------------------------------------------------------------
 # Cleanup

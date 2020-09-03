@@ -22,8 +22,8 @@ has Int $.min-un-length = MongoDB::C-PW-MIN-UN-LEN;
 #tm:0:min-pw-length:
 has Int $.min-pw-length = MongoDB::C-PW-MIN-PW-LEN;
 
-#tm:0:pw-attribs-code:
-has Int $.pw-attribs-code = MongoDB::C-PW-OTHER-CHARS;
+#tm:0:pw-attribs:
+has Int $.pw-attribs = MongoDB::C-PW-OTHER-CHARS;
 
 #-------------------------------------------------------------------------------
 #tm:1:new:
@@ -63,7 +63,7 @@ method set-pw-security (
     }
   }
 
-  $!pw-attribs-code = $pw-attribs;
+  $!pw-attribs = $pw-attribs;
   $!min-un-length = $min-un-length;
 }
 
@@ -92,7 +92,7 @@ method create-user (
   #
   else {
     my Bool $pw-ok = False;
-    given $!pw-attribs-code {
+    given $!pw-attribs {
       when MongoDB::C-PW-LOWERCASE {
         $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
       }
@@ -187,7 +187,7 @@ method update-user (
     }
 
     my Bool $pw-ok = False;
-    given $!pw-attribs-code {
+    given $!pw-attribs {
       when MongoDB::C-PW-LOWERCASE {
         $pw-ok = ($password ~~ m/ <[a..z]> /).Bool;
       }
