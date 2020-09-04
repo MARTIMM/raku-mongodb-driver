@@ -13,7 +13,7 @@ class Cursor does Iterable {
 
 #  has $.client;
 #  has Str $!client-key;
-#  has $.full-collection-name;
+  has $.full-collection-name;
   has $!uri-obj;
 
   # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
@@ -32,12 +32,12 @@ class Cursor does Iterable {
     MongoDB::Uri:D :$!uri-obj!, BSON::Document:D :$server-reply!,
 #    ServerClassType:D :$server!, Int :$number-to-return = 0
 #    Any:D :$server!,
-    Int :$number-to-return = 0
+    Int :$number-to-return = 0, :$collection
   ) {
 
 #    $!client = $collection.database.client;
 #    $!client-key = $collection.client-key;
-#    $!full-collection-name = $collection.full-collection-name;
+    $!full-collection-name = $collection.full-collection-name;
 
     # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
     # batches left on the server to retrieve. Documents may be present in
@@ -68,7 +68,7 @@ class Cursor does Iterable {
 
 #    $!client = $client;
 #    $!client-key = $client.uri-obj.client-key;
-#    $!full-collection-name = $cursor-doc<ns>;
+    $!full-collection-name = $cursor-doc<ns>;
     $!uri-obj = $client.uri-obj;
     my MongoDB::Header $header .= new;
 
@@ -126,7 +126,7 @@ class Cursor does Iterable {
 
       # Request next batch of documents
       my BSON::Document $server-reply =
-        MongoDB::Wire.new.get-more( self, :$!number-to-return);
+        MongoDB::Wire.new.get-more( self, :$!number-to-return, :$!uri-obj);
 
       if $server-reply.defined {
 
@@ -163,7 +163,7 @@ class Cursor does Iterable {
 
     # Invalidate cursor on database only if id is valid
     if [+] @$.id {
-      MongoDB::Wire.new.kill-cursors( (self,));
+      MongoDB::Wire.new.kill-cursors( (self,), :$!uri-obj);
       trace-message("Cursor killed");
 
       # Invalidate cursor id with 8 0x00 bytes
