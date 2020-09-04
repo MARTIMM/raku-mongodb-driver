@@ -26,7 +26,7 @@ class Authenticate::Scram {
   }
 
   #-----------------------------------------------------------------------------
-  multi submethod BUILD ( $!database ) { }
+  multi submethod BUILD ( :$!database ) { }
 
   #-----------------------------------------------------------------------------
   # send client first message to server and return server response
