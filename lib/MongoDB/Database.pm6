@@ -27,7 +27,7 @@ submethod BUILD (
   debug-message("create database $name using client object");
 
   # Create a collection $cmd to be used with run-command()
-  $!cmd-collection = self.collection( '$cmd', :$read-concern);
+  $!cmd-collection = self.collection( '$cmd', :$read-concern, :$!uri-obj);
 }
 
 #`{{
@@ -72,7 +72,7 @@ multi method run-command (
   BSON::Document:D $command, BSON::Document :$read-concern
   --> BSON::Document
 ) {
-
+trace-message("uri object: $!uri-obj.defined()");
   info-message("run command '{$command.keys[0]}'");
 
   my BSON::Document $rc = $read-concern // $!read-concern;
@@ -89,6 +89,9 @@ multi method run-command (
   }
 
   my $doc = $cursor.fetch;
+trace-message(
+  "command '{$command.keys[0]}': {$doc.defined ?? $doc.perl !! 'BSON::Document.new'}"
+);
   return $doc.defined ?? $doc !! BSON::Document.new;
 }
 
@@ -98,8 +101,7 @@ multi method run-command (
   List $pairs, BSON::Document :$read-concern
   --> BSON::Document
 ) {
-
-#note "run command doctype";
+trace-message("uri object: $!uri-obj.defined()");
   my BSON::Document $command .= new: $pairs;
   debug-message("run command {$command.keys[0]}");
 
@@ -117,8 +119,11 @@ multi method run-command (
   }
 
   my $doc = $cursor.fetch;
-  debug-message("command done {$command.keys[0]}");
-  trace-message("command result {($doc // '-').perl}");
+#  debug-message("command done {$command.keys[0]}");
+#  trace-message("command result {($doc // '-').perl}");
+trace-message(
+  "uri '{$command.keys[0]}': {$doc.defined ?? $doc.perl !! 'BSON::Document.new'}"
+);
   return $doc.defined ?? $doc !! BSON::Document.new;
 }
 
