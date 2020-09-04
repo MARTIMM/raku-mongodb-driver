@@ -41,7 +41,7 @@ my Str $uri = "mongodb://$username:$password@$host:$port/test";
 my MongoDB::Client $client .= new(:$uri);
 is $client.uri-obj.credential.username, $username, 'username parsed';
 is $client.uri-obj.credential.password, $password, 'password parsed';
-note $client.uri-obj;
+note $client.uri-obj.uri;
 
 my MongoDB::Database $d = $client.database('test');
 my MongoDB::Collection $c = $d.collection('cl1');
@@ -55,6 +55,7 @@ my BSON::Document $req .= new: (
 );
 
 my BSON::Document $doc = $d.run-command($req);
+note $doc.perl;
 is $doc<ok>, 1, "Result is ok";
 is $doc<n>, 4, "Inserted 4 documents";
 

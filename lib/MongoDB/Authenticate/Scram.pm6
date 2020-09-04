@@ -38,6 +38,7 @@ class Authenticate::Scram {
         payload => encode-base64( $client-first-message, :str)
       )
     );
+trace-message("doc: " ~ $doc.perl);
 
     if $doc<ok> {
       debug-message("SCRAM-SHA1 client first message");
@@ -75,11 +76,12 @@ class Authenticate::Scram {
   }
 
   #-----------------------------------------------------------------------------
-  method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
+  method mangle-password ( Str:D :$username, Str:D :$password --> Str ) {
 
     my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
-    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-    Buf.new($md5-mdb-hashed-pw.encode);
+    #my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
+    #Buf.new($md5-mdb-hashed-pw.encode);
+    md5($mdb-hashed-pw).>>.fmt('%02x').join;
   }
 
   #-----------------------------------------------------------------------------
