@@ -124,7 +124,7 @@ method get-socket (
 
 
 #next info shows that sockets have become thread save
-#trace-message("get-socket: $host, $port $*THREAD.id()");
+trace-message("get-socket: $host, $port, $username");
 
 #  my Int $thread-id = $*THREAD.id();
 
@@ -140,20 +140,29 @@ method get-socket (
   if $!rw-sem.reader( 'socketpool', {
       $!socket-info{$client-key}{"$host $port"}{$username}:exists; }
   ) {
-    $socket = $!socket-info{$client-key}{"$host $port"}{$username};
+    $socket = $!rw-sem.reader( 'socketpool', {
+        $!socket-info{$client-key}{"$host $port"}{$username};
+      }
+    );
+
+    trace-message("socket found in pool: server $host:$port, user '$username', sock id $socket.sock-id()");
   }
 
   else {
     if ? $username {
       $socket .= new( :$host, :$port, :$uri-obj);
+
+      trace-message(
+        "socket created: server $host:$port, user '$username' sock id $socket.sock-id()"
+      );
     }
 
     else {
       $socket .= new( :$host, :$port);
+      trace-message("socket created: server $host:$port sock id $socket.sock-id()");
     }
 
     if $socket {
-      trace-message("socket created for server $host:$port");
       $!rw-sem.writer( 'socketpool', {
           $!socket-info{$client-key}{"$host $port"}{$username} = $socket;
         }

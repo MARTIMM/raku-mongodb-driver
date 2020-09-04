@@ -30,9 +30,11 @@ has Bool $!is-open;
 has Instant $!time-last-used;
 has Semaphore::ReadersWriters $!rw-sem;
 
+my $sock-count = 0;
+has Int $.sock-id;
 #-------------------------------------------------------------------------------
 #tm:1:new():
-submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj? ) {
+submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
 
   # initialize mutexes
   $!rw-sem .= new;
@@ -57,12 +59,15 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj? ) {
 
   # we arrive here when there is no exception
   $!is-open = True;
+  $!sock-id = $sock-count++;
   $!time-last-used = now;
 
   # authenticate if object exists.
   if $uri-obj.defined {
     self.close unless self!authenticate($uri-obj);
   }
+
+  trace-message("socket id: $!sock-id");
 }
 
 #-------------------------------------------------------------------------------
@@ -90,13 +95,13 @@ method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
 
   # username and password should be defined and non empty
   if ? $credential.username and ? $credential.password {
-note "cred: $credential.username(), $credential.password()";
+#note "cred: $credential.username(), $credential.password()";
 
     # get authentication mechanism
     my Str $auth-mechanism = ?$credential.auth-mechanism
                              ?? $credential.auth-mechanism
                              !! 'SCRAM-SHA-1';
-note "mech: $auth-mechanism", ;
+#note "mech: $auth-mechanism";
 
 #    $credential.auth-mechanism(:$auth-mechanism);
 
@@ -108,10 +113,13 @@ note "mech: $auth-mechanism", ;
 #        my MongoDB::Authenticate::Scram $client-object .= new(
 #          :$!client, :db-name($credential.auth-source)
 #        );
+
+
         # next is done to break circular dependency
         require ::('MongoDB::Database');
         my $database = ::('MongoDB::Database').new(
-          :name($credential.auth-source), :$uri-obj
+          :name($credential.auth-source),
+          :uri-obj($uri-obj.clone-without-credential)
         );
         my MongoDB::Authenticate::Scram $client-object .= new(:$database);
 
@@ -175,7 +183,6 @@ note "mech: $auth-mechanism", ;
   elsif !$credential.username and !$credential.password {
     $authenticated-ok = True;
   }
-trace-message("authenticated: $authenticated-ok");
 
   $authenticated-ok
 }
@@ -190,7 +197,7 @@ method check-open ( --> Bool ) {
       MAX-SOCKET-UNUSED-OPEN {
 
     debug-message(
-      "close socket, timeout after {now - $!time-last-used} sec"
+      "close socket $!sock-id, timeout after {now - $!time-last-used} sec"
     );
 
     $!rw-sem.writer( 'socket', {
@@ -209,9 +216,9 @@ method check-open ( --> Bool ) {
 method send ( Buf:D $b ) {
 
   my $s = $!rw-sem.reader( 'socket', {$!socket});
-  fatal-message("socket is closed") unless $s.defined;
+  fatal-message("socket $!sock-id is closed") unless $s.defined;
 
-  trace-message("socket send, size: $b.elems()");
+  trace-message("socket $!sock-id send, size: $b.elems()");
   $s.write($b);
   $!rw-sem.writer( 'time', {$!time-last-used = now;});
 }
@@ -221,12 +228,12 @@ method send ( Buf:D $b ) {
 method receive ( int $nbr-bytes --> Buf ) {
 
   my $s = $!rw-sem.reader( 'socket', {$!socket});
-  fatal-message("socket not opened") unless $s.defined;
+  fatal-message("socket $!sock-id not opened") unless $s.defined;
 
   my Buf $bytes = $s.read($nbr-bytes);
   $!rw-sem.writer( 'time', {$!time-last-used = now;});
   trace-message(
-    "socket receive, requested $nbr-bytes bytes, received $bytes.elems()"
+    "socket $!sock-id receive, requested $nbr-bytes bytes, received $bytes.elems()"
   );
 
   $bytes;
@@ -239,22 +246,22 @@ method receive ( int $nbr-bytes --> Buf ) {
 method receive-check ( int $nbr-bytes --> Buf ) {
 
   my $s = $!rw-sem.reader( 'socket', {$!socket});
-  fatal-message("socket is closed") unless $s.defined;
+  fatal-message("socket $!sock-id is closed") unless $s.defined;
 
   my Buf $bytes = $s.read($nbr-bytes);
   if $bytes.elems == 0 {
     # No data, try again
     $bytes = $s.receive($nbr-bytes);
-    fatal-message("No response from server") if $bytes.elems == 0;
+    fatal-message("socket $!sock-id: No response from server") if $bytes.elems == 0;
   }
 
   if 0 < $bytes.elems < $nbr-bytes {
     # Not 0 but too little, try to get the rest of it
     $bytes.push($s.receive($nbr-bytes - $bytes.elems));
-    fatal-message("Response corrupted") if $bytes.elems < $nbr-bytes;
+    fatal-message("socket $!sock-id: Response corrupted") if $bytes.elems < $nbr-bytes;
   }
 
-  trace-message("socket receive, received size $bytes.elems()");
+  trace-message("socket $!sock-id receive, received size $bytes.elems()");
 
   $!rw-sem.writer( 'time', {$!time-last-used = now;});
   $bytes

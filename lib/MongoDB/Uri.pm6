@@ -114,7 +114,7 @@ my $uri-actions = class {
 }
 
 #-------------------------------------------------------------------------------
-submethod BUILD ( Str :$!uri ) {
+submethod BUILD ( Str :$!uri, Str :$client-key ) {
 
   $!servers = [];
   $!options = %();
@@ -170,13 +170,28 @@ submethod BUILD ( Str :$!uri ) {
     );
     $key-string ~= $actions.uname ~ $actions.pword;
 
-    # generate a key string from the uri data
-#    $!client-key = encode-base64( $key-string, :str);
-    $!client-key = sha1("$!uri {now}".encode)>>.fmt('%02X').join;
+    # generate a key string from the uri data. when from clone call, key
+    # is provided to keep same reference to client
+    $!client-key = $client-key // sha1("$!uri {now}".encode)>>.fmt('%02X').join;
   }
 
   # parser failure
   else {
     return fatal-message("Parsing error in url '$!uri'");
   }
+}
+
+#-------------------------------------------------------------------------------
+method clone-without-credential ( --> MongoDB::Uri ) {
+
+  # get original uri string and remove username and password. this will
+  # open sockets without authenticating.
+  my Str $uri = $!uri;
+  my Str $username = $!credential.username();
+  my Str $password = $!credential.password();
+  $uri ~~ s/ '//' $username ':' /\/\//;
+  $uri ~~ s/ '//' $password '@' /\/\//;
+
+  # create new uri object using the same client key.
+  MongoDB::Uri.new( :$uri, :$!client-key);
 }

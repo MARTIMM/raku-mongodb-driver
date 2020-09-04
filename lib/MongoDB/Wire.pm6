@@ -42,8 +42,7 @@ method query (
   QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
   Int :$number-to-return, MongoDB::Uri :$uri-obj,
 #   ServerClassType :$server,
-  :$server is copy,
-  Bool :$authenticate = True, Bool :$time-query = False
+  :$server is copy, Bool :$time-query = False
 
   --> List #BSON::Document
 ) {
@@ -76,7 +75,9 @@ method query (
       return ( BSON::Document, Duration.new(0));
     }
 
-    $!socket = $server.get-socket( :$uri-obj, :$authenticate);
+    $!socket = $server.get-socket(:$uri-obj);
+trace-message("socket id: $!socket.sock-id()");
+
     unless $!socket {
       warn-message("server {$server.name} cleaned up");
       return ( BSON::Document, Duration.new(0));
@@ -204,7 +205,7 @@ method get-more (
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
 #note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
-      $!socket.close if $!socket.defined;
+#      $!socket.close if $!socket.defined;
 
       # Fatal messages from the program
       when X::MongoDB {
