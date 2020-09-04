@@ -16,7 +16,6 @@ Exceptions are thrown when operations on a socket fails.
 use MongoDB;
 use MongoDB::Authenticate::Credential;
 use MongoDB::Authenticate::Scram;
-use MongoDB::Database;
 use MongoDB::Uri;
 
 use BSON::Document;
@@ -109,9 +108,12 @@ note "mech: $auth-mechanism", ;
 #        my MongoDB::Authenticate::Scram $client-object .= new(
 #          :$!client, :db-name($credential.auth-source)
 #        );
-        my MongoDB::Authenticate::Scram $client-object .= new(
-          MongoDB::Database.new(:name($credential.auth-source))
+        # next is done to break circular dependency
+        require ::('MongoDB::Database');
+        my $database = ::('MongoDB::Database').new(
+          :name($credential.auth-source), :$uri-obj
         );
+        my MongoDB::Authenticate::Scram $client-object .= new(:$database);
 
         my Auth::SCRAM $sc .= new(
           :username($credential.username),
