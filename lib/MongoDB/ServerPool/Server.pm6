@@ -273,11 +273,7 @@ method set-data ( *%items ) {
 
 #-------------------------------------------------------------------------------
 #TM:0:get-socket:
-method get-socket (
-  MongoDB::Uri :$uri-obj, Bool :$authenticate = True
-  --> MongoDB::SocketPool::Socket
-) {
-  trace-message("Get socket, authenticate = $authenticate");
+method get-socket ( MongoDB::Uri :$uri-obj --> MongoDB::SocketPool::Socket ) {
 
   my MongoDB::SocketPool $socket-pool .= instance;
   $socket-pool.get-socket( self.host, self.port, :$uri-obj);
