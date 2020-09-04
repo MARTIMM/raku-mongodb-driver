@@ -16,7 +16,7 @@ has MongoDB::Collection $!cmd-collection;
 
 #-----------------------------------------------------------------------------
 submethod BUILD (
-  MongoDB::Uri :$!uri-obj, Str:D :$name, BSON::Document :$read-concern
+  MongoDB::Uri :$!uri-obj!, Str:D :$name!, BSON::Document :$read-concern
 ) {
 
   $!read-concern = $read-concern // BSON::Document.new;
