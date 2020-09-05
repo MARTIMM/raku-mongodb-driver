@@ -25,7 +25,7 @@ use Auth::SCRAM;
 #-------------------------------------------------------------------------------
 unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
 
-has IO::Socket::INET $!socket;
+has IO::Socket::INET $.socket;
 has Bool $!is-open;
 has Instant $!time-last-used;
 has Semaphore::ReadersWriters $!rw-sem;
@@ -43,7 +43,11 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
   # protect $!socket and $!time-last-used. $!is-open is protected using 'socket'
   $!rw-sem.add-mutex-names( <socket time>, :RWPatternType(C-RW-WRITERPRIO));
 
-  trace-message("open socket $host, $port, authenticate: " ~ $uri-obj.defined);
+  trace-message(
+    "open socket $host, $port, authenticate user: " ~ (
+      $uri-obj.defined ?? $uri-obj.credential.username !! '<no authentication>'
+    )
+  );
 
   try {
     $!socket .= new( :$host, :$port);
@@ -62,19 +66,26 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
   $!sock-id = $sock-count++;
   $!time-last-used = now;
 
-  # authenticate if object exists.
-  if $uri-obj.defined {
-    self.close unless self!authenticate($uri-obj);
+  # authenticate if object exists and username/password not empty.
+  if $uri-obj.defined and
+     ?$uri-obj.credential.username and
+     ?$uri-obj.credential.password {
+
+    self.close unless self!authenticate( $host, $port, $uri-obj);
   }
 
-  trace-message("socket id: $!sock-id");
+  trace-message(
+    "socket id: $!sock-id, for $host, $port, authenticate user: " ~ (
+      $uri-obj.defined ?? $uri-obj.credential.username !! '<no authentication>'
+    )
+  );
 }
 
 #-------------------------------------------------------------------------------
 #tm:0:DESTROY:
 submethod DESTROY ( ) {
 
-  # close connection is any
+  # close connection if open
   $!socket.close if $!is-open;
 }
 
@@ -82,7 +93,9 @@ submethod DESTROY ( ) {
 #tm:0:!authenticate:new():
 # Try to authenticate if credentials are defined and not empty (both
 # username and password = '') in which case authentication will be successful.
-method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
+method !authenticate (
+  Str $host, Int $port, MongoDB::Uri:D $uri-obj --> Bool
+) {
 
   # assume failure
   my Bool $authenticated-ok = False;
@@ -110,16 +123,11 @@ method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
       # default in version 3.*
       when 'SCRAM-SHA-1' {
 
-#        my MongoDB::Authenticate::Scram $client-object .= new(
-#          :$!client, :db-name($credential.auth-source)
-#        );
-
-
         # next is done to break circular dependency
         require ::('MongoDB::Database');
+        my $uo = $uri-obj.clone-without-credential;
         my $database = ::('MongoDB::Database').new(
-          :name($credential.auth-source),
-          :uri-obj($uri-obj.clone-without-credential)
+          :name($credential.auth-source), :uri-obj($uo)
         );
         my MongoDB::Authenticate::Scram $client-object .= new(:$database);
 
@@ -129,6 +137,13 @@ method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
           :$client-object,
         );
 
+        # Next call will startup a conversation with the server to authenticate
+        # the user. In that process, it opens another socket which must be
+        # used later for the database operations done by that user. However,
+        # the current socket selected by the socketpool has the username which
+        # get selected later. To remedy this, the start-scram() should take
+        # the current one (this one) or after the process, copy the data into
+        # this one.
         my $error = $sc.start-scram;
         if ?$error {
           error-message(
@@ -139,6 +154,22 @@ method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
         else {
           trace-message("$credential.username() authenticated");
           $authenticated-ok = True;
+
+          # get the socket created by the authentication process. we should
+          # get the same socket when the same uri object is used.
+          require ::('MongoDB::SocketPool');
+          my MongoDB::SocketPool::Socket $s =
+            ::('MongoDB::SocketPool').instance.get-socket(
+              $host, $port, :uri-obj($uo)
+            );
+
+          # copy the socket from that process and then invalidate the other
+          $!rw-sem.writer( 'socket', {
+              $!socket.close;
+              $!socket = $s.socket;
+            }
+          );
+          $s.invalidate(:used-to-authenticate);
         }
       }
 
@@ -178,11 +209,6 @@ method !authenticate ( MongoDB::Uri:D $uri-obj --> Bool ) {
 
     } # given $auth-mechanism
   } # if ?$credential.username and ?$credential.password
-
-  # if both are not defined, authentication was not necessary
-  elsif !$credential.username and !$credential.password {
-    $authenticated-ok = True;
-  }
 
   $authenticated-ok
 }
@@ -268,7 +294,7 @@ method receive-check ( int $nbr-bytes --> Buf ) {
 }
 
 #-------------------------------------------------------------------------------
-#tm:1:close()::
+#tm:1:close::
 method close ( ) {
 
   $!rw-sem.writer( 'socket', {
@@ -278,11 +304,27 @@ method close ( ) {
     }
   );
 
-  trace-message("Close socket");
+  trace-message("Close socket $!sock-id");
 }
 
 #-------------------------------------------------------------------------------
-#tm:2:cleanup():SocketPool:
+#tm:1:invalidate::
+method invalidate ( Bool :$used-to-authenticate = False ) {
+
+  if $used-to-authenticate {
+    # sock must not be closed, it is copied by the authentication process
+    $!rw-sem.writer( 'socket', {
+        $!socket = Nil;
+        $!is-open = False;
+      }
+    );
+    trace-message("Socket $!sock-id invalidated");
+  }
+
+}
+
+#-------------------------------------------------------------------------------
+#tm:2:cleanup:SocketPool:
 method cleanup ( ) {
 
   # closing a socket can throw exceptions

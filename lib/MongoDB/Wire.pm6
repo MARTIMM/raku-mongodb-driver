@@ -76,7 +76,7 @@ method query (
     }
 
     $!socket = $server.get-socket(:$uri-obj);
-trace-message("socket id: $!socket.sock-id()");
+    trace-message("socket id: $!socket.sock-id()");
 
     unless $!socket {
       warn-message("server {$server.name} cleaned up");

@@ -452,9 +452,10 @@ multi method raw-query ( $server --> List ) {
   ( $doc, $rtt) = $w.query(
     'admin.$cmd', $monitor-command,
     :number-to-skip(0), :number-to-return(1),
-    :$server, :!authenticate, :time-query
+    :$server, :time-query
   );
-trace-message("result raw query to server $server.name(): $doc.perl()");
+
+  trace-message("result raw query to server $server.name(): $doc.perl()");
 
   ( $doc, $rtt);
 }

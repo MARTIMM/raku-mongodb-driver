@@ -148,7 +148,8 @@ trace-message("get-socket: $host, $port, $username");
     trace-message("socket found in pool: server $host:$port, user '$username', sock id $socket.sock-id()");
   }
 
-  else {
+  # check if there is a socket and not closed
+  if !($socket.defined and $socket.check-open) {
     if ? $username {
       $socket .= new( :$host, :$port, :$uri-obj);
 

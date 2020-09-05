@@ -351,7 +351,7 @@ method cleanup ( Str:D $client-key ) {
     trace-message("cleaned up server $server-name");
   }
 
-trace-message("leftover: " ~ $!servers-in-pool.perl);
+#trace-message("leftover: " ~ $!servers-in-pool.perl);
 }
 
 =finish
