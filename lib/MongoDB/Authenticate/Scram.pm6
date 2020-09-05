@@ -20,7 +20,6 @@ class Authenticate::Scram {
   #-----------------------------------------------------------------------------
   # deprecated?
   multi submethod BUILD ( ClientType:D :$client, Str :$db-name ) {
-
     $!client = $client;
     $!database = $!client.database(?$db-name ?? $db-name !! 'admin' );
   }
@@ -38,7 +37,6 @@ class Authenticate::Scram {
         payload => encode-base64( $client-first-message, :str)
       )
     );
-trace-message("doc: " ~ $doc.perl);
 
     if $doc<ok> {
       debug-message("SCRAM-SHA1 client first message");
@@ -106,7 +104,9 @@ trace-message("doc: " ~ $doc.perl);
 
   #-----------------------------------------------------------------------------
   method error ( Str:D $message --> Str ) {
-
+try {
     error-message($message);
+CATCH { .note; }
+}
   }
 }
