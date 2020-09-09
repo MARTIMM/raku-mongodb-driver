@@ -104,9 +104,9 @@ class Authenticate::Scram {
 
   #-----------------------------------------------------------------------------
   method error ( Str:D $message --> Str ) {
-try {
-    error-message($message);
-CATCH { .note; }
-}
+    try {
+      error-message($message);
+      CATCH { .note; }
+    }
   }
 }
