@@ -26,7 +26,7 @@ use Auth::SCRAM;
 unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
 
 has IO::Socket::INET $.socket;
-has Bool $!is-open;
+has Bool $.is-open;
 has Instant $!time-last-used;
 has Semaphore::ReadersWriters $!rw-sem;
 
@@ -74,11 +74,20 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
     self.close unless self!authenticate( $host, $port, $uri-obj);
   }
 
-  trace-message(
-    "socket id: $!sock-id, for $host, $port, authenticate user: " ~ (
-      $uri-obj.defined ?? $uri-obj.credential.username !! '<no authentication>'
-    )
-  );
+  # can be closed when authentication failed
+  if $!is-open {
+    trace-message(
+      "socket id: $!sock-id, for $host, $port, authenticate user: " ~ (
+        $uri-obj.defined ?? $uri-obj.credential.username !! '<no authentication>'
+      )
+    );
+  }
+
+  else {
+    trace-message(
+      "socket id: $!sock-id, for $host, $port, authenticate user " ~ $uri-obj.credential.username ~ ' failed'
+    );
+  }
 }
 
 #-------------------------------------------------------------------------------
@@ -278,7 +287,8 @@ method receive-check ( int $nbr-bytes --> Buf ) {
   if $bytes.elems == 0 {
     # No data, try again
     $bytes = $s.receive($nbr-bytes);
-    fatal-message("socket $!sock-id: No response from server") if $bytes.elems == 0;
+    fatal-message("socket $!sock-id: No response from server")
+      if $bytes.elems == 0;
   }
 
   if 0 < $bytes.elems < $nbr-bytes {

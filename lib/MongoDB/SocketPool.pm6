@@ -154,8 +154,10 @@ trace-message("get-socket: $host, $port, $username");
       $socket .= new( :$host, :$port, :$uri-obj);
 
       trace-message(
-        "socket created: server $host:$port, user '$username' sock id $socket.sock-id()"
+        "socket created: server $host:$port, user '$username' sock id $socket.sock-id() " ~ $socket.is-open ?? '' !! 'failed to open'
       );
+
+      $socket = Nil unless $socket.is-open;
     }
 
     else {
