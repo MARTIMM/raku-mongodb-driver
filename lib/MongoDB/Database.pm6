@@ -14,7 +14,7 @@ has MongoDB::Uri $!uri-obj;
 has BSON::Document $.read-concern;
 has MongoDB::Collection $!cmd-collection;
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 submethod BUILD (
   MongoDB::Uri :$!uri-obj!, Str:D :$name!, BSON::Document :$read-concern
 ) {
@@ -31,7 +31,7 @@ submethod BUILD (
 }
 
 #`{{
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 multi submethod BUILD (
   Str :$!client-key!, Str:D :$name, BSON::Document :$read-concern
 ) {
@@ -46,7 +46,7 @@ multi submethod BUILD (
 }
 }}
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Select a collection. When it is new it comes into existence only
 # after inserting data
 #
@@ -62,7 +62,7 @@ method collection (
   );
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Run command should ony be working on the admin database using the virtual
 # $cmd collection. Method is placed here because it works on a database be
 # it a special one.
@@ -95,7 +95,7 @@ multi method run-command (
   return $doc.defined ?? $doc !! BSON::Document.new;
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Run command using List of Pair.
 multi method run-command (
   List $pairs, BSON::Document :$read-concern
@@ -126,7 +126,7 @@ multi method run-command (
   return $doc.defined ?? $doc !! BSON::Document.new;
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 method !set-name ( Str $name = '' ) {
 
   # Check special database first. Should be empty and is set later
