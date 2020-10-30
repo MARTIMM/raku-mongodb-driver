@@ -64,6 +64,16 @@ sub infix:<=>( MongoDB::Client $a is rw, MongoDB::Client $b ) is export {
   $a := $b;
 }
 }}
+
+# Settings according to mongodb specification
+# See https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#heartbeatfrequencyms
+# names are written in camelback form, here all lowercase with dashes.
+# serverSelectionTryOnce and socketCheckIntervalMS are not supported because
+# this is a multi-threaded implementation.
+has Int $!local-threshold-ms;
+has Int $!server-selection-timeout-ms;
+has Int $!heartbeat-frequency-ms;
+
 #-------------------------------------------------------------------------------
 method new ( |c ) {
 
@@ -82,6 +92,12 @@ method new ( |c ) {
 submethod BUILD (
   Str:D :$!uri, BSON::Document :$read-concern
 ) {
+
+  # set a few specification settings
+  $!local-threshold-ms = C-LOCALTHRESHOLDMS;
+  $!server-selection-timeout-ms = C-SERVERSELECTIONTIMEOUTMS;
+  $!heartbeat-frequency-ms = C-HEARTBEATFREQUENCYMS;
+
 
   $!topology-description[Topo-type] = TT-NotSet;
   $!topology-set = False;

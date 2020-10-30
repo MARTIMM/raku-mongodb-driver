@@ -109,12 +109,12 @@ constant MAX-SOCKET-UNUSED-OPEN is export = 300; # 5 minutes unused
 
 #------------------------------------------------------------------------------
 # Server defaults
+
+#------------------------------------------------------------------------------
+# Client configuration defaults
 constant C-LOCALTHRESHOLDMS is export = 15;
 constant C-SERVERSELECTIONTIMEOUTMS is export = 30_000;
 constant C-HEARTBEATFREQUENCYMS is export = 10_000;
-
-#------------------------------------------------------------------------------
-# Client defaults
 constant C-SMALLEST-MAX-STALENEST-SECONDS = 90;
 
 #------------------------------------------------------------------------------
