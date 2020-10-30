@@ -21,7 +21,7 @@ There are several documents written by a group of people specially for the devel
 * []()
 -->
 
-### Notes about Clients and Servers
+### My notes about Clients and Servers
 
 * A **Server** in a topology can never be in any other kind of topology. This means that a **Client** object which started the build of a topology using some URI always end up with the same set of **Server**'s belonging to that topology. The **Uri**'s can be different although may not contradict.
 
@@ -178,13 +178,13 @@ Server1 -> Client ++ #A9DCDF: emit add servers
   end note
 
 Client -> Server1 --: done
-Server1 -> Client ++ #A9DCDF: emit process topology
+Server1 -> Client ++ #A9DCDF: emit server state
 Client -> Server1 --: done
 deactivate Server1
 
 Server2 -> Client ++ #A9DCDF: emit add servers
 Client -> Server2 --: done
-Server2 -> Client ++ #A9DCDF: emit process topology
+Server2 -> Client ++ #A9DCDF: emit server state
 Client -> Server2 --: done
 deactivate Server2
 
