@@ -76,9 +76,11 @@ method query (
     }
 
     $!socket = $server.get-socket(:$uri-obj);
-    trace-message("socket id: $!socket.sock-id()");
+    if $!socket {
+      trace-message("socket id: $!socket.sock-id()");
+    }
 
-    unless $!socket {
+    else {
       warn-message("server {$server.name} cleaned up");
       return ( BSON::Document, Duration.new(0));
     }
@@ -179,7 +181,11 @@ method get-more (
     );
 
     $!socket = $server.get-socket;
-    if ! $!socket.defined {
+    if $!socket.defined {
+      trace-message("socket id: $!socket.sock-id()");
+    }
+
+    else {
       warn-message("server {$server.name} cleaned up");
       return BSON::Document;
     }
@@ -268,7 +274,11 @@ method kill-cursors ( @cursors where .elems > 0, MongoDB::Uri :$uri-obj,
 
     fatal-message("No server available") unless $server.defined;
     $!socket = $server.get-socket;
-    if ! $!socket.defined {
+    if $!socket.defined {
+      trace-message("socket id: $!socket.sock-id()");
+    }
+
+    else {
       warn-message("server {$server.name} cleaned up");
       return BSON::Document;
     }
