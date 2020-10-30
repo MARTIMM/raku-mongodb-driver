@@ -32,6 +32,7 @@ has Semaphore::ReadersWriters $!rw-sem;
 
 my $sock-count = 0;
 has Int $.sock-id;
+
 #-------------------------------------------------------------------------------
 #tm:1:new():
 submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
