@@ -375,7 +375,7 @@ my Callable $code = sub ( Hash $m ) {
   # next minute
   if $slow-part{$fhkey}:!exists or $slow-part{$fhkey} ne "$spart:$minutes" {
     $slow-part{$fhkey} = "$spart:$minutes";
-    $dt-str = "\n" ~ '-' x 80 ~ "\n$spart:$minutes\n\n$fast-part";
+    $dt-str = "\n" ~ '-' x 80 ~ "\n$spart:$minutes UTC\n\n$fast-part";
   }
   else {
     $dt-str = "$fast-part";
