@@ -25,14 +25,18 @@ info-message("Test $?FILE start");
 #-------------------------------------------------------------------------------
 my MongoDB::Test-support $ts .= new;
 my MongoDB::Client $client = $ts.get-connection(:server-key<s1>);
-my MongoDB::Database $database = $client.database('test');
-my MongoDB::Collection $collection = $database.collection('testf');
+my MongoDB::Database $database;
+#my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $doc;
-my MongoDB::HL::Users $users .= new(:$database);
+my MongoDB::HL::Users $users;
 
 # Cleanup all before tests
-$database.run-command: (dropDatabase => 1,);
-$database.run-command: (dropAllUsersFromDatabase => 1,);
+for <test admin> -> $db {
+  $database = $client.database($db);
+  $users .= new(:$database);
+  $database.run-command: (dropDatabase => 1,);
+  $database.run-command: (dropAllUsersFromDatabase => 1,);
+}
 
 #-------------------------------------------------------------------------------
 # Mongodb user information of user Dondersteen
@@ -61,43 +65,36 @@ $database.run-command: (dropAllUsersFromDatabase => 1,);
 #   ],
 # ))
 #
-my Str $name-user = 'dondersteen';
-my Str $pw-user = 'w!tDo3jeDan';
+my Array $accounts = [
+  < dondersteen w!tDo3jeDan readWrite test database-test
+    site-admin B3n!Hurry userAdminAnyDatabase,hostManager admin site-admin
+  >
+];
 
-my Str $name-admin = 'site-admin';
-my Str $pw-admin = 'B3n!Hurry';
-
-subtest "User account preparation", {
+subtest "Add accounts", {
   $users.set-pw-security(
-    :min-un-length(10),
-    :min-pw-length(8),
-    :pw_attribs(C-PW-OTHER-CHARS)
+    :min-un-length(10), :min-pw-length(8), :pw_attribs(C-PW-OTHER-CHARS)
   );
 
-  $doc = $users.create-user(
-    $name-admin, $pw-admin,
-    :custom-data((user-type => 'site-admin'),),
-    :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
-  );
-  ok $doc<ok>, "User $name-admin created";
+  for @$accounts -> $username, $password, $rolespec, $db, $user-type {
+    $database = $client.database($db);
+    $users .= new(:$database);
 
-  $doc = $users.create-user(
-    $name-user, $pw-user,
-    :custom-data(
-        license => 'to_kill',
-        user-type => 'database-test-admin'
-    ),
-    :roles([(role => 'readWrite', db => 'test'),])
-  );
+    my Array $roles = [];
+    for $rolespec.split(',') -> $role {
+      $roles.push: ( :$role, :$db);
+    }
 
-  ok $doc<ok>, "User $name-user created";
-
-  $doc = $database.run-command: (usersInfo => 1,);
+    $doc = $users.create-user(
+      $username, $password, :custom-data((:$user-type),), :$roles
+    );
+    ok $doc<ok>,
+       "Create $username on database $db with roles: $roles.join(', ')";
+    $doc = $database.run-command: (usersInfo => 1,);
+    is $doc<users>[0]<user>, $username,
+       "info of $doc<users>[0]<user> retrieved";
 #note $doc.perl;
-
-  is $doc<users>.elems, 2, '2 users defined';
-  is $doc<users>[0]<user>, any( $name-user, $name-admin), $doc<users>[0]<user>;
-  is $doc<users>[0]<user>, any( $name-user, $name-admin), $doc<users>[1]<user>;
+  }
 }
 
 #-------------------------------------------------------------------------------

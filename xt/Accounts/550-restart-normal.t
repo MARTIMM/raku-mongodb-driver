@@ -17,19 +17,20 @@ use Base64;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
-#drop-send-to('screen');
-modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = "xt/Log/550-restart-normal.log".IO.open(
   :mode<wo>, :create, :truncate
 );
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter Timer Monitor Uri>);
+#set-filter(|<ObserverEmitter Timer Monitor Uri>);
+set-filter(|<ObserverEmitter Timer>);
 #set-filter(|< Timer Socket SocketPool >);
 
 info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
-my MongoDB::Test-support $ts .= new;
+#my MongoDB::Test-support $ts .= new;
 
 #`{{
 # Example from https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst
@@ -121,9 +122,47 @@ sub restart-to-authenticate( ) {
 #-------------------------------------------------------------------------------
 sub restart-to-normal( ) {
 
-#  set-exception-process-level(MongoDB::Severity::Warn);
+  my MongoDB::Test-support $ts .= new;
+  my Hash $clients = $ts.create-clients;
 
-  ok $ts.server-control.stop-mongod('s1'), "Server 1 stopped";
+  my Str $host = $clients<s1>.uri-obj.servers[0]<host>;
+  my Int $port = $clients<s1>.uri-obj.servers[0]<port>.Int;
+
+  my Str $username = 'site-admin';
+  my Str $password = 'B3n!Hurry';
+
+  my Str $uri = "mongodb://$username:$password@$host:$port/?authSource=admin";
+  my BSON::Document $doc = $ts.server-control.stop-mongod( 's1', $uri);
+  if $doc.defined {
+    note $doc.perl;
+    is $doc<ok>, 1, 'server stopped';
+  }
+  else {
+    diag "old versions do not return status";
+  }
+#`{{
+  # try to get other role
+  my BSON::Document $req .= new: (
+    :grantRolesToUser($username),
+    roles => [
+      ( :role<hostManager>, :db<admin>),
+    ]
+  );
+
+  my MongoDB::Client $client .= new(:$uri);
+  my MongoDB::Database $d = $client.database('admin');
+  $doc = $d.run-command($req);
+  is $doc<ok>, 1, "Role added";
+
+  $doc = $ts.server-control.stop-mongod( 's1', $uri);
+  if $doc.defined {
+    is $doc<ok>, 1, 'server stopped';
+  }
+  else {
+    diag "old versions do not return status";
+  }
+}}
+
   ok $ts.server-control.start-mongod('s1'), "Server 1 in normal mode";
 }
 

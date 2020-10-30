@@ -54,12 +54,9 @@ class MyClientDryRun {
     'v=UMWeI25JD1yNYZRMpZ4VHvhZ9e0=';
   }
 
-#  method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
   method mangle-password ( Str:D :$username, Str:D :$password --> Str ) {
 
     my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
-#    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-#    Buf.new($md5-mdb-hashed-pw.encode);
     md5($mdb-hashed-pw).>>.fmt('%02x').join;
   }
 
@@ -138,10 +135,10 @@ class MyClientMDB {
   has Int $!conversation-id;
 
   #-----------------------------------------------------------------------------
-  submethod BUILD ( ) {
+  submethod BUILD ( Str :$database ) {
 
     $!client = $ts.get-connection(:server-key<s1>);
-    $!database = $!client.database('test');
+    $!database = $!client.database($database);
   }
 
   #-----------------------------------------------------------------------------
@@ -201,12 +198,9 @@ class MyClientMDB {
   }
 
   #-----------------------------------------------------------------------------
-#  method mangle-password ( Str:D :$username, Str:D :$password --> Buf ) {
   method mangle-password ( Str:D :$username, Str:D :$password --> Str ) {
 
     my utf8 $mdb-hashed-pw = ($username ~ ':mongo:' ~ $password).encode;
-#    my Str $md5-mdb-hashed-pw = md5($mdb-hashed-pw).>>.fmt('%02x').join;
-#    Buf.new($md5-mdb-hashed-pw.encode);
     md5($mdb-hashed-pw).>>.fmt('%02x').join;
   }
 
@@ -250,11 +244,10 @@ subtest 'Mongodb login',  {
   my Str $username = 'dondersteen';
   my Str $password = 'w!tDo3jeDan';
   my Auth::SCRAM $sc .= new(
-    :$username, :$password, :client-object(MyClientMDB.new)
+    :$username, :$password, :client-object(MyClientMDB.new(:database<test>))
   );
 
   $sc.start-scram;
-
 
   # Need to clear object because it receives a role which will
   # cause a failure in the next init
@@ -263,7 +256,7 @@ subtest 'Mongodb login',  {
   $username = 'site-admin';
   $password = 'B3n!Hurry';
   $sc .= new(
-    :$username, :$password, :client-object(MyClientMDB.new)
+    :$username, :$password, :client-object(MyClientMDB.new(:database<admin>))
   );
 
   $sc.start-scram;
