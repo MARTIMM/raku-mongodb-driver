@@ -58,7 +58,7 @@ method new ( ) { !!! }
 
 #-------------------------------------------------------------------------------
 method instance ( --> MongoDB::ServerPool ) {
-  $instance = self.bless unless $instance;
+  $instance //= self.bless;
   $instance
 }
 

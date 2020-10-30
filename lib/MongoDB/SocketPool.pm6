@@ -70,7 +70,7 @@ method new ( ) { !!! }
 #-------------------------------------------------------------------------------
 #tm:1:instance():
 method instance ( --> MongoDB::SocketPool ) {
-  $instance = self.bless unless $instance;
+  $instance //= self.bless;
 
   $instance
 }
