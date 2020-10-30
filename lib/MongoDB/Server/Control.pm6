@@ -94,21 +94,21 @@ method start-mongod (
 
 #-----------------------------------------------------------------------------
 #method stop-mongod ( *@server-keys --> Bool ) {
-method stop-mongod ( $server-key --> Bool ) {
+method stop-mongod ( $server-key, $uri --> BSON::Document ) {
 
   my Bool $stopped = False;
   my Int $port-number = self.get-port-number($server-key);
 
   # shutdown can only be given to localhost or as an authenticated
   # user with proper rights
-  my MongoDB::Client $client .= new(:uri("mongodb://localhost:$port-number"));
+  my MongoDB::Client $client .= new(:$uri);
   my MongoDB::Database $database = $client.database('admin');
 
   # force needed to shutdown replcated servers
   my BSON::Document $req .= new: ( shutdown => 1, force => True);
   my BSON::Document $doc = $database.run-command($req);
 
-  # some versions just break off so doc can be undefined
+  # older versions just break off so doc can be undefined
   if !$doc or (?$doc and $doc<ok> ~~ 1e0) {
     $stopped = True;
     debug-message('Command executed ok');
@@ -118,7 +118,7 @@ method stop-mongod ( $server-key --> Bool ) {
     warn-message("Error: $doc<errcode>, $doc<errmsg>");
   }
 
-  $stopped
+  $doc
 
 #`{{
 # on windows the --shutdown option does not work!
