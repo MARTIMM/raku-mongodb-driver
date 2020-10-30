@@ -18,6 +18,8 @@ nav_menu: default-nav
 * While I had promised to support mongod versions 2.\*, I've seen that version 2.6 is deprecated as of April 07, 2016 (Blog date from [here](https://www.mongodb.com/blog/post/mongodb-2-6-end-of-life)). That's already a long time ago. So I wanted to pull back my promises and only support the latest few versions of which the latest is already 4.0. Please take a note from here: [support policy mongo servers](https://www.mongodb.com/support-policy).
 * To narrow the support to just a few server versions will also slim down the driver software instead of having to test for all quirks and exceptions from older versions.
 * MONGODB-CR authentication will not be implemented anymore. This method was deprecated since 3.6 and removed from 4.0. This method is deprecated because of security issues.
+* As of version 0.25.1 a sandbox is setup to run separate mongod and mongos servers. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without the need to fiddle with the user's database servers.
+* When installing the driver, tests are done only on newest mongod servers of versions 3.\*. Testing on MS Windows must still be setup. Necessary parts such as **BSON** are already tested on AppVeyor however.
 
 ## Synopsis
 
@@ -194,11 +196,6 @@ ok 15 - updatedExisting returned False
 # Name and surname: Jonathan Worthington
 # Name and surname: Moritz Lenz
 ```
-
-## Notes
-
-* As of version 0.25.1 a sandbox is setup to run separate mongod and mongos servers. Because of the sandbox, the testing programs are able to test administration tasks, authentication, replication, sharding, master/slave setup and independent server setup. This makes it safe to do the installation tests without the need to fiddle with the user's database servers.
-* When installing the driver, tests are done only on newest mongod servers of versions 3.\*. Testing on MS Windows must still be setup. Necessary parts such as **BSON** are already tested on AppVeyor however.
 
 ## Implementation track
 
