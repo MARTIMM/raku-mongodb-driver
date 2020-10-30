@@ -29,12 +29,13 @@ my $uri-grammar = grammar {
 
   token protocol { 'mongodb://' }
 
-
   token server-section { <username-password>? <server-list>? }
 
-  # username and password cannot have chars '@:'
+  # username and password can have chars '@:%/?&' but they must be %-encoded
+  # see https://tools.ietf.org/html/rfc3986#section-2.1
+  # and https://www.w3schools.com/tags/ref_urlencode.ASP
   token username-password {
-    $<username>=<-[:@]>+ ':' $<password>=<-[:@]>+ '@'
+    $<username>=<-[:]>+ ':' $<password>=<-[@]>+ '@'
   }
 
   token server-list { <host-port> [ ',' <host-port> ]* }
@@ -51,7 +52,6 @@ my $uri-grammar = grammar {
   token hname { <[\w\d\-\.]>* }
 
   token port { \d+ }
-
 
   token path-section { '/' <database>? <options>? }
 
@@ -152,10 +152,11 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
     # set some options if not defined and convert to proper type
     $!options<localThresholdMS> =
       ( $!options<localThresholdMS> // MongoDB::C-LOCALTHRESHOLDMS ).Int;
-    $!options<serverSelectionTimeoutMS> =
-      ( $!options<serverSelectionTimeoutMS> // MongoDB::C-SERVERSELECTIONTIMEOUTMS ).Int;
-    $!options<heartbeatFrequencyMS> =
-      ( $!options<heartbeatFrequencyMS> // MongoDB::C-HEARTBEATFREQUENCYMS ).Int;
+    $!options<serverSelectionTimeoutMS> = (
+      $!options<serverSelectionTimeoutMS> // MongoDB::C-SERVERSELECTIONTIMEOUTMS
+    ).Int;
+    $!options<heartbeatFrequencyMS> = ( $!options<heartbeatFrequencyMS> // MongoDB::C-HEARTBEATFREQUENCYMS
+    ).Int;
 
     my Str $auth-mechanism = $!options<authMechanism> // '';
     my Str $auth-mechanism-properties =
