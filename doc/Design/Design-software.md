@@ -6,7 +6,7 @@ This project did not start by sitting back and design things first. I Can't tell
 
 ### Links
 
-There are several documents written by a group of people specially for the developers of the mongodb drivers. Her are some links;
+There are several documents written by a group of people specially for the developers of the mongodb drivers. Here are some links;
 
 * [Connection string spec](https://github.com/mongodb/specifications/blob/master/source/connection-string/connection-string-spec.rst#defining-connection-options)
 * [Github root of specifications](https://github.com/mongodb/specifications/tree/master/source)
@@ -72,30 +72,10 @@ With a collection.find()
 
 ## Users class view of the package
 
+
 First a class diagram where the obvious classes are noted. Most of the time when `.run-command()` is called on a **Database**, the **Application** doesn't need direct access to a **Collection**. It is only used when`.find()` is needed.
 
-```plantuml
-
-Application *--> Client
-Application *--> Database
-Application *-> Collection
-Client *- "*" Server
-Database -> Client
-Client <-- Collection: for\nWire
-Database *- Collection
-Collection --> Wire
-Collection *--> Cursor
-
-Wire <- Cursor
-Wire --> Client: for\nserver
-Wire -> Server: for\nsocket
-Wire -> Socket: for I/O
-
-Server --> "*" Socket: admin
-Monitor *-> "*" RegisteredServer
-Server --> RegisteredServer
-
-```
+![]()
 The **Client** object is like a center point. Every object needs to provide it to the next because of the need to look up a **Server** from a leaf object like **Wire** which is the only object needing it besides **Monitor**. According to some points made above it could become;
 
 ```plantuml
@@ -247,9 +227,9 @@ Database -> Application : $document
 ```
 
 #### Server - Socket interaction
-scale 0.8
 
 ```plantuml
+'scale 0.8
 
 class Server
 class Socket <<singleton>> {
