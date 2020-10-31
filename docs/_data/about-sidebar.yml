@@ -3,9 +3,9 @@
 - bar_title: "About"
   bar_menu:
   - title: "About"
-    url: "/content-docs/About/about.html"
+    url: "/content-docs/about/about.html"
   - title: "Change log"
-    url: "/content-docs/About/release-notes.html"
+    url: "/content-docs/about/release-notes.html"
 
 #  - title: "Gnome::GDK3"
 #  - title: "Gnome::Gio"

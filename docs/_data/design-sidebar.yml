@@ -1,16 +1,12 @@
 # https://jekyllrb.com/tutorials/navigation/
 #nav_title: "please set variable 'nav_title' in your frontmatter"
 
-nav_menus:
-  - nav_pages:
-    - title: "Home"
-      url: '/'
-    - title: "Reference"
-      url: "/content-docs/reference/reference.html"
-    - title: "Design"
-      url: "/content-docs/design/design.html"
-    - title: "About"
-      url: "/content-docs/about/about.html"
+- bar_title: "Reference"
+  bar_menu:
+  - title: "design"
+    url: "/content-docs/design/design.html"
+#  - title: "Change log"
+#    url: "/content-docs/about/release-notes.html"
 
 #    - title: "Projects"
 #      url: "/content-docs/projects.html"
