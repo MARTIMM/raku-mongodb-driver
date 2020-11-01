@@ -7,33 +7,11 @@ use MongoDB;
 use MongoDB::Header;
 use MongoDB::Uri;
 
-# use 'require' to break circular dependency
-#use MongoDB::ServerPool;
+use MongoDB::ServerPool;
+use MongoDB::ServerPool::Server;
 
 #-------------------------------------------------------------------------------
 unit class MongoDB::Wire:auth<github:MARTIMM>;
-
-#  has ServerClassType $!server;
-#has SocketType $!socket;
-has  $!socket;
-
-#-----------------------------------------------------------------------------
-# Value needed for round trip timing and is set to get more accurate values
-#has Duration $!round-trip-time .= new(0.0);
-#has Bool $!time-query = False;
-
-#`{{
-#-----------------------------------------------------------------------------
-method timed-query ( |c --> List ) {
-
-note "timed query...";
-
-  $!time-query = True;
-  my BSON::Document $doc = self.query(|c);
-note "timed query ended";
-  ( $doc, $!round-trip-time);
-}
-}}
 
 #-----------------------------------------------------------------------------
 method query (
@@ -41,14 +19,12 @@ method query (
   BSON::Document:D $qdoc, BSON::Document $projection?,
   QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
   Int :$number-to-return, MongoDB::Uri :$uri-obj,
-#   ServerClassType :$server,
-  :$server is copy, Bool :$time-query = False
+  MongoDB::ServerPool::Server :$server is copy, Bool :$time-query = False
 
-  --> List #BSON::Document
+  --> List
 ) {
 
   my Duration $round-trip-time .= new(0.0);
-#    $!server = $server;
   my MongoDB::Header $header .= new;
 
   # OR all flag values to get the integer flag, be sure it is at least 0x00.
@@ -64,12 +40,13 @@ method query (
       :$flags, :$number-to-skip, :$number-to-return
     );
 
-#    my MongoDB::ServerPool $server-pool .= instance;
-    require ::('MongoDB::ServerPool');
-    $server = ::('MongoDB::ServerPool').instance.select-server(
+    # server is only provided when called from Monitor. all other objects
+    # call the method without a server object.
+    $server = MongoDB::ServerPool.instance.select-server(
       BSON::Document.new, $uri-obj.client-key
     ) unless $server.defined;
 
+    # check if server is selected
     unless $server.defined {
       error-message("No server object for query");
       return ( BSON::Document, Duration.new(0));
