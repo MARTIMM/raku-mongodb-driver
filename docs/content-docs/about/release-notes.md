@@ -8,8 +8,13 @@ layout: sidebar
 # Release notes
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
+
+#### 2020-11-01 0.43.15
+* The tests to authenticate using SCRAM-SHA1 are completed in its new setting and work fine. Most of the test problems were to start and stop servers without crashing due to lack of privileges among others.
+* Removed dependency on **URI::Escape** and implemented method `.uri-unescape()` in `$uri-actions` in **MongoDB::Uri**.
+
 #### 2020-09-03 0.43.14
-* Change username and parseword parse in **MongoDB::Uri**. Characters ':' and '@' cannot be used.
+* Change username and password parse in **MongoDB::Uri**. Characters like ':' and '@' cannot be used directly but must be uri-encoded using %<hexnum>. E.g. '@' becomes %40 and ':' becomes %3A.
 
 #### 2020-07-20 0.43.13
 * Change **MongoDB::Server::Socket** module. This should improve Server, Socket, Wire and Monitor.
