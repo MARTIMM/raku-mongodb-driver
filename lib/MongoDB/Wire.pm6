@@ -9,9 +9,12 @@ use MongoDB::Uri;
 
 use MongoDB::ServerPool;
 use MongoDB::ServerPool::Server;
+use MongoDB::SocketPool::Socket;
 
 #-------------------------------------------------------------------------------
 unit class MongoDB::Wire:auth<github:MARTIMM>;
+
+has MongoDB::SocketPool::Socket $!socket;
 
 #-----------------------------------------------------------------------------
 method query (

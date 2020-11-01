@@ -22,7 +22,6 @@ submethod BUILD (
   $!read-concern = $read-concern // BSON::Document.new;
 
   self!set-name($name);
-  #$!client-key = $client.uri-obj.client-key;
 
   debug-message("create database $name using client object");
 
@@ -52,10 +51,10 @@ multi submethod BUILD (
 #
 method collection (
   Str:D $name, BSON::Document :$read-concern
-  --> MongoDB::Collection ) {
+  --> MongoDB::Collection
+) {
 
-  $!read-concern =
-    $read-concern.defined ?? $read-concern !! $!read-concern;
+  $!read-concern = $read-concern.defined ?? $read-concern !! $!read-concern;
 
   return MongoDB::Collection.new(
     :database(self), :$name, :$read-concern, :$!uri-obj
