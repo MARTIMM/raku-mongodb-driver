@@ -16,18 +16,17 @@ Application *--> Database
 Application *--> Collection
 
 Client --> Monitor
-Client --> ServerPool
+Client ---> ServerPool
 ServerPool *--> "*" Server
 Server -> SocketPool
 SocketPool *-> "*" Socket
 Collection -* Database
-Collection -> Wire
-Collection *-- Cursor
+Collection ---> Wire
+Collection *---> Cursor
 Application --> Cursor
 
 Cursor -> Wire
 Wire -> ServerPool
-ServerPool <- Monitor
-
+Monitor --> Wire
 @enduml
 ```
