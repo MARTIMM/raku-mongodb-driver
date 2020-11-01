@@ -1,8 +1,6 @@
 use v6;
 use MongoDB;
 use MongoDB::Authenticate::Credential;
-use URI::Escape;
-#use Base64;
 use OpenSSL::Digest;
 
 #TODO Add possibility of DNS Seedlist: https://docs.mongodb.com/manual/reference/connection-string/#dns-seedlist-connection-format
@@ -31,11 +29,11 @@ my $uri-grammar = grammar {
 
   token server-section { <username-password>? <server-list>? }
 
-  # username and password can have chars '@:%/?&' but they must be %-encoded
+  # username and password can have chars '@:/?&=,' but they must be %-encoded
   # see https://tools.ietf.org/html/rfc3986#section-2.1
   # and https://www.w3schools.com/tags/ref_urlencode.ASP
   token username-password {
-    $<username>=<-[:]>+ ':' $<password>=<-[@]>+ '@'
+    $<username>=<-[@:/?&=,]>+ ':' $<password>=<-[@:/?&=,]>+ '@'
   }
 
   token server-list { <host-port> [ ',' <host-port> ]* }
@@ -49,17 +47,17 @@ my $uri-grammar = grammar {
   token host { <ipv4-host> || <ipv6-host> || <hname> }
   token ipv4-host { \d**1..3 [ '.' \d**1..3 ]**3 }
   token ipv6-host { '[' ~ ']' [ [ \d || ':' ]+ ] }
-  token hname { <[\w\d\-\.]>* }
+  token hname { <[\w\-\.\%]>* }
 
   token port { \d+ }
 
   token path-section { '/' <database>? <options>? }
 
-  token database { <[\w]>+ }
+  token database { <[\w\%]>+ }
 
   token options { '?' <option> [ '&' <option> ]* }
 
-  token option { $<key>=<[\w\d\-\_]>+ '=' $<value>=<[\w\d\-\_\,\.]>+ }
+  token option { $<key>=<[\w\-\_]>+ '=' $<value>=<[\w\-\_\,\.]>+ }
 }
 
 #-------------------------------------------------------------------------------
@@ -79,12 +77,12 @@ my $uri-actions = class {
   }
 
   method username-password ( Match $m ) {
-    $!uname = uri-unescape(~$m<username>);
-    $!pword = uri-unescape(~$m<password>);
+    $!uname = self.uri-unescape(~$m<username>);
+    $!pword = self.uri-unescape(~$m<password>);
   }
 
   method host-port ( Match $m ) {
-    my $h = ? ~$m<host> ?? ~$m<host> !! 'localhost';
+    my $h = ? ~$m<host> ?? self.uri-unescape(~$m<host>) !! 'localhost';
 
     # in case of an ipv6 address, remove the brackets around the ip spec
 #      $h ~~ s:g/ <[\[\]]> //;
@@ -105,11 +103,21 @@ my $uri-actions = class {
   }
 
   method database ( Match $m ) {
-    $!dtbs = ~$m // 'admin';
+    $!dtbs = self.uri-unescape(~$m // 'admin');
   }
 
   method option ( Match $m ) {
     $!optns{~$m<key>} = ~$m<value>;
+  }
+
+  #-----------------------------------------------------------------------------
+  method uri-unescape ( Str $txt is copy --> Str ) {
+    while $txt ~~ m/ '%' $<encoded> = [ <xdigit>+ ] / {
+      my Str $decoded = Buf.new(('0x' ~ $/<encoded>.Str).Int).decode;
+      $txt ~~ s/ '%' <xdigit>+ /$decoded/;
+    }
+
+    $txt
   }
 }
 

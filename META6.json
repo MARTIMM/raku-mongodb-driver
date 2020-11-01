@@ -1,5 +1,5 @@
 {
-  "version": "0.43.14",
+  "version": "0.43.15",
   "description": "MongoDB driver",
   "name": "MongoDB",
 
@@ -48,7 +48,6 @@
     "Auth::SCRAM",
     "Base64",
     "OpenSSL",
-    "URI::Escape",
     "Unicode::PRECIS",
     "Terminal::ANSIColor",
     "Log::Async"

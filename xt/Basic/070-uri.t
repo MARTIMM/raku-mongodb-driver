@@ -84,12 +84,12 @@ subtest "Uri parsing", {
   is $uri.options<test>, '2', 'mongodb:///users?test=2&list=jhg3 --> option test = 2';
   is $uri.options<list>, 'jhg3', 'mongodb:///users?test=2&list=jhg3 --> option list = jhg3';
 
-  $uri .= new(:uri<mongodb://mt:pw@>);
-  is $uri.servers[0]<host>, 'localhost', 'mongodb://mt:pw@ --> server = localhost';
-  is $uri.servers[0]<port>, 27017, 'mongodb://mt:pw@ --> port = 27017';
-  is $uri.auth-source, 'admin', 'mongodb://mt:pw@ --> auth database = admin';
-  is $uri.username, 'mt', 'mongodb://mt:pw@ --> username = mt';
-  is $uri.password, 'pw', 'mongodb://mt:pw@ --> password = pw';
+  $uri .= new(:uri<mongodb://mt%40tm:p%3Aw@>);
+  is $uri.servers[0]<host>, 'localhost', 'mongodb://mt%40tm:p%3Aw@ --> server = localhost';
+  is $uri.servers[0]<port>, 27017, 'mongodb://mt%40tm:p%3Aw@ --> port = 27017';
+  is $uri.auth-source, 'admin', 'mongodb://mt%40tm:p%3Aw@ --> auth database = admin';
+  is $uri.username, 'mt@tm', 'mongodb://mt%40tm:p%3Aw@ --> username = mt@tm';
+  is $uri.password, 'p:w', 'mongodb://mt%40tm:p%3Aw@ --> password = p:w';
 
   $uri .= new(:uri<mongodb://mt:pw@h2:9876/users>);
   is $uri.servers[0]<host>, 'h2', 'mongodb://mt:pw@h2:9876/users --> server = h2';
