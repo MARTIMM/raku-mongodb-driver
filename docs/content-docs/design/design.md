@@ -18,7 +18,7 @@ The users application uses the **Client**, **Database**, **Collection** and **Cu
 **ServerPool** is made singleton to make several objects able to select a server. The **SocketPool** is like that for the same reason (more than one server needs it). **Monitor** is created only once and then made to run in a thread. Its main task is to get information from the mongodb servers. **Client** objects must start the **Monitor** as its first task which is only done once of course.
 
 
-## Interactions client and server objects
+## Interactions between client and server objects
 
 At the creation of the Client object, there are a lot of actions happening to get all parts ready for the next user task. Below is an interaction of a **Client**, **Server** and **Monitor** shown followed with cleaning up a **Client**;
 
@@ -37,8 +37,18 @@ Communication between these objects is mainly done by emitting messages in one o
 {% assign url = site.baseurl | append: "/images/uml/DBIO-interact01.svg" %}
 ![url]( {{ url }} )
 
+You can see that the user application only needs to know about the **Client** and **Database** objects. Behind the scene, the database object calls the **Collection** objects `.find()` method to get the information needed. The database object only returns the first document from the **Cursor**. The rest is ignored if there are more documents.
 
 ## Interactions using find
 
 {% assign url = site.baseurl | append: "/images/uml/DBIO-interact02.svg" %}
+![url]( {{ url }} )
+
+When the user expects more documents to be returned, a more elaborate setup must be implemented. First the application calls `.find()` itself and second, the application must iterate over the **Cursor** object using the `.fetch` method to retrieve all documents.
+
+## Looking somewhat deeper
+
+For whome is interested, a diagram follows to show how the **Wire** object interacts with other objects to get the request encoded, sent to te server, retrieve result and to decode this result.
+
+{% assign url = site.baseurl | append: "/images/uml/DBIO-interact03.svg" %}
 ![url]( {{ url }} )

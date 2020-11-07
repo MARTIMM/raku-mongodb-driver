@@ -252,9 +252,18 @@ After some discussion with developers from MongoDB and the perl5 driver develope
     * [ ] readPreference
     * [ ] maxStalenessSeconds
     * [ ] readPreferenceTags
-  * Authentication options
+  * Authentication options. See also [here](https://docs.mongodb.com/manual/reference/parameters/#param.authenticationMechanisms).
     * [ ] authSource
-    * [ ] authMechanism
+    * authMechanism
+      * MONGODB-CR is deprecated since 4.0. This will not be implemented.
+      * SCRAM is the default since 3.0.
+        * [x] SCRAM-SHA-1
+        * [ ] SCRAM-SHA-256
+      * MONGODB-X509: Using tls options above
+        * [ ] Client x.509 Certificates
+        * [ ] Member x.509 Certificates
+      * GSSAPI: kerberos
+      * PLAIN: LDAP SASL available only in MongoDB Enterprise. This will not be implemented because of the lack of one such server.
     * [ ] authMechanismProperties
     * [ ] gssapiServiceName
   * Server selection and discovery options
@@ -267,20 +276,17 @@ After some discussion with developers from MongoDB and the perl5 driver develope
     * [ ] retryWrites
     * [ ] uuidRepresentation
 
-* Authentication using SCRAM-SHA is implemented.
 
-* The blogs [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116)
-and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read concerns.
+* The blogs [Server Discovery and Monitoring](https://www.mongodb.com/blog/post/server-discovery-and-monitoring-next-generation-mongodb-drivers?jmp=docs&_ga=1.148010423.1411139568.1420476116) and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-generation-mongodb-drivers?jmp=docs&_ga=1.107199874.1411139568.1420476116) provide directions on how to direct the read and write operations to the proper server. Parts of the methods are implemented but are not yet fully operational. Hooks are there such as RTT measurement and read concerns.
+
 * What I want to provide is the following server situations;
-  * Single server. The simplest of situations. **This is done and tested**.
-  * Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to a secondary server with the risk that it is not up to date. **This is done and tested**.
-  * Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
-  * Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several MongoDB::Client objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server. This could be a master for read and write or a slave for read only operations. **This is done and tested**.
+  * [x] Single server. The simplest of situations.
+  * [x] Several servers in a replica set. Also not very complicated. Commands are directed to the master server because the data on that server (a master server) is up to date. The user has a choice where to send read commands to a secondary server with the risk that it is not up to date.
+  * [ ] Server setup for sharding. I have no experience with sharding yet. I believe that all commands are directed to a mongos server which sends the task to a server which can handle it.
+  * [x] Independent servers. As I see it now, the mix can not be supplied in the seedlist of a uri. This will result in a 'Unknown' topology. The implementer should use several **MongoDB::Client** objects where the seedlist is a proper list of mongos servers, replica typed servers (primary, secondary, arbiter or ghost). Otherwise it should only contain one standalone server.
 
-## Documentation
 
-### Program documentation
-
+<!--
 #### Modules
 
 * [MongoDB](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/MongoDB.pdf)
@@ -310,6 +316,7 @@ and [Server Selection](https://www.mongodb.com/blog/post/server-selection-next-g
 
 ### Driver specs
 * [server selection]( https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst)
+-->
 
 ## INSTALLING THE MODULES
 
@@ -319,7 +326,7 @@ Use zef to install the package.
 
 This project is tested against the newest perl6 version with Rakudo built on MoarVM implementing Perl v6.\*. On Travis-CI however, the latest rakudobrew version is used which might be a little older.
 
-MongoDB server versions are supported from 2.6 and up. Versions lower than this are not supported because of a not completely implemented wire protocol.
+MongoDB server versions are supported from 3.8 and up. Versions lower than this are not supported because of a not completely implemented wire protocol.
 
 ## Attribution
 
@@ -331,83 +338,9 @@ MongoDB server versions are supported from 2.6 and up. Versions lower than this 
 
 ## AUTHORS
 
-Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
-Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
+* Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
+* Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
 
 ## Contributors
 
 Dan Zwell (lefth on github)
-
-<!-- Run scripts after loading the page. Html is displayed by Jekyll -->
-<!-- script>
-$(document).ready( function() {
-    fetch(
-      "https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master", {
-        method: 'POST',     // *GET, POST, PUT, DELETE, etc.
-        mode: 'cors',       // no-cors, *cors, same-origin
-        cache: 'no-cache',  // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'omit', // include, *same-origin, omit
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'image/svg+xml'
-          // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        //body: JSON.stringify(data) // body data type must match "Content-Type" header
-      }
-    ).then( response => {
-        if ( !response.ok ) {
-          throw new Error('Network response was not ok');
-        }
-        return response.blob();
-      }
-    ).then( myBlob => {
-        myImage.src = URL.createObjectURL(myBlob);
-      }
-    ).catch( error => {
-        console.error(
-          'There has been a problem with your fetch operation:', error
-        );
-      }
-    );
-
-/*
-    var jqxhr = $.ajax( {
-        type: "POST",
-        url: "https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master",
-        crossDomain: true,
-        //dataType: "xml",
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          //'Content-Type': 'image/svg+xml'
-        },
-        accept: 'image/svg+xml',
-        context: document.body,
-        error: function ( xhr, error, errorThrown) {
-          //alert('error');
-          $( "#new-label" ).append(xhr.status);
-        },
-      }
-    );
-
-    jqxhr.done( function(svgdata) {
-        alert(svgdata);
-        $( "#new-label" ).append(svgdata);
-      }
-    );
-
-    jqxhr.fail( function() {
-        //alert("fail");
-        $( "#new-label" ).append(" fail ");
-      }
-    );
-
-    jqxhr.always( function() {
-        //alert("always");
-      }
-    );
-*/
-  }
-);
-</script -->
