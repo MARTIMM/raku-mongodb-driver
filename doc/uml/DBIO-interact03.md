@@ -2,6 +2,9 @@
 @startuml
 'scale 0.9
 
+'hide footbox
+
+skinparam roundcorner 10
 skinparam sequence {
 '  LifeLineBorderColor blue
   LifeLineBackgroundColor #fff

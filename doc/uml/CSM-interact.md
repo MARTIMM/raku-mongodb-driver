@@ -2,6 +2,7 @@
 @startuml
 
 
+skinparam roundcorner 10
 skinparam sequence {
 '  LifeLineBorderColor blue
   LifeLineBackgroundColor #fff
@@ -90,7 +91,7 @@ Server1 --> Client:
 destroy Server1
 
 Client -> Server2 ++: .cleanup()
-Server2 --> Monitor ++ #A9DCDF: emit unregister server
+Server2 --> Monitor ++: emit unregister server
 deactivate Monitor
 
 Server2 -> Server2: cleanup\nsockets
