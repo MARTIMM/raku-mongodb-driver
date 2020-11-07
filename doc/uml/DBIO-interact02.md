@@ -7,45 +7,62 @@ skinparam sequence {
   LifeLineBackgroundColor #fff
 }
 
-participant "User Application" as Application
-activate Application
+'participant "User Application" as Application
+'activate Application
 
 participant Client
 participant Database
 participant Collection
-participant Wire
+'participant Wire
 participant Cursor
+box "Will be\ndetailed\nlater" #efffff
+  participant Wire
+end box
 
-Application -> Client : .new(:$uri)
-activate Client
-Client -> Application : $cl
-Application -> Client : $cl.database(:$name)
-Client -> Database : .new(:$name)
-activate Database
-Database -> Application : $db
+-> Client ++: .new(:uri)
+create Client
+return cl
 
-Application -> Database: .collection()
-Database -> Collection: .new()
-activate Collection
-Collection -> Application: $col
+-> Client ++: cl.database(:name)
+create Database
+Client -> Database ++: .new(:name)
+return db
+return db
 
-Application -> Collection: $col.find($request)
+-> Database ++: db.collection()
 
-Collection -> Wire: .query($request)
-activate Wire
-Wire -> Collection: $result
-deactivate Wire
+create Collection
+Database -> Collection ++: .new()
+return col
+return col
 
-Collection -> Cursor: .new($result)
-activate Cursor
+-> Collection ++: col.find(request)
 
-'Cursor -> Application: $cursor
-'deactivate Collection
-'deactivate Database
+create Wire
+Collection -> Wire ++: .query(request)
+return result
+destroy Wire
 
-Cursor -> Application: $documents
-deactivate Cursor
+create Cursor
+Collection -> Cursor ++: .new(result)
+return cursor
+return cursor
 
+== repeat fetch until no documents are left ==
+-> Cursor ++: while cursor.fetch
+Cursor -> Wire ++: .get-more()
+return document
+'return document
+<-- Cursor: document
+
+... after some iterations ...
+<-- Cursor: undefined document
+
+destroy Cursor
+
+== Done ==
+
+destroy Wire
 
 @enduml
 ```

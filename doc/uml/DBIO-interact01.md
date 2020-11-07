@@ -1,50 +1,60 @@
 ```plantuml
 @startuml
-'scale 0.8
+scale 0.8
 
 skinparam sequence {
 '  LifeLineBorderColor blue
   LifeLineBackgroundColor #fff
 }
 
-participant "User Application" as Application
-activate Application
+'box "never\nending" #efffff
+'  participant Wire
+'end box
+
+'participant "User Application" as Application
+'activate Application
 
 participant Client
 participant Database
 participant Collection
-participant Wire
 participant Cursor
+box "Will be\ndetailed\nlater" #efffff
+  participant Wire
+end box
 
-Application -> Client : .new(:$uri)
-activate Client
-Client -> Application : $cl
-Application -> Client : $cl.database(:$name)
-Client -> Database : .new(:$name)
-activate Database
-Database -> Application : $db
-Application -> Database : $db.run-command($request)
+-> Client ++: .new(:uri)
+create Client
+return cl
 
-Database -> Collection: .new(:$name)
-activate Collection
-Collection -> Database: $col
-Database -> Collection: $col.find($request)
 
-Collection -> Wire: .query($request)
-activate Wire
-Wire -> Collection: $result
-deactivate Wire
+-> Client ++: cl.database(:name)
+create Database
+Client -> Database ++: .new(:name)
+return db
+return db
 
-Collection -> Cursor: .new($result)
-activate Cursor
-deactivate Collection
+-> Database ++: db.run-command(request)
+create Collection
+Database -> Collection ++: .new(:name)
+return col
+Database -> Collection ++: col.find(request)
 
-Cursor -> Database: $document
-deactivate Cursor
+create Wire
+Collection -> Wire ++: .query(request)
+return result
+destroy Wire
 
-Database -> Application: $document
+create Cursor
+Collection -> Cursor ++: .new(result)
+return cursor
 
-'deactivate Database
+return cursor
+
+Database -> Cursor ++: cursor.fetch
+return document
+
+destroy Cursor
+return document
 
 @enduml
 ```
