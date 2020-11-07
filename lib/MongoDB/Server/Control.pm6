@@ -100,7 +100,7 @@ method stop-mongod ( $server-key, $uri --> BSON::Document ) {
   my Int $port-number = self.get-port-number($server-key);
 
   # shutdown can only be given to localhost or as an authenticated
-  # user with proper rights
+  # user with proper rights when server is started with --auth option.
   my MongoDB::Client $client .= new(:$uri);
   my MongoDB::Database $database = $client.database('admin');
 
@@ -108,6 +108,7 @@ method stop-mongod ( $server-key, $uri --> BSON::Document ) {
   my BSON::Document $req .= new: ( shutdown => 1, force => True);
   my BSON::Document $doc = $database.run-command($req);
 
+#note "doc: ", $doc // 'undefined';
   # older versions just break off so doc can be undefined
   if !$doc or (?$doc and $doc<ok> ~~ 1e0) {
     $stopped = True;

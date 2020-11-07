@@ -16,7 +16,7 @@ unit class MongoDB::Wire:auth<github:MARTIMM>;
 
 has MongoDB::SocketPool::Socket $!socket;
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 method query (
   Str:D $full-collection-name,
   BSON::Document:D $qdoc, BSON::Document $projection?,
@@ -96,7 +96,7 @@ method query (
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
 #note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
-.note;
+#.note;
 
       $!socket.close if $!socket.defined;
 
@@ -132,7 +132,7 @@ method query (
   return ( $result, $time-query ?? $round-trip-time !! Duration.new(0));
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 method get-more (
   $cursor, Int :$number-to-return, MongoDB::Uri :$uri-obj,
 #  ServerClassType:D :$server # where .^name eq 'MongoDB::Server'
@@ -160,7 +160,7 @@ method get-more (
       $cursor.full-collection-name, $cursor.id, :$number-to-return
     );
 
-    $!socket = $server.get-socket;
+    $!socket = $server.get-socket(:$uri-obj);
     if $!socket.defined {
       trace-message("socket id: $!socket.sock-id()");
     }
@@ -223,7 +223,7 @@ method get-more (
   return $result;
 }
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #method kill-cursors ( @cursors where .elems > 0, ServerClassType:D :$server! ) {
 method kill-cursors ( @cursors where .elems > 0, MongoDB::Uri :$uri-obj,
 #, Any:D :$server!
@@ -304,10 +304,9 @@ method kill-cursors ( @cursors where .elems > 0, MongoDB::Uri :$uri-obj,
   }
 }
 
-#-----------------------------------------------------------------------------
-# Read number of bytes from server. When no/not enaugh bytes an error
+#-------------------------------------------------------------------------------
+# Read number of bytes from server. When no/not enough bytes an error
 # is thrown.
-#
 method !get-bytes ( int $n --> Buf ) {
 
   my Buf $bytes = $!socket.receive($n);
@@ -327,6 +326,8 @@ method !get-bytes ( int $n --> Buf ) {
 
   $bytes;
 }
+
+
 
 
 

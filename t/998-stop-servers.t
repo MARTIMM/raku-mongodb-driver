@@ -12,10 +12,16 @@ drop-send-to('screen');
 info-message("Test $?FILE start");
 
 my MongoDB::Test-support $ts .= new;
+$ts.serverkeys('s1');
+my Hash $clients = $ts.create-clients;
+my MongoDB::Client $cl = $clients{$clients.keys[0]};
+my Str $uri = $cl.uri-obj.uri;
 
 #------------------------------------------------------------------------------
 for @($ts.serverkeys) -> $skey {
-  ok $ts.server-control.stop-mongod($skey), "Server $skey is stopped";
+
+  $ts.server-control.stop-mongod( $skey, $uri);
+  ok 1, 'server down';
 }
 
 #`{{
