@@ -109,9 +109,11 @@ method get-socket (
   }
   $cleanup-count++;
 }}
-  if $uri-obj.defined {
+
+#  if $uri-obj.defined {
     $client-key = $uri-obj.client-key;
     $username = $uri-obj.credential.username;
+#`{{
   }
 
   # no uri object - client key must be generated and mostly comes from
@@ -121,12 +123,9 @@ method get-socket (
     $client-key = '__MONITOR__CLIENT_KEY__';
     $username = '';
   }
+}}
 
-
-#next info shows that sockets have become thread save
-trace-message("get-socket: $host, $port, $username");
-
-#  my Int $thread-id = $*THREAD.id();
+  trace-message("get-socket: $host, $port, $username, Client key: $client-key");
 
   $!rw-sem.writer( 'socketpool', {
       $!socket-info{$client-key} = %()

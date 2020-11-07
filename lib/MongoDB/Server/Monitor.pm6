@@ -426,7 +426,7 @@ trace-message("monitor-work server $server-name, %registered-servers.perl()");
             :!ok, :reason('Undefined document') #, :$server-name
           }
       ) if %registered-servers{$server-name}[ServerObj].defined;
-      # ^^^ keep testing, other thread may have been in deleting process
+      # ^^^ keep testing, other thread may have been deleting servers
 
 #      $!monitor-data-supplier.emit( %(
 #          :!ok, reason => 'Undefined document', :$server-name
@@ -447,6 +447,7 @@ multi method raw-query ( $server --> List ) {
   my Duration $rtt;
 
   my MongoDB::Uri $uri-obj .= new(:uri("mongodb://$server.name()"));
+  $uri-obj.client-key = '__MONITOR__CLIENT_KEY__';
 
   my MongoDB::Wire $w .= new;
   ( $doc, $rtt) = $w.query(

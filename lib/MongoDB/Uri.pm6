@@ -15,7 +15,7 @@ has MongoDB::Authenticate::Credential $.credential handles <
     >;
 
 # a unique (hopefully) key generated from the uri string.
-has Str $.client-key;
+has Str $.client-key is rw; # Must be writable by Monitor;
 
 # original uri for other purposes perhaps
 has Str $.uri;
