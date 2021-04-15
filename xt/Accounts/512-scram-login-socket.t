@@ -6,14 +6,14 @@ use Test-support;
 
 use MongoDB;
 use MongoDB::Client;
-use MongoDB::HL::Users;
+#use MongoDB::HL::Users;
 use MongoDB::Database;
 use MongoDB::Collection;
 
 use BSON::Document;
-use Auth::SCRAM;
-use OpenSSL::Digest;
-use Base64;
+#use Auth::SCRAM;
+#use OpenSSL::Digest;
+#use Base64;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
