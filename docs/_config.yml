@@ -90,7 +90,7 @@ github_username: MARTIMM
 
 #url: "https://martimm.github.io"
 port: 4001
-baseurl: "/mongodb"
+baseurl: "/mongo-perl6-driver"
 
 # https://jekyllrb.com/docs/configuration/front-matter-defaults/
 defaults:
