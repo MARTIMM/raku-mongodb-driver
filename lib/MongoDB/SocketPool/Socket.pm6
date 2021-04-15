@@ -104,25 +104,25 @@ submethod DESTROY ( ) {
 # Try to authenticate if credentials are defined and not empty (both
 # username and password = '') in which case authentication will be successful.
 method !authenticate (
-  Str $host, Int $port, MongoDB::Uri:D $uri-obj --> Bool
+  Str:D $host, Int:D $port, MongoDB::Uri:D $uri-obj --> Bool
 ) {
 
   # assume failure
   my Bool $authenticated-ok = False;
 
-  my MongoDB::Authenticate::Credential $credential = $uri-obj.credential;
+#  my MongoDB::Authenticate::Credential $credential = $uri-obj.credential;
 
   # this socket is for a server which is controlled by a client which has given
   # the uri object. the client has its key from this uri object.
-  my Str $client-key = $uri-obj.client-key;
+#  my Str $client-key = $uri-obj.client-key;
 
   # username and password should be defined and non empty
-  if ? $credential.username and ? $credential.password {
+#  if ? $credential.username and ? $credential.password {
 #note "cred: $credential.username(), $credential.password()";
 
     # get authentication mechanism
-    my Str $auth-mechanism = ?$credential.auth-mechanism
-                             ?? $credential.auth-mechanism
+    my Str $auth-mechanism = ?$uri-obj.credential.auth-mechanism
+                             ?? $uri-obj.credential.auth-mechanism
                              !! 'SCRAM-SHA-1';
 #note "mech: $auth-mechanism";
 
@@ -132,62 +132,17 @@ method !authenticate (
 
       # default in version 3.*
       when 'SCRAM-SHA-1' {
-
-        # next is done to break circular dependency
-        require ::('MongoDB::Database');
-        my $uo = $uri-obj.clone-without-credential;
-        my $database = ::('MongoDB::Database').new(
-          :name($credential.auth-source), :uri-obj($uo)
-        );
-        my MongoDB::Authenticate::Scram $client-object .= new(:$database);
-
-        my Auth::SCRAM $sc .= new(
-          :username($credential.username),
-          :password($credential.password),
-          :$client-object,
-        );
-
-        # Next call will startup a conversation with the server to authenticate
-        # the user. In that process, it opens another socket which must be
-        # used later for the database operations done by that user. However,
-        # the current socket selected by the socketpool has the username which
-        # get selected later. To remedy this, the start-scram() should take
-        # the current one (this one) or after the process, copy the data into
-        # this one.
-        my $error = $sc.start-scram;
-        if ?$error {
-          error-message(
-            "Authentication fail for $credential.username(): $error"
-          );
-        }
-
-        else {
-          trace-message("$credential.username() authenticated");
-          $authenticated-ok = True;
-
-          # get the socket created by the authentication process. we should
-          # get the same socket when the same uri object is used.
-          require ::('MongoDB::SocketPool');
-          my MongoDB::SocketPool::Socket $s =
-            ::('MongoDB::SocketPool').instance.get-socket(
-              $host, $port, :uri-obj($uo)
-            );
-
-          # copy the socket from that process and then invalidate the other
-          $!rw-sem.writer( 'socket', {
-              $!socket.close;
-              $!socket = $s.socket;
-            }
-          );
-          $s.invalidate(:used-to-authenticate);
-        }
+        self!scram-authenticate( $host, $port, $uri-obj, 1);
       }
 
       # since version 4.*
       when 'SCRAM-SHA-256' {
+        self!scram-authenticate( $host, $port, $uri-obj, 256);
+#`{{
         warn-message(
           "Authentication mechanism 'SCRAM-SHA-256' is not yet supported"
         );
+}}
       }
 
       # removed from version 4.*. will not be supported!!
@@ -218,7 +173,74 @@ method !authenticate (
       }
 
     } # given $auth-mechanism
-  } # if ?$credential.username and ?$credential.password
+#  } # if ?$credential.username and ?$credential.password
+
+  $authenticated-ok
+}
+
+#-------------------------------------------------------------------------------
+method !scram-authenticate (
+  Str:D $host, Int:D $port, MongoDB::Uri:D $uri-obj, Int:D $sha-type
+  --> Bool
+) {
+  my Bool $authenticated-ok = False;
+  my MongoDB::Authenticate::Credential $credential = $uri-obj.credential;
+
+  # next is done to break circular dependency
+  require ::('MongoDB::Database');
+
+  # prevent authentication on the socket used by the authentication process
+  my $uo = $uri-obj.clone-without-credential;
+  my $database = ::('MongoDB::Database').new(
+    :name($credential.auth-source), :uri-obj($uo)
+  );
+
+note "X: $host, $port, $sha-type";
+
+  my MongoDB::Authenticate::Scram $client-object .= new(
+    :$database, :$sha-type
+  );
+
+  my Auth::SCRAM $sc .= new(
+    :username($credential.username),
+    :password($credential.password),
+    :$client-object,
+  );
+
+  # Next call will startup a conversation with the server to authenticate
+  # the user. In that process, it opens another socket which must be
+  # used later for the database operations done by that user. However,
+  # the current socket selected by the socketpool has the username which
+  # get selected later. To remedy this, the start-scram() should take
+  # the current one (this one) or after the process, copy the data into
+  # this one.
+  my $error = $sc.start-scram;
+  if ?$error {
+    error-message(
+      "Authentication fail for $credential.username(): $error"
+    );
+  }
+
+  else {
+    trace-message("$credential.username() authenticated");
+    $authenticated-ok = True;
+
+    # get the socket created by the authentication process. we should
+    # get the same socket when the same uri object is used.
+    require ::('MongoDB::SocketPool');
+    my MongoDB::SocketPool::Socket $s =
+      ::('MongoDB::SocketPool').instance.get-socket(
+        $host, $port, :uri-obj($uo)
+      );
+
+    # copy the socket from that process and then invalidate the other
+    $!rw-sem.writer( 'socket', {
+        $!socket.close;
+        $!socket = $s.socket;
+      }
+    );
+    $s.invalidate(:used-to-authenticate);
+  }
 
   $authenticated-ok
 }

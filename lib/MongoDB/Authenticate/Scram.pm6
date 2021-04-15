@@ -16,16 +16,22 @@ class Authenticate::Scram {
   has ClientType $!client;
   has DatabaseType $!database;
   has Int $!conversation-id;
+  has Int $!sha-type;
 
   #-----------------------------------------------------------------------------
   # deprecated?
-  multi submethod BUILD ( ClientType:D :$client, Str :$db-name ) {
-    $!client = $client;
-    $!database = $!client.database(?$db-name ?? $db-name !! 'admin' );
+  multi submethod BUILD (
+    ClientType:D :$!client!, Str :$db-name,
+    Int :$!sha-type # where * ~~ any( 1, 256)
+  ) {
+    $!database = $!client.database( ?$db-name ?? $db-name !! 'admin' );
   }
 
   #-----------------------------------------------------------------------------
-  multi submethod BUILD ( :$!database ) { }
+  multi submethod BUILD (
+    :$!database!, Int:D :$!sha-type where * ~~ any( 1, 256)
+   ) {
+   }
 
   #-----------------------------------------------------------------------------
   # send client first message to server and return server response
@@ -33,13 +39,13 @@ class Authenticate::Scram {
 
     my BSON::Document $doc = $!database.run-command( BSON::Document.new: (
         saslStart => 1,
-        mechanism => 'SCRAM-SHA-1',
+        mechanism => "SCRAM-SHA-$!sha-type",
         payload => encode-base64( $client-first-message, :str)
       )
     );
 
     if $doc<ok> {
-      debug-message("SCRAM-SHA1 client first message");
+      debug-message("SCRAM-SHA-$!sha-type client first message");
     }
 
     else {
@@ -62,7 +68,7 @@ class Authenticate::Scram {
     );
 
     if $doc<ok> {
-      debug-message("SCRAM-SHA1 client final message");
+      debug-message("SCRAM-SHA-$!sha-type client final message");
     }
 
     else {
@@ -94,7 +100,7 @@ class Authenticate::Scram {
     );
 
     if $doc<ok> {
-      info-message("SCRAM-SHA1 autentication successfull");
+      info-message("SCRAM-SHA-$!sha-type autentication successfull");
     }
 
     else {
