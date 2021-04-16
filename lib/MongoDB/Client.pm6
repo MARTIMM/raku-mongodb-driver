@@ -20,7 +20,7 @@ INIT {
 }
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Client:auth<github:MARTIMM>;
+unit class MongoDB::Client:auth<github:MARTIMM>:ver<0.1.0>;
 
 has Array $!topology-description = [];
 

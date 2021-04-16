@@ -5,7 +5,7 @@ use BSON::Document;
 use MongoDB;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<github:MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>:ver<0.1.0>;
 
 #-------------------------------------------------------------------------------
 class Header {

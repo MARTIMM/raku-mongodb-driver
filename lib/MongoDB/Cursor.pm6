@@ -6,7 +6,7 @@ use MongoDB::Wire;
 use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<github:MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>:ver<0.1.0>;
 
 #-------------------------------------------------------------------------------
 class Cursor does Iterable {
@@ -16,7 +16,7 @@ class Cursor does Iterable {
   has $.full-collection-name;
   has $!uri-obj;
 
-  # Cursor id ia an int64 (8 byte buffer). When set to 8 0 bytes, there are
+  # Cursor id is an int64 (8 byte buffer). When set to 8 0 bytes, there are
   # no documents on the server or the cursor is killed.
   has Buf $.id;
 
@@ -27,14 +27,13 @@ class Cursor does Iterable {
   has $!number-to-return;
 
   #-----------------------------------------------------------------------------
-  # Support for the newer BSON::Document
+  # Used by MongoDB::Colection.find(…)
   multi submethod BUILD (
     MongoDB::Uri:D :$!uri-obj!, BSON::Document:D :$server-reply!,
 #    ServerClassType:D :$server!, Int :$number-to-return = 0
 #    Any:D :$server!,
     Int :$number-to-return = 0, :$collection
   ) {
-
 #    $!client = $collection.database.client;
 #    $!client-key = $collection.client-key;
     $!full-collection-name = $collection.full-collection-name;
@@ -43,7 +42,8 @@ class Cursor does Iterable {
     # batches left on the server to retrieve. Documents may be present in
     # this reply.
     #
-    $!id = $server-reply<cursor-id>;
+    $!id = $server-reply<cursor-id>; # cursor-id from older version ?
+#    $!id = Buf.new( $server-reply<id>) // Buf.new( 0, 0, 0, 0, 0, 0, 0, 0);
 #    if [+] @($server-reply<cursor-id>) {
 #      $!server = $server;
 #    }
@@ -60,11 +60,14 @@ class Cursor does Iterable {
   }
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # This can be set with data received from a command e.g. listDatabases
+  # This can be set with data received from a command e.g.
+  #   MongoDB::Database.run-command: (getLastError => 1, …);
+  #   MongoDB::Database.run-command: (find => $collection, …);
   multi submethod BUILD (
     MongoDB::ClientType:D :$client!, BSON::Document:D :$cursor-doc!,
     BSON::Document :$read-concern, Int :$number-to-return = 0
   ) {
+note 'Server-reply: ', $cursor-doc.perl;
 
 #    $!client = $client;
 #    $!client-key = $client.uri-obj.client-key;

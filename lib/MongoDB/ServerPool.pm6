@@ -9,7 +9,7 @@ This class herds a group of servers which are added by a B<Client> object. Clien
 =end pod
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::ServerPool:auth<github:MARTIMM>;
+unit class MongoDB::ServerPool:auth<github:MARTIMM>:ver<0.1.0>;
 
 use BSON::Document;
 

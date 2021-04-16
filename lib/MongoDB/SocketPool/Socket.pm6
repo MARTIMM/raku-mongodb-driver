@@ -23,7 +23,7 @@ use Semaphore::ReadersWriters;
 use Auth::SCRAM;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
+unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>:ver<0.1.0>;
 
 has IO::Socket::INET $.socket;
 has Bool $.is-open;

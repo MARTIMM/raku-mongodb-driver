@@ -12,7 +12,7 @@ use MongoDB::ServerPool::Server;
 use MongoDB::SocketPool::Socket;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Wire:auth<github:MARTIMM>;
+unit class MongoDB::Wire:auth<github:MARTIMM>:ver<0.1.0>;
 
 has MongoDB::SocketPool::Socket $!socket;
 

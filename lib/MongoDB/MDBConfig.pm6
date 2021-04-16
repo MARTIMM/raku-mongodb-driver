@@ -5,7 +5,7 @@ use Config::DataLang::Refine;
 
 #------------------------------------------------------------------------------
 # Singleton class used to maintain config for whole of mongodb
-unit class MongoDB::MDBConfig:auth<github:MARTIMM>;
+unit class MongoDB::MDBConfig:auth<github:MARTIMM>:ver<0.1.0>;
 
 my MongoDB::MDBConfig $instance;
 has Config::DataLang::Refine $.cfg handles 'config';

@@ -5,7 +5,7 @@ use OpenSSL::Digest;
 
 #TODO Add possibility of DNS Seedlist: https://docs.mongodb.com/manual/reference/connection-string/#dns-seedlist-connection-format
 #-------------------------------------------------------------------------------
-unit class MongoDB::Uri:auth<github:MARTIMM>;
+unit class MongoDB::Uri:auth<github:MARTIMM>:ver<0.1.0>;
 
 #-------------------------------------------------------------------------------
 has Array $.servers;

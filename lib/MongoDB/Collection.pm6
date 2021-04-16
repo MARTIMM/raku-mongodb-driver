@@ -8,7 +8,7 @@ use MongoDB::Cursor;
 #use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Collection:auth<github:MARTIMM>;
+unit class MongoDB::Collection:auth<github:MARTIMM>:ver<0.1.0>;
 
 #has DatabaseType $.database;
 has Str $.name;

@@ -15,7 +15,7 @@ use BSON::Document;
 use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Server::Monitor:auth<github:MARTIMM>;
+unit class MongoDB::Server::Monitor:auth<github:MARTIMM>:ver<0.1.0>;
 
 #-------------------------------------------------------------------------------
 my MongoDB::Server::Monitor $singleton-instance;

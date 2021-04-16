@@ -6,7 +6,7 @@ use Log::Async;
 my $logger;
 
 #------------------------------------------------------------------------------
-package MongoDB:auth<github:MARTIMM> {
+package MongoDB:auth<github:MARTIMM>:ver<0.1.0> {
 
   enum MdbLoglevels << :Trace(TRACE) :Debug(DEBUG) :Info(INFO)
                        :Warn(WARNING) :Error(ERROR) :Fatal(FATAL)

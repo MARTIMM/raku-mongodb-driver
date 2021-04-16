@@ -7,7 +7,7 @@ use Base64;
 use OpenSSL::Digest;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<github:MARTIMM>;
+unit package MongoDB:auth<github:MARTIMM>:ver<0.1.0>;
 
 #-----------------------------------------------------------------------------
 # Class definition to do authentication with

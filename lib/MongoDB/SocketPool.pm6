@@ -35,7 +35,7 @@ use MongoDB::SocketPool::Socket;
 use Semaphore::ReadersWriters;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::SocketPool:auth<github:MARTIMM>;
+unit class MongoDB::SocketPool:auth<github:MARTIMM>:ver<0.1.0>;
 
 my MongoDB::SocketPool $instance;
 

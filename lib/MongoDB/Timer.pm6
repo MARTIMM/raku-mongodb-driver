@@ -5,7 +5,7 @@ use MongoDB;
 # Cancelable promise example from Brad Gilbert at stackoverflow
 # https://stackoverflow.com/questions/52955919/is-it-possible-to-terminate-a-promises-code-block-from-another-promise/52956311#52956311
 #-------------------------------------------------------------------------------
-unit class MongoDB::Timer:auth<github:MARTIMM>;
+unit class MongoDB::Timer:auth<github:MARTIMM>:ver<0.1.0>;
 also is Promise;
 
 has Promise $.promise;
