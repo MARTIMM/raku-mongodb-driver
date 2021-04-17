@@ -94,7 +94,7 @@ method start-mongod (
 
 #-----------------------------------------------------------------------------
 #method stop-mongod ( *@server-keys --> Bool ) {
-method stop-mongod ( $server-key, $uri --> BSON::Document ) {
+method stop-mongod ( $server-key, $uri --> Bool ) {
 
   my Bool $stopped = False;
   my Int $port-number = self.get-port-number($server-key);
@@ -108,8 +108,9 @@ method stop-mongod ( $server-key, $uri --> BSON::Document ) {
   my BSON::Document $req .= new: ( shutdown => 1, force => True);
   my BSON::Document $doc = $database.run-command($req);
 
-#note "doc: ", $doc // 'undefined';
+note "doc: ", $doc // 'undefined';
   # older versions just break off so doc can be undefined
+  my $res = True;
   if !$doc or (?$doc and $doc<ok> ~~ 1e0) {
     $stopped = True;
     debug-message('Command executed ok');
@@ -117,9 +118,10 @@ method stop-mongod ( $server-key, $uri --> BSON::Document ) {
 
   else {
     warn-message("Error: $doc<errcode>, $doc<errmsg>");
+    $res = False;
   }
 
-  $doc
+  $res
 
 #`{{
 # on windows the --shutdown option does not work!
