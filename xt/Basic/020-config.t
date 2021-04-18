@@ -49,10 +49,10 @@ subtest "control test", {
 subtest "server start/stop from config data test", {
 
   my MongoDB::Server::Control $mdbcntrl .= new;
-  ok $mdbcntrl.start-mongod("s1"), 'Server 1 started';
-  my $port = $mdbcntrl.get-port-number('s1');
-  ok $mdbcntrl.stop-mongod( "s1", "mongodb://localhost:$port"),
-    'Server 1 stopped';
+  ok $mdbcntrl.start-mongod("s2"), 'Server 2 started';
+  my $port = $mdbcntrl.get-port-number('s2');
+  ok $mdbcntrl.stop-mongod( "s2", "mongodb://localhost:$port"),
+    'Server 2 stopped';
 }
 
 #-------------------------------------------------------------------------------
