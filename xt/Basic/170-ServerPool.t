@@ -44,22 +44,14 @@ subtest "ServerPool creation", {
 
 #-------------------------------------------------------------------------------
 subtest "ServerPool manipulations", {
-  $servers.add-server( $client-key, $host, $port);
-#note $servers.get-server-pool-key( $host, $port);
+  $servers.add-server( $client-key, "$host:$port");
 
   my Array $topology-description = [];
   $topology-description[Topo-type] = TT-Single;
-  my MongoDB::ServerPool::Server $server = $servers.select-server(
-    BSON::Document.new, $client-key, $topology-description,
-    $clients<s1>.uri-obj
-  );
+  my MongoDB::ServerPool::Server $server = $servers.select-server($client-key);
 
   isa-ok $server, MongoDB::ServerPool::Server;
-
-#  is $servers.get-server-pool-key( $host, $port), $client-key,
-#    '.add-server() / .get-server-topology()';
 }
 
-#-------------------------------------------------------------------------------
 info-message("Test $?FILE stop");
 done-testing();
