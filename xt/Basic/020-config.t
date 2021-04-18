@@ -31,7 +31,8 @@ subtest "config test", {
     :locations(['Sandbox',]), :config-name<config.toml>
   );
   isa-ok $mdbcfg, MongoDB::MDBConfig;
-  like $mdbcfg.cfg.refine(<server s2>)<port>, /650\d\d/, 'port number select';
+  like $mdbcfg.cfg.refine(<server s2>)<port>, /650\d\d/,
+    'port number select: ' ~ $mdbcfg.cfg.refine(<server s2>)<port>;
   is $mdbcfg.cfg.refine(<locations s6>)<server-subdir>, 'Server-s6',
      'server 6 subdir';
 }
