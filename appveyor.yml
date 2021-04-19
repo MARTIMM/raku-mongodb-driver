@@ -64,14 +64,14 @@ install:
 build: off
 
 test_script:
-  - perl6 xt/wrapper.pl6 t/098-mk-sandbox.t
+  - perl6 xt/wrapper.raku t/098-mk-sandbox.t
 #  - dir %WORKDIR%
   - dir %WORKDIR%\Sandbox\Server-s1
   - type %WORKDIR%\Sandbox\config.toml
-  - perl6 xt/wrapper.pl6 --ignore --serverkeys=s1 t/099*
+  - perl6 xt/wrapper.raku --ignore --serverkeys=s1 t/099*
 #  - type %WORKDIR%\Sandbox\Server-s1\m.log
-#  - perl6 xt/wrapper.pl6 --serverkeys=s1 t/099* t/[2-5]* t/998*
-  - perl6 xt/wrapper.pl6 t/999-rm-sandbox.t
+#  - perl6 xt/wrapper.raku --serverkeys=s1 t/099* t/[2-5]* t/998*
+  - perl6 xt/wrapper.raku t/999-rm-sandbox.t
 
 # fetch repository as zip archive
 shallow_clone: true

@@ -1,11 +1,49 @@
-# ![Leaf](logotype/logo_32x32.png) MongoDB Driver
-
-[![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
-
-Documentation about this project can be found [at this site](http://martimm.github.io/mongodb) as well as the release notes.
+# ![Leaf](logotype/logo_32x32.png) MongoDB Driver for Raku
 
 <!--
+[![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
+-->
 
+![T][travis-svg] ![A][appveyor-svg] ![L][license-svg]
+
+[travis-svg]: https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master
+[travis-run]: https://travis-ci.org/MARTIMM/mongo-perl6-driver
+
+[appveyor-svg]: https://ci.appveyor.com/api/projects/status/github/MARTIMM/mongo-perl6-driver?branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending&svg=true
+[appveyor-run]: https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master
+
+[license-svg]: http://martimm.github.io/label/License-label.svg
+[licence-lnk]: http://www.perlfoundation.org/artistic_license_2_0
+
+## Documentation
+* [ 🔗 Website](https://martimm.github.io/mongo-perl6-driver/)
+* [ 🔗 Travis-ci run on master branch][travis-run]
+* [ 🔗 Appveyor run on master branch][appveyor-run]
+* [ 🔗 License document][licence-lnk]
+* [ 🔗 Release notes](https://martimm.github.io/mongo-perl6-driver/content-docs/about/release-notes.html)
+* [ 🔗 Issues](https://github.com/MARTIMM/mongo-perl6-driver/issues)
+
+
+## INSTALLING THE MODULES
+
+Use zef to install the package.
+```
+zef install MongoDB
+```
+
+## AUTHORS
+
+Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
+Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
+
+## Contributors
+
+Dan Zwell (lefth on github)
+
+
+
+
+<!--
 
 ## Notes
 * While I had promised to support mongod versions 2.\*, I've seen that version 2.6 is deprecated as of April 07, 2016 (Blog date from [here](https://www.mongodb.com/blog/post/mongodb-2-6-end-of-life)). That's already a long time ago. So I wanted to pull back my promises and only support the latest few versions of which the latest is already 4.0. Please take a note from here: [support policy mongo servers](https://www.mongodb.com/support-policy).
@@ -326,20 +364,3 @@ MongoDB server versions are supported from 2.6 and up. Versions lower than this 
 * David Golden, who has pointed me to important documents he has developed together with a MongoDB team. It's about guide lines for server discovery and building up a topology of the servers seeded from the url.
 
 -->
-
-
-## INSTALLING THE MODULES
-
-Use zef to install the package.
-```
-zef install MongoDB
-```
-
-## AUTHORS
-
-Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
-Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
-
-## Contributors
-
-Dan Zwell (lefth on github)

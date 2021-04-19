@@ -1,4 +1,4 @@
-#!/usr/bin/env perl6
+#!/usr/bin/env -S raku -I lib
 
 use v6;
 use lib 'lib', 't';

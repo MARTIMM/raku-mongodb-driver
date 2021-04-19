@@ -22,10 +22,9 @@ constant SERVER-VERSION2 = '4.0.18';
 has MongoDB::Server::Control $.server-control;
 
 # Environment variable SERVERKEYS holds a list of server keys. This is set by
-# xt/wrapper.pl6
+# xt/wrapper.raku
 
 submethod BUILD ( ) {
-
   # initialize Control object with config
   $!server-control .= new(
     :locations(['Sandbox',]),
@@ -36,7 +35,6 @@ submethod BUILD ( ) {
 #-------------------------------------------------------------------------------
 # Get a connection.
 method get-connection ( Str:D :$server-key! --> MongoDB::Client ) {
-
   my Int $port-number = $!server-control.get-port-number($server-key);
   MongoDB::Client.new(:uri("mongodb://localhost:$port-number"))
 }

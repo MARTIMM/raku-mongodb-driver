@@ -61,7 +61,7 @@ Adding an account is done in such a way that it might be possible for a hacker t
 Some more authentication methods should be added.
 
 ## [Issue #20 Installing problems ](https://github.com/MARTIMM/mongo-perl6-driver/issues/20)
-The test suite was quite complex and a lot of tests are not needed when installing. A cutback in the tests is done but the full test suite is done on Travis-CI in such a way that the extra tests will not fail the total install. To do that a program `xt/wrapper.pl6` is created.
+The test suite was quite complex and a lot of tests are not needed when installing. A cutback in the tests is done but the full test suite is done on Travis-CI in such a way that the extra tests will not fail the total install. To do that a program `xt/wrapper.raku` is created.
 
 ## [Issue #23 too many threads](https://github.com/MARTIMM/mongo-perl6-driver/issues/23) (closed)
 Client class needs too many threads to find the state of the server and the topology of the whole set of servers found from the uri.
