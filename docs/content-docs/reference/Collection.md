@@ -15,7 +15,8 @@ This example uses a `find()` without any arguments. This causes all documents to
 
     my MongoDB::Client $client .= new(:uri('mongodb://'));
     my MongoDB::Database $database = $client.database('contacts');
-    my MongoDB::Collection $collection = $database.collection('raku_users');
+    my MongoDB::Collection $collection =
+      $database.collection('raku_users');
 
     # Find everything and show it
     for $collection.find -> BSON::Document $document {
@@ -29,7 +30,8 @@ This example shows that the `find()` narrows the search down by using conditions
 
     my MongoDB::Client $client .= new(:uri('mongodb://'));
     my MongoDB::Database $database = $client.database('contacts');
-    my MongoDB::Collection $collection = $database.collection('raku_users');
+    my MongoDB::Collection $collection =
+      $database.collection('raku_users');
 
     my MongoDB::Cursor $cursor = $collection.find(
       :$criteria(nick => 'camelia'), $number-to-return(1)
@@ -65,15 +67,15 @@ Create a new collection object.
 
 However, the easier way is to call collection on the database
 
-    my MongoDB::Collection $collection = $database.collection('perl_users');
+    my MongoDB::Collection $collection =
+      $database.collection('perl_users');
 
 ### Example 3
 
 Or directly from the client
 
-    my MongoDB::Collection $collection = $client.collection(
-      'contacts.perl_users'
-    );
+    my MongoDB::Collection $collection =
+      $client.collection('contacts.perl_users');
 
 full-collection-name
 --------------------
@@ -126,7 +128,8 @@ Find record in a collection.
 
     my MongoDB::Client $client = $clients{'mongodb://'};
     my MongoDB::Database $database = $client.database('admin');
-    my MongoDB::Collection $collection = $database.collection('contacts');
+    my MongoDB::Collection $collection =
+      $database.collection('contacts');
 
     # next is just a series of silly addresses to do a bulk insert
     my Array $docs = [];
@@ -148,8 +151,9 @@ Find record in a collection.
     if $doc<ok> == 1 {
       say "inserted $doc<n> docs";
 
-      # Search for a document where test_record ~~ 'tr100' and return
-      # all fields in that document except for the _id field.
+      # Search for a document where test_record ~~ 'tr100'
+      # and return all fields in that document except for
+      # the _id field.
       my MongoDB::Cursor $cursor = $collection.find(
       :criteria(test_record => 'tr100',),
       :projection(_id => 0,)
