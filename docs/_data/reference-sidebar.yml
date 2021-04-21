@@ -5,8 +5,10 @@
   bar_menu:
   - title: "Client"
     url: "/content-docs/reference/Client.html"
-#  - title: "Change log"
-#    url: "/content-docs/about/release-notes.html"
+  - title: "Collection"
+    url: "/content-docs/about/Collection.html"
+  - title: "Database"
+    url: "/content-docs/reference/Database.html"
 
 #    - title: "Projects"
 #      url: "/content-docs/projects.html"
@@ -22,3 +24,8 @@
 #    - title: "Reference"
 #      url: "/content-docs/reference-gtk3.html"
 #      right: true
+
+- bar_title: "Internal"
+  bar_menu:
+  - title: ""
+    url: "/content-docs/reference/.html"
