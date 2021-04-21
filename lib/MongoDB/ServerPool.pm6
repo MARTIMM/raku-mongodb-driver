@@ -155,10 +155,7 @@ method get-server-names ( Str:D $client-key --> Array ) {
 }
 
 #-------------------------------------------------------------------------------
-method select-server (
-  BSON::Document $read-concern, Str $client-key
-  --> MongoDB::ServerPool::Server
-) {
+method select-server ( Str $client-key --> MongoDB::ServerPool::Server ) {
 #  sleep 10;
   my Str $selected-server;
 

@@ -91,7 +91,7 @@ role HL::CollectionRole {
   method read (
     Hash :$criteria, Hash :$projection,
     Int :$number-to-skip, Int :$number-to-return,
-#TODO    Int :$flags = 0, BSON::Document :$read-concern, :$server is copy
+#TODO    Int :$flags = 0, :$server is copy
 
     --> BSON::Document
   ) {

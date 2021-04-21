@@ -1,3 +1,5 @@
+#TL:0:MongoDB::Cursor:
+
 use v6;
 use BSON::Document;
 use MongoDB;
@@ -65,7 +67,7 @@ class Cursor does Iterable {
   #   MongoDB::Database.run-command: (find => $collection, …);
   multi submethod BUILD (
     MongoDB::ClientType:D :$client!, BSON::Document:D :$cursor-doc!,
-    BSON::Document :$read-concern, Int :$number-to-return = 0
+    Int :$number-to-return = 0
   ) {
 note 'Server-reply: ', $cursor-doc.perl;
 
@@ -75,22 +77,10 @@ note 'Server-reply: ', $cursor-doc.perl;
     $!uri-obj = $client.uri-obj;
     my MongoDB::Header $header .= new;
 
-    my BSON::Document $rc = $read-concern // $client.read-concern;
-
     # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
     # batches left on the server to retrieve. Documents may be present in
     # this reply.
-    #
     $!id = $header.encode-cursor-id($cursor-doc<id>);
-#    if [+] @$!id {
-#      $!server = $!client.select-server(:$read-concern);
-#      my MongoDB::ServerPool $server-pool .= instance;
-#      $!server = $server-pool.select-server( $read-concern, $!client-key);
-#    }
-
-#    else {
-#      $!server = Nil;
-#    }
 
     # Get documents from the reply.
     @!documents = @($cursor-doc<firstBatch>);

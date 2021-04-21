@@ -38,7 +38,6 @@ has Semaphore::ReadersWriters $!rw-sem;
 has Str $!uri;
 has MongoDB::Uri $.uri-obj; # readable for several modules
 
-has BSON::Document $.read-concern;
 has Str $!Replicaset;
 
 #  has Promise $!background-discovery;
@@ -89,9 +88,7 @@ method new ( |c ) {
 
 #-------------------------------------------------------------------------------
 #TODO pod doc arguments
-submethod BUILD (
-  Str:D :$!uri, BSON::Document :$read-concern
-) {
+submethod BUILD ( Str:D :$!uri ) {
 
   # set a few specification settings
   $!local-threshold-ms = C-LOCALTHRESHOLDMS;
@@ -114,6 +111,9 @@ submethod BUILD (
     <servers todo topology>, :RWPatternType(C-RW-WRITERPRIO)
   );
 
+#`{{ TODO next structure could not have been a read concern description
+     it should have been something else, but what???
+
 #TODO check version: read-concern introduced in version 3.2
   # Store read concern or initialize to default
   $!read-concern = $read-concern // BSON::Document.new: (
@@ -124,6 +124,7 @@ submethod BUILD (
 #           or > $!heartbeat-frequency-ms + $!idle-write-period-ms
     tag-sets => [BSON::Document.new(),]
   );
+}}
 
   # parse the uri and get info in $!uri-obj. fields are protocol, username,
   # password, servers, database and options.
@@ -542,10 +543,7 @@ multi method select-server ( Str:D :$servername! --> MongoDB::ServerPool::Server
 #-------------------------------------------------------------------------------
 # Read/write concern selection
 #multi method select-server (
-method select-server (
-  BSON::Document :$read-concern
-  --> MongoDB::ServerPool::Server
-) {
+method select-server ( --> MongoDB::ServerPool::Server ) {
 
   #! Wait until topology is set
   until $!rw-sem.reader( 'topology', { $!topology-set }) {
@@ -559,19 +557,15 @@ method select-server (
 #note "topo: ", $topology-description.perl;
 
   my MongoDB::ServerPool $server-pool .= instance;
-  $server-pool.select-server( $read-concern, $!uri-obj.client-key);
+  $server-pool.select-server($!uri-obj.client-key);
 }
 
 #`{{
 #-------------------------------------------------------------------------------
 # Read/write concern selection
 #multi method select-server (
-method select-server (
-  BSON::Document :$read-concern is copy
-  --> MongoDB::ServerPool::Server
-) {
+method select-server ( --> MongoDB::ServerPool::Server ) {
 
-  $read-concern //= $!read-concern;
   my MongoDB::ServerPool::Server $selected-server;
 
   # record the server selection start time. used also in debug message
@@ -749,34 +743,17 @@ CATCH {.note;}
 }
 
 #-------------------------------------------------------------------------------
-method database (
-  Str:D $name, BSON::Document :$read-concern
-  --> MongoDB::Database
-) {
-
-  my BSON::Document $rc =
-     $read-concern.defined ?? $read-concern !! $!read-concern;
-
-  MongoDB::Database.new( :$!uri-obj, :name($name), :read-concern($rc));
+method database ( Str:D $name --> MongoDB::Database ) {
+  MongoDB::Database.new( :$!uri-obj, :name($name));
 }
 
 #-------------------------------------------------------------------------------
-method collection (
-  Str:D $full-collection-name, BSON::Document :$read-concern
-  --> MongoDB::Collection
-) {
+method collection ( Str:D $full-collection-name --> MongoDB::Collection ) {
+
 #TODO check for dot in the name
-
-  my BSON::Document $rc =
-     $read-concern.defined ?? $read-concern !! $!read-concern;
-
   ( my $db-name, my $cll-name) = $full-collection-name.split( '.', 2);
-
-  my MongoDB::Database $db .= new(
-    :$!uri-obj, :name($db-name), :read-concern($rc)
-  );
-
-  return $db.collection( :$!uri-obj, $cll-name, :read-concern($rc));
+  my MongoDB::Database $db .= new( :$!uri-obj, :name($db-name));
+  $db.collection($cll-name)
 }
 
 #-------------------------------------------------------------------------------

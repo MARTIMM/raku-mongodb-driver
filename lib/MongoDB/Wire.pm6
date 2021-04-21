@@ -45,9 +45,8 @@ method query (
 
     # server is only provided when called from Monitor. all other objects
     # call the method without a server object.
-    $server = MongoDB::ServerPool.instance.select-server(
-      BSON::Document.new, $uri-obj.client-key
-    ) unless $server.defined;
+    $server = MongoDB::ServerPool.instance.select-server($uri-obj.client-key)
+      unless $server.defined;
 
     # check if server is selected
     unless $server.defined {
@@ -147,9 +146,7 @@ method get-more (
   try {
     require ::('MongoDB::ServerPool');
     my $server-pool = ::('MongoDB::ServerPool').instance;
-    my $server = $server-pool.select-server(
-      BSON::Document.new, $uri-obj.client-key
-    );
+    my $server = $server-pool.select-server($uri-obj.client-key);
 
     unless $server.defined {
       error-message("No server object for query");
@@ -243,9 +240,7 @@ method kill-cursors ( @cursors where .elems > 0, MongoDB::Uri :$uri-obj,
     require ::('MongoDB::ServerPool');
     my $server-pool = ::('MongoDB::ServerPool').instance;
 #    my MongoDB::ServerPool $server-pool .= instance;
-    my $server = $server-pool.select-server(
-      BSON::Document.new, $uri-obj.client-key
-    );
+    my $server = $server-pool.select-server($uri-obj.client-key);
 
     unless $server.defined {
       error-message("No server object for query");
