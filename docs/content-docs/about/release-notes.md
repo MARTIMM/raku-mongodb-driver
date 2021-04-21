@@ -9,6 +9,46 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
+#### 2021-04- 0.43.16
+* Sometimes it is good not to work all the time on the same project. Now returning to have a glimpse at it, I saw that it is completely unnecessary to handle the read and write concern data anywhere in the program because the user (him/her)self must insert this information in the request. I had already made some attempt to set and use a readconcern. Now, the read concern (and maybe some experimental write concern) will be completely removed from the driver and leaving it up to the user.
+
+  An example where both are used;
+
+  ```
+  my MongoDB::Client $client .= new(:uri<mongodb://>);
+  my MongoDB::Database $db = $!client.database('UserProfile');
+
+  given my BSON::Document $request .= new {
+    .<find> = $collection;
+    .<filter> = BSON::Document.new: (departement => 'administration');
+    .<limit> = $limit if ?$limit;
+    .<readConcern> = BSON::Document.new: (level => 'local',);
+  }
+
+  my BSON::Document $doc = $db.run-command($request);
+  if $doc<ok> {
+    …
+
+    # After a modification update the data from $new-data
+    given $request .= new {
+      .<update> = $collection;
+      .<updates> = [
+        BSON::Document.new: (
+          :q(BSON::Document.new: (departement => 'administration'),
+          :u($new-data),
+        ),
+      ],
+      :writeConcern(BSON::Document.new: (:w<majority>)
+    }
+  }
+  ```
+
+  See also [find](https://docs.mongodb.com/manual/reference/command/find/#mongodb-dbcommand-dbcmd.find), [update](https://docs.mongodb.com/manual/reference/command/update/#mongodb-dbcommand-dbcmd.update), [read concern](https://docs.mongodb.com/manual/reference/read-concern/) and [write concern](https://docs.mongodb.com/manual/reference/write-concern/) in the Mongodb documentation.
+
+* A start is made to update the pod documents and to merge them into the modules and are regenerated. Many docs were out of sync with the changes made. The documentation will become available [here](https://martimm.github.io/mongo-perl6-driver/content-docs/reference/reference.html).
+
+* Made sure that all tests in xt/Basic work again. These are extra tests meant to run on Travis and Appveyor.
+
 #### 2020-11-01 0.43.15
 * The tests to authenticate using SCRAM-SHA1 are completed in its new setting and work fine. Most of the test problems were to start and stop servers without crashing due to lack of privileges among others.
 * Removed dependency on **URI::Escape** and implemented method `.uri-unescape()` in `$uri-actions` in **MongoDB::Uri**.
