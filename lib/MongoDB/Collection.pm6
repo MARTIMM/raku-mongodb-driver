@@ -1,4 +1,45 @@
+#TL:1:MongoDB::Collection:
+
 use v6;
+
+=begin pod
+
+=head1 MongoDB::Collection
+
+Operations on collections in a MongoDB database
+
+=head1 Description
+
+A MongoDB collection is where the data can be found. The data is stored as a document. The document is provided as a B<BSON::Document>. The only interesting method here is C<find()> which can also be done using the C<run-command()> from B<MongoDB::Database>.
+
+
+=head2 Example 1
+
+This example uses a C<find()> without any arguments. This causes all documents to be returned and shown.
+
+  my MongoDB::Client $client .= new(:uri('mongodb://'));
+  my MongoDB::Database $database = $client.database('contacts');
+  my MongoDB::Collection $collection = $database.collection('raku_users');
+
+  # Find everything and show it
+  for $collection.find -> BSON::Document $document {
+    $document.perl.say;
+  }
+
+=head2 Example 2
+
+This example shows that the C<find()> narrows the search down by using conditions.
+
+  my MongoDB::Client $client .= new(:uri('mongodb://'));
+  my MongoDB::Database $database = $client.database('contacts');
+  my MongoDB::Collection $collection = $database.collection('raku_users');
+
+  my MongoDB::Cursor $cursor = $collection.find(
+    :$criteria(nick => 'camelia'), $number-to-return(1)
+  );
+  $cursor.fetch.perl.say;
+
+=end pod
 
 use BSON::Document;
 use MongoDB;
@@ -8,51 +49,164 @@ use MongoDB::Cursor;
 #use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Collection:auth<github:MARTIMM>:ver<0.1.0>;
+unit class MongoDB::Collection:auth<github:MARTIMM>:ver<0.1.1>;
 
-#has DatabaseType $.database;
+#-------------------------------------------------------------------------------
+=begin pod
+=head1 Methods
+=end pod
+
 has Str $.name;
 has Str $.full-collection-name;
+
 has MongoDB::Uri $!uri-obj;
-has BSON::Document $.read-concern;
 
 #-----------------------------------------------------------------------------
+#TM:1:new:
+=begin pod
+=head2 new
+
+Create a new collection object.
+
+  submethod BUILD (
+    Str:D :$name, MongoDB::Uri:D :$uri-obj,
+    MongoDB::Database:D :$database
+  )
+
+=item Str:D $!name; The name of the collection.
+=item DatabaseType:D $database; The database where collection resides.
+=item MongoDB::Uri $uri-obj; Object holding URI information given to the B<MongoDB::Client>.
+
+=head3 Example 1
+
+  my MongoDB::Collection $collection .= new(
+    :$database, :name<perl_users>, :uri-obj($client.uri-obj)
+  );
+
+=head3 Example 2
+
+However, the easier way is to call collection on the database
+
+  my MongoDB::Collection $collection = $database.collection('perl_users');
+
+=head3 Example 3
+
+Or directly from the client
+
+  my MongoDB::Collection $collection = $client.collection(
+    'contacts.perl_users'
+  );
+
+=end pod
+
 submethod BUILD (
-  MongoDB::Uri :$!uri-obj, DatabaseType:D :$database,
-  Str:D :$!name, BSON::Document :$!read-concern
+  MongoDB::Uri:D :$!uri-obj, DatabaseType:D :$database, Str:D :$!name
 ) {
-
-  $!read-concern //= $database.read-concern;
   $!full-collection-name = [~] $database.name, '.', $!name;
-
   debug-message("create collection $!full-collection-name");
 }
 
 #-----------------------------------------------------------------------------
-# Find record in a collection. One of the few left to use the wire protocol.
-#
+#TM:1:full-collection-name:
+=begin pod
+=head2 full-collection-name
+
+Get the full representation of this collection. This is a string composed of the database name and collection name separated by a dot. E.g. I<person.address> means collection I<address> in database I<person>.
+
+  method full-collection-name ( --> Str )
+=end pod
+
+#-----------------------------------------------------------------------------
+#TM:1:name:
+=begin pod
+=head2 name
+
+Get the name of the current collection. It is set by C<MongoDB::Database> when a collection object is created.
+
+  method name ( --> Str )
+=end pod
+
+#-------------------------------------------------------------------------------
+#TM:1:find:
+=begin pod
+Find record in a collection.
+
+  multi method find (
+    List() :$criteria = (), List() :$projection = (),
+    Int :$number-to-skip = 0, Int :$number-to-return = 0,
+    QueryFindFlags :@flags = Array[QueryFindFlags].new,
+    --> MongoDB::Cursor
+  )
+
+  multi method find (
+    BSON::Document :$criteria = BSON::Document.new,
+    BSON::Document :$projection?,
+    Int :$number-to-skip = 0, Int :$number-to-return = 0,
+    QueryFindFlags :@flags = Array[QueryFindFlags].new,
+    --> MongoDB::Cursor
+  )
+
+=item $criteria; Document that represents the query. The query will contain one or more elements, all of which must match for a document to be included in the result set. Possible elements include C<$query>, C<$orderby>, C<$hint>, and C<$explain>.
+=item $projection; Document that limits the fields in the returned documents. The document contains one or more elements, each of which is the name of a field that should be returned, and the integer value 1. In JSON notation, an example to limit to the fields a, b and c would be C<{ a : 1, b : 1, c : 1}>.
+=item $number-to-skip; Number of documents to skip.
+=item $number-to-return; Number of documents to return in the first returned batch.
+=item @flags; Bit vector of query options. See B<MongoDB> documentation or defined enumerations and such.
+
+=head3 Example
+
+  use MongoDB;
+  use MongoDB::Client;
+  use MongoDB::Cursor;
+  use BSON::ObjectId;
+  use BSON::Document;
+
+  my MongoDB::Client $client = $clients{'mongodb://'};
+  my MongoDB::Database $database = $client.database('admin');
+  my MongoDB::Collection $collection = $database.collection('contacts');
+
+  # next is just a series of silly addresses to do a bulk insert
+  my Array $docs = [];
+  for ^200 -> $i {
+    $docs.push: (
+      code                => "n$i",
+      name                => "name $i and lastname $i",
+      address             => "address $i",
+      test_record         => "tr$i"
+    );
+  }
+
+  my BSON::Document $req .= new: (
+    insert => $collection.name,
+    documents => $docs
+  );
+
+  my BSON::Document $doc = $database.run-command($req);
+  if $doc<ok> == 1 {
+    say "inserted $doc<n> docs";
+
+    # Search for a document where test_record ~~ 'tr100' and return
+    # all fields in that document except for the _id field.
+    my MongoDB::Cursor $cursor = $collection.find(
+    :criteria(test_record => 'tr100',),
+    :projection(_id => 0,)
+    );
+    $doc = $cursor.fetch;
+
+    say "There are $doc.elems() fields returned";
+    say "Test record field is $doc<test_record>";
+  }
+
+
+=end pod
+
 # Method using Pair.
 multi method find (
   List :$criteria where all(@$criteria) ~~ Pair = (),
   List :$projection where all(@$projection) ~~ Pair = (),
   Int :$number-to-skip = 0, Int :$number-to-return = 0,
   QueryFindFlags :@flags = Array[QueryFindFlags].new,
-  List :$read-concern
   --> MongoDB::Cursor
 ) {
-
-  my BSON::Document $rc =
-     $read-concern.defined ?? BSON::Document.new: $read-concern
-                           !! $!read-concern;
-
-  #my ServerClassType $server = $!database.client.select-server(
-#    my MongoDB::ServerPool $server-pool .= instance;
-#    my $server = $server-pool.select-server( $rc, $!client-key);
-
-#    unless $server.defined {
-#      error-message("No server object for query");
-#      return MongoDB::Cursor;
-#    }
 
   my BSON::Document $cr .= new: $criteria;
   my BSON::Document $pr .= new: $projection;
@@ -73,31 +227,15 @@ multi method find (
   );
 }
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Find record in a collection using a BSON::Document
 multi method find (
   BSON::Document :$criteria = BSON::Document.new,
   BSON::Document :$projection?,
   Int :$number-to-skip = 0, Int :$number-to-return = 0,
   QueryFindFlags :@flags = Array[QueryFindFlags].new,
-  BSON::Document :$read-concern
   --> MongoDB::Cursor
 ) {
-
-  my BSON::Document $rc = $read-concern // $!read-concern;
-
-#note "Find server doctype";
-  #my ServerClassType $server = $!database.client.select-server(
-#    my $server = $!database.client.select-server(
-#      :read-concern($rc)
-#    );
-#    my MongoDB::ServerPool $server-pool .= instance;
-#    my $server = $server-pool.select-server( $rc, $!client-key);
-#note "Server doctype $server.name()";
-
-#    unless $server.defined {
-#      error-message("No server object for query");
-#      return MongoDB::Cursor;
-#    }
 
   ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
     $!full-collection-name, $criteria, $projection, :@flags,
@@ -111,10 +249,16 @@ multi method find (
 
   return MongoDB::Cursor.new(
     :collection(self), :$server-reply,
-#    :$server,
     :$number-to-return, :$!uri-obj
   );
 }
+
+
+
+
+
+
+=finish
 
 #`{{
 #-------------------------------------------------------------------------------
