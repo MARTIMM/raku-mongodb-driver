@@ -49,8 +49,13 @@ script:
   - xt/wrapper.raku --serverkeys=s1 --ignore xt/Basic
   - xt/wrapper.raku --serverkeys=s1 t/998*
 
+#  - xt/wrapper.raku --serverkeys=s1,s2 t/099*
 #  - xt/wrapper.raku --serverkeys=s1,s2 --ignore t/099* xt/Behavior/1* t/998*
+#  - xt/wrapper.raku --serverkeys=s1,s2 t/998*
+
+#  - xt/wrapper.raku --serverkeys=s3,s4 t/099*
 #  - xt/wrapper.raku --serverkeys=s4,s5 --ignore t/099* xt/Behavior/1* t/998*
+#  - xt/wrapper.raku --serverkeys=s3,s4 t/998*
 
 #  - xt/wrapper.raku --serverkeys=s1,s2,s3 --ignore t/099* xt/Behavior/6* t/998*
 #  - xt/wrapper.raku --serverkeys=s4,s5,s6 --ignore t/099* xt/Behavior/6* t/998*
