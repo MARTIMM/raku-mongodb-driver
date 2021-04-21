@@ -158,7 +158,7 @@ method create-sandbox ( ) {
   if $*KERNEL.name eq 'win32' {
 
     # These variabl;es are also used in the appveyor script
-    my Str $WORKDIR = 'C:\projects\mongo-perl6-driver';
+    my Str $WORKDIR = 'C:\projects\raku-mongodb-driver';
     my Str $INSDIR = 't\Appveyor';
     my Str $MDBNAME = 'mongodb-win32-x86_64-2008plus-ssl-3.6.4';
     $server-setup = {
@@ -359,8 +359,8 @@ method create-sandbox ( ) {
       $config-text ~= Q:qq:to/EOCONFIG/;
 
       [ binaries.$skey ]
-        mongod = "C:/projects/mongo-perl6-driver/mongodb-{$server-setup{$skey}<server-version>}/mongod"
-        mongos = "C:/projects/mongo-perl6-driver/mongodb-{$server-setup{$skey}<server-version>}/mongos"
+        mongod = "C:/projects/raku-mongodb-driver/mongodb-{$server-setup{$skey}<server-version>}/mongod"
+        mongos = "C:/projects/raku-mongodb-driver/mongodb-{$server-setup{$skey}<server-version>}/mongos"
       EOCONFIG
     }
 

@@ -96,7 +96,7 @@ github: [metadata]
 
 #url: "https://martimm.github.io:4001"
 port: 4001
-baseurl: "/mongo-perl6-driver"
+baseurl: "/raku-mongodb-driver"
 
 markdown: kramdown
 highlighter: rouge

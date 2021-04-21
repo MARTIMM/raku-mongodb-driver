@@ -99,17 +99,17 @@ class Header {
     # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
 
 #TODO sometimes an error here
-#Error at /home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/site#sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) 468:Cannot call method 'Stringy' on a null object
+#Error at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/site#sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) 468:Cannot call method 'Stringy' on a null object
 #  in method ASSIGN-KEY at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) line 353
 #
 #Cannot call method 'Stringy' on a null object
 #  in block  at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) line 668
-#  in method encode-query at /home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 112
+#  in method encode-query at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 112
 #
 # encode() on any, error: Something went wrong in (BSON)
 #   in block  at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/1C86C2A42ED2791383D5AE68657AB40DE055BD1C (BSON::Document) line 594
 #   in method encode at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/1C86C2A42ED2791383D5AE68657AB40DE055BD1C (BSON::Document) line 585
-#   in method encode-query at /home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 111
+#   in method encode-query at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 111
 # ...
 
       my Buf $query-buffer .= new;

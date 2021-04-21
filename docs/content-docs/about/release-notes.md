@@ -45,7 +45,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
   See also [find](https://docs.mongodb.com/manual/reference/command/find/#mongodb-dbcommand-dbcmd.find), [update](https://docs.mongodb.com/manual/reference/command/update/#mongodb-dbcommand-dbcmd.update), [read concern](https://docs.mongodb.com/manual/reference/read-concern/) and [write concern](https://docs.mongodb.com/manual/reference/write-concern/) in the Mongodb documentation.
 
-* A start is made to update the pod documents and to merge them into the modules and are regenerated. Many docs were out of sync with the changes made. The documentation will become available [here](https://martimm.github.io/mongo-perl6-driver/content-docs/reference/reference.html).
+* A start is made to update the pod documents and to merge them into the modules and are regenerated. Many docs were out of sync with the changes made. The documentation will become available [here](https://martimm.github.io/raku-mongodb-driver/content-docs/reference/reference.html).
 
 * Made sure that all tests in xt/Basic work again. These are extra tests meant to run on Travis and Appveyor.
 

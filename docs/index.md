@@ -11,7 +11,7 @@ nav_menu: default-nav
 </script>
 <p id="new-label"></p -->
 
-[![Build Status](https://travis-ci.com/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.com/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
+[![Build Status](https://travis-ci.com/MARTIMM/raku-mongodb-driver.svg?branch=master)](https://travis-ci.com/MARTIMM/raku-mongodb-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/raku-mongodb-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
 # Project MongoDB Driver
 
@@ -290,19 +290,19 @@ After some discussion with developers from MongoDB and the perl5 driver develope
 <!--
 #### Modules
 
-* [MongoDB](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/MongoDB.pdf)
-* [MongoDB::Client](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Client.pdf)
-* [MongoDB::Database](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Database.pdf)
-* [MongoDB::Collection](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Collection.pdf)
-* [MongoDB::Cursor](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Cursor.pdf)
-* [MongoDB::Server](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/Server.pdf)
+* [MongoDB](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/MongoDB.pdf)
+* [MongoDB::Client](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/Client.pdf)
+* [MongoDB::Database](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/Database.pdf)
+* [MongoDB::Collection](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/Collection.pdf)
+* [MongoDB::Cursor](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/Cursor.pdf)
+* [MongoDB::Server](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/Server.pdf)
 
 * doc/Users.pdf
 
 #### Notes
 
-* [Release notes](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/CHANGES.md)
-* [Bugs, todo, etc.](https://github.com/MARTIMM/mongo-perl6-driver/blob/master/doc/TODO.md)
+* [Release notes](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/CHANGES.md)
+* [Bugs, todo, etc.](https://github.com/MARTIMM/raku-mongodb-driver/blob/master/doc/TODO.md)
 
 ### MongoDB documents
 

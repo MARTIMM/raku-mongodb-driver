@@ -16,7 +16,7 @@ install:
   - choco feature enable -n allowGlobalConfirmation
   - choco feature enable -n allowEmptyChecksums
 
-  - SET WORKDIR=C:\projects\mongo-perl6-driver
+  - SET WORKDIR=C:\projects\raku-mongodb-driver
   - SET INSDIR=t\Appveyor
   - SET MDBNAME=mongodb-win32-x86_64-2008plus-ssl-3.6.4
 

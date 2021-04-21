@@ -55,5 +55,5 @@
   "test-depends": [ ],
   "build-depends": [ ],
 
-  "source-url": "git://github.com/MARTIMM/mongo-perl6-driver.git"
+  "source-url": "git://github.com/MARTIMM/raku-mongodb-driver.git"
 }
