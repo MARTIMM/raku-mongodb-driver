@@ -13,6 +13,7 @@ use MongoDB::ServerPool::Server;
 #use MongoDB::Client;
 #use MongoDB::Database;
 #use MongoDB::Header;
+use MongoDB::Uri;
 
 use Base64;
 use OpenSSL::Digest;
@@ -64,7 +65,10 @@ subtest "Server manipulations", {
 
 #-------------------------------------------------------------------------------
 subtest "Socket manipulations", {
-  my MongoDB::SocketPool::Socket $socket = $server.get-socket(:!authenticate);
+  my MongoDB::Uri $uri-obj .= new(:uri("mongodb://$server.name()"));
+  my MongoDB::SocketPool::Socket $socket = $server.get-socket(
+    :$uri-obj#, :!authenticate
+  );
   isa-ok $socket, MongoDB::SocketPool::Socket;
 }
 

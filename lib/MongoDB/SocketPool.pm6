@@ -178,32 +178,27 @@ method get-socket (
 #-------------------------------------------------------------------------------
 #tm:1:cleanup:
 # close and remove a socket belonging to the server on the current thread
-method cleanup ( Str $client-key, Str $server-name --> Bool ) {
+method cleanup ( Str $client-key, Str $server-name ) {
+#note "c: $client-key, $server-name, {$!socket-info{$client-key}{$server-name}//'-'}";
 
-  my Bool $cleanup-done = False;
+  $!rw-sem.writer( 'socketpool', {
+      my Hash $info-cl-srv =
+        $!socket-info{$client-key}{$server-name}:delete // %();
 
-  my Hash $si-cl-srv = $!rw-sem.writer( 'socketpool', {
-      $!socket-info{$client-key}{$server-name}:delete // %();
+      for $info-cl-srv.keys -> $un {
+        my $s = $info-cl-srv{$un};
+        $s.close;
+
+        if ? $un {
+          trace-message("cleanup socket for server $server-name and user $un");
+        }
+
+        else {
+          trace-message("cleanup socket for server $server-name");
+        }
+      }
     }
   );
-
-#  for $si-cl.keys -> $server-name {
-    for $si-cl-srv.keys -> $un {
-      my $s = $si-cl-srv{$un};
-      $s.close;
-      $cleanup-done = True;
-
-      if ? $un {
-        trace-message("cleanup socket for server $server-name and user $un");
-      }
-
-      else {
-        trace-message("cleanup socket for server $server-name");
-      }
-    }
-#  }
-
-  $cleanup-done
 }
 
 #-------------------------------------------------------------------------------

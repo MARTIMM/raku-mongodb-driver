@@ -1,10 +1,14 @@
 use v6;
-#use lib 't', 'lib';
-
+use lib 't', 'lib';
 use Test;
 
-#use Test-support;
+use Test-support;
+
+use BSON::Document;
+
 use MongoDB;
+use MongoDB::Database;
+use MongoDB::MDBConfig;
 use MongoDB::SocketPool::Socket;
 use MongoDB::SocketPool;
 
@@ -22,7 +26,15 @@ set-filter(|<ObserverEmitter Timer Client Monitor>);
 info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
+my MongoDB::Test-support $ts .= new;
+my Hash $clients = $ts.create-clients;
+my MongoDB::Client $client = $clients<s1>;
+
+
 my MongoDB::SocketPool $sockets;
+
+my Str $host = $client.uri-obj.servers[0]<host>;
+my Int $port = $client.uri-obj.servers[0]<port>.Int;
 
 #-------------------------------------------------------------------------------
 subtest "SocketPool creation", {
@@ -34,17 +46,26 @@ subtest "SocketPool creation", {
 
 #-------------------------------------------------------------------------------
 subtest "SocketPool manipulations", {
+  my MongoDB::MDBConfig $mdbcfg .= instance(
+    :locations(['Sandbox',]), :config-name<config.toml>
+  );
+#note "$host, $port, $client.uri-obj().client-key()";
 
-#my $t0 = now;
+  # Must use the connection to have a socket in the pool
+  my MongoDB::Database $database = $client.database('mt-test');
+  my BSON::Document $doc = $database.run-command: (getLastError => 1,);
+  is $doc<ok>, 1, 'No last errors';
+
   # get a socket without uri object -> mimic Monitor
   my MongoDB::SocketPool::Socket $s = $sockets.get-socket(
-    'www.google.com', 80
+    $host, $port, :uri-obj($client.uri-obj)
   );
-#note now - $t0;
+
   isa-ok $s, MongoDB::SocketPool::Socket;
 
   # cleanup Monitor sockets
-  ok $sockets.cleanup('__MONITOR__CLIENT_KEY__'), '.cleanup()';
+  #ok $sockets.cleanup( '__MONITOR__CLIENT_KEY__', "host:$port"), '.cleanup()';
+  #ok $sockets.cleanup( $client.uri-obj.client-key, "$host:$port"), '.cleanup()';
 }
 
 #-------------------------------------------------------------------------------
