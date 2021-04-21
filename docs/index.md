@@ -1,6 +1,7 @@
 ---
 title: MongoDB Driver
 #layout: sidebar
+layout: default
 nav_menu: default-nav
 #sidebar_menu: main-sidebar
 ---
