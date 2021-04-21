@@ -88,7 +88,22 @@ enum WireOpcode is export (
 );
 
 #------------------------------------------------------------------------------
-# Query flags
+=begin pod
+
+Query flags.
+
+=item bit 0 is reserved. Must be set to 0.
+=item C-QF-TAILABLECURSOR corresponds to TailableCursor. Tailable means cursor is not closed when the last data is retrieved. Rather, the cursor marks the final object's position. You can resume using the cursor later, from where it was located, if more data were received. Like any "latent cursor", the cursor may become invalid at some point (CursorNotFound) – for example if the final object it references were deleted.
+=item C-QF-SLAVEOK corresponds to SlaveOk. Allow query of replica slave. Normally these return an error except for namespace "local".
+=item C-QF-OPLOGREPLAY corresponds to OplogReplay. Starting in MongoDB 4.4, you need not specify this flag because the optimization automatically happens for eligible queries on the oplog. See oplogReplay for more information.
+=item C-QF-NOCURSORTIMOUT corresponds to NoCursorTimeout. The server normally times out idle cursors after an inactivity period (10 minutes) to prevent excess memory use. Set this option to prevent that.
+=item C-QF-AWAITDATA corresponds to AwaitData. Use with TailableCursor. If we are at the end of the data, block for a while rather than returning no data. After a timeout period, we do return as normal.
+=item C-QF-EXHAUST corresponds to Exhaust. Stream the data down full blast in multiple "more" packages, on the assumption that the client will fully read all data queried. Faster when you are pulling a lot of data and know you want to pull it all down. Note: the client is not allowed to not read all the data unless it closes the connection.
+=item C-QF-PORTAIL corresponds to Partial. Get partial results from a mongos if some shards are down (instead of throwing an error)
+=item bits 8-31 are reserved. Must be set to 0.
+=end pod
+
+#TT:1:QueryFindFlags:
 enum QueryFindFlags is export (
   :C-NO-FLAGS(0x00), :C-QF-RESERVED(0x01),
   :C-QF-TAILABLECURSOR(0x02), :C-QF-SLAVEOK(0x04),
