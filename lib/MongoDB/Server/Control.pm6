@@ -108,7 +108,6 @@ method stop-mongod ( $server-key, $uri --> Bool ) {
   my BSON::Document $req .= new: ( shutdown => 1, force => True);
   my BSON::Document $doc = $database.run-command($req);
 
-note "doc: ", $doc // 'undefined';
   # older versions just break off so doc can be undefined
   my $res = True;
   if !$doc or (?$doc and $doc<ok> ~~ 1e0) {
