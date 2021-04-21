@@ -83,14 +83,23 @@
 ## ----- [ end of defaults ] -----
 
 ## ----- [ your settings ] -----
+plugins:
+  - jekyll-feed
+  - kramdown
+  - kramdown-plantuml
+
 title: MongoDB Driver
 description: A Raku driver for a mongodb database
 email: mt1957@gmail.com
 github_username: MARTIMM
+github: [metadata]
 
 #url: "https://martimm.github.io:4001"
 port: 4001
 baseurl: "/mongo-perl6-driver"
+
+markdown: kramdown
+highlighter: rouge
 
 # https://jekyllrb.com/docs/configuration/front-matter-defaults/
 defaults:
