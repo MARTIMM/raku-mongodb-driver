@@ -10,7 +10,7 @@ nav_menu: default-nav
 </script>
 <p id="new-label"></p -->
 
-[![Build Status](https://travis-ci.org/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.org/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
+[![Build Status](https://travis-ci.com/MARTIMM/mongo-perl6-driver.svg?branch=master)](https://travis-ci.com/MARTIMM/mongo-perl6-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/mongo-perl6-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
 
 # Project MongoDB Driver
 
