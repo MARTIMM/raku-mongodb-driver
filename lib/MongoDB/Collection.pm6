@@ -131,6 +131,8 @@ Get the name of the current collection. It is set by C<MongoDB::Database> when a
 #-------------------------------------------------------------------------------
 #TM:1:find:
 =begin pod
+=head2 find
+
 Find record in a collection.
 
   multi method find (

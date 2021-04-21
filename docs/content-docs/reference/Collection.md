@@ -91,6 +91,9 @@ Get the name of the current collection. It is set by `MongoDB::Database` when a 
 
     method name ( --> Str )
 
+find
+----
+
 Find record in a collection.
 
     multi method find (
