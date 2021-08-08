@@ -1,0 +1,38 @@
+---
+---
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: "en-US" }}">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    {% assign url = site.baseurl | append: "/favicon.ico" %}
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url }}" />
+    {% assign url = site.baseurl | append: "/assets/css/style.css" %}
+    <link rel="stylesheet" href="{{ url }}">
+    {% assign url = site.baseurl | append: "/assets/css/print.css" %}
+    <link rel="stylesheet" type="text/css" href="{{ url }}" media="print">
+
+    <!--link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    <link rel="stylesheet" type="text/css" href="{{ '/assets/css/print.css' | relative_url }}" media="print"-->
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>{{ page.title }}</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <!-- https://jekyllrb.com/tutorials/navigation/ -->
+        {% include header-section.html %}
+
+        <section id="main_content">
+          {{ content }}
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

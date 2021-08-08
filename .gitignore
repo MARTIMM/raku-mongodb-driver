@@ -1,6 +1,4 @@
 .directory
-*.html
-*/*.html
 Old/*
 Tests/*
 t/Sandbox/*

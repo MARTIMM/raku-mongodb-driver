@@ -1,0 +1,25 @@
+{% for sb_menu in site.data[page.sidebar_menu] %}
+  <div class="sidebar">
+    <strong>{{ sb_menu.bar_title }}</strong>
+    <hr />
+    <ul class="sidebar-list">
+
+    {% for item in sb_menu.bar_menu %}
+      {% assign url = site.baseurl | append: item.url %}
+<!--
+      {% if item.type %}
+        {% assign classstr = item.type %}
+      {% else %}
+        {% assign classstr = "object" %}
+      {% endif %}
+-->
+      <!--li class="{{ classstr }}"-->
+      <li>
+        <a href="{{ url }}"> {{ item.title }} </a>
+      </li>
+
+    {% endfor %}
+
+    </ul>
+  </div>
+{% endfor %}

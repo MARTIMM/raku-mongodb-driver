@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<html>
+  <head>
+    <title>Server discovery</title>
+    <meta charset="UTF-8"/>
+    <link rel="stylesheet" href="file:///home/marcel/Languages/Perl6/Projects/mongo-perl6-driver/../Semi-xml/resources/TestDoc.css"/>
+  </head>
+  <body>
+    <h1 id="___top" class="title">Server discovery</h1>
+    <h2>Testing client behaviour</h2>
+    <p>The client must be tested to follow a set of specifications in order to have the same behaviour over all drivers. Depending on the language this behaviour can be shown in events or return values. This report is following a specification from <a href="https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst">Mongodb</a> website and is shown below.
+</p>
+    <h2>Abstract</h2>
+    <p>This spec defines how a MongoDB client discovers and monitors one or more servers. It covers monitoring a single server, a set of mongoses, or a replica set. How does the client determine what type of servers they are? How does it keep this information up to date? How does the client find an entire replica set from a seed list, and how does it respond to a stepdown, election, reconfiguration, or network error?
+</p>
+    <p>All drivers must answer these questions the same. Or, where platforms' limitations require differences among drivers, there must be as few answers as possible and each must be clearly explained in this spec. Even in cases where several answers seem equally good, drivers must agree on one way to do it.
+</p>
+    <p>MongoDB users and driver authors benefit from having one way to discover and monitor servers. Users can substantially understand their driver's behavior without inspecting its code or asking its author. Driver authors can avoid subtle mistakes when they take advantage of a design that has been well-considered, reviewed, and tested.
+</p>
+    <p>The server discovery and monitoring method is specified in four sections. First, a client is configured. Second, it begins monitoring by calling ismaster on all servers. (Multi-threaded and asynchronous monitoring is described first, then single-threaded monitoring.) Third, as ismaster calls are received the client parses them, and fourth, it updates its view of the topology.
+</p>
+    <p>Finally, this spec describes how drivers update their topology view in response to errors, and includes generous implementation notes for driver authors.
+</p>
+    <p>This spec does not describe how a client chooses a server for an operation; that is the domain of the Server Selection Spec. But there is a section describing the interaction between monitoring and server selection.
+</p>
+    <p>There is no discussion of driver architecture and data structures, nor is there any specification of a user-facing API. This spec is only concerned with the algorithm for monitoring the server topology.
+</p>
+    <pre class="test-block-code">use lib 't';
+use Test-support;
+use MongoDB;
+use MongoDB::Client;
+use MongoDB::Server;
+my MongoDB::Test-support $ts .= new;
+my Int $p1 = $ts.server-control.get-port-number('s1');
+my Int $p2 = $ts.server-control.get-port-number('s2');
+my MongoDB::Client $client .= new(:uri&lt;mongodb://localhost:34567/&gt;);
+ok $client.defined, 'T0';
+</pre>
+    <table class="test-table">
+      <tr>
+        <td class="check-mark green">&#x2714;</td>
+        <td class="test-comment"><b>T0: </b>Returned client object is defined, even when the uri is not pointing to an existing mongod server.
+</td>
+      </tr>
+    </table>
+    <table>
+      <tr>
+        <th>Normal tests</th>
+        <th>Bug issues</th>
+        <th>Todo tests</th>
+        <th>Summary</th>
+      </tr>
+      <tr>
+        <td>
+          <svg xmlns="http://www.w3.org/2000/svg" height="100" width="150">
+            <path d="M 50 50 l 0 -47A 47 47 0 1 1 49.99 3z" class="test-ok"/>
+            <g transform="rotate( 360, 50, 50)">
+              <path d="M 50 50 l 0 -47A 47 47 0 0 1 50 3z" class="test-nok"/>
+            </g>
+            <g transform="translate(100,5)">
+              <rect x="0" height="10" y="0" class="test-ok" width="15"/>
+              <text x="20" y="10" class="legend">1</text>
+              <rect x="0" height="10" y="15" class="test-nok" width="15"/>
+              <text x="20" y="25" class="legend">0</text>
+              <path d="M 0 28 H 40" class="line"/>
+              <text x="20" y="40" class="legend">1</text>
+            </g>
+          </svg>
+        </td>
+        <td>
+          <svg xmlns="http://www.w3.org/2000/svg" height="100" width="150">
+            <g transform="translate(100,5)">
+              <rect x="0" height="10" y="0" class="bug-ok" width="15"/>
+              <text x="20" y="10" class="legend">0</text>
+              <rect x="0" height="10" y="15" class="bug-nok" width="15"/>
+              <text x="20" y="25" class="legend">0</text>
+              <path d="M 0 28 H 40" class="line"/>
+              <text x="20" y="40" class="legend">0</text>
+            </g>
+          </svg>
+        </td>
+        <td>
+          <svg xmlns="http://www.w3.org/2000/svg" height="100" width="150">
+            <g transform="translate(100,5)">
+              <rect x="0" height="10" y="0" class="todo-ok" width="15"/>
+              <text x="20" y="10" class="legend">0</text>
+              <rect x="0" height="10" y="15" class="todo-nok" width="15"/>
+              <text x="20" y="25" class="legend">0</text>
+              <path d="M 0 28 H 40" class="line"/>
+              <text x="20" y="40" class="legend">0</text>
+            </g>
+          </svg>
+        </td>
+        <td>
+          <svg xmlns="http://www.w3.org/2000/svg" height="100" width="200">
+            <path d="M 50 50 l 0 -47A 47 47 0 1 1 49.99 3z" class="test-ok"/>
+            <g transform="rotate( 360, 50, 50)">
+              <path d="M 50 50 l 0 -47A 47 47 0 0 1 50 3z" class="test-nok"/>
+            </g>
+            <g transform="rotate( 360, 50, 50)">
+              <path d="M 50 50 l 0 -47A 47 47 0 0 1 50 3z" class="bug-nok"/>
+            </g>
+            <g transform="rotate( 360, 50, 50)">
+              <path d="M 50 50 l 0 -47A 47 47 0 0 1 50 3z" class="todo-nok"/>
+            </g>
+            <g transform="rotate( 360, 50, 50)">
+              <path d="M 50 50 l 0 -47A 47 47 0 0 1 50 3z" class="skip"/>
+            </g>
+            <g transform="translate(100,5)">
+              <rect x="0" height="10" y="0" class="test-ok" width="15"/>
+              <text x="20" y="10" class="legend">1</text>
+              <text x="40" y="10" class="legend">ok</text>
+              <rect x="0" height="10" y="15" class="test-nok" width="15"/>
+              <text x="20" y="25" class="legend">0</text>
+              <text x="40" y="25" class="legend">Tests</text>
+              <rect x="0" height="10" y="30" class="bug-nok" width="15"/>
+              <text x="20" y="40" class="legend">0</text>
+              <text x="40" y="40" class="legend">Bugs</text>
+              <rect x="0" height="10" y="45" class="todo-nok" width="15"/>
+              <text x="20" y="55" class="legend">0</text>
+              <text x="40" y="55" class="legend">Todo</text>
+              <rect x="0" height="10" y="60" class="skip" width="15"/>
+              <text x="20" y="70" class="legend">0</text>
+              <text x="40" y="70" class="legend">Skip</text>
+              <path d="M 0 73 H 80" class="line"/>
+              <text x="20" y="85" class="legend">1</text>
+              <text x="40" y="85" class="legend">Total</text>
+            </g>
+          </svg>
+        </td>
+      </tr>
+    </table>
+    <div class="footer">Generated using SemiXML, SxmlLib::Testing::TestDoc, XML</div>
+  </body>
+</html>
