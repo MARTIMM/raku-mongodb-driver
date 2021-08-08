@@ -69,7 +69,7 @@ class Cursor does Iterable {
     MongoDB::ClientType:D :$client!, BSON::Document:D :$cursor-doc!,
     Int :$number-to-return = 0
   ) {
-note 'Server-reply: ', $cursor-doc.perl;
+#note 'Server-reply: ', $cursor-doc.perl;
 
 #    $!client = $client;
 #    $!client-key = $client.uri-obj.client-key;
