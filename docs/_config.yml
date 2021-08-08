@@ -89,7 +89,7 @@ plugins:
   - kramdown-plantuml
 
 title: MongoDB Driver
-description: A Raku driver for a mongodb database
+description: MongoDB database driver
 email: mt1957@gmail.com
 github_username: MARTIMM
 github: [metadata]
