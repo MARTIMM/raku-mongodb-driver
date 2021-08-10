@@ -1,7 +1,59 @@
+#TL:1:MongoDB::Client
+
 use v6;
+#-------------------------------------------------------------------------------
+=begin pod
 
-#TODO readconcern does not have to be a BSON::Document. no encoding!
+=head1 MongoDB::Client
 
+Class to define connections to servers
+
+=head1 Description
+
+This class is your most often used class. It maintains the connection to the servers specified in the given uri. In the background it starts a monitor (only once) and manage the server pool.
+
+The options which can be used in the uri are in the following tables. See also L<this information|https://docs.mongodb.com/manual/reference/connection-string/#connection-string-options> for more details.
+
+
+=head1 Synopsis
+=head2 Declaration
+
+  unit class MongoDB::Client;
+
+
+=head2 Uml Diagram
+
+![](plantuml/Client.svg)
+
+
+=head1 See Also
+
+=item MongoDB::Uri; For Uri handling.
+=item MongoDB::Database; Accessing the database using C<.run-command()>.
+=item MongoDB::Collection; Less often used to use the C<.find()> method on a collection.
+
+
+=head1 Example
+
+  my MongoDB::Client $client .= new(:uri<mongodb://>);
+  my MongoDB::Database $people-db = $client.database('people');
+
+  my BSON::Document $request .= new: (
+    insert => 'famous-people',
+    documents => [
+      BSON::Document.new((
+        name => 'Larry',
+        surname => 'Wall',
+      )),
+    ]
+  );
+
+  my BSON::Document $doc = $people-db.run-command($request);
+  say $doc<ok> ?? 'insert request ok' !! 'failed to insert';
+
+=end pod
+
+#-------------------------------------------------------------------------------
 use MongoDB;
 use MongoDB::Uri;
 use MongoDB::ServerPool::Server;
@@ -20,66 +72,66 @@ INIT {
 }
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Client:auth<github:MARTIMM>:ver<0.1.0>;
+unit class MongoDB::Client:auth<github:MARTIMM>:ver<0.1.1>;
 
+#-------------------------------------------------------------------------------
+=begin pod
+=head1 Types
+=end pod
+
+#-------------------------------------------------------------------------------
 has Array $!topology-description = [];
 
+#-------------------------------------------------------------------------------
 has Bool $!topology-set;
 
-# Store all found servers here. key is the name of the server which is
-# the server address/ip and its port number. This should be unique. The
-# data is a Hash of Hashes.
-#has Hash $!servers;
-
-#has $!observed-servers;
-
+#-------------------------------------------------------------------------------
 has Semaphore::ReadersWriters $!rw-sem;
 
-has Str $!uri;
-has MongoDB::Uri $.uri-obj; # readable for several modules
+#-------------------------------------------------------------------------------
+=begin pod
+=head2 uri-obj
 
+The uri object after parsing the uri string. All information about the connection can be found here such as host and port number.
+
+  has MongoDB::Uri $.uri-obj;
+
+=end pod
+
+#TE:1:$.uri-obj:
+has MongoDB::Uri $.uri-obj;
+
+#-------------------------------------------------------------------------------
+has Str $!uri;
+
+#-------------------------------------------------------------------------------
 has Str $!Replicaset;
 
-#  has Promise $!background-discovery;
-#has Bool $!repeat-discovery-loop;
-
-# Only for single threaded implementations according to mongodb documents
-# has Bool $!server-selection-try-once = False;
-# has Int $!socket-check-interval-ms = 5000;
-
+#-------------------------------------------------------------------------------
 # Cleaning up is done concurrently so the test on a variable like $!servers
 # to be undefined, will not work. Instead check if the below variable is True
 # to see if destroying the client is started.
 has Bool $!cleanup-started = False;
 
-#`{{ canot overide =
 #-------------------------------------------------------------------------------
-sub infix:<=>( MongoDB::Client $a is rw, MongoDB::Client $b ) is export {
-  if $a.defined {
-    warn-message('Old client object is defined, will be forcebly cleaned');
-    $a.cleanup;
-  }
-
-  $a := $b;
-}
-}}
-
 # Settings according to mongodb specification
 # See https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#heartbeatfrequencyms
 # names are written in camelback form, here all lowercase with dashes.
 # serverSelectionTryOnce and socketCheckIntervalMS are not supported because
 # this is a multi-threaded implementation.
-has Int $!local-threshold-ms;
-has Int $!server-selection-timeout-ms;
-has Int $!heartbeat-frequency-ms;
+#has Int $!local-threshold-ms;
+#has Int $!server-selection-timeout-ms;
+#has Int $!heartbeat-frequency-ms;
 
 #-------------------------------------------------------------------------------
 method new ( |c ) {
 
-  # In case of an assignement like $c .= new(...) $c should be cleaned first
-  if self.defined and not $!cleanup-started {
+  # In case of an assignement like $c .= new(…) or $c.new(…) $c
+  # should be cleaned first
 
-    warn-message('user client object still defined, will be cleaned first');
+  if self.defined and not $!cleanup-started {
+#    note "Client with uri $!uri destroyed.";
+    warn-message("Client with uri $!uri destroyed.");
     self.cleanup;
   }
 
@@ -87,21 +139,59 @@ method new ( |c ) {
 }
 
 #-------------------------------------------------------------------------------
-#TODO pod doc arguments
-submethod BUILD ( Str:D :$!uri ) {
+=begin pod
+=head1 Methods
+=head2 new
+
+Create a C<MongoDB::Client> object. The servers are reachable in both ipv4 and ipv6 domains. The ipv4 domain is tried first and after a failure ipv6 is tried. To specify a specific address, the following formats are possible; C<mongodb://127.0.0.1:27017> for ipv4 or C<mongodb://[::1]:27017> for ipv6.
+
+Defined as
+
+  new ( Str:D :$!uri! )
+
+=item :uri; Uri to describe servers and options
+
+B<Note>. It is important to keep the following in mind to prevent memory leakage. The object must be cleaned up by hand before the variable is reused. This is because the Client object creates some background processes to keep an eye on the server and to update server object states and topology.
+
+  my MongoDB::Client $client .= new(:uri(…));
+  … work with object …
+  $client.cleanup;
+
+Some help is given by the object creation. When it notices that the object is defined along with some internal variables, it will destroy that object first before continuing. This also means that you must not use another C<MongoDB::Client> object to create a new one!
+
+When used for the first time, no leakage is possible
+
+  my MongoDB::Client $c1, $c2;
+  $c1 .= new(:uri(…));
+
+In the next step, object C<$c1> will be destroyed because C<.new()> will check if the object is defined. So, do not do this unless you want that behavior.
+
+  $c2 = $c1.new(:uri(…));
+
+This is ok however, because we want to overwrite the object anyway
+
+  $c2 .= new(:uri(…));
+
+And this might result in memory leakage if C<DESTROY()> cannot cleanup the object properly, because C<$c2> was already defined. With an extra note that in the background servers mentioned in C<$c2> will continue to be monitored resulting in loss of performance for the rest of the program!
+
+  $c2 = MongoDB::Client.new(:uri(…));
+
+Note that the servers named in the uri must have something in common such as a replica set. Servers are refused when there is some problem between them e.g. both are master servers. In such situations another C<MongoDB::Client> object should be created for the other server.
+
+=end pod
+
+#TM:1:new:
+submethod BUILD ( Str:D :$!uri! ) {
 
   # set a few specification settings
-  $!local-threshold-ms = C-LOCALTHRESHOLDMS;
-  $!server-selection-timeout-ms = C-SERVERSELECTIONTIMEOUTMS;
-  $!heartbeat-frequency-ms = C-HEARTBEATFREQUENCYMS;
+  #$!local-threshold-ms = C-LOCALTHRESHOLDMS;
+  #$!server-selection-timeout-ms = C-SERVERSELECTIONTIMEOUTMS;
+  #$!heartbeat-frequency-ms = C-HEARTBEATFREQUENCYMS;
 
 
   $!topology-description[Topo-type] = TT-NotSet;
   $!topology-set = False;
   trace-message("init client, topology set to {TT-NotSet}");
-
-#  $!servers = %();
-#  $!observed-servers = %();
 
   # initialize mutexes
   $!rw-sem .= new;
@@ -111,24 +201,8 @@ submethod BUILD ( Str:D :$!uri ) {
     <servers todo topology>, :RWPatternType(C-RW-WRITERPRIO)
   );
 
-#`{{ TODO next structure could not have been a read concern description
-     it should have been something else, but what???
-
-#TODO check version: read-concern introduced in version 3.2
-  # Store read concern or initialize to default
-  $!read-concern = $read-concern // BSON::Document.new: (
-    mode => RCM-Primary,
-#TODO  next key only when max-wire-version >= 5 ??
-#      max-staleness-seconds => 90,
-#      must be > C-SMALLEST-MAX-STALENEST-SECONDS
-#           or > $!heartbeat-frequency-ms + $!idle-write-period-ms
-    tag-sets => [BSON::Document.new(),]
-  );
-}}
-
   # parse the uri and get info in $!uri-obj. fields are protocol, username,
   # password, servers, database and options.
-#  $!uri = $uri;
   $!uri-obj .= new(:$!uri);
 
   # set the heartbeat frequency by emitting the value found in the URI
@@ -148,8 +222,228 @@ submethod BUILD ( Str:D :$!uri ) {
     if !$event-manager.check-subscription(
       "$!uri-obj.client-key() $server-name process topology"
     ) {
-      # this client receives the data from a server in a List to be
+      # This client receives the data from a server in a List to be
       # processed by process-topology().
+      $event-manager.subscribe-observer(
+        $server-name ~ ' process topology',
+        -> List $server-data { self!process-topology(|$server-data); },
+        :event-key("$!uri-obj.client-key() $server-name process topology")
+      );
+
+      # This client gets new host information from the server. it is
+      # possible that hosts are processed before.
+      $event-manager.subscribe-observer(
+        $server-name ~ ' add servers',
+        -> @new-hosts { self!add-servers(@new-hosts); },
+        :event-key("$!uri-obj.client-key() $server-name add servers")
+      );
+    }
+
+    # A server is stored in a pool and can be shared among different clients.
+    # The information comes from some server to these clients. Therefore the
+    # key must be a server name attached to some string. The folowing observer
+    # steps must be done per added server.
+
+    # create Server object
+    my MongoDB::ServerPool $server-pool .= instance;
+
+    # This client gets new host information from the server. it is
+    # possible that hosts are processed before.
+    my Bool $created = $server-pool.add-server(
+      $!uri-obj.client-key, $server-name
+    );
+
+    unless $created {
+#trace-message("Server $server-name already there, try to find topology");
+      $server-pool.set-server-data( $server-name, :$!uri-obj);
+      self!process-topology( $server-name, ServerType, Bool);
+    }
+  }
+}
+
+#-------------------------------------------------------------------------------
+#`{{
+Can do this
+
+  my MongoDB::Client $c .= new(:uri<mongodb//server:port/>;
+  …
+  $c = Nil; # destroyed after some time by garbage collector, but when?
+  …
+  $c = MongoDB::Client.new(:uri<mongodb//server:port/>;
+
+Server can be removed when DESTROY is called while $c is just initialized again with the same server. This is possible because servers are stored per client using a client key which is generated in Uri using the uri string and the time. Therefore when a server is used by another client too, the server is not removed.
+}}
+
+submethod DESTROY ( ) {
+
+  if self.defined and not $!cleanup-started {
+
+#    note "Garbage collect: Destroying client, uri: $!uri";
+    warn-message("Garbage collect: Destroying client, uri: $!uri");
+    self.cleanup;
+  }
+}
+
+#-------------------------------------------------------------------------------
+#TM:1:database
+=begin pod
+=head2 database
+
+Create a database object. In mongodb a database and its collections are only
+created when data is written in a collection.
+
+  method database ( Str:D $name --> MongoDB::Database )
+
+=end pod
+method database ( Str:D $name --> MongoDB::Database ) {
+  MongoDB::Database.new( :$!uri-obj, :name($name))
+}
+
+#-------------------------------------------------------------------------------
+#TM:1:collection
+=begin pod
+=head2 collection
+
+Create a collection. A shortcut to define a database and collection at once. The names for the database and collection are given in the string full-collection-name. This is a string of two names separated by a dot '.'.
+
+A name like C<contacts.family> means to create and/or access a database C<contacts> with a collection C<family>.
+
+  method collection ( Str:D $full-collection-name --> MongoDB::Collection )
+
+=end pod
+method collection ( Str:D $full-collection-name --> MongoDB::Collection ) {
+
+#TODO check for dot in the name
+  ( my $db-name, my $cll-name) = $full-collection-name.split( '.', 2);
+  my MongoDB::Database $db .= new( :$!uri-obj, :name($db-name));
+  $db.collection($cll-name)
+}
+
+#-------------------------------------------------------------------------------
+#TM:1:cleanup
+=begin pod
+=head2 cleanup
+
+Stop any background work on the Server object as well as the Monitor object. Cleanup structures so the object can be cleaned further by the Garbage Collector later.
+
+  method cleanup ( )
+
+=end pod
+
+# cleanup cannot be done in separate thread because everything must be cleaned
+# up before other tasks are performed.
+method cleanup ( ) {
+
+  $!cleanup-started = True;
+
+  # some timing to see if this cleanup can be improved
+  my Instant $t0 = now;
+
+  my MongoDB::ServerPool $server-pool .= instance;
+  my MongoDB::ObserverEmitter $e .= new;
+  for @($server-pool.get-server-names($!uri-obj.client-key)) -> Str $sname {
+    $e.unsubscribe-observer("$!uri-obj.client-key() $sname process topology");
+    $e.unsubscribe-observer("$!uri-obj.client-key() $sname add servers");
+  }
+
+  # Remove all servers concurrently. Shouldn't be many per client.
+  $server-pool.cleanup($!uri-obj.client-key);
+
+  $!rw-sem.rm-mutex-names(<servers todo topology>);
+  debug-message("Client destroyed after {(now - $t0)} sec");
+}
+
+#-------------------------------------------------------------------------------
+#TM:1:server-status
+=begin pod
+=head2 server-status
+
+Return the status of some server.
+
+  method server-status ( Str:D $server-name --> ServerType )
+
+=end pod
+
+method server-status ( Str:D $server-name --> ServerType ) {
+
+  #! Wait until topology is set
+  until $!rw-sem.reader( 'topology', { $!topology-set }) {
+    sleep 0.5;
+  }
+
+  my MongoDB::ServerPool $server-pool .= instance;
+  my ServerType $sts = $server-pool.get-server-data( $server-name, 'status');
+
+  $sts // ST-Unknown
+}
+
+#-------------------------------------------------------------------------------
+#TM:1:topology
+=begin pod
+=head2 topology
+
+Return the topology of which the set of servers represents.
+
+  method topology ( --> TopologyType )
+
+=end pod
+method topology ( --> TopologyType ) {
+
+  #! Wait until topology is set
+  until $!rw-sem.reader( 'topology', { $!topology-set }) {
+    sleep 0.5;
+  }
+
+  $!rw-sem.reader( 'topology', {$!topology-description[Topo-type]});
+}
+
+
+#TODO pod doc
+#TODO use read/write concern for selection
+#TODO must break loop when nothing is found
+#-------------------------------------------------------------------------------
+# No doc, is used internally but must be public for other classes
+method select-server ( --> MongoDB::ServerPool::Server ) {
+
+  #! Wait until topology is set
+  until $!rw-sem.reader( 'topology', { $!topology-set }) {
+#note "wait 0.5: $*THREAD.id()";
+    sleep 0.3;
+  }
+
+#  my Array $topology-description = $!rw-sem.reader(
+#    'topology', { $!topology-description }
+#  );
+#note "topo: ", $topology-description.perl;
+
+  my MongoDB::ServerPool $server-pool .= instance;
+  $server-pool.select-server($!uri-obj.client-key);
+}
+
+#-------------------------------------------------------------------------------
+#---[ Private methods ]---------------------------------------------------------
+#-------------------------------------------------------------------------------
+# Add server to todo list.
+method !add-servers ( @new-hosts ) {
+
+  trace-message("push @new-hosts[*] on todo list");
+try {
+  my MongoDB::ObserverEmitter $event-manager .= new;
+  my MongoDB::ServerPool $server-pool .= instance;
+  for @new-hosts -> Str $server-name {
+
+    # A server is stored in a pool and can be shared among different clients.
+    # The information comes from some server to these clients. Therefore the
+    # key must be a server name attached to some string. The folowing observer
+    # steps must be done per added server.
+
+#    unless $!observed-servers{$server-name} {
+
+    if !$event-manager.check-subscription(
+      "$!uri-obj.client-key() $server-name process topology"
+    ) {
+      # this client receives the data from a server in a List to be processed by
+      # process-topology().
       $event-manager.subscribe-observer(
         $server-name ~ ' process topology',
         -> List $server-data { self!process-topology(|$server-data); },
@@ -165,38 +459,19 @@ submethod BUILD ( Str:D :$!uri ) {
       );
     }
 
-    # A server is stored in a pool and can be shared among different clients.
-    # The information comes from some server to these clients. Therefore the
-    # key must be a server name attached to some string. The folowing observer
-    # steps must be done per added server.
-#    unless $!observed-servers{$server-name} {
-
-    # create Server object
-    my MongoDB::ServerPool $server-pool .= instance;
-
-    # this client gets new host information from the server. it is
-    # possible that hosts are processed before.
+    # create Server object, if server already existed, get the
+    # info from server immediately
     my Bool $created = $server-pool.add-server(
-        $!uri-obj.client-key, $server-name, #$!uri-obj,
-#        :status(ST-Unknown), :!ismaster
+      $!uri-obj.client-key, $server-name
     );
-
     unless $created {
       $server-pool.set-server-data( $server-name, :$!uri-obj);
 trace-message("Server $server-name already there, try to find topology");
-      self!process-topology( $server-name, ServerType, Bool);
+#      self!process-topology( $server-name, ServerType, Bool);
     }
   }
+CATCH {.note;}
 }
-
-#-------------------------------------------------------------------------------
-submethod DESTROY ( ) {
-
-  if self.defined and not $!cleanup-started {
-
-    warn-message('Destroy client');
-    self.cleanup;
-  }
 }
 
 #-------------------------------------------------------------------------------
@@ -320,6 +595,33 @@ method !process-topology (
   info-message("Client '$!uri-obj.client-key()' topology is $topology");
 }
 
+
+=finish
+
+
+
+
+
+
+#-------------------------------------------------------------------------------
+# Only for single threaded implementations according to mongodb documents
+# has Bool $!server-selection-try-once = False;
+# has Int $!socket-check-interval-ms = 5000;
+
+
+
+#`{{ canot overide =
+#-------------------------------------------------------------------------------
+sub infix:<=>( MongoDB::Client $a is rw, MongoDB::Client $b ) is export {
+  if $a.defined {
+    warn-message('Old client object is defined, will be forcebly cleaned');
+    $a.cleanup;
+  }
+
+  $a := $b;
+}
+}}
+
 #`{{
 #-------------------------------------------------------------------------------
 method process-topology-old ( ) {
@@ -438,44 +740,6 @@ method nbr-servers ( --> Int ) {
 }}
 
 #-------------------------------------------------------------------------------
-# Get the server status
-method server-status ( Str:D $server-name --> ServerType ) {
-
-  #! Wait until topology is set
-  until $!rw-sem.reader( 'topology', { $!topology-set }) {
-    sleep 0.5;
-  }
-
-#`{{
-  my Hash $h = $!rw-sem.reader(
-    'servers', {
-    my $x = $!servers{$server-name}:exists
-            ?? $!servers{$server-name}<server>.get-status
-            !! {};
-    $x;
-  });
-
-  my ServerType $sts = $h<status> // ST-Unknown;
-}}
-
-  my MongoDB::ServerPool $server-pool .= instance;
-  my ServerType $sts = $server-pool.get-server-data( $server-name, 'status');
-#note "server-status: '$server-name', {$sts // ST-Unknown}";
-  $sts // ST-Unknown;
-}
-
-#-------------------------------------------------------------------------------
-method topology ( --> TopologyType ) {
-
-  #! Wait until topology is set
-  until $!rw-sem.reader( 'topology', { $!topology-set }) {
-    sleep 0.5;
-  }
-
-  $!rw-sem.reader( 'topology', {$!topology-description[Topo-type]});
-}
-
-#-------------------------------------------------------------------------------
 # Selecting servers based on;
 #
 # - Record the server selection start time
@@ -535,30 +799,6 @@ multi method select-server ( Str:D :$servername! --> MongoDB::ServerPool::Server
   $selected-server;
 }
 }}
-
-
-#TODO pod doc
-#TODO use read/write concern for selection
-#TODO must break loop when nothing is found
-#-------------------------------------------------------------------------------
-# Read/write concern selection
-#multi method select-server (
-method select-server ( --> MongoDB::ServerPool::Server ) {
-
-  #! Wait until topology is set
-  until $!rw-sem.reader( 'topology', { $!topology-set }) {
-#note "wait 0.5: $*THREAD.id()";
-    sleep 0.3;
-  }
-
-#  my Array $topology-description = $!rw-sem.reader(
-#    'topology', { $!topology-description }
-#  );
-#note "topo: ", $topology-description.perl;
-
-  my MongoDB::ServerPool $server-pool .= instance;
-  $server-pool.select-server($!uri-obj.client-key);
-}
 
 #`{{
 #-------------------------------------------------------------------------------
@@ -689,121 +929,3 @@ note "ss1 Topology: $topology";
   $selected-server;
 }
 }}
-
-#-------------------------------------------------------------------------------
-# Add server to todo list.
-method !add-servers ( @new-hosts ) {
-
-  trace-message("push @new-hosts[*] on todo list");
-try {
-  my MongoDB::ObserverEmitter $event-manager .= new;
-  my MongoDB::ServerPool $server-pool .= instance;
-  for @new-hosts -> Str $server-name {
-
-    # A server is stored in a pool and can be shared among different clients.
-    # The information comes from some server to these clients. Therefore the
-    # key must be a server name attached to some string. The folowing observer
-    # steps must be done per added server.
-
-#    unless $!observed-servers{$server-name} {
-
-    if !$event-manager.check-subscription(
-      "$!uri-obj.client-key() $server-name process topology"
-    ) {
-      # this client receives the data from a server in a List to be processed by
-      # process-topology().
-      $event-manager.subscribe-observer(
-        $server-name ~ ' process topology',
-        -> List $server-data { self!process-topology(|$server-data); },
-        :event-key("$!uri-obj.client-key() $server-name process topology")
-      );
-
-      # this client gets new host information from the server. it is
-      # possible that hosts are processed before.
-      $event-manager.subscribe-observer(
-        $server-name ~ ' add servers',
-        -> @new-hosts { self!add-servers(@new-hosts); },
-        :event-key("$!uri-obj.client-key() $server-name add servers")
-      );
-    }
-
-    # create Server object, if server already existed, get the
-    # info from server immediately
-    my Bool $created = $server-pool.add-server(
-      $!uri-obj.client-key, $server-name
-    );
-    unless $created {
-      $server-pool.set-server-data( $server-name, :$!uri-obj);
-trace-message("Server $server-name already there, try to find topology");
-#      self!process-topology( $server-name, ServerType, Bool);
-    }
-  }
-CATCH {.note;}
-}
-}
-
-#-------------------------------------------------------------------------------
-method database ( Str:D $name --> MongoDB::Database ) {
-  MongoDB::Database.new( :$!uri-obj, :name($name));
-}
-
-#-------------------------------------------------------------------------------
-method collection ( Str:D $full-collection-name --> MongoDB::Collection ) {
-
-#TODO check for dot in the name
-  ( my $db-name, my $cll-name) = $full-collection-name.split( '.', 2);
-  my MongoDB::Database $db .= new( :$!uri-obj, :name($db-name));
-  $db.collection($cll-name)
-}
-
-#-------------------------------------------------------------------------------
-# Forced cleanup
-#
-# cleanup cannot be done in separate thread because everything must be cleaned
-# up before other tasks are performed.
-method cleanup ( ) {
-
-  $!cleanup-started = True;
-
-  # some timing to see if this cleanup can be improved
-  my Instant $t0 = now;
-
-  my MongoDB::ServerPool $server-pool .= instance;
-  my MongoDB::ObserverEmitter $e .= new;
-  for @($server-pool.get-server-names($!uri-obj.client-key)) -> Str $sname {
-    $e.unsubscribe-observer("$!uri-obj.client-key() $sname process topology");
-    $e.unsubscribe-observer("$!uri-obj.client-key() $sname add servers");
-  }
-
-  # stop loop and wait for exit
-  #if $!repeat-discovery-loop {
-  #  $!repeat-discovery-loop = False;
-#      $!background-discovery.result;
-  #}
-
-  # Remove all servers concurrently. Shouldn't be many per client.
-  $server-pool.cleanup($!uri-obj.client-key);
-
-#`{{
-  $!rw-sem.writer(
-    'servers', {
-
-      for $!servers.values -> Hash $server-data {
-        my MongoDB::ServerPool::Server $server = $server-data<server>;
-        if $server.defined {
-          # Stop monitoring on server
-          $server.cleanup;
-          debug-message(
-            "server '$server.name()' destroyed after {(now - $t0)} sec"
-          );
-        }
-      }
-    }
-  );
-}}
-  # unsubscribe observers
-
-#  $!servers = Nil;
-  $!rw-sem.rm-mutex-names(<servers todo topology>);
-  debug-message("Client destroyed after {(now - $t0)} sec");
-}
