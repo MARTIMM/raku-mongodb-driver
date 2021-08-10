@@ -4,11 +4,11 @@
 - bar_title: "Reference"
   bar_menu:
   - title: "Client"
-    url: "/content-docs/reference/Client.html"
+    url: "/content-docs/reference/MDB/Client.html"
   - title: "Collection"
-    url: "/content-docs/reference/Collection.html"
+    url: "/content-docs/reference/MDB/Collection.html"
   - title: "Database"
-    url: "/content-docs/reference/Database.html"
+    url: "/content-docs/reference/MDB/Database.html"
 
 #    - title: "Projects"
 #      url: "/content-docs/projects.html"
@@ -25,7 +25,7 @@
 #      url: "/content-docs/reference-gtk3.html"
 #      right: true
 
-- bar_title: "Internal"
+- bar_title: "BSON"
   bar_menu:
-  - title: ""
-    url: "/content-docs/reference/.html"
+#  - title: ""
+#    url: "/content-docs/reference/BSON/.html"
