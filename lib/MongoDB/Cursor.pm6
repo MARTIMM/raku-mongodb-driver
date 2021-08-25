@@ -44,7 +44,7 @@ class Cursor does Iterable {
     # batches left on the server to retrieve. Documents may be present in
     # this reply.
     #
-    $!id = $server-reply<cursor-id>; # cursor-id from older version ?
+    $!id = $server-reply<cursor-id>.binary-data; # cursor-id from older version ?
 #    $!id = Buf.new( $server-reply<id>) // Buf.new( 0, 0, 0, 0, 0, 0, 0, 0);
 #    if [+] @($server-reply<cursor-id>) {
 #      $!server = $server;
@@ -126,7 +126,7 @@ class Cursor does Iterable {
         # Get cursor id, It may change to "0" if there are no more
         # documents to fetch.
         #
-        $!id = $server-reply<cursor-id>;
+        $!id = $server-reply<cursor-id>.binary-data;
 #        unless [+] @$!id {
 #          $!server = Nil;
 #        }
