@@ -40,7 +40,20 @@ constant clientMinWireVersion is export = 0;
 constant clientMaxWireVersion is export = 7;
 
 #------------------------------------------------------------------------------
-# topology types
+#TE:1:TopologyType
+=begin pod
+=head2 enum TopologyType
+
+Topology types
+
+=item TT-Single; The first server with no faulty responses will set the topology to single. Any new ST-Standalone server will flip the topology to TT-Unknown.
+=item TT-ReplicaSetNoPrimary; When there are no primary servers found (yet) in a group of replicaservers, the topology is one of replicaset without a primary. When only one server is provided in the uri, the topology would first be TT-Single. Then the Client will gather more data from the server to find the primary and or other secondary servers. The topology might then change into this topology or the TT-ReplicaSetWithPrimary described below.
+=item TT-ReplicaSetWithPrimary; When in a group of replica servers a primary is found, this topology is selected.
+=item TT-Sharded; When mongos servers are provided in the uri, this topology applies. When there is only one server, the type would become TT-Single.
+=item TT-Unknown; Any set of servers which are ST-Unknown will set the topology to TT-Unknown. Depending on the problems of these servers their states can change, and with that, the topology. When there is a set of servers which are not mixable, the topology becomes also TT-Unknown. Examples are more than one standalone server, mongos and replica servers, replicaservers from different replica sets etc.
+
+=end pod
+
 enum TopologyType is export <
   TT-Single TT-ReplicaSetNoPrimary TT-ReplicaSetWithPrimary
   TT-Sharded TT-Unknown TT-NotSet
@@ -54,7 +67,24 @@ enum TopologyDescription is export <
 >;
 
 #------------------------------------------------------------------------------
-# Status values of a Server.object
+#TE:1:ServerType
+=begin pod
+=head2 enum ServerType
+
+Status values of a Server object
+
+=item ST-Mongos; Field 'msg' in returned resuld of ismaster request is 'isdbgrid'.
+=item ST-RSGhost; Field 'isreplicaset' is set. Server is in an initialization state.
+=item ST-RSPrimary; Replicaset primary server. Field 'setName' is the replicaset name and 'ismaster' is True.
+=item ST-RSSecondary; Replicaset secondary server. Field 'setName' is the replicaset name and 'secondary' is True.
+=item ST-RSArbiter; Replicaset arbiter. Field 'setName' is the replicaset name and 'arbiterOnly' is True.
+=item ST-RSOther; An other type of replicaserver is found. Possibly in transition between states.
+=item ST-Standalone;  Any other server being master or slave.
+=item ST-Unknown; Servers which are down or with errors.
+=item ST-PossiblePrimary; not implemeted in this driver.
+
+=end pod
+
 enum ServerType is export <
   ST-Standalone ST-Mongos ST-PossiblePrimary ST-RSPrimary ST-RSSecondary
   ST-RSArbiter ST-RSOther ST-RSGhost ST-Unknown
