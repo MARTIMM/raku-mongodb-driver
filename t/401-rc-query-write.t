@@ -155,7 +155,7 @@ subtest "Get last error", {
   $doc = $database.run-command: (getLastError => 1,);
   is $doc<ok>, 1, 'getLastError request ok';
   is $doc<err>, Any, 'no errors';
-  is $doc<errmsg>, Any, 'No message';
+  ok $doc<errmsg>:!exists, 'No message';
 }
 
 #------------------------------------------------------------------------------
