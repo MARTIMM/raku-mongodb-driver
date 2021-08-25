@@ -209,10 +209,12 @@ subtest "Error testing", {
   ok $doc<ok>.Bool, 'No error after kill cursor';
 
   # Is this ok (No fifty because of test with explain on cursor????
-  $doc = $database.run-command: (
-    count => $collection.name,
-    query => BSON::Document.new: (test_record => 'tr38',),
-    hint => BSON::Document.new: (test_record => 1,),
+  $doc = $database.run-command(
+    BSON::Document.new: (
+      :count($collection.name),
+      :query(:test_record<tr38>,),
+      :hint(:1test_record,),
+    )
   );
 
   is $doc<n>, 1, 'Counting 1 document on search';
