@@ -9,7 +9,10 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
-#### 2021-04- 0.43.16
+#### 2021-08-15 0.43.17
+* Because of changes made in BSON, some code is changed here because of that. This should not be visible to the user but there some restrictions may surface. Please read the [BSON documentation](https://martimm.github.io/raku-mongodb-driver/docs/reference/BSON/Document.html) for its implecations.
+
+#### 2021-04-28 0.43.16
 * Sometimes it is good not to work all the time on the same project. Now returning to have a glimpse at it, I saw that it is completely unnecessary to handle the read and write concern data anywhere in the program because the user (him/her)self must insert this information in the request. I had already made some attempt to set and use a readconcern. Now, the read concern (and maybe some experimental write concern) will be completely removed from the driver and leaving it up to the user.
 
   An example where both are used;
