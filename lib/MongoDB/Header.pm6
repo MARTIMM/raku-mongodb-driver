@@ -33,23 +33,27 @@ method encode-message-header (
     # int32 messageLength
     # total message size, including this, 4 * 4 are 4 int32's
     #
-    encode-int32($buffer-size + 4 * 4),
+    #encode-int32($buffer-size + 4 * 4),
+    Buf.new.write-int32( 0, $buffer-size + 4 * 4, LittleEndian),
 
     # int32 requestID
     # identifier for this message, at start 0, visible across wire ojects
     #
-    encode-int32($used-request-id),
+    #encode-int32($used-request-id),
+    Buf.new.write-int32( 0, $used-request-id, LittleEndian),
 
     # int32 responseTo
     # requestID from the original request, no response so 0
     # (used in reponses from db)
     #
-    encode-int32(0),
+    #encode-int32(0),
+    Buf.new.write-int32( 0, 0, LittleEndian),
 
     # int32 opCode
     # request type, code from caller is a choice from constants
     #
-    encode-int32($op-code.value);
+    #encode-int32($op-code.value);
+    Buf.new.write-int32( 0, $op-code.value, LittleEndian);
 
   return ( $msg-header, $used-request-id);
 }
@@ -117,36 +121,39 @@ method encode-query (
 #   in method encode-query at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 111
 # ...
 
-  my BSON::Encode $encoder;
-  my Buf $query-buffer .= new;
+  my BSON::Encode $encoder .= new;
+  my Buf $query-buffer = [~]
 
-  # int32 flags
-  # bit vector of query options
-  #
-  $query-buffer ~= encode-int32($flags);
+    # int32 flags
+    # bit vector of query options
+    #
+    #$query-buffer ~= encode-int32($flags);
+    Buf.new.write-int32( 0, $flags, LittleEndian),
 
-  # cstring fullCollectionName
-  # "dbname.collectionname"
-  #
-  $query-buffer ~= encode-cstring($full-collection-name);
+    # cstring fullCollectionName
+    # "dbname.collectionname"
+    #
+    #$query-buffer ~= encode-cstring($full-collection-name),
+    encode-cstring($full-collection-name),
 
-  # int32 numberToSkip
-  # number of documents to skip
-  #
-  $query-buffer ~= encode-int32($number-to-skip);
+    # int32 numberToSkip
+    # number of documents to skip
+    #
+    #$query-buffer ~= encode-int32($number-to-skip);
+    Buf.new.write-int32( 0, $number-to-skip, LittleEndian),
 
-  # int32 numberToReturn
-  # number of documents to return
-  # in the first OP-REPLY batch
-  #
-  $query-buffer ~= encode-int32($number-to-return);
+    # int32 numberToReturn
+    # number of documents to return
+    # in the first OP-REPLY batch
+    #
+    #$query-buffer ~= encode-int32($number-to-return);
+    Buf.new.write-int32( 0, $number-to-return, LittleEndian),
 
-  # document query
-  # query object
-  #
-  $encoder .= new;
-  $query-buffer ~= $encoder.encode($query);
-  #$query-buffer ~= $query.encode;
+    # document query
+    # query object
+    #
+    #$query-buffer ~= $query.encode;
+    $encoder.encode($query);
 
 
   # [ document  returnFieldSelector; ]
