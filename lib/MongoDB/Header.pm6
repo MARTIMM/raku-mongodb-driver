@@ -15,9 +15,6 @@ unit class MongoDB::Header:auth<github:MARTIMM>:ver<0.1.0>;
 #TODO semaphore protection when in thread other than main?
 my Int $request-id = 0;
 
-#my BSON::Encode $encoder;
-#my BSON::Decode $decoder;
-
 #-------------------------------------------------------------------------------
 method encode-message-header (
   Int $buffer-size, WireOpcode $op-code --> List
@@ -33,26 +30,22 @@ method encode-message-header (
     # int32 messageLength
     # total message size, including this, 4 * 4 are 4 int32's
     #
-    #encode-int32($buffer-size + 4 * 4),
     Buf.new.write-int32( 0, $buffer-size + 4 * 4, LittleEndian),
 
     # int32 requestID
     # identifier for this message, at start 0, visible across wire ojects
     #
-    #encode-int32($used-request-id),
     Buf.new.write-int32( 0, $used-request-id, LittleEndian),
 
     # int32 responseTo
     # requestID from the original request, no response so 0
     # (used in reponses from db)
     #
-    #encode-int32(0),
     Buf.new.write-int32( 0, 0, LittleEndian),
 
     # int32 opCode
     # request type, code from caller is a choice from constants
     #
-    #encode-int32($op-code.value);
     Buf.new.write-int32( 0, $op-code.value, LittleEndian);
 
   return ( $msg-header, $used-request-id);
@@ -69,32 +62,38 @@ method decode-message-header ( Buf $b, $index is rw --> BSON::Document ) {
     # int32 messageLength
     # total message size, including this
     #
-    message-length  => decode-int32( $b, $index),
+    message-length  => $b.read-int32( $index, LittleEndian),
 
     # int32 requestID
     # identifier for this message
     #
-    request-id      => decode-int32( $b, $index + BSON::C-INT32-SIZE),
+    request-id      => $b.read-int32(
+      $index += BSON::C-INT32-SIZE, LittleEndian
+    ),
 
     # int32 responseTo
     # requestID from the original request
     # (used in reponses from db)
     #
-    response-to     => decode-int32( $b, $index + 2 * BSON::C-INT32-SIZE),
+    response-to     => $b.read-int32(
+      $index += BSON::C-INT32-SIZE, LittleEndian
+    ),
 
     # int32 opCode
     # request type
     #
-    op-code         => decode-int32( $b, $index + 3 * BSON::C-INT32-SIZE)
+    op-code         => $b.read-int32(
+      $index += BSON::C-INT32-SIZE, LittleEndian
+    )
   );
 
   # the only allowed message returned from database is OP-REPLY
   #
-# I trust the server to send a OP-REPLY so no check done
+# I trust the server to send an OP-REPLY so, no check done
 #      die [~] 'Unexpected OP_code (', $msg-header<op_code>, ')'
 #         unless $msg-header<op_code> == OP-REPLY;
 
-  $index += 4 * BSON::C-INT32-SIZE;
+  $index += BSON::C-INT32-SIZE;
   return $msg-header;
 }
 
@@ -121,48 +120,40 @@ method encode-query (
 #   in method encode-query at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 111
 # ...
 
-  my BSON::Encode $encoder .= new;
   my Buf $query-buffer = [~]
 
     # int32 flags
     # bit vector of query options
     #
-    #$query-buffer ~= encode-int32($flags);
     Buf.new.write-int32( 0, $flags, LittleEndian),
 
     # cstring fullCollectionName
     # "dbname.collectionname"
     #
-    #$query-buffer ~= encode-cstring($full-collection-name),
     encode-cstring($full-collection-name),
 
     # int32 numberToSkip
     # number of documents to skip
     #
-    #$query-buffer ~= encode-int32($number-to-skip);
     Buf.new.write-int32( 0, $number-to-skip, LittleEndian),
 
     # int32 numberToReturn
     # number of documents to return
     # in the first OP-REPLY batch
     #
-    #$query-buffer ~= encode-int32($number-to-return);
     Buf.new.write-int32( 0, $number-to-return, LittleEndian),
 
     # document query
     # query object
     #
-    #$query-buffer ~= $query.encode;
-    $encoder.encode($query);
+    BSON::Encode.new.encode($query);
 
 
   # [ document  returnFieldSelector; ]
   # Optional. Selector indicating the fields to return
   #
   if ? $projection {
-    $encoder .= new;
-    $query-buffer ~= $encoder.encode($projection);
-    #$query-buffer ~= $projection.encode;
+    $query-buffer ~= BSON::Encode.new.encode($projection);
   }
 
   # encode message header and get used request id
@@ -187,7 +178,7 @@ method encode-get-more (
     # int32 ZERO
     # 0 - reserved for future use
     #
-    encode-int32(0),
+    Buf.new.write-int32( 0, LittleEndian),
 
     # cstring fullCollectionName
     # "dbname.collectionname"
@@ -200,8 +191,7 @@ method encode-get-more (
     # 0 takes the default which is for this particular server all that is
     # left. That can be too much and therefore needs a restriction
     #
-    #encode-int32(0),
-    encode-int32($number-to-return),
+    Buf.new.write-int32( 0, $number-to-return, LittleEndian),
 
     # int64 cursorID
     # cursorID from the OP-REPLY
@@ -225,12 +215,12 @@ method encode-kill-cursors ( Buf:D @cursor-ids --> List ) {
     # int32 ZERO
     # 0 - reserved for future use
     #
-    encode-int32(0),
+    Buf.new.write-int32( 0, 0, LittleEndian),
 
     # int32 numberOfCursorIDs
     # number of cursorIDs in message
     #
-    encode-int32(+@cursor-ids)
+    Buf.new.write-int32( 0, +@cursor-ids, LittleEndian)
   ;
 
   # int64* cursorIDs
@@ -251,18 +241,13 @@ method encode-kill-cursors ( Buf:D @cursor-ids --> List ) {
 
 #-------------------------------------------------------------------------------
 method encode-cursor-id ( Int $cursor-id --> Buf ) {
-
-  return encode-int64($cursor-id);
+  Buf.new.write-int64( 0, $cursor-id, LittleEndian)
 }
 
 #-------------------------------------------------------------------------------
 method decode-reply ( Buf $b --> BSON::Document ) {
 
   # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
-  # Because the decoding is not started via self.decode() $!index in BSON must
-  # be initialized explicitly. There may not be another decode() started in the
-  # mean time using this object because this attribute will be disturbed.
-  #
 
   # MsgHeader header
   # standard message header
@@ -271,32 +256,28 @@ method decode-reply ( Buf $b --> BSON::Document ) {
   my BSON::Document $message-header = self.decode-message-header(
     $b, $index
   );
-#note "$*THREAD.id() header decoded, $message-header.perl()";
 
   # int32 responseFlags
   # bit vector
   #
-  my $response-flags = decode-int32( $b, $index);
+  my $response-flags = $b.read-int32( $index, LittleEndian);
 
   # int64 cursorID
   # cursor id if client needs to do get more's
-  # TODO big integers are not yet implemented in Rakudo
-  # so cursor is build using raw Buf
   #
-  $index += BSON::C-INT32-SIZE;
-  my Buf $cursor-id = $b.subbuf( $index, 8);
+  my Buf $cursor-id = $b.subbuf( $index += BSON::C-INT32-SIZE, 8);
 
   # int32 startingFrom
   # where in the cursor this reply is starting
   #
-  $index += 8;
-  my Int $starting-from = decode-int32( $b, $index);
+  my Int $starting-from = $b.read-int32( $index += 8, LittleEndian);
 
   # int32 numberReturned
   # number of documents in the reply
   #
-  $index += BSON::C-INT32-SIZE;
-  my Int $number-returned = decode-int32( $b, $index);
+  my Int $number-returned = $b.read-int32(
+    $index += BSON::C-INT32-SIZE, LittleEndian
+  );
 
   $index += BSON::C-INT32-SIZE;
 
@@ -304,32 +285,15 @@ method decode-reply ( Buf $b --> BSON::Document ) {
     :$message-header, :$response-flags, :$cursor-id,
     :$starting-from, :$number-returned,
   );
-#note "$*THREAD.id() reply doc, $reply-document.raku()";
-
-#say "MH length: ", $reply-document<message-header><message-length>;
-#say "MH rid: ", $reply-document<message-header><request-id>;
-#say "MH opc: ", $reply-document<message-header><op-code>;
-#say "MH nret: ", $reply-document<number-returned>;
-#say "MH cid: ", $reply-document<cursor-id>;
-
-#note "$*THREAD.id() Buf: ", $b;
-#note "$*THREAD.id() Subbuf: ", $b.subbuf( $index, 30);
-
-#note "$*THREAD.id() Buf length: ", $b.elems;
-#note "$*THREAD.id() Subbuf at $index";
 
   # Extract documents from message.
   my Array $documents = [];
   for ^$reply-document<number-returned> {
-    my $doc-size = decode-int32( $b, $index);
-#note "$*THREAD.id() I: $index, $doc-size";
-#    my BSON::Document $document .= new($b.subbuf( $index, $doc-size));
-    my BSON::Decode $decoder .= new;
-    my BSON::Document $document = $decoder.decode(
+    my $doc-size = $b.read-int32( $index, LittleEndian);
+    my BSON::Document $document = BSON::Decode.new.decode(
       $b.subbuf( $index, $doc-size)
     );
-#note "$*THREAD.id() doc $document.perl()";
-#        $index += BSON::C-INT32-SIZE;
+
     $index += $doc-size;
     $documents.push($document);
   }
@@ -337,7 +301,6 @@ method decode-reply ( Buf $b --> BSON::Document ) {
   $reply-document<documents> = $documents;
 
   $index += 3 * BSON::C-INT32-SIZE + 8;
-#say "B: $index, ", $b.elems;
 
   # Every response byte must be consumed
   #

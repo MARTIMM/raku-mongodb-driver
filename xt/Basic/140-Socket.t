@@ -55,7 +55,7 @@ subtest "Socket manipulations", {
 
   $socket.send($encoded-query);
   my Buf $size-bytes = $socket.receive-check(4);
-  my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+  my Int $response-size = $size-bytes.read-int32( 0, LittleEndian) - 4;
   my Buf $server-reply = $size-bytes ~ $socket.receive-check($response-size);
   my BSON::Document $result = $header.decode-reply($server-reply);
   is $result<number-returned>, 1, '.send() / .receive-check()';

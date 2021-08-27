@@ -73,7 +73,7 @@ method query (
     my Buf $size-bytes = self!get-bytes(4);
 
     # Convert Buf to Int and substract 4 to get remaining size of data
-    my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+    my Int $response-size = $size-bytes.read-int32( 0, LittleEndian) - 4;
 
     # Assert that number of bytes is still positive
     fatal-message("Wrong number of bytes to read from socket: $response-size")
@@ -171,7 +171,7 @@ method get-more (
 
     # Read 4 bytes for int32 response size
     my Buf $size-bytes = self!get-bytes(4);
-    my Int $response-size = decode-int32( $size-bytes, 0) - 4;
+    my Int $response-size = $size-bytes.read-int32( 0, LittleEndian) - 4;
 
     # Receive remaining response bytes from socket. Prefix it with the already
     # read bytes and decode. Return the resulting document.
@@ -329,189 +329,186 @@ method !get-bytes ( int $n --> Buf ) {
 
 =finish
 
-#`{{
-    #---------------------------------------------------------------------------
+Obsoleted stuff
+
+#---------------------------------------------------------------------------
+#
+method OP_INSERT (
+  $collection, Int $flags, *@documents --> Nil
+) is DEPRECATED('OP-INSERT') {
+
+  self.OP-INSERT( $collection, $flags, @documents);
+}
+
+method OP-INSERT ( $collection, Int $flags, *@documents --> Nil ) {
+  # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
+
+  my Buf $B-OP-INSERT = [~]
+
+    # int32 flags
+    # bit vector
     #
-    method OP_INSERT (
-      $collection, Int $flags, *@documents --> Nil
-    ) is DEPRECATED('OP-INSERT') {
+    encode-int32($flags),
 
-      self.OP-INSERT( $collection, $flags, @documents);
-    }
-
-    method OP-INSERT ( $collection, Int $flags, *@documents --> Nil ) {
-      # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPINSERT
-
-      my Buf $B-OP-INSERT = [~]
-
-        # int32 flags
-        # bit vector
-        #
-        encode-int32($flags),
-
-        # cstring fullCollectionName
-        # "dbname.collectionname"
-        #
-        encode-cstring($collection.full.collection-name);
-
-      # document* documents
-      # one or more documents to insert into the collection
-      #
-      for @documents -> $document {
-        $B-OP-INSERT ~= self.encode-document($document);
-      }
-
-      # MsgHeader header
-      # standard message header
-      #
-      my Buf $msg-header = self!enc-msg-header( $B-OP-INSERT.elems, OP-INSERT);
-
-      # send message without waiting for response
-      #
-      $collection.database.client.send( $msg-header ~ $B-OP-INSERT, False);
-    }
-}}
-#`{{
-    #---------------------------------------------------------------------------
+    # cstring fullCollectionName
+    # "dbname.collectionname"
     #
-    method OP_KILL_CURSORS ( *@cursors --> Nil ) is DEPRECATED('OP-KILL-CURSORS') {
-      self.OP-KILL-CURSORS(@cursors);
-    }
+    encode-cstring($collection.full.collection-name);
+
+  # document* documents
+  # one or more documents to insert into the collection
+  #
+  for @documents -> $document {
+    $B-OP-INSERT ~= self.encode-document($document);
+  }
+
+  # MsgHeader header
+  # standard message header
+  #
+  my Buf $msg-header = self!enc-msg-header( $B-OP-INSERT.elems, OP-INSERT);
+
+  # send message without waiting for response
+  #
+  $collection.database.client.send( $msg-header ~ $B-OP-INSERT, False);
+}
+
+#---------------------------------------------------------------------------
+#
+method OP_KILL_CURSORS ( *@cursors --> Nil ) is DEPRECATED('OP-KILL-CURSORS') {
+  self.OP-KILL-CURSORS(@cursors);
+}
 }}
 #`{{
-    method OP-KILL-CURSORS ( *@cursors --> Nil ) {
-      # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPKILLCURSORS
+method OP-KILL-CURSORS ( *@cursors --> Nil ) {
+  # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPKILLCURSORS
 
-      my Buf $B-OP-KILL_CURSORS = [~]
+  my Buf $B-OP-KILL_CURSORS = [~]
 
-        # int32 ZERO
-        # 0 - reserved for future use
-        #
-        encode-int32(0),
-
-        # int32 numberOfCursorIDs
-        # number of cursorIDs in message
-        #
-        encode-int32(+@cursors);
-
-      # int64* cursorIDs
-      # sequence of cursorIDs to close
-      #
-      for @cursors -> $cursor {
-        $B-OP-KILL_CURSORS ~= $cursor.id;
-      }
-
-      # MsgHeader header
-      # standard message header
-      #
-      my Buf $msg-header = self!enc-msg-header(
-        $B-OP-KILL_CURSORS.elems,
-        BSON::OP-KILL-CURSORS
-      );
-
-      # send message without waiting for response
-      #
-      @cursors[0].collection.database.client.send( $msg-header ~ $B-OP-KILL_CURSORS, False);
-    }
-}}
-#`{{
-    #---------------------------------------------------------------------------
+    # int32 ZERO
+    # 0 - reserved for future use
     #
-    method OP_UPDATE (
-      $collection, Int $flags, %selector, %update
-      --> Nil
-    ) is DEPRECATED('OP-UPDATE') {
+    encode-int32(0),
 
-      self.OP-UPDATE( $collection, $flags, %selector, %update);
-    }
-
-    method OP-UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
-      # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPUPDATE
-
-      my Buf $B-OP-UPDATE = [~]
-
-        # int32 ZERO
-        # 0 - reserved for future use
-        #
-        encode-int32(0),
-
-        # cstring fullCollectionName
-        # "dbname.collectionname"
-        #
-        encode-cstring($collection.full-collection-name),
-
-        # int32 flags
-        # bit vector
-        #
-        encode-int32($flags),
-
-        # document selector
-        # query object
-        #
-        self.encode-document(%selector),
-
-        # document update
-        # specification of the update to perform
-        #
-        self.encode-document(%update);
-
-      # MsgHeader header
-      # standard message header
-      #
-      my Buf $msg-header = self!enc-msg-header(
-        $B-OP-UPDATE.elems, OP-UPDATE
-      );
-
-      # send message without waiting for response
-      #
-      $collection.database.client.send( $msg-header ~ $B-OP-UPDATE, False);
-    }
-}}
-#`{{
-    #---------------------------------------------------------------------------
+    # int32 numberOfCursorIDs
+    # number of cursorIDs in message
     #
-    method OP_DELETE (
-      $collection, Int $flags, %selector
-      --> Nil
-    ) is DEPRECATED('OP-DELETE') {
+    encode-int32(+@cursors);
 
-      self.OP-DELETE( $collection, $flags, %selector);
-    }
+  # int64* cursorIDs
+  # sequence of cursorIDs to close
+  #
+  for @cursors -> $cursor {
+    $B-OP-KILL_CURSORS ~= $cursor.id;
+  }
 
-    method OP-DELETE ( $collection, Int $flags, %selector --> Nil ) {
-      # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
+  # MsgHeader header
+  # standard message header
+  #
+  my Buf $msg-header = self!enc-msg-header(
+    $B-OP-KILL_CURSORS.elems,
+    BSON::OP-KILL-CURSORS
+  );
 
-      my Buf $B-OP-DELETE = [~]
+  # send message without waiting for response
+  #
+  @cursors[0].collection.database.client.send( $msg-header ~ $B-OP-KILL_CURSORS, False);
+}
 
-        # int32 ZERO
-        # 0 - reserved for future use
-        #
-        encode-int32(0),
+#---------------------------------------------------------------------------
+#
+method OP_UPDATE (
+  $collection, Int $flags, %selector, %update
+  --> Nil
+) is DEPRECATED('OP-UPDATE') {
 
-        # cstring fullCollectionName
-        # "dbname.collectionname"
-        #
-        encode-cstring($collection.full-collection-name),
+  self.OP-UPDATE( $collection, $flags, %selector, %update);
+}
 
-        # int32 flags
-        # bit vector
-        #
-        encode-int32($flags),
+method OP-UPDATE ( $collection, Int $flags, %selector, %update --> Nil ) {
+  # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPUPDATE
 
-        # document selector
-        # query object
-        #
-        self.encode-document(%selector);
+  my Buf $B-OP-UPDATE = [~]
 
-      # MsgHeader header
-      # standard message header
-      #
-      my Buf $msg-header = self!enc-msg-header(
-        $B-OP-DELETE.elems, OP-DELETE
-      );
+    # int32 ZERO
+    # 0 - reserved for future use
+    #
+    encode-int32(0),
 
-      # send message without waiting for response
-      #
-      $collection.database.client.send( $msg-header ~ $B-OP-DELETE, False);
-    }
-}}
+    # cstring fullCollectionName
+    # "dbname.collectionname"
+    #
+    encode-cstring($collection.full-collection-name),
+
+    # int32 flags
+    # bit vector
+    #
+    encode-int32($flags),
+
+    # document selector
+    # query object
+    #
+    self.encode-document(%selector),
+
+    # document update
+    # specification of the update to perform
+    #
+    self.encode-document(%update);
+
+  # MsgHeader header
+  # standard message header
+  #
+  my Buf $msg-header = self!enc-msg-header(
+    $B-OP-UPDATE.elems, OP-UPDATE
+  );
+
+  # send message without waiting for response
+  #
+  $collection.database.client.send( $msg-header ~ $B-OP-UPDATE, False);
+}
+
+#---------------------------------------------------------------------------
+#
+method OP_DELETE (
+  $collection, Int $flags, %selector
+  --> Nil
+) is DEPRECATED('OP-DELETE') {
+
+  self.OP-DELETE( $collection, $flags, %selector);
+}
+
+method OP-DELETE ( $collection, Int $flags, %selector --> Nil ) {
+  # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPDELETE
+
+  my Buf $B-OP-DELETE = [~]
+
+    # int32 ZERO
+    # 0 - reserved for future use
+    #
+    encode-int32(0),
+
+    # cstring fullCollectionName
+    # "dbname.collectionname"
+    #
+    encode-cstring($collection.full-collection-name),
+
+    # int32 flags
+    # bit vector
+    #
+    encode-int32($flags),
+
+    # document selector
+    # query object
+    #
+    self.encode-document(%selector);
+
+  # MsgHeader header
+  # standard message header
+  #
+  my Buf $msg-header = self!enc-msg-header(
+    $B-OP-DELETE.elems, OP-DELETE
+  );
+
+  # send message without waiting for response
+  #
+  $collection.database.client.send( $msg-header ~ $B-OP-DELETE, False);
+}
