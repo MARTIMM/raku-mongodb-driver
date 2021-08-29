@@ -9,6 +9,9 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
+#### 2021-08-15 0.43.18
+* Some more changes
+
 #### 2021-08-15 0.43.17
 * Because of changes made in BSON, some code is changed here because of that. This should not be visible to the user but there some restrictions may surface. Please read the [BSON documentation](https://martimm.github.io/raku-mongodb-driver/docs/reference/BSON/Document.html) for its implecations.
 
