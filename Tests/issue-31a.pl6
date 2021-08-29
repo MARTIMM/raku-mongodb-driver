@@ -1,5 +1,4 @@
 use v6;
-use lib '../lib';
 
 use BSON::Document;
 use MongoDB;
@@ -7,15 +6,15 @@ use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
 
-BEGIN {
+#BEGIN {
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-my $handle = "Issue31a.log".IO.open( :mode<wo>, :create, :truncate);
+my $handle = "Tests/Issue31a.log".IO.open( :mode<wo>, :create, :truncate);
 add-send-to( 'issue', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-#set-filter(|<ObserverEmitter Timer Socket>);
+set-filter(|<ObserverEmitter Timer Socket>);
 #set-filter(|< Timer Socket SocketPool >);
-}
+#}
 
 sub MAIN( ) {
 
@@ -26,7 +25,7 @@ sub MAIN( ) {
   my MongoDB::Client $client .= new(:$uri);
   my MongoDB::Database $database = $client.database('Library');
   my $doc = $database.run-command(BSON::Document.new: (ping => 1));
-#  $doc.perl.say;
+#  $doc.raku.say;
   say "\n1st run:   ", now - $t0;
   trace-message("end 1st run");
 

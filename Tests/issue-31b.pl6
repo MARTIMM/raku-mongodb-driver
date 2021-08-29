@@ -1,5 +1,5 @@
 use v6;
-use lib '../lib', '../t';
+use lib 't';
 
 use Test-support;
 
