@@ -1,7 +1,6 @@
 .directory
+Old*
 Old/*
-Tests/*
-t/Sandbox/*
 Sandbox/*
 t/Software/*
 t/Travis-ci/*
@@ -15,6 +14,5 @@ t/Appveyor/*
 ~*
 .bundle/*
 Gemfile*
-Old*
 **/vendor/*
 **/_site
