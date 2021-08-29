@@ -368,8 +368,10 @@ trace-message("monitor-work server $server-name, %registered-servers.perl()");
     ( $doc, $rtt) = self.raw-query($server);
 
 
-    my Str $doc-text = ($doc // '-').perl;
-    trace-message("is-master request result for $server-name: $doc-text");
+#    my Str $doc-text = ($doc // '-').perl;
+    trace-message(
+      "is-master request result for $server-name: {($doc // '-').perl}"
+    );
 
     # when doc is defined, the request ended properly. the ok field
     # in the doc will tell if the operation is succsessful or not
@@ -456,7 +458,7 @@ multi method raw-query ( $server --> List ) {
     :$server, :time-query, :$uri-obj
   );
 
-  trace-message("result raw query to server $server.name(): $doc.perl()");
+#trace-message("result raw query to server $server.name(): $doc.perl()");
 
   ( $doc, $rtt);
 }
