@@ -182,26 +182,32 @@ method !process-status ( BSON::Document $mdata --> List ) {
   my ServerType $server-status = ST-Unknown;
   my MongoDB::ObserverEmitter $notify-client;
 
+#debug-message(
+#  "Types: {$mdata<msg>:exists}, {$mdata<isreplicaset>:exists}, {? $mdata<setName>:exists}"
+#);
+
   # Shard server
   if $mdata<msg>:exists and $mdata<msg> eq 'isdbgrid' {
     $server-status = ST-Mongos;
   }
 
   # Replica server in preinitialization state
-  elsif ? $mdata<isreplicaset> {
+  elsif $mdata<isreplicaset>:exists {
     $server-status = ST-RSGhost;
   }
 
-  elsif ? $mdata<setName> {
+  elsif $mdata<setName>:exists {
     $is-master = ? $mdata<ismaster>;
     if $is-master {
+#debug-message("Types: is master");
       $server-status = ST-RSPrimary;
       $notify-client.emit(
         $!name ~ ' add servers', @($mdata<hosts>)
       ) if $mdata<hosts>:exists;
     }
 
-    elsif ? $mdata<secondary> {
+    elsif $mdata<secondary>:exists {
+#debug-message("Types: is secondary");
       $server-status = ST-RSSecondary;
       $notify-client.emit(
         $!name ~ ' add servers', @($mdata<primary>)
@@ -221,6 +227,7 @@ method !process-status ( BSON::Document $mdata --> List ) {
     $server-status = ST-Standalone;
     $is-master = ? $mdata<ismaster>;
   }
+#debug-message("sts $server-status, $is-master");
 
   ( $server-status, $is-master)
 }
