@@ -466,7 +466,7 @@ try {
     );
     unless $created {
       $server-pool.set-server-data( $server-name, :$!uri-obj);
-trace-message("Server $server-name already there, try to find topology");
+#trace-message("Server $server-name already there, try to find topology");
 #      self!process-topology( $server-name, ServerType, Bool);
     }
   }
@@ -489,6 +489,7 @@ method !process-topology (
     );
     trace-message("server info updated for $new-server-name with $server-status, $is-master");
   }
+
   else {
     trace-message("server info updated for $new-server-name");
   }
