@@ -69,11 +69,10 @@ method add-server ( Str:D $client-key, Str:D $server-name --> Bool ) {
   # assume we didn't have to create a new server
   my Bool $created-anew = False;
 
-  # check if server was created before. if not create one and store in pool
+  # check if server was created before. if not, create one and store in pool
   unless $!rw-sem.reader(
     'server-info', { $!servers-in-pool{$server-name}:exists }
   ) {
-
     my MongoDB::ServerPool::Server $server .= new(:$server-name);
     $!rw-sem.writer( 'server-info', {
 
@@ -90,6 +89,7 @@ method add-server ( Str:D $client-key, Str:D $server-name --> Bool ) {
   # set client info
   $!rw-sem.writer( 'client-info', {
       # check if client exists, if not, init
+trace-message("client $client-key does not exist") unless $!clients-of-servers{$client-key}:exists;
       $!clients-of-servers{$client-key} = %()
         unless $!clients-of-servers{$client-key}:exists;
     }
@@ -116,6 +116,7 @@ method add-server ( Str:D $client-key, Str:D $server-name --> Bool ) {
 #-------------------------------------------------------------------------------
 method set-server-data ( Str $server-name, *%server-data ) {
 
+trace-message("Set data for $server-name");
   # use reader because locally it's reading servers in pool. the server
   # protects using a writer
   $!rw-sem.reader( 'server-info', {
