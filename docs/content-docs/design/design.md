@@ -1,5 +1,5 @@
 ---
-title: MongoDB Driver
+title: Design of the software
 layout: sidebar
 nav_menu: default-nav
 sidebar_menu: design-sidebar

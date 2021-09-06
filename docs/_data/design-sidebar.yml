@@ -1,12 +1,15 @@
 # https://jekyllrb.com/tutorials/navigation/
 #nav_title: "please set variable 'nav_title' in your frontmatter"
 
-- bar_title: "Reference"
+- bar_title: "MongoDB"
   bar_menu:
-  - title: "design"
+  - title: "Design"
     url: "/content-docs/design/design.html"
-#  - title: "Change log"
-#    url: "/content-docs/about/release-notes.html"
+
+- bar_title: "BSON"
+  bar_menu:
+  - title: "Specification"
+    url: "/content-docs/design/bson-spec.html"
 
 #    - title: "Projects"
 #      url: "/content-docs/projects.html"
