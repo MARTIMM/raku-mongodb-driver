@@ -114,13 +114,11 @@ Synopsis
 Declaration
 -----------
 
-    unit class BSON::Document:auth<github:MARTIMM>:ver<0.2.0>;
+    unit class BSON::Document:auth<github:MARTIMM>;
     also does BSON::Ordered;
 
 Example
-=======
-
-    use BSON::Document;
+-------
 
     my BSON::Document $d .= new: (:data-pi(π));
 
