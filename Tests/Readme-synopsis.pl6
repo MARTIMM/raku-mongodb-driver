@@ -6,7 +6,7 @@ use MongoDB::Client;
 use MongoDB::Database;
 use MongoDB::Collection;
 
-my MongoDB::Client $client .= new(:uri('mongodb://:65010'));
+my MongoDB::Client $client .= new(:uri('mongodb://:65011'));
 my MongoDB::Database $database = $client.database('myPetProject');
 
 # Drop database before start
@@ -84,8 +84,9 @@ is $doc<n>, 1, "deleted 1 doc from names";
 $req .= new: (
   update => 'names',
   updates => [ (
-      q => ( name => ('$regex' => BSON::Regex.new( :regex<y>, :options<i>),),),
-      u => ('$set' => (type => "men with 'y' in name"),),
+      #q => ( name => ('$regex' => BSON::Regex.new( :regex<y>, :options<i>),),),
+      q => ( :name( '$regex' => 'y', '$options' => '<i>')),
+      u => ('$set' => (type => "men with 'y' in name key"),),
       upsert => True,
       multi => True,
     ),
@@ -127,7 +128,7 @@ my MongoDB::Cursor $cursor = $collection.find: :projection(
 
 while $cursor.fetch -> BSON::Document $d {
   say "Name and surname: ", $d<name>, ' ', $d<surname>,
-      ($d<type> ?? ", $d<type>" !! '');
+      ($d<type>:exists ?? ", $d<type>" !! '');
 
   if $d<name> eq 'Moritz' {
     # Just to be sure

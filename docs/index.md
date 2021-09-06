@@ -122,7 +122,7 @@ $req .= new: (
   update => 'names',
   updates => [ (
       q => ( name => ('$regex' => BSON::Regex.new( :regex<y>, :options<i>),),),
-      u => ('$set' => (type => "men with 'y' in name"),),
+      u => ('$set' => (type => "men with 'y' in name key"),),
       upsert => True,
       multi => True,
     ),
@@ -138,7 +138,7 @@ is $doc<nModified>, 2, "modified 2 docs in names";
 $doc = $database.run-command: (
   findAndModify => 'famous-people',
   query => (surname => 'Walll'),
-  update => ('$set' => surname => 'Wall'),
+  update => ('$set' => (surname => 'Wall')),
 );
 
 is $doc<ok>, 1, "findAndModify request ok";
@@ -164,7 +164,7 @@ my MongoDB::Cursor $cursor = $collection.find: :projection(
 
 while $cursor.fetch -> BSON::Document $d {
   say "Name and surname: ", $d<name>, ' ', $d<surname>,
-      ($d<type> ?? ", $d<type>" !! '');
+      ($d<type>:exists ?? ", $d<type>" !! '');
 
   if $d<name> eq 'Moritz' {
     # Just to be sure
@@ -192,7 +192,7 @@ ok 12 - existing document in famous-people updated
 ok 13 - findAndModify retry request ok
 ok 14 - record not found
 ok 15 - updatedExisting returned False
-# Name and surname: Larry Wall, men with 'y' in name
+# Name and surname: Larry Wall, men with 'y' in name key
 # Name and surname: Damian Conway
 # Name and surname: Jonathan Worthington
 # Name and surname: Moritz Lenz
