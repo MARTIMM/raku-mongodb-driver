@@ -33,8 +33,7 @@ my BSON::Document $doc;
 #------------------------------------------------------------------------------
 subtest {
   # Create collection and insert data in it!
-  #
-  $doc = $database.run-command: (
+  $req .= new: (
     insert => $collection.name,
     documents => [
       ( name => 'Jan Klaassen', code => 14),
@@ -42,32 +41,37 @@ subtest {
       ( name => 'Jan Hein',     code => 20)
     ]
   );
+  $doc = $database.run-command($req);
 
   #----------------------------------------------------------------------------
-  $doc = $database.run-command: (count => $collection.name,);
+  $req .= new: (count => $collection.name);
+  $doc = $database.run-command($req);
   is $doc<ok>, 1, 'Count request ok';
   is $doc<n>, 3, 'Three documents in collection';
 
-  $doc = $database.run-command: (
+  $req .= new: (
     count => $collection.name,
     query => (name => 'Piet Hein')
   );
+  $doc = $database.run-command($req);
   is $doc<n>, 1, 'One document found';
 
   #----------------------------------------------------------------------------
-  $doc = $database.run-command: (
+  $req .= new: (
     distinct => $collection.name,
     key => 'code'
   );
+  $doc = $database.run-command($req);
   is $doc<ok>, 1, 'Distinct request ok';
 
   is-deeply $doc<values>.sort, ( 14, 20), 'Codes found are 14, 20';
 
-  $doc = $database.run-command: (
+  $req .= new: (
     distinct => $collection.name,
     key => 'code',
     query => (name => 'Piet Hein')
   );
+  $doc = $database.run-command($req);
   is-deeply $doc<values>, [20], 'Code found is 20';
 
 

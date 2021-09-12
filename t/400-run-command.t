@@ -7,6 +7,7 @@ use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
 use BSON::Document;
+use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
@@ -43,11 +44,10 @@ subtest "Query and Write Operation Commands", {
 
   $req .= new: (
     insert => 'famous_people',
-    documents => [
-      BSON::Document.new((
+    documents => [ (
         name => 'Larry',
         surname => 'Walll',
-        languages => BSON::Document.new((
+        languages => (
           Perl0 => 'introduced Perl to my officemates.',
           Perl1 => 'introduced Perl to the world',
           Perl2 => "introduced Henry Spencer's regular expression package.",
@@ -55,8 +55,8 @@ subtest "Query and Write Operation Commands", {
           Perl4 => 'introduced the first Camel book.',
           Perl5 => 'introduced everything else, including the ability to introduce everything else.',
           Perl6 => 'A perl changing perl event, Dec 12,2015'
-        )),
-      )),
+        ),
+      ),
     ]
   );
 
@@ -138,7 +138,7 @@ subtest "Diagnostic Commands", {
   }
 
   else {
-    $doc = $database.run-command: (listCollections => 1,);
+    $doc = $database.run-command(BSON::Document.new: (listCollections => 1));
     is $doc<ok>, 1, 'list collections request ok';
 
     my MongoDB::Cursor $c .= new( :$client, :cursor-doc($doc<cursor>));
@@ -155,7 +155,7 @@ subtest "Diagnostic Commands", {
     # Second attempt using iteratable role
     $f-cl1 = False;
     $f-cl2 = False;
-    $doc = $database.run-command: (listCollections => 1,);
+    $doc = $database.run-command(BSON::Document.new: (listCollections => 1));
     for MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>)) -> BSON::Document $d {
       $f-cl1 = True if $d<name> eq 'cl1';
       $f-cl2 = True if $d<name> eq 'cl2';

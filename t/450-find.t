@@ -8,6 +8,7 @@ use Test-support;
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Cursor;
+use MongoDB::Collection;
 use BSON::ObjectId;
 use BSON::Document;
 
