@@ -3,13 +3,13 @@
 
 - bar_title: "Reference"
   bar_menu:
-  - title: "Client"
+  - title: "MongoDB::Client"
     url: "/content-docs/reference/MDB/Client.html"
-  - title: "Collection"
+  - title: "MongoDB::Collection"
     url: "/content-docs/reference/MDB/Collection.html"
-  - title: "Cursor"
+  - title: "MongoDB::Cursor"
     url: "/content-docs/reference/MDB/Cursor.html"
-  - title: "Database"
+  - title: "MongoDB::Database"
     url: "/content-docs/reference/MDB/Database.html"
 
 
