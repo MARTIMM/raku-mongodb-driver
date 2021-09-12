@@ -1,6 +1,6 @@
 #TL:1:MongoDB::Client
 
-use v6;
+use v6.d;
 #-------------------------------------------------------------------------------
 =begin pod
 
@@ -23,7 +23,7 @@ The options which can be used in the uri are in the following tables. See also L
 
 =head2 Uml Diagram
 
-![](plantuml/Client.svg)
+![](images/Client.svg)
 
 
 =head1 See Also
@@ -40,11 +40,10 @@ The options which can be used in the uri are in the following tables. See also L
 
   my BSON::Document $request .= new: (
     insert => 'famous-people',
-    documents => [
-      BSON::Document.new((
+    documents => [ (
         name => 'Larry',
         surname => 'Wall',
-      )),
+      ),
     ]
   );
 
@@ -324,7 +323,7 @@ method collection ( Str:D $full-collection-name --> MongoDB::Collection ) {
 =begin pod
 =head2 cleanup
 
-Stop any background work on the Server object as well as the Monitor object. Cleanup structures so the object can be cleaned further by the Garbage Collector later.
+Stop any background work on the Server object as well as the Monitor object. The cleanup all structures so the object can be cleaned further by the Garbage Collector later.
 
   method cleanup ( )
 

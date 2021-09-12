@@ -1,6 +1,6 @@
 #TL:1:MongoDB::Database
 
-use v6;
+use v6.d;
 #-------------------------------------------------------------------------------
 =begin pod
 
@@ -52,7 +52,7 @@ has Str $.name;
 
 Define a database object. The database is created (if not existant) the moment that data is stored in a collection.
 
-  new ( MongoDB::Uri:D :$uri-obj!, Str:D :$name! )
+  submethod BUILD ( MongoDB::Uri:D :$uri-obj!, Str:D :$name! )
 
 =item MongoDB::Uri $uri-obj; the object that describes the uri provided to the client.
 =item Str $name; Name of the database.
@@ -114,43 +114,27 @@ The name of the database.
 
 Run a command against the database. For proper handling of this command it is necessary to study the documentation on the MongoDB site. A good starting point is L<at this page|https://docs.mongodb.org/manual/reference/command/>.
 
-The command argument is a C<BSON::Document> or List of Pair of which the latter might be more convenient. Mind the comma's when describing list of one Pair! This is very important see e.g. the following Raku REPL interaction;
-
-  > 123.WHAT.say
-  (Int)
-  > (123).WHAT.say
-  (Int)
-  > (123,).WHAT.say     # Only now it becomes a list
-  (List)
-
-  > (a => 1).WHAT.say
-  (Pair)
-  > (a => 1,).WHAT.say  # Again, with comma it becomes a list
-  (List)
-
 See also L<Perl6 docs here|http://doc.perl6.org/routine/%2C> and
-L<here|http://doc.perl6.org/language/list>
+L<here|http://doc.perl6.org/language/list> and L<BSON::Document|../BSON/Document.html>
 
-  multi method run-command ( BSON::Document:D $command --> BSON::Document )
-  multi method run-command ( List:D() $command --> BSON::Document ) {
+  method run-command ( BSON::Document:D $command --> BSON::Document )
 
 =item $command; A B<BSON::Document> or a B<List> of B<Pair>. A structure which defines the command to send to the server.
 
 The command returns always (almost always …) a B<BSON::Document>. Check for its definedness and when defined check the C<ok> key to see if the command was successful
 
-=head3 Example 1
+=head3 Example
 
-First example shows how to insert a document. See also L<information here|https://docs.mongodb.org/manual/reference/command/insert/>. We insert a document using information from http://perldoc.perl.org/perlhist.html. Note that I have a made typo in Larry's name on purpose. We will correct this in the second example.
+This example shows how to insert a document. See also L<information here|https://docs.mongodb.org/manual/reference/command/insert/>. We insert a document using information from http://perldoc.perl.org/perlhist.html. Note that I have a made typo in Larry's name on purpose. We will correct this in the second example.
 
 Insert a document into collection 'famous_people'
 
   my BSON::Document $req .= new: (
     insert => 'famous_people',
-    documents => [
-      BSON::Document.new((
+    documents => [ (
         name => 'Larry',
         surname => 'Walll',
-        languages => BSON::Document.new((
+        languages => (
           Perl0 => 'introduced Perl to my officemates.',
           Perl1 => 'introduced Perl to the world',
           Perl2 => 'introduced Henry Spencer\'s regular expression package.',
@@ -160,8 +144,8 @@ Insert a document into collection 'famous_people'
                    ~ ' including the ability to introduce everything else.',
           Perl6 => 'A perl changing perl event, Dec 24, 2015',
           Raku => 'Renaming Perl6 into Raku, Oct 2019'
-        )),
-      )),
+        ),
+      ),
     ]
   );
 
@@ -171,14 +155,7 @@ Insert a document into collection 'famous_people'
     …
   }
 
-
-As you can see above, it might be confusing how to use the round brackets (). Normally when a method or sub is called you have positional and named arguments. A named argument is like a pair. So to provide a pair as a positional argument, the pair must be enclosed between an extra pair of round brackets. E.g. C<<$some-array.push(($some-key => $some-value));>>. There is a nicer form using a colon ':' e.g. C<<$some-array.push: ($some-key => $some-value);>>. This is done above on the first line. However, this is not possible at the inner calls because these round brackets also delimit the pairs in the list to the new() method.
-
-
-=head3 Example 2
-
-The second method is easier using C<List> of C<Pair> not only for the run-command but also in place of nested C<BSON:Document>'s. Now we use the C<findAndModify> command to correct our spelling mistake of mr Walls name.  See documentation L<here|https://docs.mongodb.org/manual/reference/command/findAndModify/>.
-
+  # Now search for something
   my BSON::Document $doc = $database.run-command: (
     findAndModify => 'famous_people',
     query => (surname => 'Walll'),
@@ -192,7 +169,7 @@ The second method is easier using C<List> of C<Pair> not only for the run-comman
   }
 
 
-Please also note that mongodb uses query selectors such as C<$set> above and virtual collections like C<$cmd>. Because they start with a '$' these must be protected against evaluation by Raku using single quotes.
+Please also note that mongodb uses query selectors such as C<$set> above and virtual collections like C<$cmd>. Because they start with a '$' these must be protected against evaluation by Raku using single quotes. These names are used as keys and unfortunately you can not use the named argument notation like it is possible for e.g. C<:findAndModify<famous_people>>.
 
 =end pod
 

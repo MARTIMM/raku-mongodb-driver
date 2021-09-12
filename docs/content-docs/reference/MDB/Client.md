@@ -21,7 +21,7 @@ Declaration
 Uml Diagram
 -----------
 
-![](plantuml/Client.svg)
+![](images/Client.svg)
 
 See Also
 ========
@@ -40,11 +40,10 @@ Example
 
     my BSON::Document $request .= new: (
       insert => 'famous-people',
-      documents => [
-        BSON::Document.new((
+      documents => [ (
           name => 'Larry',
           surname => 'Wall',
-        )),
+        ),
       ]
     );
 
@@ -121,7 +120,7 @@ A name like `contacts.family` means to create and/or access a database `contacts
 cleanup
 -------
 
-Stop any background work on the Server object as well as the Monitor object. Cleanup structures so the object can be cleaned further by the Garbage Collector later.
+Stop any background work on the Server object as well as the Monitor object. The cleanup all structures so the object can be cleaned further by the Garbage Collector later.
 
     method cleanup ( )
 

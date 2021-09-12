@@ -6,7 +6,7 @@ Operations on collections in a MongoDB database
 Description
 ===========
 
-A MongoDB collection is where the data can be found. The data is stored as a document. The document is provided as a **BSON::Document**. The only interesting method here is `find()` which can also be done using the `run-command()` from **MongoDB::Database**.
+A MongoDB collection is where the data can be found. The data is stored as a document. The document is provided as a **BSON::Document**. The only interesting method here is `find()`. This method is also used by the `run-command()` from **MongoDB::Database**. So, most of the time you will find yourself using the `.run-command()` instead.
 
 Example 1
 ---------
@@ -20,7 +20,7 @@ This example uses a `find()` without any arguments. This causes all documents to
 
     # Find everything and show it
     for $collection.find -> BSON::Document $document {
-      $document.perl.say;
+      $document.raku.say;
     }
 
 Example 2
@@ -36,7 +36,7 @@ This example shows that the `find()` narrows the search down by using conditions
     my MongoDB::Cursor $cursor = $collection.find(
       :$criteria(nick => 'camelia'), $number-to-return(1)
     );
-    $cursor.fetch.perl.say;
+    $cursor.fetch.raku.say;
 
 Methods
 =======
@@ -59,6 +59,9 @@ Create a new collection object.
 
 ### Example 1
 
+Create a collection `perl_users` in database `contacts`.
+
+    my MongoDB::Database $database .= new($client.database('contacts'));
     my MongoDB::Collection $collection .= new(
       :$database, :name<perl_users>, :uri-obj($client.uri-obj)
     );
@@ -72,7 +75,7 @@ However, the easier way is to call collection on the database
 
 ### Example 3
 
-Or directly from the client
+Or directly from the client. Note the how the database name and collection name is written, names are separated by a dot ('.'). See below at `full-collection-name`.
 
     my MongoDB::Collection $collection =
       $client.collection('contacts.perl_users');
@@ -94,7 +97,7 @@ Get the name of the current collection. It is set by `MongoDB::Database` when a 
 find
 ----
 
-Find record in a collection.
+Find record in a collection. This method is used directly if you want some finer control over the search procedure.
 
     multi method find (
       List() :$criteria = (), List() :$projection = (),

@@ -7,23 +7,11 @@
     url: "/content-docs/reference/MDB/Client.html"
   - title: "Collection"
     url: "/content-docs/reference/MDB/Collection.html"
+  - title: "Cursor"
+    url: "/content-docs/reference/MDB/Cursor.html"
   - title: "Database"
     url: "/content-docs/reference/MDB/Database.html"
 
-#    - title: "Projects"
-#      url: "/content-docs/projects.html"
-#    - title: "Tutorial"
-#    - title: "Examples"
-#      url: "/content-docs/examples.html"
-#    - title: "About"
-#      url: '/content-docs/about.html'
-#      right: true
-#    - title: "Design"
-#      url: "/content-docs/design.html"
-#      right: true
-#    - title: "Reference"
-#      url: "/content-docs/reference-gtk3.html"
-#      right: true
 
 - bar_title: "BSON"
   bar_menu:

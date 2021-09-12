@@ -1,6 +1,6 @@
 #TL:1:MongoDB::Collection:
 
-use v6;
+use v6.d;
 
 =begin pod
 
@@ -10,7 +10,7 @@ Operations on collections in a MongoDB database
 
 =head1 Description
 
-A MongoDB collection is where the data can be found. The data is stored as a document. The document is provided as a B<BSON::Document>. The only interesting method here is C<find()> which can also be done using the C<run-command()> from B<MongoDB::Database>.
+A MongoDB collection is where the data can be found. The data is stored as a document. The document is provided as a B<BSON::Document>. The only interesting method here is C<find()>. This method is also used by the C<run-command()> from B<MongoDB::Database>. So, most of the time you will find yourself using the C<.run-command()> instead.
 
 
 =head2 Example 1
@@ -24,7 +24,7 @@ This example uses a C<find()> without any arguments. This causes all documents t
 
   # Find everything and show it
   for $collection.find -> BSON::Document $document {
-    $document.perl.say;
+    $document.raku.say;
   }
 
 =head2 Example 2
@@ -39,7 +39,7 @@ This example shows that the C<find()> narrows the search down by using condition
   my MongoDB::Cursor $cursor = $collection.find(
     :$criteria(nick => 'camelia'), $number-to-return(1)
   );
-  $cursor.fetch.perl.say;
+  $cursor.fetch.raku.say;
 
 =end pod
 
@@ -81,6 +81,9 @@ Create a new collection object.
 
 =head3 Example 1
 
+Create a collection C<perl_users> in database C<contacts>.
+
+  my MongoDB::Database $database .= new($client.database('contacts'));
   my MongoDB::Collection $collection .= new(
     :$database, :name<perl_users>, :uri-obj($client.uri-obj)
   );
@@ -94,7 +97,7 @@ However, the easier way is to call collection on the database
 
 =head3 Example 3
 
-Or directly from the client
+Or directly from the client. Note the how the database name and collection name is written, names are separated by a dot ('.'). See below at C<full-collection-name>.
 
   my MongoDB::Collection $collection =
     $client.collection('contacts.perl_users');
@@ -133,16 +136,9 @@ Get the name of the current collection. It is set by C<MongoDB::Database> when a
 =begin pod
 =head2 find
 
-Find record in a collection.
+Find record in a collection. This method is used directly if you want some finer control over the search procedure.
 
-  multi method find (
-    List() :$criteria = (), List() :$projection = (),
-    Int :$number-to-skip = 0, Int :$number-to-return = 0,
-    QueryFindFlags :@flags = Array[QueryFindFlags].new,
-    --> MongoDB::Cursor
-  )
-
-  multi method find (
+  method find (
     BSON::Document :$criteria = BSON::Document.new,
     BSON::Document :$projection?,
     Int :$number-to-skip = 0, Int :$number-to-return = 0,
