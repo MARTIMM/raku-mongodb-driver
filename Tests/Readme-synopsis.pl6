@@ -15,11 +15,10 @@ $database.run-command(BSON::Document.new: (dropDatabase => 1));
 # Inserting data in collection 'famous-people'
 my BSON::Document $req .= new: (
   insert => 'famous-people',
-  documents => [
-    BSON::Document.new((
+  documents => [ (
       name => 'Larry',
       surname => 'Walll',
-      languages => BSON::Document.new((
+      languages => (
         Perl0 => 'introduced Perl to my officemates.',
         Perl1 => 'introduced Perl to the world',
         Perl2 => "introduced Henry Spencer's regular expression package.",
@@ -27,8 +26,8 @@ my BSON::Document $req .= new: (
         Perl4 => 'introduced the first Camel book.',
         Perl5 => 'introduced everything else, including the ability to introduce everything else.',
         Perl6 => 'A perl changing perl event, Dec 12,2015'
-      )),
-    )),
+      ),
+    ),
   ]
 );
 
