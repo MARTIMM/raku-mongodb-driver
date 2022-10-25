@@ -19,7 +19,7 @@
 * I am now more satisfied with logging because of the use of parts of the Log::Async module. A few additions might be to use macros to get info at the calling point before sending to the \*-message() subs. This will make the search through the stack unnecessary.
 
 * Must check for max BSON document size
-* There is an occasional 'double free' bug in perl6 which torpedes tests now and then. This is a perl6 problem.
+* There is an occasional 'double free' bug in perl6 which torpedes tests now and then. This is a perl6 problem (solved? 24-10-2022).
 
 ## Other items to check
 * [MongoDB Limits and Thresholds](https://docs.mongodb.org/manual/reference/limits/)
