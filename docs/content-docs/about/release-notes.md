@@ -9,6 +9,9 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
+#### 2022-11-21 0.43.20
+  * Rename file extensions of all Raku files.
+
 #### 2021-08-15 0.43.19
 * BSON documents added to site. Also modified some MongoDB documents and added new ones.
 
