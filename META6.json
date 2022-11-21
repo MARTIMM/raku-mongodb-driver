@@ -1,5 +1,5 @@
 {
-  "version": "0.43.19",
+  "version": "0.43.20",
   "description": "MongoDB driver",
   "name": "MongoDB",
 
@@ -13,32 +13,32 @@
   ],
 
   "provides": {
-    "MongoDB::Authenticate::Credential": "lib/MongoDB/Authenticate/Credential.pm6",
-    "MongoDB::Authenticate::Scram":     "lib/MongoDB/Authenticate/Scram.pm6",
-    "MongoDB::Client":                  "lib/MongoDB/Client.pm6",
-    "MongoDB::Collection":              "lib/MongoDB/Collection.pm6",
-    "MongoDB::Cursor":                  "lib/MongoDB/Cursor.pm6",
-    "MongoDB::Database":                "lib/MongoDB/Database.pm6",
-    "MongoDB::Header":                  "lib/MongoDB/Header.pm6",
-    "MongoDB::HL::Collection":          "lib/MongoDB/HL/Collection.pm6",
-    "MongoDB::HL::Users":               "lib/MongoDB/HL/Users.pm6",
-    "MongoDB::Log":                     "lib/MongoDB/Log.pm6",
-    "MongoDB::MDBConfig":               "lib/MongoDB/MDBConfig.pm6",
-    "MongoDB::ObserverEmitter":         "lib/MongoDB/ObserverEmitter.pm6",
-    "MongoDB::Server::Control":         "lib/MongoDB/Server/Control.pm6",
-    "MongoDB::Server::Monitor":         "lib/MongoDB/Server/Monitor.pm6",
-    "MongoDB::ServerPool::Server":      "lib/MongoDB/ServerPool/Server.pm6",
-    "MongoDB::ServerPool":              "lib/MongoDB/ServerPool.pm6",
-    "MongoDB::SocketPool::Socket":      "lib/MongoDB/SocketPool/Socket.pm6",
-    "MongoDB::SocketPool":              "lib/MongoDB/SocketPool.pm6",
-    "MongoDB::Timer":                   "lib/MongoDB/Timer.pm6",
-    "MongoDB::Uri":                     "lib/MongoDB/Uri.pm6",
-    "MongoDB::Wire":                    "lib/MongoDB/Wire.pm6",
-    "MongoDB":                          "lib/MongoDB.pm6"
+    "MongoDB::Authenticate::Credential": "lib/MongoDB/Authenticate/Credential.rakumod",
+    "MongoDB::Authenticate::Scram":     "lib/MongoDB/Authenticate/Scram.rakumod",
+    "MongoDB::Client":                  "lib/MongoDB/Client.rakumod",
+    "MongoDB::Collection":              "lib/MongoDB/Collection.rakumod",
+    "MongoDB::Cursor":                  "lib/MongoDB/Cursor.rakumod",
+    "MongoDB::Database":                "lib/MongoDB/Database.rakumod",
+    "MongoDB::Header":                  "lib/MongoDB/Header.rakumod",
+    "MongoDB::HL::Collection":          "lib/MongoDB/HL/Collection.rakumod",
+    "MongoDB::HL::Users":               "lib/MongoDB/HL/Users.rakumod",
+    "MongoDB::Log":                     "lib/MongoDB/Log.rakumod",
+    "MongoDB::MDBConfig":               "lib/MongoDB/MDBConfig.rakumod",
+    "MongoDB::ObserverEmitter":         "lib/MongoDB/ObserverEmitter.rakumod",
+    "MongoDB::Server::Control":         "lib/MongoDB/Server/Control.rakumod",
+    "MongoDB::Server::Monitor":         "lib/MongoDB/Server/Monitor.rakumod",
+    "MongoDB::ServerPool::Server":      "lib/MongoDB/ServerPool/Server.rakumod",
+    "MongoDB::ServerPool":              "lib/MongoDB/ServerPool.rakumod",
+    "MongoDB::SocketPool::Socket":      "lib/MongoDB/SocketPool/Socket.rakumod",
+    "MongoDB::SocketPool":              "lib/MongoDB/SocketPool.rakumod",
+    "MongoDB::Timer":                   "lib/MongoDB/Timer.rakumod",
+    "MongoDB::Uri":                     "lib/MongoDB/Uri.rakumod",
+    "MongoDB::Wire":                    "lib/MongoDB/Wire.rakumod",
+    "MongoDB":                          "lib/MongoDB.rakumod"
   },
 
   "old-provides": {
-      "MongoDB::Server":                  "lib/MongoDB/Server.pm6"
+      "MongoDB::Server":                  "lib/MongoDB/Server.rakumod"
   },
 
   "depends": [
