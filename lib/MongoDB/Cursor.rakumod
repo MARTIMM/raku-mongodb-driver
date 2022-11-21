@@ -15,7 +15,7 @@ After calling C<MongoDB::Collection.find()> to query the collection for data, a 
 =head1 Synopsis
 =head2 Declaration
 
-  unit class MongoDB::Cursor:auth<github:MARTIMM>:ver<0.2.0>;
+  unit class MongoDB::Cursor:auth<github:MARTIMM>;
   also does Iterable;
 
 
@@ -84,7 +84,7 @@ use MongoDB::Wire;
 use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Cursor:auth<github:MARTIMM>:ver<0.2.0>;
+unit class MongoDB::Cursor:auth<github:MARTIMM>;
 also does Iterable;
 
 #-------------------------------------------------------------------------------

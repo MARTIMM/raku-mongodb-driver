@@ -12,7 +12,7 @@ use Config::DataLang::Refine;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Server::Control:auth<github:MARTIMM>:ver<0.1.0>;
+unit class MongoDB::Server::Control:auth<github:MARTIMM>;
 
 #TODO startup/shutdown on windows and apples
 #-----------------------------------------------------------------------------

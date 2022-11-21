@@ -14,7 +14,7 @@ Synopsis
 Declaration
 -----------
 
-    unit class MongoDB::Cursor:auth<github:MARTIMM>:ver<0.2.0>;
+    unit class MongoDB::Cursor:auth<github:MARTIMM>;
     also does Iterable;
 
 Example

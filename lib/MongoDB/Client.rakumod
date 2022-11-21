@@ -71,7 +71,7 @@ INIT {
 }
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Client:auth<github:MARTIMM>:ver<0.1.1>;
+unit class MongoDB::Client:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 =begin pod

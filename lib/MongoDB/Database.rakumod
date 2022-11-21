@@ -26,7 +26,7 @@ Creating a MongoDB database will not happen when a Raku B<MongoDB::Database> is 
 =end pod
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Database:auth<github:MARTIMM>:ver<0.1.1>;
+unit class MongoDB::Database:auth<github:MARTIMM>;
 
 use MongoDB;
 use MongoDB::Uri;

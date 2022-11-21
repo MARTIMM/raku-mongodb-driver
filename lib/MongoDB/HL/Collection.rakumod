@@ -9,7 +9,7 @@ use MongoDB::Collection;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
-unit package MongoDB:auth<github:MARTIMM>:ver<0.1.0>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 # Array index into schema
 constant C-MANDATORY            = 0;

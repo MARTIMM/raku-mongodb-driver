@@ -11,7 +11,7 @@ use Unicode::PRECIS::Identifier::UsernameCasePreserved;
 use Unicode::PRECIS::FreeForm::OpaqueString;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::HL::Users:auth<hgithub:MARTIMM>:ver<0.1.0>;
+unit class MongoDB::HL::Users:auth<hgithub:MARTIMM>;
 
 #tm:1:database:
 has MongoDB::Database $.database;

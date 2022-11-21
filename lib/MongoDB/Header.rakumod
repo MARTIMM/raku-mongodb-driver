@@ -7,7 +7,7 @@ use BSON::Encode;
 use BSON::Decode;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Header:auth<github:MARTIMM>:ver<0.1.0>;
+unit class MongoDB::Header:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 # Request id must be kept among all objects of this type so the request can

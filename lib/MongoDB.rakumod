@@ -24,7 +24,7 @@ sub EXPORT { {
 };
 
 #------------------------------------------------------------------------------
-unit package MongoDB:auth<github:MARTIMM>:ver<0.1.0>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #------------------------------------------------------------------------------
 constant SERVER-VERSION1 is export = '4.0.5';

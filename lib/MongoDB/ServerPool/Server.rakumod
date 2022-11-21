@@ -18,7 +18,7 @@ use Semaphore::ReadersWriters;
 #use Auth::SCRAM;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::ServerPool::Server:auth<github:MARTIMM>:ver<0.1.0>;
+unit class MongoDB::ServerPool::Server:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 #TM:1:host:

@@ -13,7 +13,7 @@ use Semaphore::ReadersWriters;
 # * Entries are keyed so they can be removed too.
 # * Logging.
 #-------------------------------------------------------------------------------
-unit class MongoDB::ObserverEmitter:auth<github:MARTIMM>:ver<0.1.0>;
+unit class MongoDB::ObserverEmitter:auth<github:MARTIMM>;
 
 # make events and supply global to the Emitter objects
 my Array $events;

@@ -4,7 +4,7 @@ use MongoDB;
 
 #-------------------------------------------------------------------------------
 # https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#client-implementation
-unit package MongoDB:auth<github:MARTIMM>:ver<0.1.0>;
+unit package MongoDB:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 class Authenticate::Credential {

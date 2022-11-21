@@ -51,7 +51,7 @@ use MongoDB::Cursor;
 #use MongoDB::ServerPool;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Collection:auth<github:MARTIMM>:ver<0.1.1>;
+unit class MongoDB::Collection:auth<github:MARTIMM>;
 
 #-------------------------------------------------------------------------------
 =begin pod
