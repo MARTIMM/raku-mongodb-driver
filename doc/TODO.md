@@ -7,6 +7,36 @@
 * Blog [A Consistent CRUD API](https://www.mongodb.com/blog/post/consistent-crud-api-next-generation-mongodb-drivers?jmp=docs&_ga=1.72964115.1411139568.1420476116)
 * Mongodb spec docs
 
+
+## Fedora
+Fedora does not support mongo database because of its license so it cannot be installed using dnf. There is, however, a way to set up the package manager.
+
+Create a file **/etc/yum.repos.d/mongodb-org-4.4.repo** and edit;
+```
+[Mongodb]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/8/mongodb-org/4.4/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-4.4.asc
+```
+Install that file using dnf
+```
+dnf install mongodb-org
+```
+**Warning**: MongoDB does not guarantee compatibility with Fedora Linux, so newer MongoDB server packages might fail to install. See MongoDB [issue ticket SERVER-58871](https://jira.mongodb.org/browse/SERVER-58870).
+
+You can also go to the website using the baseurl and download the code.
+
+
+## Powershell for linux
+
+<!--
+Go to [powershell github](https://github.com/PowerShell/PowerShell)
+A little lower there is a table with a Fedora entry. Choose an rpm to download from the stable column.
+-->
+Run discover to install a snap package
+
 ## Speed
 * Speed can be influenced by specifying types on all variables, but on the other hand, it might slow it down because of type checking. Need to investigate that. Again, typing variables helps resolving mistakes too!
 * Take native types for simple things such as counters
