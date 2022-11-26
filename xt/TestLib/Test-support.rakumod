@@ -1,8 +1,150 @@
-use v6;
+#-------------------------------------------------------------------------------
+use BSON::Document;
+
+use MongoDB;
+use MongoDB::Collection;
+use MongoDB::Client;
+
+#use TestLib::Control;
+#use TestLib::MDBConfig;
+
+use YAMLish;
 
 #-------------------------------------------------------------------------------
-#unit package MongoDB:auth<github:MARTIMM>;
+unit class TestLib::Test-support:auth<github:MARTIMM>;
 
+constant SERVER_PATH = 'xt/TestServers';
+constant CONFIG_NAME = 'config.yaml';
+
+#my TestLib::MDBConfig $instance;
+
+has Hash $.cfg;
+
+#-------------------------------------------------------------------------------
+# also keep this the same as in Build.pm6
+#constant SERVER-VERSION1 = '3.6.9';
+#constant SERVER-VERSION1 = '4.0.5';
+#constant SERVER-VERSION2 = '4.0.18';
+# later builds have specific os names in the archive name
+#  constant SERVER-VERSION2 = '4.2.6';
+
+#has TestLib::Control $.server-control;
+
+# Environment variable SERVERKEYS holds a list of server keys. This is set by
+# xt/wrapper.raku
+
+#-------------------------------------------------------------------------------
+submethod BUILD ( ) {
+  # initialize Control object with config
+  #$!server-control .= new;
+
+#  TestLib::MDBConfig.instance(:config-name<config.yaml>);
+
+  $!cfg = load-yaml((SERVER_PATH ~ '/' ~ CONFIG_NAME).IO.slurp);
+note 'cfg: ', $!cfg.gist;
+}
+
+#-------------------------------------------------------------------------------
+method create-server-config( Str $server, Version $version ) {
+
+note "make config for server '$server'";
+
+my $data-path = [~] SERVER_PATH, '/ServerData/', $server, '/', $version;
+mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
+my Str $port = '65011';
+
+  # Initialize with data which are always the same
+  my Hash $server-config = %(
+    systemLog => %(
+      :destination<file>,
+      :path("$*CWD/$data-path/mdb.log"),
+      :logAppend,
+#      :logRotate<1>,
+
+      component => %(
+        accessControl => %(:verbosity<2>),
+        command => %(:verbosity<2>),
+        replication => %(
+          :verbosity<2>,
+          ($version > v3.6.9 ?? election => %(:verbosity<2>) !! %()),
+          heartbeats => %(:verbosity<2>),
+          ($version > v3.6.9 ?? initialSync => %(:verbosity<2>) !! %()),
+          rollback => %(:verbosity<2>),
+        ),
+        storage => %(
+          :verbosity<2>,
+          journal => %(:verbosity<2>),
+          ($version > v3.6.9 ?? recovery => %(:verbosity<2>) !! %()),
+        ),
+        write => %(:verbosity<2>),
+      )
+    ),
+
+    storage => %(
+      :dbPath("$*CWD/$data-path/db"),
+      journal => %(:!enabled,),
+    ),
+
+    processManagement => %(
+      :!fork,
+    ),
+
+    net => %(
+      :bindIp<localhost>,
+      :$port,
+    ),
+  );
+
+  # remove some yaml thingies and save
+  my Str $scfg = save-yaml($server-config);
+  $scfg ~~ s:g/ '---' \n //;
+  $scfg ~~ s:g/ '...' //;
+  "$data-path/server-config.conf".IO.spurt($scfg);
+}
+
+#-------------------------------------------------------------------------------
+method start-mongod ( Str $server, Str $version --> Bool ) {
+
+  my $data-path = [~] SERVER_PATH, '/ServerData/', $server, '/', $version;
+
+  my Str $command = "$*CWD/{SERVER_PATH}/ServerSoftware/$version/mongod"
+    ~ " --config $*CWD/$data-path/server-config.conf -vvv";
+
+  info-message($command);
+
+  my Bool $started = False;
+  try {
+    my Proc $proc = shell $command, :err, :out;
+
+    # when closing the channels, exceptions are thrown by Proc when there
+    # were any problems
+    $proc.err.close;
+    $proc.out.close;
+    CATCH {
+      default {
+        fatal-message(.message);
+      }
+    }
+  }
+
+  $started = True;
+  debug-message('Command executed ok');
+
+  $started
+}
+
+
+
+
+
+
+
+
+
+
+
+=finish
+#-------------------------------------------------------------------------------
 use BSON::Document;
 use MongoDB;
 use MongoDB::Collection;
@@ -10,7 +152,7 @@ use MongoDB::Server::Control;
 use MongoDB::Client;
 
 #-------------------------------------------------------------------------------
-unit class MongoDB::Test-support:auth<github:MARTIMM>;
+unit class TestLib::Test-support:auth<github:MARTIMM>;
 
 # also keep this the same as in Build.pm6
 #  constant SERVER-VERSION1 = '3.6.9';
@@ -111,9 +253,9 @@ method !find-next-free-port ( Int $start-portnbr --> Int ) {
 }
 
 #-------------------------------------------------------------------------------
-multi method serverkeys ( Str $serverkeys is copy ) {
+multi method serverkeys ( Str $serverkeys:D ) {
 
-  %*ENV<SERVERKEYS> = $serverkeys // 's1';
+  %*ENV<SERVERKEYS> = $serverkeys;
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
