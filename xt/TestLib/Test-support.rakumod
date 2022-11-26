@@ -5,9 +5,6 @@ use MongoDB;
 use MongoDB::Collection;
 use MongoDB::Client;
 
-#use TestLib::Control;
-#use TestLib::MDBConfig;
-
 use YAMLish;
 
 #-------------------------------------------------------------------------------
@@ -16,32 +13,24 @@ unit class TestLib::Test-support:auth<github:MARTIMM>;
 constant SERVER_PATH = 'xt/TestServers';
 constant CONFIG_NAME = 'config.yaml';
 
-#my TestLib::MDBConfig $instance;
-
 has Hash $.cfg;
 
 #-------------------------------------------------------------------------------
-# also keep this the same as in Build.pm6
-#constant SERVER-VERSION1 = '3.6.9';
-#constant SERVER-VERSION1 = '4.0.5';
-#constant SERVER-VERSION2 = '4.0.18';
-# later builds have specific os names in the archive name
-#  constant SERVER-VERSION2 = '4.2.6';
-
-#has TestLib::Control $.server-control;
-
-# Environment variable SERVERKEYS holds a list of server keys. This is set by
-# xt/wrapper.raku
-
-#-------------------------------------------------------------------------------
 submethod BUILD ( ) {
-  # initialize Control object with config
-  #$!server-control .= new;
-
-#  TestLib::MDBConfig.instance(:config-name<config.yaml>);
 
   $!cfg = load-yaml((SERVER_PATH ~ '/' ~ CONFIG_NAME).IO.slurp);
-note 'cfg: ', $!cfg.gist;
+#note 'cfg: ', $!cfg.gist;
+
+  my $log-path = "{SERVER_PATH}/ServerData/wrapper.log";
+
+  drop-send-to('mongodb');
+  #drop-send-to('screen');
+  #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+  my $handle = $log-path.IO.open( :mode<wo>, :create, :truncate);
+  add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+  #set-filter(|<ObserverEmitter Timer Socket>);
+  #set-filter(|<ObserverEmitter>);
+  info-message("Wrapper tests started");
 }
 
 #-------------------------------------------------------------------------------
@@ -49,9 +38,10 @@ method create-server-config( Str $server, Version $version ) {
 
 note "make config for server '$server'";
 
-my $data-path = [~] SERVER_PATH, '/ServerData/', $server, '/', $version;
-mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
-my Str $port = '65011';
+  my $data-path = [~] SERVER_PATH, '/ServerData/', $server, '/', $version;
+  mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
+
+  my Str $port = ($!cfg<server>{$server}<port> // 27012).Str;
 
   # Initialize with data which are always the same
   my Hash $server-config = %(
@@ -86,7 +76,7 @@ my Str $port = '65011';
     ),
 
     processManagement => %(
-      :!fork,
+      :fork,
     ),
 
     net => %(
@@ -132,6 +122,41 @@ method start-mongod ( Str $server, Str $version --> Bool ) {
 
   $started
 }
+
+#-----------------------------------------------------------------------------
+method stop-mongod ( Str $server, Str $version --> Bool ) {
+
+  my Bool $stopped = False;
+  my Str $port = ($!cfg<server>{$server}<port> // 27012).Str;
+  my Str $uri = "mongodb://localhost:$port";
+
+  # shutdown can only be given to localhost or as an authenticated
+  # user with proper rights when server is started with --auth option.
+  my MongoDB::Client $client .= new(:$uri);
+  my MongoDB::Database $database = $client.database('admin');
+
+  # force needed to shutdown replicated servers
+  my BSON::Document $req .= new: ( shutdown => 1, force => True);
+  my BSON::Document $doc = $database.run-command($req);
+
+  # older versions just break off so doc can be undefined
+  if !$doc or (?$doc and $doc<ok> ~~ 1e0) {
+    $stopped = True;
+    debug-message('Shutdown executed ok');
+  }
+
+  else {
+    warn-message("Error: $doc<errcode>, $doc<errmsg>");
+    $stopped = False;
+  }
+
+  $stopped
+}
+
+#-----------------------------------------------------------------------------
+method clean-mongod ( Str $server, Str $version ) {
+}
+
 
 
 
