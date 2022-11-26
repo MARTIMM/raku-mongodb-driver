@@ -1,0 +1,5 @@
+use Test;
+
+use MongoDB::Client;
+ok 1, 'MongoDB::Client loaded';
+done-testing;
