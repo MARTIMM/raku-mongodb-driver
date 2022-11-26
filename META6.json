@@ -1,5 +1,5 @@
 {
-  "version": "0.43.20",
+  "version": "0.43.21",
   "description": "MongoDB driver",
   "name": "MongoDB",
 
@@ -23,9 +23,7 @@
     "MongoDB::HL::Collection":          "lib/MongoDB/HL/Collection.rakumod",
     "MongoDB::HL::Users":               "lib/MongoDB/HL/Users.rakumod",
     "MongoDB::Log":                     "lib/MongoDB/Log.rakumod",
-    "MongoDB::MDBConfig":               "lib/MongoDB/MDBConfig.rakumod",
     "MongoDB::ObserverEmitter":         "lib/MongoDB/ObserverEmitter.rakumod",
-    "MongoDB::Server::Control":         "lib/MongoDB/Server/Control.rakumod",
     "MongoDB::Server::Monitor":         "lib/MongoDB/Server/Monitor.rakumod",
     "MongoDB::ServerPool::Server":      "lib/MongoDB/ServerPool/Server.rakumod",
     "MongoDB::ServerPool":              "lib/MongoDB/ServerPool.rakumod",
@@ -38,8 +36,12 @@
   },
 
   "old-provides": {
-      "MongoDB::Server":                  "lib/MongoDB/Server.rakumod"
+    "MongoDB::MDBConfig":               "lib/MongoDB/MDBConfig.rakumod",
+    "MongoDB::Server::Control":         "lib/MongoDB/Server/Control.rakumod",
+    "MongoDB::Server":                  "lib/MongoDB/Server.rakumod"
   },
+
+  "NOTE": "The complex tests make use of modules not installed with this package. E.g. YAMLish",
 
   "depends": [
     "BSON",
