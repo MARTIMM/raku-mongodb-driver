@@ -16,3 +16,4 @@ t/Appveyor/*
 Gemfile*
 **/vendor/*
 **/_site
+xt/TestServers/*
