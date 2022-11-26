@@ -11,6 +11,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
 #### 2022-11-22 0.43.21
 * Tests will be dramatically shortened to only a load of a module. This means that the sandbox can be removed. The tests will then only be done on servers like `Github actions` or on my machine.
+* Dropped modules and simplyfied testing. Only a `wrapper.raku` used now and prove6 is not used.
 
 #### 2022-11-21 0.43.20
   * Rename file extensions of all Raku files.
