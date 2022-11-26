@@ -26,7 +26,7 @@ dnf install mongodb-org
 ```
 **Warning**: MongoDB does not guarantee compatibility with Fedora Linux, so newer MongoDB server packages might fail to install. See MongoDB [issue ticket SERVER-58871](https://jira.mongodb.org/browse/SERVER-58870).
 
-You can also go to the website using the baseurl and download the code.
+You can also go to the website using the **baseurl** and download the code.
 
 
 ## Powershell for linux
