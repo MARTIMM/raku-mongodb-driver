@@ -1,0 +1,83 @@
+os: Visual Studio 2015
+
+platform: x64
+
+branches:
+  # whitelist
+  only:
+#    - master
+#    - windows
+    - develop
+    - dummy-branch
+
+install:
+  - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
+
+  - choco feature enable -n allowGlobalConfirmation
+  - choco feature enable -n allowEmptyChecksums
+
+  - SET WORKDIR=C:\projects\raku-mongodb-driver
+  - SET INSDIR=t\Appveyor
+  - SET MDBNAME=mongodb-win32-x86_64-2008plus-ssl-3.6.4
+
+  - appveyor DownloadFile https://downloads.mongodb.org/win32/%MDBNAME%.zip -FileName %WORKDIR%\%INSDIR%\mongodb.zip
+  - 7z x %WORKDIR%\%INSDIR%\mongodb.zip -o%WORKDIR%\%INSDIR% * -r
+  - SET PATH=%WORKDIR%\%INSDIR%\%MDBNAME%\bin;%PATH%
+
+  - choco install strawberryperl
+  - SET PATH=C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;%PATH%
+
+  # this is more like what is happening on Travis so tests are more the same
+  # From https://gist.github.com/ugexe/e95307a3a606df83fdcb
+  - git clone https://github.com/rakudo/rakudo.git C:\rakudo
+  - cd C:\rakudo
+  - perl Configure.pl --gen-moar=HEAD --gen-nqp
+  - nmake install
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - SET PATH=C:\rakudo\install\bin;C:\rakudo\install\share\perl6\site\bin;%PATH%
+
+  #- appveyor DownloadFile "http://rakudo.org/downloads/star/rakudo-star-latest-x86_64 (JIT).msi" -FileName %APPVEYOR_BUILD_FOLDER%\rakudo.msi
+  #- msiexec /i rakudo.msi /quiet /qn /norestart /log install.log
+  #- SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
+
+#  - dir %WORKDIR%
+#  - dir %WORKDIR%\%INSDIR%
+#  - dir %WORKDIR%\%INSDIR%\%MDBNAME%\bin
+
+
+#  - SET PATH=C:\rakudo\bin;C:\rakudo\share\perl6\site\bin;%PATH%
+#  - zef --/test install Log::Async
+#  - zef --/test install Config::TOML
+#  - zef --/test install Auth::SCRAM
+#  - zef --/test install Base64
+#  - zef --/test install OpenSSL
+#  - zef --/test install Unicode::PRECIS
+#  - zef --/test install Config::DataLang::Refine
+
+  - git clone https://github.com/ugexe/zef.git C:\zef
+  - cd C:\zef
+  - perl6 -Ilib bin/zef --verbose install .
+  - cd %APPVEYOR_BUILD_FOLDER%
+
+  - zef --/test --depsonly install .
+
+build: off
+
+test_script:
+  - perl6 xt/wrapper.raku t/098-mk-sandbox.t
+#  - dir %WORKDIR%
+  - dir %WORKDIR%\Sandbox\Server-s1
+  - type %WORKDIR%\Sandbox\config.toml
+  - perl6 xt/wrapper.raku --ignore --serverkeys=s1 t/099*
+#  - type %WORKDIR%\Sandbox\Server-s1\m.log
+#  - perl6 xt/wrapper.raku --serverkeys=s1 t/099* t/[2-5]* t/998*
+  - perl6 xt/wrapper.raku t/999-rm-sandbox.t
+
+# fetch repository as zip archive
+shallow_clone: true
+
+# set clone depth
+clone_depth: 5
+
+environment:
+  Test-Env: AppVeyor
