@@ -1,0 +1,33 @@
+@startmindmap
+* t
+** client.rakutest
+** database.rakutest
+** …
+
+* xt
+** TestServers
+*** ServerData
+**** server-name
+***** version
+****** db
+****** mdb.log
+****** server-config.conf
+***** …
+**** …
+**** wrapper.log
+*** ServerSoftware
+**** version
+***** mongod
+***** mongos
+**** …
+*** config.yaml
+** Tests
+*** test dir
+**** test program
+**** …
+*** …
+*** test program
+*** …
+** TestDocs
+** wrapper.raku
+@endmindmap
