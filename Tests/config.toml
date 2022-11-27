@@ -1,0 +1,61 @@
+[locations]
+dbpath = "m.data"
+logpath = "m.log"
+pidfilepath = "m.pid"
+server-path = "./xt/TestServers"
+mongod = "./xt/TestServers/3.6.9/mongod"
+mongos = "./xt/TestServers/3.6.9/mongos"
+
+[locations.simple]
+server-subdir = "Server1"
+
+[locations.replica1]
+server-subdir = "Server2"
+
+
+[ server ]
+nojournal = true
+fork = true
+# next is not for wiredtiger but for mmapv1
+#  smallfiles = true
+#  ipv6 = true
+#  quiet = true
+#  verbose = '=command=v =network=v'
+verbose = 'vv'
+#  logappend = true
+
+# use ss -tunl to find free port number
+[ server.simple ]
+port = 65010
+
+
+[ server.replica1 ]
+port = 65011
+
+[ server.replica1.replicate1 ]
+oplogSize = 128
+replSet = 'first_replicate'
+
+
+[ server.replica2 ]
+port = 65012
+auth = true
+
+[ server.replica2.replicate1 ]
+oplogSize = 128
+replSet = 'first_replicate'
+
+[ server.replica2.replicate3 ]
+oplogSize = 128
+replSet = 'second_replicate'
+
+#        authenticate => True,
+#        account => {
+#          user => 'Dondersteen',
+#          pwd => 'w@tD8jeDan',
+#        },
+
+[ account.replica2 ]
+user = 'test_user'
+pwd = 'T3st-Us3r'
+
