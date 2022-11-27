@@ -10,7 +10,7 @@ layout: sidebar
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
 #### 2022-11-22 0.43.21
-* Tests will be dramatically shortened to only a load of a module. This means that the sandbox can be removed. The tests will then only be done on servers like `Github actions` or on my machine.
+* Tests will be dramatically shortened to only the load of modules. This means that the sandbox can be removed. The tests will then only be done on servers like `Github actions` or on my machine.
 * Dropped modules and simplyfied testing. Only a `wrapper.raku` used now and prove6 is not used.
 
 #### 2022-11-21 0.43.20

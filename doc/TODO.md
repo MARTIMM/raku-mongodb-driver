@@ -26,8 +26,7 @@ dnf install mongodb-org
 ```
 **Warning**: MongoDB does not guarantee compatibility with Fedora Linux, so newer MongoDB server packages might fail to install. See MongoDB [issue ticket SERVER-58871](https://jira.mongodb.org/browse/SERVER-58870).
 
-You can also go to the website using the **baseurl** and download the code.
-
+You can also go to the website using the **baseurl** and download the code. Take the redhat 8 version 64bit (on my system) because 7 has troubles with missing libs like `libcrypto.so.10`. This is done for my test environment (note: not saved to github).
 
 ## Powershell for linux
 
@@ -38,7 +37,7 @@ A little lower there is a table with a Fedora entry. Choose an rpm to download f
 Run discover to install a snap package
 
 ## Speed
-* Speed can be influenced by specifying types on all variables, but on the other hand, it might slow it down because of type checking. Need to investigate that. Again, typing variables helps resolving mistakes too!
+* Speed can be influenced by specifying types on all variables, but on the other hand, it might slow it down because of type checking - **types are ok because it slows compile time but not run time**. Need to investigate that. Again, typing variables helps resolving mistakes too!
 * Take native types for simple things such as counters
 * Setting constraints like (un)definedness etc on parameters
 * The compile step of perl6 takes some time before running. This obviously depends on the code base of the programs. One thing I have done is removing all exception classes from the modules and replace them by only one class defined in MongoDB/Log.pm.
