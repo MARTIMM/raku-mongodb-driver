@@ -2,9 +2,6 @@
 
 use lib 'xt';
 
-#use Test;
-#use TestLib::Test-support;
-
 use BSON::Document;
 
 use MongoDB;
@@ -13,14 +10,11 @@ use MongoDB::Client;
 
 use YAMLish;
 
-#use Tap;
-
 #-------------------------------------------------------------------------------
 # class defined below
 class Wrapper {...}
 
 #-------------------------------------------------------------------------------
-#sub MAIN ( @tests, Str:D :$server, Bool :$ignore = False, Str:D :$version! ) {
 sub MAIN (
   *@tests, Str :$test-dir is copy = '', 
   Str:D :$servers, Str :$version = '4.0.18',
@@ -30,14 +24,17 @@ sub MAIN (
 
   # Set server list in environment
   my @server-ports = ();
-  
-  #for @$server-keys -> $server-key {
-  for $servers.split(/\s* ',' \s*/) -> $server-key {
+  my @servers = $servers.split(/\s* ',' \s*/);
+note 'servers: ', @servers.gist;
+
+  for @servers -> $server-key {
     @server-ports.push: $ts.create-server-config(
       $server-key, Version.new($version)
     );
     $ts.start-mongod( $server-key, $version) if $start;
+  }
 
+  for @servers -> $server-key {
     # Get full pathnames
     my @test-files = ();
     $test-dir = 'xt/Tests' ~ (?$test-dir ?? "/$test-dir" !! '');
@@ -47,13 +44,10 @@ sub MAIN (
     }
 #note @test-files;
 
-#    my %args = :jobs(1), :err<ignore>, :timer;
-#    my $harness = TAP::Harness.new(|%args);
-#    $harness.run(@test-files);
-
     # Run the tests and return exit code if not ignored
     for @test-files -> $test-file {
-      my Str $cmd = "rakudo -Ilib '$test-file' " ~ @server-ports.join(' ');
+      my Str $cmd = "rakudo -Ilib '$test-file' $version "
+                    ~ @server-ports.join(' ');
 #"mongodb://localhost:$port-number"
 note "\ntest command: $cmd";
 #    $cmd ~= ' || echo "failures ignored, these tests are for developers"'
@@ -61,8 +55,9 @@ note "\ntest command: $cmd";
       my Proc $p = shell $cmd;
       note 'exit code: ', $p.exitcode;
     }
-#    exit $p.exitcode;
+  }
 
+  for @servers -> $server-key {
     $ts.stop-mongod( $server-key, $version) if $stop;
     $ts.clean-mongod( $server-key, $version) if $cleanup and $stop;
   }
@@ -181,8 +176,8 @@ class Wrapper:auth<github:MARTIMM> {
     $component<replication><verbosity> = 2;
     $component<replication><heartbeats><verbosity> = 2;
     $component<replication><rollback><verbosity> = 2;
-    $component<replication><election><verbosity> = 2 if $version > v3.6.9;
-    $component<replication><initialSync><verbosity> = 2 if $version > v3.6.9;
+    $component<replication><election><verbosity> = 2 if $version > v4.0.18;
+    $component<replication><initialSync><verbosity> = 2 if $version > v4.0.18;
     $component<storage><verbosity> = 2;
     $component<storage><journal><verbosity> = 2;
     $component<storage><recovery><verbosity> = 2 if $version > v3.6.9;
@@ -258,7 +253,34 @@ class Wrapper:auth<github:MARTIMM> {
   }
 
   #-----------------------------------------------------------------------------
-  method clean-mongod ( Str $server, Str $version ) {
+  method start-mongos ( Str $server, Str $version ) {
 
+  }
+
+  #-----------------------------------------------------------------------------
+  method stop-mongos ( Str $server, Str $version ) {
+
+  }
+
+  #-----------------------------------------------------------------------------
+  method clean-mongod ( Str $server, Str $version ) {
+    sleep 1;
+
+    my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
+    for dir "$data-path/db/diagnostic.data" -> $f {
+      note 'unlink ', $f.basename, ' in diagnostic.data';
+      $f.unlink;
+    }
+
+    note 'rmdir diagnostic.data';
+    "$data-path/db/diagnostic.data".IO.rmdir;
+
+    for dir "$data-path/db" -> $f {
+      note 'unlink ', $f.basename, ' in db';
+      $f.unlink;
+    }
+
+    note 'unlink mdb.log';
+    "$data-path/mdb.log".IO.unlink;
   }
 }
