@@ -420,6 +420,21 @@ method select-server ( --> MongoDB::ServerPool::Server ) {
 }
 
 #-------------------------------------------------------------------------------
+method server-version ( MongoDB::Database $db --> Str ) {
+
+  my BSON::Document $doc = $db.run-command: (
+    :serverStatus(1),
+    :repl(0), :metrics(0), :locks(0), :asserts(0),
+    :backgroundFlushing(0), :connections(0), :cursors(0),
+    :extra_info(0), :globalLock(0), :indexCounters(0), :network(0),
+    :opcounters(0), :opcountersRepl(0), :recordStats(0)
+  );
+
+#note "V: ", $doc.perl;
+  $doc<version>
+}
+
+#-------------------------------------------------------------------------------
 #---[ Private methods ]---------------------------------------------------------
 #-------------------------------------------------------------------------------
 # Add server to todo list.
