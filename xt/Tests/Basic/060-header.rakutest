@@ -1,10 +1,23 @@
-use v6.c;
 use Test;
 
 use BSON;
 use BSON::Document;
 use MongoDB;
 use MongoDB::Header;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+#note "args: $log-path, $version, @server-ports";
+
+#-------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
+#set-filter(|<ObserverEmitter Timer Socket>);
 
 #-------------------------------------------------------------------------------
 subtest "Header encode/decode", {

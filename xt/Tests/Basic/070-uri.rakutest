@@ -1,14 +1,20 @@
-use v6;
-
 use Test;
 use MongoDB;
 use MongoDB::Uri;
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+#note "args: $log-path, $version, @server-ports";
+
+#-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-info-message("Test $?FILE start");
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
+#set-filter(|<ObserverEmitter Timer Socket>);
 
 #------------------------------------------------------------------------------
 subtest "Uri parsing", {

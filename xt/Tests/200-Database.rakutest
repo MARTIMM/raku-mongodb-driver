@@ -1,4 +1,3 @@
-use v6;
 use lib 'lib';
 use Test;
 
@@ -7,17 +6,19 @@ use MongoDB::Client;
 use MongoDB::Database;
 use BSON::Document;
 
-my Version $version .= new(@*ARGS[0]);
-my @server-ports = @*ARGS[1..*];
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+#note "args: $log-path, $version, @server-ports";
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-#my $handle = "t/Log/200-Database.log".IO.open( :mode<wo>, :create, :truncate);
-#add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
 #set-filter(|<ObserverEmitter Timer Socket>);
-#set-filter(|<ObserverEmitter>);
 
 
 info-message("Test $?FILE start");
@@ -106,7 +107,7 @@ subtest 'Database statistics server 1', {
     %db-names{$d<name>} = $idx++;
   }
 
-  ok %db-names<test>:exists, 'test found';
+  nok %db-names<test>:exists, 'test found';
   ok !@($doc<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
 }
 

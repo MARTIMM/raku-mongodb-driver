@@ -1,35 +1,37 @@
-use v6;
-use lib 't', 'lib';
-
 use Test;
-
-use Test-support;
 
 use BSON::Document;
 
 use MongoDB;
+use MongoDB::Client;
 use MongoDB::ServerPool;
 use MongoDB::ServerPool::Server;
 
 use Base64;
 
 #-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+#note "args: $log-path, $version, @server-ports";
+
+#-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-my $handle = "xt/Log/170-ServerPool.log".IO.open(
-  :mode<wo>, :create, :truncate
-);
-add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
 #set-filter(|<ObserverEmitter Timer Socket>);
 
 info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
-my MongoDB::Test-support $ts .= new;
-my Hash $clients = $ts.create-clients;
-my Str $host = $clients<s1>.uri-obj.servers[0]<host>;
-my Int $port = $clients<s1>.uri-obj.servers[0]<port>.Int;
+my Str $uri = "mongodb://localhost:@server-ports[0]";
+my MongoDB::Client $client .= new(:$uri);
+my $uri-obj = $client.uri-obj;
+my Str $host = $uri-obj.servers[0]<host>;
+my Int $port = $uri-obj.servers[0]<port>.Int;
+
 my Str $client-key = encode-base64( "s1 $host $port", :str);
 
 my MongoDB::ServerPool $servers;
