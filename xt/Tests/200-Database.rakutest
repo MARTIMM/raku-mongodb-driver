@@ -29,6 +29,8 @@ my BSON::Document $doc;
 # single server tests => one server key
 my Str $uri = "mongodb://localhost:@server-ports[0]";
 my MongoDB::Client $client .= new(:$uri);
+my Version $server-version = $client.server-version;
+
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 
@@ -69,11 +71,23 @@ subtest "Error checking", {
   $doc = $database.run-command: (getLastError => 1,);
   is $doc<ok>, 1, 'No last errors';
 
-  $doc = $database.run-command: (getPrevError => 1,);
-  is $doc<ok>, 1, 'No previous errors';
+  if $server-version >= v4.2.0 {
+    skip "getPrevError removed from version $server-version", 1;
+  }
 
-  $doc = $database.run-command: (resetError => 1,);
-  is $doc<ok>, 1, 'Rest errors ok';
+  else {
+    $doc = $database.run-command: (getPrevError => 1,);
+    is $doc<ok>, 1, 'No previous errors';
+  }
+
+  if $server-version >= v5.0.0 {
+    skip "resetError removed from version $server-version", 1;
+  }
+
+  else {
+    $doc = $database.run-command: (resetError => 1,);
+    is $doc<ok>, 1, 'Rest errors ok';
+  }
 }
 
 #-------------------------------------------------------------------------------
