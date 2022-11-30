@@ -107,7 +107,7 @@ subtest 'Database statistics server 1', {
     %db-names{$d<name>} = $idx++;
   }
 
-  nok %db-names<test>:exists, 'test found';
+  ok %db-names<test>:exists, 'test found';
   ok !@($doc<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
 }
 
