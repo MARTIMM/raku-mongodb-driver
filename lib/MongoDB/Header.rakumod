@@ -178,7 +178,7 @@ method encode-get-more (
     # int32 ZERO
     # 0 - reserved for future use
     #
-    Buf.new.write-int32( 0, LittleEndian),
+    Buf.new.write-int32( 0, 0, LittleEndian),
 
     # cstring fullCollectionName
     # "dbname.collectionname"
