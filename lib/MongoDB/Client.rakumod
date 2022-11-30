@@ -420,8 +420,9 @@ method select-server ( --> MongoDB::ServerPool::Server ) {
 }
 
 #-------------------------------------------------------------------------------
-method server-version ( MongoDB::Database $db --> Str ) {
+method server-version ( --> Version ) {
 
+  my MongoDB::Database $db = self.database('admin');
   my BSON::Document $doc = $db.run-command: (
     :serverStatus(1),
     :repl(0), :metrics(0), :locks(0), :asserts(0),
@@ -431,7 +432,7 @@ method server-version ( MongoDB::Database $db --> Str ) {
   );
 
 #note "V: ", $doc.perl;
-  $doc<version>
+  Version.new($doc<version>)
 }
 
 #-------------------------------------------------------------------------------
