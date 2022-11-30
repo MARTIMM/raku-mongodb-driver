@@ -40,7 +40,7 @@ sub MAIN (
   # Set server list in environment
   my @server-ports = ();
   my @servers = $servers.split(/\s* ',' \s*/);
-note 'servers: ', @servers.gist, ', ',  $start, ', ', $stop;
+#note 'servers: ', @servers.gist, ', ',  $start, ', ', $stop;
 
   for @servers -> $server {
     @server-ports.push: $ts.create-server-config(
@@ -118,9 +118,7 @@ class Wrapper:auth<github:MARTIMM> {
 
   #-----------------------------------------------------------------------------
   submethod BUILD ( ) {
-
     $!cfg = load-yaml((SERVER_PATH ~ '/' ~ CONFIG_NAME).IO.slurp);
-  #note 'cfg: ', $!cfg.gist;
   }
 
   #-----------------------------------------------------------------------------
@@ -301,7 +299,8 @@ class Wrapper:auth<github:MARTIMM> {
     # Run the tests and return exit code if not ignored
     for @test-files -> $test-file {
       my Str $cmd = "rakudo -Ilib '$test-file' '$log-path' $version "
-                    ~ @server-ports.join(' ');
+                    ~ @server-ports.join(' ')
+                    ~ ' || echo ""';
 
 #    $cmd ~= ' || echo "failures ignored, these tests are for developers"'
 #      if $ignore;
@@ -312,9 +311,11 @@ class Wrapper:auth<github:MARTIMM> {
       drop-send-to('mdb');
 
       # Get the test outout from the test and save it for later
-      my @test-lines;
-      my Proc $p = shell $cmd, :out;
-      @test-lines = $p.out.lines;
+      my ( @test-rlines, @test-elines);
+      my Proc $p = shell $cmd, :out, :err;
+      @test-elines = $p.err.lines.map: { "TestErrorOutput: $_" };
+      @test-rlines = $p.out.lines.map: { "TestResultOutput: $_" };
+      $p.err.close;
       $p.out.close;
 
       # Make a new handle to continue logging
@@ -324,8 +325,12 @@ class Wrapper:auth<github:MARTIMM> {
       );
 
       # Write the test data into the log
-      for @test-lines -> $l {
-        info-message("TestResultOutput: $l");
+      for @test-rlines -> $l {
+        info-message($l);
+      }
+
+      for @test-elines -> $l {
+        info-message($l);
       }
 
       info-message("Test finished with exit code: $p.exitcode() $test-file");
@@ -351,11 +356,11 @@ class Wrapper:auth<github:MARTIMM> {
 
       $line ~~ s/^ .*? ']:' \s+ //;
       $line ~~ s:g/ \' //;
-note $line;
+#note $line;
 
       if $line ~~ m:s/Run test\: rakudo/ {
+        note $line;
         my @l = $line.split(/\s+/);
-#note 'l1: ', @l.gist;
         $version = @l[6];
         $test-results<test-programs>{$version}{@l[4]} = [];
       }
@@ -374,13 +379,13 @@ note $line;
 
       elsif $line ~~ m/TestResultOutput \:/ {
         $line ~~ s/TestResultOutput \://;
-note $line;
+#note $line;
 
-        if $line ~~ m/\s* ok/ {
+        if $line ~~ m/^ \s* ok/ {
           $test-count[0]++;
         }
 
-        elsif $line ~~ m/\s* nok/ {
+        elsif $line ~~ m/^ \s* not \s+ ok/ {
           $test-count[1]++;
         }
 
@@ -388,10 +393,15 @@ note $line;
           $test-count[2]++;
         }
       }
+
+      elsif $line ~~ m/TestErrorOutput \:/ {
+        $line ~~ s/TestErrorOutput \://;
+        note $line;
+      }
     }
 
-    note "\n, $test-results.gist()";
-    note 'Number of tests run: ', [+] @$test-count;
+note "\n, $test-results.gist()";
+    note "\nNumber of tests run: ", [+] @$test-count;
     note 'Succesfull tests: ', $test-count[0];
     note 'Failed tests: ', $test-count[1];
     note 'Sub tests: ', $test-count[2];
