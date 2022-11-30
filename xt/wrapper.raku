@@ -349,7 +349,7 @@ class Wrapper:auth<github:MARTIMM> {
 
     my Hash $test-results = %();
     my Str $version= '';
-    my Array $test-count = [ 0, 0, 0];
+    my Array $test-count = [ 0, 0, 0, 0];
 
     for $log-path.IO.open.lines -> $line is copy {
 #note $line;
@@ -381,7 +381,11 @@ class Wrapper:auth<github:MARTIMM> {
         $line ~~ s/TestResultOutput \://;
 #note $line;
 
-        if $line ~~ m/^ \s* ok/ {
+        if $line ~~ m/\# \s+ SKIP \s*/ {
+          $test-count[3]++;
+        }
+
+        elsif $line ~~ m/^ \s* ok/ {
           $test-count[0]++;
         }
 
@@ -402,9 +406,10 @@ class Wrapper:auth<github:MARTIMM> {
 
 note "\n, $test-results.gist()";
     note "\nNumber of tests run: ", [+] @$test-count;
+    note 'Sub tests: ', $test-count[2];
     note 'Succesfull tests: ', $test-count[0];
     note 'Failed tests: ', $test-count[1];
-    note 'Sub tests: ', $test-count[2];
+    note 'Skipped tests: ', $test-count[3];
   }
 }
 
