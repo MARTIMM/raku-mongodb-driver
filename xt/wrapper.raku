@@ -156,12 +156,12 @@ class Wrapper:auth<github:MARTIMM> {
 
     # Add log verbosity levels
     my Hash $component = $server-config<systemLog><component>;
-    $component<accessControl><verbosity> = 2;
-    $component<command><verbosity> = 2;
-    $component<storage><verbosity> = 2;
-    $component<storage><journal><verbosity> = 2;
+    $component<accessControl><verbosity> = 2 if $version > v2.6.11;
+    $component<command><verbosity> = 2 if $version > v2.6.11;
+    $component<storage><verbosity> = 2 if $version > v2.6.11;
+    $component<storage><journal><verbosity> = 2 if $version > v2.6.11;
     $component<storage><recovery><verbosity> = 2 if $version > v3.6.9;
-    $component<write><verbosity> = 2;
+    $component<write><verbosity> = 2 if $version > v2.6.11;
 
     if ?$!cfg<server>{$server}<replSet> {
       $component<replication><verbosity> = 2;
