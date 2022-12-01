@@ -52,18 +52,15 @@ subtest "Database, create collection, drop", {
   # Second try gets an error
   $doc = $database.run-command($req);
   is $doc<ok>, 0, 'Second collection cl1 not created';
-#  diag $doc.perl;
-#remove: lang dependency  like $doc<errmsg>, /:s already exists/, $doc<errmsg>;
-#TODO get all codes and test on code instead of messages to prevent changes
-# in mongod in future
+#diag $doc.perl;
 
-#  if $version ~~ / '2.6.' \d+ / {
-#    skip "No error code returned from 2.6.* server", 1;
-#  }
-#
-#  else {
+  if $server-version < v3.0.5 {
+    skip "No error code returned from server version $server-version", 1;
+  }
+
+  else {
     is $doc<code>, 48, 'error code 48';
-#  }
+  }
 }
 
 #-------------------------------------------------------------------------------
