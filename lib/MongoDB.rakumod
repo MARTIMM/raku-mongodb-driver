@@ -111,10 +111,16 @@ enum ReadConcernModes is export <
 #------------------------------------------------------------------------------
 # Constants. See http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-RequestOpcodes
 enum WireOpcode is export (
-  :OP-REPLY(1),
-  :OP-MSG(1000), :OP-UPDATE(2001), :OP-INSERT(2002),
-  :OP-RESERVED(2003), :OP-QUERY(2004), :OP-GET-MORE(2005),
-  :OP-DELETE(2006), :OP-KILL-CURSORS(2007),
+  :OP-REPLY(1),           # removed 5.1.0
+  :OP-UPDATE(2001),       # removed 5.1.0
+  :OP-INSERT(2002),       # removed 5.1.0
+  :OP-RESERVED(2003),
+  :OP-QUERY(2004),        # removed 5.1.0
+  :OP-GET-MORE(2005),     # removed 5.1.0
+  :OP-DELETE(2006),       # removed 5.1.0
+  :OP-KILL-CURSORS(2007), # removed 5.1.0
+  :OP-COMPRESSED(2012),   # since 3.4.0
+  :OP-MSG(1013),          # since 3.6.0
 );
 
 #------------------------------------------------------------------------------
@@ -139,6 +145,13 @@ enum QueryFindFlags is export (
   :C-QF-TAILABLECURSOR(0x02), :C-QF-SLAVEOK(0x04),
   :C-QF-OPLOGREPLAY(0x08), :C-QF-NOCURSORTIMOUT(0x10), :C-QF-AWAITDATA(0x20),
   :C-QF-EXHAUST(0x40), :C-QF-PORTAIL(0x80),
+);
+
+#------------------------------------------------------------------------------
+#TT:1:MsgOpFlags:
+enum QueryFindFlags is export (
+  :C-NO-FLAGS(0x00), :C-ChecksumPresent(0x01), :C-MoreToCome(0x02),
+  :C-ExhaustAllowed(0x010000)
 );
 
 #------------------------------------------------------------------------------
