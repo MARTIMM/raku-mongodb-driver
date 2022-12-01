@@ -451,8 +451,8 @@ multi method raw-query ( $server --> List ) {
   my MongoDB::Uri $uri-obj .= new(:uri("mongodb://$server.name()"));
   $uri-obj.client-key = '__MONITOR__CLIENT_KEY__';
 
-  # After server version 6.0 the OP_QUERY is going away except to
-  # get ismaster server information
+  # After server version 5.1 the OP_QUERY is going away except to
+  # get ismaster server handshake
   my MongoDB::Wire $w .= new;
   ( $doc, $rtt) = $w.query(
     'admin.$cmd', $monitor-command,
