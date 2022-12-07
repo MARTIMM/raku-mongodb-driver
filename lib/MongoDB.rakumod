@@ -120,7 +120,7 @@ enum WireOpcode is export (
   :OP-DELETE(2006),       # removed 5.1.0
   :OP-KILL-CURSORS(2007), # removed 5.1.0
   :OP-COMPRESSED(2012),   # since 3.4.0
-  :OP-MSG(1013),          # since 3.6.0
+  :OP-MSG(2013),          # since 3.6.0
 );
 
 #------------------------------------------------------------------------------
@@ -149,8 +149,9 @@ enum QueryFindFlags is export (
 
 #------------------------------------------------------------------------------
 #TT:1:MsgOpFlags:
-enum QueryFindFlags is export (
-  :C-NO-FLAGS(0x00), :C-ChecksumPresent(0x01), :C-MoreToCome(0x02),
+# :C-NO-FLAGS(0x00) from above, can be used here too.
+enum MsgOpFindFlags is export (
+  :C-ChecksumPresent(0x01), :C-MoreToCome(0x02),
   :C-ExhaustAllowed(0x010000)
 );
 
