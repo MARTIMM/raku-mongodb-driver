@@ -59,7 +59,8 @@ unit class MongoDB::Collection:auth<github:MARTIMM>;
 =end pod
 
 has Str $.name;
-has Str $.full-collection-name;
+has Str $.dbname;
+#has Str $.full-collection-name;
 
 has MongoDB::Uri $!uri-obj;
 
@@ -107,8 +108,9 @@ Or directly from the client. Note the how the database name and collection name 
 submethod BUILD (
   MongoDB::Uri:D :$!uri-obj, DatabaseType:D :$database, Str:D :$!name
 ) {
-  $!full-collection-name = [~] $database.name, '.', $!name;
-  debug-message("create collection $!full-collection-name");
+#  $!full-collection-name = [~] $database.name, '.', $!name;
+  $!dbname = $database.name;
+  debug-message("create collection $!dbname.$!name");
 }
 
 #-----------------------------------------------------------------------------
@@ -120,6 +122,10 @@ Get the full representation of this collection. This is a string composed of the
 
   method full-collection-name ( --> Str )
 =end pod
+
+method full-collection-name ( --> Str ) {
+  [~] $!dbname, '.', $!name
+}
 
 #-----------------------------------------------------------------------------
 #TM:1:name:
@@ -135,6 +141,8 @@ Get the name of the current collection. It is set by C<MongoDB::Database> when a
 #TM:1:find:
 =begin pod
 =head2 find
+
+Note that this method will be obsoleted and removed in a later version. The search of documents can be done using the run-command. See for example L<here in the mongodb documentation|https://www.mongodb.com/docs/manual/reference/command/find>.
 
 Find record in a collection. This method is used directly if you want some finer control over the search procedure.
 
@@ -213,7 +221,7 @@ multi method find (
   my BSON::Document $cr .= new: $criteria;
   my BSON::Document $pr .= new: $projection;
   ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
-    $!full-collection-name, $cr, $pr, :@flags, :$number-to-skip,
+    "$!dbname.$!name", $cr, $pr, :@flags, :$number-to-skip,
     :$number-to-return, :$!uri-obj
   );
 
@@ -240,7 +248,7 @@ multi method find (
 ) {
 
   ( my BSON::Document $server-reply, $) = MongoDB::Wire.new.query(
-    $!full-collection-name, $criteria, $projection, :@flags,
+    "$!dbname.$!name", $criteria, $projection, :@flags,
     :$number-to-skip, :$number-to-return, :$!uri-obj
   );
 
