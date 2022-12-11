@@ -153,10 +153,37 @@ package MongoDB:auth<github:MARTIMM> {
     #--------------------------------------------------------------------------
     # overload log method
     method log (
-      Str:D :$msg, Loglevels:D :$level,
+      :$msg is copy = '-', Loglevels:D :$level,
       DateTime :$when = DateTime.now.utc,
       Callable :$code
     ) {
+      # Stringify some types
+      if $msg ~~ Buf {
+        my Bool $add-space = False;
+        $msg = $msg.map(
+          {
+            my $chr-code = $_;
+            my $ret-char;
+            if 0 <= $chr-code <= 31 or $chr-code eq 127 {
+              $ret-char = $add-space
+                            ?? $chr-code.fmt(' 0x%02x ')
+                            !! $chr-code.fmt('0x%02x ');
+              $add-space = False;
+            }
+
+            else {
+              $add-space = True;
+              $ret-char = .chr;
+            }
+            
+            $ret-char
+          }
+        ). join;
+      }
+
+      elsif $msg.^name eq 'BSON::Document' {
+        $msg .= perl;
+      }
 
       my Hash $m;
       if ? $code {
@@ -226,9 +253,10 @@ sub search-callframe ( *@types --> CallFrame ) {
 #------------------------------------------------------------------------------
 # log code with stack frames
 my Callable $log-code-cf = sub (
-  Str:D :$msg, Any:D :$level, DateTime :$when = DateTime.now.utc
+  Str:D() :$msg, Any:D :$level, DateTime :$when = DateTime.now.utc
   --> Hash
 ) {
+
   my CallFrame $cf;
   my Str $method = '';        # method or routine name
   my Int $line = 0;           # line number where Message is called
@@ -272,32 +300,32 @@ my Callable $log-code = sub (
 }}
 
 #------------------------------------------------------------------------------
-sub trace-message ( Str $msg ) is export {
+sub trace-message ( $msg ) is export {
   $logger.log( :$msg, :level(MongoDB::Trace), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
-sub debug-message ( Str $msg ) is export {
+sub debug-message ( $msg ) is export {
   $logger.log( :$msg, :level(MongoDB::Debug), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
-sub info-message ( Str $msg ) is export {
+sub info-message ( $msg ) is export {
   $logger.log( :$msg, :level(MongoDB::Info), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
-sub warn-message ( Str $msg ) is export {
+sub warn-message ( $msg ) is export {
   $logger.log( :$msg, :level(MongoDB::Warn), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
-sub error-message ( Str $msg ) is export {
+sub error-message ( $msg ) is export {
   $logger.log( :$msg, :level(MongoDB::Error), :code($log-code-cf));
 }
 
 #------------------------------------------------------------------------------
-sub fatal-message ( Str $msg ) is export {
+sub fatal-message ( $msg ) is export {
   $logger.log( :$msg, :level(MongoDB::Fatal), :code($log-code-cf));
   sleep 0.5;
   die X::MongoDB.new( :message($msg));
