@@ -20,8 +20,8 @@ has MongoDB::SocketPool::Socket $!socket;
 method query (
   Str:D $full-collection-name,
   BSON::Document:D $qdoc, BSON::Document $projection?,
-  QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip,
-  Int :$number-to-return, MongoDB::Uri :$uri-obj,
+  QueryFindFlags :@flags = Array[QueryFindFlags].new, Int :$number-to-skip = 0,
+  Int :$number-to-return = 1, MongoDB::Uri :$uri-obj,
   MongoDB::ServerPool::Server :$server is copy, Bool :$time-query = False
 
   --> List
@@ -38,16 +38,20 @@ method query (
   my Instant $t0;
 
   try {
-    ( my Buf $encoded-query, my Int $request-id) = $header.encode-query(
+    my Buf $encoded-query;
+    my Int $request-id;
+
+    ( $encoded-query, $request-id) = $header.encode-query(
       $full-collection-name, $qdoc, $projection,
       :$flags, :$number-to-skip, :$number-to-return
     );
+info-message($encoded-query);
 
     # server is only provided when called from Monitor. all other objects
     # call the method without a server object.
     $server = MongoDB::ServerPool.instance.select-server($uri-obj.client-key)
       unless $server.defined;
-
+  
     # check if server is selected
     unless $server.defined {
       error-message("No server object for query");
@@ -96,6 +100,130 @@ method query (
     CATCH {
 #note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
 #.note;
+info-message($_.gist);
+
+      $!socket.close if $!socket.defined;
+
+      # Fatal messages from the program elsewhere
+      when X::MongoDB {
+        # Already logged
+      }
+
+      # Other messages from Socket.open
+      when .message ~~ m:s/Failed to resolve host name/ ||
+           .message ~~ m:s/Could not connect socket/ ||
+           .message ~~ m:s/Could not receive data from socket/ ||
+           .message ~~ m:s/Connection reset by peer/ {
+
+        warn-message($server.name ~ ': ' ~ .message);
+      }
+
+      # From BSON::Document
+      when X::BSON {
+        error-message($server.name ~ ': ' ~ .message);
+      }
+
+      # If not one of the above errors, rethrow the error after showing
+      default {
+        fatal-message($server.name ~ ': ' ~ .message);
+#        .note;
+#        .rethrow;
+      }
+    }
+  }
+
+#note "rtt: $round-trip-time, ", Duration.new(0);
+  return ( $result, $time-query ?? $round-trip-time !! Duration.new(0));
+}
+
+#-------------------------------------------------------------------------------
+method message (
+  Str:D $database-name, BSON::Document:D $qdoc,
+  QueryFindFlags :@flags = Array[QueryFindFlags].new,
+  MongoDB::Uri :$uri-obj,
+  MongoDB::ServerPool::Server :$server is copy, Bool :$time-query = False
+
+  --> List
+) {
+info-message($database-name);
+info-message($qdoc);
+
+  my Duration $round-trip-time .= new(0.0);
+  my MongoDB::Header $header .= new;
+
+  # OR all flag values to get the integer flag, be sure it is at least 0x00.
+  my Int $flags = [+|] @flags>>.value;
+
+  my BSON::Document $result;
+
+  my Instant $t0;
+
+  try {
+    my Buf $encoded-query;
+    my Int $request-id;
+
+    ( $encoded-query, $request-id) = $header.encode-msg(
+      $qdoc, :$database-name, :$flags
+    );
+info-message($encoded-query);
+#info-message($uri-obj.gist);
+
+    # server is only provided when called from Monitor. all other objects
+    # call the method without a server object.
+    $server = MongoDB::ServerPool.instance.select-server($uri-obj.client-key)
+      unless $server.defined;
+#info-message($server.gist);
+
+    # check if server is selected
+    unless $server.defined {
+      error-message("No server object for query");
+      return ( BSON::Document, Duration.new(0));
+    }
+
+    $!socket = $server.get-socket(:$uri-obj);
+    if $!socket {
+      trace-message("socket id: $!socket.sock-id()");
+    }
+
+    else {
+      warn-message("server {$server.name} cleaned up");
+      return ( BSON::Document, Duration.new(0));
+    }
+
+    # start timing
+    $t0 = now if $time-query;
+
+    $!socket.send($encoded-query);
+
+    # Read 4 bytes for int32 response size
+    my Buf $size-bytes = self!get-bytes(4);
+info-message($size-bytes);
+
+    # Convert Buf to Int and substract 4 to get remaining size of data
+    my Int $response-size = $size-bytes.read-int32( 0, LittleEndian) - 4;
+info-message($response-size);
+
+    # Assert that number of bytes is still positive
+    fatal-message("Wrong number of bytes to read from socket: $response-size")
+      unless $response-size > 0;
+
+    # Receive remaining response bytes from socket. Prefix it with the
+    # already read bytes and decode. Return the resulting document.
+    my Buf $server-reply = $size-bytes ~ self!get-bytes($response-size);
+
+    # then time response
+    $round-trip-time = now - $t0 if $time-query;
+
+    $result = $header.decode-reply($server-reply);
+
+    # Assert that the request-id and response-to are the same
+    fatal-message("Id in request is not the same as in the response")
+      unless $request-id == $result<message-header><response-to>;
+
+    # Catch all thrown exceptions and take out the server if needed
+    CATCH {
+note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
+.note;
 
       $!socket.close if $!socket.defined;
 

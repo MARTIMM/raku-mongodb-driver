@@ -98,28 +98,120 @@ method decode-message-header ( Buf $b, $index is rw --> BSON::Document ) {
 }
 
 #-------------------------------------------------------------------------------
+# OP_MSG is introduced in version 3.6.0. Until then it only was possible to use
+# OP_QUERY. OP_QUERY is removed from version 5.1.0 except for ismaster requests
+# and a small number of other requests.
+method encode-msg (
+  BSON::Document $query, Str :$database-name = '$cmd', Int :$flags = 0
+  --> List
+) {
+  my Buf $query-buffer = [~]
+
+    # int32 flags, bit vector of message options
+    Buf.new.write-int32( 0, $flags, LittleEndian);
+
+  my Str $kind1-needed = '';
+  my BSON::Document $kind0-doc .= new;
+  my BSON::Document $kind1-doc .= new;
+  for $query.kv -> $k, $v {
+info-message("msg key $k value {$v.perl}, {$v.^name}");
+    if $k eq 'insert' {
+      $kind1-needed = 'documents';
+    }
+
+    elsif $k eq 'update' {
+      $kind1-needed = 'updates';
+    }
+
+    elsif $k eq 'delete' {
+      $kind1-needed = 'deletes';
+    }
+     
+    $kind0-doc{$k} = $v;
+  }
+
+  # Add a database name to the type0 section
+  $kind0-doc<$db> = $database-name;
+
+  # Create a section 0
+  $query-buffer ~= [~]
+    # Kind 0 type section
+    Buf.new.write-int8( 0, 0, LittleEndian),
+
+    # With a single document
+    BSON::Encode.new.encode($kind0-doc);
+
+  if ?$kind1-needed {
+    for $query.kv -> $k, $v {
+      if $v ~~ Array {
+        $kind1-doc<identifier> = $kind1-needed;
+        $kind1-doc<documents> = $v;
+
+        last;
+      }
+    }
+  }
+
+  # Create a section 1 if needed
+  if ?$kind1-needed {
+#    $kind1-doc<identifier> = $kind1-needed;
+
+    $query-buffer ~= [~]
+      # Kind 1 type section
+      Buf.new.write-int8( 0, 1, LittleEndian),
+
+      # With the array. size is at the top
+      BSON::Encode.new.encode($kind1-doc);
+  }
+
+#`{{
+    # cstring fullCollectionName
+    # "dbname.collectionname"
+    #
+    encode-cstring($full-collection-name),
+
+    # int32 numberToSkip
+    # number of documents to skip
+    #
+    Buf.new.write-int32( 0, $number-to-skip, LittleEndian),
+
+    # int32 numberToReturn
+    # number of documents to return
+    # in the first OP-REPLY batch
+    #
+    Buf.new.write-int32( 0, $number-to-return, LittleEndian),
+
+    # document query
+    # query object
+    #
+    BSON::Encode.new.encode($query);
+}}
+
+
+  # [ document  returnFieldSelector; ]
+  # Optional. Selector indicating the fields to return
+  #
+#  if ? $projection {
+#    $query-buffer ~= BSON::Encode.new.encode($projection);
+#  }
+
+  # encode message header and get used request id
+  ( my Buf $message-header, my Int $u-request-id) =
+    self.encode-message-header( $query-buffer.elems, OP-MSG);
+
+  # return total encoded buffer with request id
+  return ( $message-header ~ $query-buffer, $u-request-id);
+
+
+}
+
+#-------------------------------------------------------------------------------
 method encode-query (
   Str:D $full-collection-name, BSON::Document $query,
   BSON::Document $projection?,
   Int :$flags = 0, Int :$number-to-skip = 0, Int :$number-to-return = 0
   --> List
 ) {
-  # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPQUERY
-
-#TODO sometimes an error here
-#Error at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/site#sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) 468:Cannot call method 'Stringy' on a null object
-#  in method ASSIGN-KEY at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) line 353
-#
-#Cannot call method 'Stringy' on a null object
-#  in block  at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/61ACC157F671E9B0DE38D49D311F5060033DA7F8 (BSON::Document) line 668
-#  in method encode-query at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 112
-#
-# encode() on any, error: Something went wrong in (BSON)
-#   in block  at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/1C86C2A42ED2791383D5AE68657AB40DE055BD1C (BSON::Document) line 594
-#   in method encode at /home/marcel/Software/perl6/rakudo/install/share/perl6/site/sources/1C86C2A42ED2791383D5AE68657AB40DE055BD1C (BSON::Document) line 585
-#   in method encode-query at /home/marcel/Languages/Perl6/Projects/raku-mongodb-driver/lib/MongoDB/Header.pm6 (MongoDB::Header) line 111
-# ...
-
   my Buf $query-buffer = [~]
 
     # int32 flags
@@ -247,30 +339,48 @@ method encode-cursor-id ( Int $cursor-id --> Buf ) {
 #-------------------------------------------------------------------------------
 method decode-reply ( Buf $b --> BSON::Document ) {
 
+info-message($b);
+
   # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
 
   # MsgHeader header
   # standard message header
-  #
   my $index = 0;
   my BSON::Document $message-header = self.decode-message-header(
     $b, $index
   );
+info-message($message-header);
+
+  given $message-header<op-code> {
+    when OP-REPLY {
+      self!decode-query-reply( $b, $index, $message-header);
+    }
+
+    when OP-MSG {
+      self!decode-msg-reply( $b, $index, $message-header);
+    }
+ }
+}
+
+#-------------------------------------------------------------------------------
+method !decode-query-reply (
+  Buf $b, Int $index is copy, BSON::Document $message-header --> BSON::Document
+) {
 
   # int32 responseFlags
   # bit vector
-  #
   my $response-flags = $b.read-int32( $index, LittleEndian);
+info-message($response-flags);
 
   # int64 cursorID
   # cursor id if client needs to do get more's
-  #
   my Buf $cursor-id = $b.subbuf( $index += BSON::C-INT32-SIZE, 8);
+info-message($cursor-id);
 
   # int32 startingFrom
   # where in the cursor this reply is starting
-  #
   my Int $starting-from = $b.read-int32( $index += 8, LittleEndian);
+info-message($starting-from);
 
   # int32 numberReturned
   # number of documents in the reply
@@ -278,6 +388,7 @@ method decode-reply ( Buf $b --> BSON::Document ) {
   my Int $number-returned = $b.read-int32(
     $index += BSON::C-INT32-SIZE, LittleEndian
   );
+info-message($number-returned);
 
   $index += BSON::C-INT32-SIZE;
 
@@ -305,6 +416,113 @@ method decode-reply ( Buf $b --> BSON::Document ) {
   # Every response byte must be consumed
   #
   die 'Unexpected bytes at the end of response' if $index < $b.elems;
+
+  $reply-document
+}
+
+#-------------------------------------------------------------------------------
+method !decode-msg-reply (
+  Buf $b, Int $index is copy, BSON::Document $message-header --> BSON::Document
+) {
+
+  # int32 responseFlags
+  # bit vector
+  my $flagbits = $b.read-int32( $index, LittleEndian);
+info-message($flagbits.fmt('%032b'));
+
+  my Bool $checksum-present = ?($flagbits +& C-ChecksumPresent);
+  my Bool $more-to-come = ?($flagbits +& C-MoreToCome);
+  my Bool $exhaust-allowed = ?($flagbits +& C-ExhaustAllowed);
+info-message("$checksum-present, $more-to-come, $exhaust-allowed");
+
+  # section kind
+  my $kind = $b.read-int8( $index += BSON::C-INT32-SIZE, LittleEndian);
+info-message($kind);
+  my Buf $cursor-id .= new( 0, 0, 0, 0, 0, 0, 0, $more-to-come ?? 1 !! 0);
+  my BSON::Document $reply-document .= new: (
+    :$message-header, :$flagbits, :$cursor-id
+#    :$starting-from, :$number-returned,
+  );
+
+  given $kind {
+    when 0 {
+      my $doc-size = $b.read-int32( $index += 1, LittleEndian);
+info-message($doc-size);
+      my BSON::Document $document = BSON::Decode.new.decode(
+        $b.subbuf( $index, $doc-size)
+      );
+      $reply-document<documents> = [$document,];
+      $reply-document<number-returned> = 1;
+    }
+
+    when 1 {
+      my $section-size = $b.read-int32( $index += 1, LittleEndian);
+info-message($section-size);
+      my Array $documents = [];
+      my Int $max-buf-size = $index + $section-size;
+      while $index < $max-buf-size {
+        my $doc-size = $b.read-int32( $index, LittleEndian);
+        my BSON::Document $document = BSON::Decode.new.decode(
+          $b.subbuf( $index, $doc-size)
+        );
+info-message($document);
+
+        $index += $doc-size;
+        $documents.push($document);
+      }
+
+      $reply-document<documents> = $documents;
+      $reply-document<number-returned> = $reply-document<documents>.elems;
+    }
+  }
+
+#`{{
+  # int64 cursorID
+  # cursor id if client needs to do get more's
+  my Buf $cursor-id = $b.subbuf( $index += BSON::C-INT32-SIZE, 8);
+info-message($cursor-id);
+
+  # int32 startingFrom
+  # where in the cursor this reply is starting
+  my Int $starting-from = $b.read-int32( $index += 8, LittleEndian);
+info-message($starting-from);
+
+  # int32 numberReturned
+  # number of documents in the reply
+  #
+  my Int $number-returned = $b.read-int32(
+    $index += BSON::C-INT32-SIZE, LittleEndian
+  );
+info-message($number-returned);
+
+  $index += BSON::C-INT32-SIZE;
+
+  my BSON::Document $reply-document .= new: (
+    :$message-header, :$response-flags, :$cursor-id,
+    :$starting-from, :$number-returned,
+  );
+
+  # Extract documents from message.
+  my Array $documents = [];
+  for ^$reply-document<number-returned> {
+    my $doc-size = $b.read-int32( $index, LittleEndian);
+    my BSON::Document $document = BSON::Decode.new.decode(
+      $b.subbuf( $index, $doc-size)
+    );
+
+    $index += $doc-size;
+    $documents.push($document);
+  }
+
+  $reply-document<documents> = $documents;
+
+  $index += 3 * BSON::C-INT32-SIZE + 8;
+
+  # Every response byte must be consumed
+  die 'Unexpected bytes at the end of response' if $index < $b.elems;
+}}
+
+
 
   return $reply-document;
 }
