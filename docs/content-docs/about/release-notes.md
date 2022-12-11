@@ -12,7 +12,8 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 #### 2022-11-22 0.43.21
 * Tests will be dramatically shortened to only the load of modules. This means that the sandbox can be removed. The tests will then only be done on servers like `Github actions` or on my machine.
 * Dropped modules and simplyfied testing. Only a `wrapper.raku` used now and prove6 is not used.
-* Server version 3.6.0 and later have introduced the OP_MSG. To cope with older versions the tests are also done with server version 2.6.11 and 3.0.5
+* Server version 3.6.0 and later have introduced the OP_MSG. To cope with older versions the tests are also done with server version 2.6.11 and 3.0.5.
+* During the implementations, the Collection module gets less important because the `run-command()` is not using the `find()` method anymore and accesses the Wire module directly. This makes it possible to retry the query operation with an older method when OP_MSG is not available on a server.
 
 #### 2022-11-21 0.43.20
   * Rename file extensions of all Raku files.
