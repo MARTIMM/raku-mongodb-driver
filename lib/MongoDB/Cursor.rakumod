@@ -146,7 +146,9 @@ multi submethod BUILD (
 #    $!client-key = $collection.client-key;
   $!full-collection-name = $collection.full-collection-name;
 
-  # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
+ #info-message($server-reply);
+
+ # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
   # batches left on the server to retrieve. Documents may be present in
   # this reply.
   #
@@ -176,6 +178,7 @@ multi submethod BUILD (
   Int :$number-to-return = 0
 ) {
 #note 'Server-reply: ', $cursor-doc.perl;
+#info-message($cursor-doc);
 
 #    $!client = $client;
 #    $!client-key = $client.uri-obj.client-key;
@@ -195,7 +198,28 @@ multi submethod BUILD (
   trace-message("Cursor set for @!documents.elems() documents (type 2)");
 }
 
-#-----------------------------------------------------------------------------
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# From new implementation of run-command in Database
+multi submethod BUILD (
+  MongoDB::ClientType:D :$client!, BSON::Document:D :$server-doc!,
+) {
+  $!uri-obj = $client.uri-obj;
+  my MongoDB::Header $header .= new;
+#info-message($server-doc);
+
+  # Get cursor id from reply. Will be 8 * 0 bytes when there are no more
+  # batches left on the server to retrieve. Documents may be present in
+  # this reply.
+  $!id = $server-doc<cursor-id>.binary-data;
+
+  # Get documents from the reply.
+  @!documents = @($server-doc<documents>);
+
+  trace-message("Cursor set for @!documents.elems() documents");
+}
+
+#`{{
+#-------------------------------------------------------------------------------
 #TM:1:full-collection-name:
 =begin pod
 =head2 full-collection-name
@@ -204,6 +228,7 @@ Get the full representation of this collection. This is a string composed of the
 
   method full-collection-name ( --> Str )
 =end pod
+}}
 
 #-------------------------------------------------------------------------------
 #TM:1:iterator
