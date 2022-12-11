@@ -19,17 +19,24 @@ my $handle = $log-path.IO.open( :mode<wo>, :append);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
 #set-filter(|<ObserverEmitter Timer Socket>);
 
+info-message("Test $?FILE start");
+
 #-------------------------------------------------------------------------------
 subtest "Header encode/decode", {
 
   my MongoDB::Header $header .= new;
 
   my BSON::Document $d .= new: ( doc => 'info');
+#info-message($d);
   my Buf $b = $d.encode;
+#info-message($b);
+
 
   ( my Buf $h,
     my Int $req-id
   ) = $header.encode-message-header( $b.elems, OP-QUERY);
+#info-message($h);
+
   is $h.elems, 4*4, 'Size of header is 16';
   is $req-id, 0, 'First request encoding';
 
@@ -50,7 +57,6 @@ subtest "Header encode/decode", {
      ([+] 4, 12, 4, 4, $b.elems, 4 * 4),
      "Total encoded size is {$q-encode.elems}";
   is $req-id, 1, 'Second request encoding';
-
 };
 
 #-------------------------------------------------------------------------------
@@ -72,12 +78,12 @@ subtest "query/reply",  {
     0x05, 0x00, 0x00, 0x00,             # empty document
     0x00
   );
+#info-message($hand-made-buf);
 
   my BSON::Document $rd = $header.decode-reply($hand-made-buf);
   is $rd<message-header><request-id>, 1, 'Request id is 1';
   is $rd<number-returned>, 1, 'Number of docs is 1';
   is $rd<documents>[0].elems, 0, 'Empty document';
-
 };
 
 #-------------------------------------------------------------------------------
@@ -108,6 +114,114 @@ subtest "encoding get more",  {
   );
 
   is-deeply $encoded-get-more, $hand-made-buf, 'Encoded get more request';
+};
+
+#-------------------------------------------------------------------------------
+subtest "encoding query",  {
+  my MongoDB::Header $header .= new;
+  my BSON::Document $qdoc .= new: (:serverStatus(1),);
+  my BSON::Document $projection .= new;
+
+  my Str $full-collection-name = 'db.cl';
+  my ( $encoded-query, $request-id) = $header.encode-query(
+    $full-collection-name, $qdoc, $projection,
+    :flags(0), :number-to-skip(0), :number-to-return(1)
+  );
+  info-message("e=$encoded-query.gist(), rid=$request-id");
+
+  my Buf $hand-made-buf .= new(
+    0x3e, 0x00, 0x00, 0x00,             # size 62 bytes
+    0x03, 0x00, 0x00, 0x00,             # Req id = 3 (3rd request in this test)
+    0x00, 0x00, 0x00, 0x00,             # resp to 0
+    0xd4, 0x07, 0x00, 0x00,             # OP-QUERY
+
+    0x00, 0x00, 0x00, 0x00,             # 0, query flags
+    0x64, 0x62, 0x2E, 0x63, 0x6C, 0x00, # 'db.cl'
+    0x00, 0x00, 0x00, 0x00,             # 0, numberToSkip
+    0x01, 0x00, 0x00, 0x00,             # 1, number to return
+    0x17, 0x00, 0x00, 0x00,             # doc size
+    0x10, 0x73, 0x65, 0x72, 0x76, 0x65, # doc
+    0x72, 0x53, 0x74, 0x61, 0x74, 0x75,
+    0x73, 0x00, 0x01, 0x00, 0x00, 0x00,
+    0x00,                               # end doc
+    0x05, 0x00, 0x00, 0x00,             # size projection
+    0x00,                               # end empty projection
+  );
+
+  is-deeply $encoded-query, $hand-made-buf, 'Encoded query';
+};
+
+#-------------------------------------------------------------------------------
+subtest "encoding msg",  {
+  subtest 'simple message', {
+    my MongoDB::Header $header .= new;
+    my BSON::Document $qdoc .= new: (:serverStatus(1),);
+    my ( $encoded-msg, $request-id) = $header.encode-msg( $qdoc, :flags(0));
+    info-message("e=$encoded-msg.gist(), rid=$request-id");
+
+    my Buf $hand-made-buf .= new(
+      0x3A, 0x00, 0x00, 0x00,             # size 49 bytes
+      0x04, 0x00, 0x00, 0x00,             # Req id = 4 (4th request)
+      0x00, 0x00, 0x00, 0x00,             # resp to 0
+      0xdd, 0x07, 0x00, 0x00,             # OP-MSG
+
+      0x00, 0x00, 0x00, 0x00,             # 0, msg flags
+      0x00,                               # kind is 0: single document
+      0x25, 0x00, 0x00, 0x00,             # doc size
+      0x10,                               # int = 0x10
+      0x73, 0x65, 0x72, 0x76, 0x65,       # serverStatus + 0x00
+      0x72, 0x53, 0x74, 0x61, 0x74,
+      0x75, 0x73, 0x00,
+      0x01, 0x00, 0x00, 0x00,             # value 1
+      0x02, 0x24, 0x64, 0x62, 0x00,       # '$db' key + 0x00
+      0x05, 0x00, 0x00, 0x00,             # str size
+      0x24, 0x63, 0x6D, 0x64, 0x00,       # '$cmd' = db name + 0x00
+      0x00,                               # end doc
+    );
+
+    is-deeply $encoded-msg, $hand-made-buf, 'Encoded message';
+  
+    # TODO; decode
+  }
+
+  subtest 'complex message', {
+    my MongoDB::Header $header .= new;
+    my BSON::Document $qdoc .= new: (
+      :insert<cll>,
+      :documents([
+        BSON::Document.new((:a(10),:b(11))),
+        BSON::Document.new((:a(10),:b(11))),
+      ]),
+    );
+    info-message($qdoc);
+
+    my Str $database-name = 'db';
+    my ( $encoded-msg, $request-id) = $header.encode-msg(
+      $qdoc, :$database-name, :flags(0)
+    );
+    info-message($encoded-msg);
+
+    my Buf $hand-made-buf .= new(
+      0x2c, 0x00, 0x00, 0x00,             # size 44 bytes
+      0x04, 0x00, 0x00, 0x00,             # Req id = 4 (4th request)
+      0x00, 0x00, 0x00, 0x00,             # resp to 0
+      0xdd, 0x07, 0x00, 0x00,             # OP-MSG
+
+      0x00, 0x00, 0x00, 0x00,             # 0, msg flags
+      0x00,                               # kind is 0: single document
+      0x17, 0x00, 0x00, 0x00,             # doc size
+      0x10, 0x73, 0x65, 0x72, 0x76, 0x65, # doc
+      0x72, 0x53, 0x74, 0x61, 0x74, 0x75,
+      0x73, 0x00, 0x01, 0x00, 0x00, 0x00,
+
+      0x00,                               # end doc
+    );
+
+    is-deeply $encoded-msg, $hand-made-buf, 'Encoded message';
+  
+    # TODO; decode
+  }
+  
 
 };
 

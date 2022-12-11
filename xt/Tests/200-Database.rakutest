@@ -17,8 +17,8 @@ drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = $log-path.IO.open( :mode<wo>, :append);
-add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
-#set-filter(|<ObserverEmitter Timer Socket>);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Socket>);
 
 
 info-message("Test $?FILE start");
@@ -29,10 +29,19 @@ my BSON::Document $doc;
 # single server tests => one server key
 my Str $uri = "mongodb://localhost:@server-ports[0]";
 my MongoDB::Client $client .= new(:$uri);
-my Version $server-version = $client.server-version;
-
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
+
+$req .= new((
+  :serverStatus(1),
+  :repl(0), :metrics(0), :locks(0), :asserts(0),
+  :backgroundFlushing(0), :connections(0), :cursors(0),
+  :extra_info(0), :globalLock(0), :indexCounters(0), :network(0),
+  :opcounters(0), :opcountersRepl(0), :recordStats(0)
+));
+
+$doc = $db-admin.run-command($req);
+my Version $server-version = Version.new($doc<version>);
 
 # Drop database first then create new databases
 $req .= new: ( dropDatabase => 1 );
@@ -52,7 +61,7 @@ subtest "Database, create collection, drop", {
   # Second try gets an error
   $doc = $database.run-command($req);
   is $doc<ok>, 0, 'Second collection cl1 not created';
-#diag $doc.perl;
+info-message($doc);
 
   if $server-version < v3.0.5 {
     skip "No error code returned from server version $server-version", 1;
@@ -65,9 +74,15 @@ subtest "Database, create collection, drop", {
 
 #-------------------------------------------------------------------------------
 subtest "Error checking", {
-  $doc = $database.run-command: (getLastError => 1,);
-  is $doc<ok>, 1, 'No last errors';
+  if $server-version >= v5.1.0 {
+    skip "getLastError removed from version $server-version", 1;
+  }
 
+  else {
+    $doc = $database.run-command: (getLastError => 1,);
+    is $doc<ok>, 1, 'No last errors';
+  }
+  
   if $server-version >= v4.2.0 {
     skip "getPrevError removed from version $server-version", 1;
   }
