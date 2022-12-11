@@ -295,7 +295,7 @@ created when data is written in a collection.
 
 =end pod
 method database ( Str:D $name --> MongoDB::Database ) {
-  MongoDB::Database.new( :$!uri-obj, :name($name))
+  MongoDB::Database.new( :client(self), :name($name))
 }
 
 #-------------------------------------------------------------------------------
@@ -314,7 +314,7 @@ method collection ( Str:D $full-collection-name --> MongoDB::Collection ) {
 
 #TODO check for dot in the name
   ( my $db-name, my $cll-name) = $full-collection-name.split( '.', 2);
-  my MongoDB::Database $db .= new( :$!uri-obj, :name($db-name));
+  my MongoDB::Database $db .= new( :client(self), :name($db-name));
   $db.collection($cll-name)
 }
 
@@ -417,22 +417,6 @@ method select-server ( --> MongoDB::ServerPool::Server ) {
 
   my MongoDB::ServerPool $server-pool .= instance;
   $server-pool.select-server($!uri-obj.client-key);
-}
-
-#-------------------------------------------------------------------------------
-method server-version ( --> Version ) {
-
-  my MongoDB::Database $db = self.database('admin');
-  my BSON::Document $doc = $db.run-command: (
-    :serverStatus(1),
-    :repl(0), :metrics(0), :locks(0), :asserts(0),
-    :backgroundFlushing(0), :connections(0), :cursors(0),
-    :extra_info(0), :globalLock(0), :indexCounters(0), :network(0),
-    :opcounters(0), :opcountersRepl(0), :recordStats(0)
-  );
-
-#note "V: ", $doc.perl;
-  Version.new($doc<version>)
 }
 
 #-------------------------------------------------------------------------------
