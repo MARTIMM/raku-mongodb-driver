@@ -31,6 +31,8 @@ unit class MongoDB::Database:auth<github:MARTIMM>;
 use MongoDB;
 use MongoDB::Uri;
 use MongoDB::Collection;
+use MongoDB::Cursor;
+
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
@@ -41,6 +43,7 @@ use BSON::Document;
 #-------------------------------------------------------------------------------
 has MongoDB::Uri $!uri-obj;
 has MongoDB::Collection $!cmd-collection;
+has ClientType $!client;
 
 # doc sorted down …
 has Str $.name;
@@ -52,28 +55,31 @@ has Str $.name;
 
 Define a database object. The database is created (if not existant) the moment that data is stored in a collection.
 
-  submethod BUILD ( MongoDB::Uri:D :$uri-obj!, Str:D :$name! )
+  submethod BUILD ( MongoDB::Client:D :$client!, Str:D :$name! )
 
-=item MongoDB::Uri $uri-obj; the object that describes the uri provided to the client.
-=item Str $name; Name of the database.
+=item $client; the object that describes the uri provided to the client.
+=item $name; Name of the database.
 
+=begin comment
 =head3 Example 1
 
   my MongoDB::Client $client .= new(:uri<mongodb://>);
-  my MongoDB::Database $database .= new(
-    $client.uri-obj, :name<mydatabase>
-  );
+  my MongoDB::Database $database .= new( :$client, :name<mydatabase>);
 
 =head3 Example 2
 
 The slightly easier way is using the client to create a database object;
+=end comment
+However, get the database object as follows
 
   my MongoDB::Client $client .= new(:uri<mongodb://>);
   my MongoDB::Database $database = $client.database('mydatabase');
 
 =end pod
 
-submethod BUILD ( MongoDB::Uri:D :$!uri-obj!, Str:D :$name! ) {
+submethod BUILD ( ClientType:D :$!client!, Str:D :$name! ) {
+
+  $!uri-obj = $!client.uri-obj;
 
   self!set-name($name);
 
@@ -179,8 +185,43 @@ Please also note that mongodb uses query selectors such as C<$set> above and vir
 #
 # Run command using the BSON::Document.
 multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
-  info-message("run command '{$command.keys[0]}'");
+#`{{
+  # Use Wire() encode methods directly without using find() from Collection
+  my MongoDB::Wire $wire .= new;
+  my MongoDB::Cursor $cursor;
+  my BSON::Document $server-reply;
+  my Duration $round-trip-time;
 
+  # Try OP_MSG first, then try OP_QUERY when server is very old and OP_MSG
+  # is not available.
+  info-message("run command {$command.keys[0]} using OP_QUERY");
+  ( $server-reply, $round-trip-time) = $wire.query(
+    "$!name.\$cmd", $command, BSON::Document.new, :$!uri-obj  #, :number-to-return(-1)
+  );
+
+info-message($server-reply);
+  if $server-reply.defined {
+    $cursor .= new( :$!client, :server-doc($server-reply));
+  }
+
+  my $doc = $cursor.fetch;
+  $doc //= BSON::Document.new;
+  trace-message("uri '{$command.keys[0]}': $doc.perl()");
+  $doc
+}}
+
+  # check for error of the OP_QUERY command
+  my BSON::Document $doc = self!try-op-query($command);
+  if $doc<ok> == 0 and $doc<code> == 352 and
+     $doc<codeName> eq 'UnsupportedOpQueryCommand' {
+
+     $doc = self!try-op-msg($command);
+  }
+
+  $doc
+}
+
+#`{{
   # And use it to do a find on it, get the doc and return it.
   my MongoDB::Cursor $cursor = $!cmd-collection.find(
     :criteria($command), :number-to-return(1)
@@ -198,14 +239,107 @@ multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
   );
 
   return $doc.defined ?? $doc !! BSON::Document.new;
-}
+}}
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Run command using List of Pair.
 multi method run-command ( List:D() $pairs --> BSON::Document ) {
-  my BSON::Document $command .= new: $pairs;
-  info-message("run command {$command.keys[0]}");
 
+note $?LINE;
+#`{{
+  # Use Wire() encode methods directly without using find() from Collection
+  my MongoDB::Wire $wire .= new;
+  my MongoDB::Cursor $cursor;
+  my BSON::Document $command .= new: $pairs;
+  my BSON::Document $server-reply;
+  my Duration $round-trip-time;
+
+#debug-message($command);
+  # Try OP_MSG first, then try OP_QUERY when server is very old.
+  info-message("run command {$command.keys[0]} using OP_QUERY");
+  ( $server-reply, $round-trip-time) = $wire.query(
+    "$!name.\$cmd", $command, :$!uri-obj  #, :number-to-return(-1)
+  );
+
+#info-message($server-reply);
+  if $server-reply.defined {
+    $cursor .= new( :$!client, :server-doc($server-reply));
+  }
+
+  my $doc = $cursor.fetch;
+  $doc //= BSON::Document.new;
+
+  # check for error for the OP_QUERY command
+
+
+  trace-message("uri '{$command.keys[0]}': $doc.perl()");
+  $doc;
+}}
+
+  # check for error of the OP_QUERY command
+  my BSON::Document $command .= new: $pairs;
+  my BSON::Document $doc = self!try-op-query($command);
+  if $doc<ok> == 0 and
+     $doc<code> == 352 and
+     $doc<codeName> eq 'UnsupportedOpQueryCommand' {
+note "Unsupported OP_QUERY Command";
+
+    $doc = self!try-op-msg($command);
+  }
+
+  $doc
+}
+
+#-------------------------------------------------------------------------------
+method !try-op-query ( BSON::Document $command --> BSON::Document ) {
+  # Use Wire() encode methods directly without using find() from Collection
+  my MongoDB::Wire $wire .= new;
+  my MongoDB::Cursor $cursor;
+  my BSON::Document $server-reply;
+  my Duration $round-trip-time;
+
+  info-message("run command {$command.keys[0]} using OP_QUERY");
+  ( $server-reply, $round-trip-time) = $wire.query(
+    "$!name.\$cmd", $command, :$!uri-obj  #, :number-to-return(-1)
+  );
+
+#info-message($server-reply);
+  if $server-reply.defined {
+    $cursor .= new( :$!client, :server-doc($server-reply));
+  }
+
+  my $doc = $cursor.fetch;
+  $doc //= BSON::Document.new;
+
+  $doc
+}
+
+#-------------------------------------------------------------------------------
+method !try-op-msg ( BSON::Document $command --> BSON::Document ) {
+  # Use Wire() encode methods directly without using find() from Collection
+  my MongoDB::Wire $wire .= new;
+  my MongoDB::Cursor $cursor;
+  my BSON::Document $server-reply;
+  my Duration $round-trip-time;
+
+  info-message("run command {$command.keys[0]} using OP_MSG");
+  ( $server-reply, $round-trip-time) = $wire.message(
+    $!name, $command, :$!uri-obj
+  );
+
+info-message($server-reply);
+  if $server-reply.defined {
+    $cursor .= new( :$!client, :server-doc($server-reply));
+  }
+
+  my $doc = $cursor.fetch;
+  $doc //= BSON::Document.new;
+
+  $doc
+}
+
+
+#`{{
   # And use it to do a find on it, get the doc and return it.
   my MongoDB::Cursor $cursor = $!cmd-collection.find(
     :criteria($command), :number-to-return(1)
@@ -224,7 +358,8 @@ multi method run-command ( List:D() $pairs --> BSON::Document ) {
     "uri '{$command.keys[0]}': {$doc.defined ?? $doc.perl !! 'BSON::Document.new'}"
   );
   return $doc.defined ?? $doc !! BSON::Document.new;
-}
+}}
+
 
 #-------------------------------------------------------------------------------
 method !set-name ( Str $name = '' ) {
