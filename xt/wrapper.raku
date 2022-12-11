@@ -23,7 +23,8 @@ drop-send-to('mongodb');
 #drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = $log-path.IO.open( :mode<wo>, :create, :truncate);
-add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info));
+#add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info));
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 set-filter(|<ObserverEmitter Timer Socket>);
 #set-filter(|<ObserverEmitter>);
 
@@ -32,7 +33,7 @@ info-message("Wrapper tests started");
 #-------------------------------------------------------------------------------
 sub MAIN (
   *@test-specs, Str :$test-dir is copy = '', 
-  Str:D :$servers, Str :$version = '4.0.18',
+  Str:D :$servers, Str :$version = '4.4.18',
   Bool :$start = False, Bool :$stop = False, Bool :$cleanup = False,
 ) {
   my Wrapper $ts .= new;
@@ -73,21 +74,22 @@ sub USAGE ( ) {
     mongos servers. The program starts and stops the server when requested
 
     Command;
-      wrapper.raku <options> <test dir> <test list>
+      wrapper.raku <options> <test list>
     
     Options
-      --test-dir        Test directory where test programs are placed. By
-                        default it is an empty string which means in the
-                        'xt/Tests' directory. When a directory or path is
-                        provided, this means that it is a path from 'xt/Tests'.
+      --cleanup         Cleanup the database data after stopping. The stop
+                        option must also be provided.
       --servers         A comma separated list of keys. The keys are used in
                         the configuration file at 'xt/TestServers/config.yaml'.
       --start           Start server before testing.
       --stop            Stop server after testing.
-      --cleanup         Cleanup the database data after stopping. The stop
-                        option must also be provided.
+      --test-dir        Test directory where test programs are placed. By
+                        default it is an empty string which means that test
+                        files are to be found in the 'xt/Tests' directory. When
+                        a directory or path is provided, this means that it is
+                        a path from 'xt/Tests'.
       --version         Version of the mongo servers to test. The version is
-                        '4.0.18' by default.
+                        '4.4.18' by default.
 
     Arguments
       test list         A list of tests to run with the server. The name is
@@ -97,11 +99,11 @@ sub USAGE ( ) {
     Examples
       Testing accounting on a single server. The server key is 'simple'.
 
-        wrapper.raku --version=3.6.9 --servers=simple Accounts '5'
+        wrapper.raku --version=3.6.9 --servers=simple --test-dir=Accounts 5
 
       Testing replica servers. Before tests are run, the servers are started.
 
-        wrapper --servers=replica1,replica2 --start Behavior '61'
+        wrapper --servers=replica1,replica2 --start --test-dir=Behavior 61
 
       Stop servers and clean database without testing.
 
@@ -225,6 +227,7 @@ class Wrapper:auth<github:MARTIMM> {
     my MongoDB::Database $database = $client.database('admin');
 
     # force needed to shutdown replicated servers
+#    my BSON::Document $req .= new: ( shutdown => 1, force => True);
     my BSON::Document $req .= new: ( shutdown => 1, force => True);
     my BSON::Document $doc = $database.run-command($req);
 
