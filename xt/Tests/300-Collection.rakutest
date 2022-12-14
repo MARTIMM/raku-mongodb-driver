@@ -1,39 +1,40 @@
-use v6;
-use lib 't';
-
+use lib 'lib';
 use Test;
-use Test-support;
+
 use MongoDB;
 use MongoDB::Database;
 use MongoDB::Client;
 use BSON::Document;
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+#note "args: $log-path, $version, @server-ports";
+
+#-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-#my $handle = "t/Log/300-Collection.log".IO.open( :mode<wo>, :create, :truncate);
-#add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-#set-filter(|<ObserverEmitter Timer Socket>);
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
 
 info-message("Test $?FILE start");
 
-my MongoDB::Test-support $ts .= new;
+my BSON::Document $req;
+my BSON::Document $doc;
+#my MongoDB::Cursor $cursor;
 
 # single server tests => one server key
-my Hash $clients = $ts.create-clients;
-my Str $skey = $clients.keys[0];
-#my Str $bin-path = $ts.server-control.get-binary-path( 'mongod', $skey);
-my MongoDB::Client $client = $clients{$clients.keys[0]};
+my Str $uri = "mongodb://localhost:@server-ports[0]";
+my MongoDB::Client $client .= new(:$uri);
 my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 
 # Create collection and insert data in it!
 my MongoDB::Collection $collection = $database.collection('cl1');
 isa-ok( $collection, 'MongoDB::Collection');
-
-my BSON::Document $req;
-my BSON::Document $doc;
-my MongoDB::Cursor $cursor;
 
 $database.run-command: (drop => $collection.name,);
 
@@ -44,14 +45,19 @@ subtest "Several inserts", {
   $req .= new: (
     insert => $collection.name,
     documents => [
-      ( name => 'Jan Klaassen'),        ( name => 'Piet B'),
-      ( name => 'Me T'),                ( :name('Di D'))
+      ( name => 'Jan Klaassen'),
+      ( name => 'Piet B'),
+      ( name => 'Me T'),
+      ( :name('Di D'))
     ]
   );
 
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 4, "Inserted 4 documents";
+}
+done-testing;
+=finish
 
   $req .= new: ( count => $collection.name, query => (name => 'Me T',));
   $doc = $database.run-command($req);

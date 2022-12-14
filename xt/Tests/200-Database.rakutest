@@ -20,7 +20,6 @@ my $handle = $log-path.IO.open( :mode<wo>, :append);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 set-filter(|<ObserverEmitter Timer Socket>);
 
-
 info-message("Test $?FILE start");
 
 my BSON::Document $req;
@@ -34,13 +33,55 @@ my MongoDB::Database $db-admin = $client.database('admin');
 
 $req .= new((
   :serverStatus(1),
-  :repl(0), :metrics(0), :locks(0), :asserts(0),
-  :backgroundFlushing(0), :connections(0), :cursors(0),
-  :extra_info(0), :globalLock(0), :indexCounters(0), :network(0),
-  :opcounters(0), :opcountersRepl(0), :recordStats(0)
+  :activeIndexBuilds(0),
+  :asserts(0),
+  :batchedDeletes(0),
+  :bucketCatalog(0),
+  :catalogStats(0),
+  :connections(0),
+  :defaultRWConcern(0),
+  :electionMetrics(0),
+  :extra_info(0),
+  :flowControl(0),
+  :freeMonitoring(0),
+  :globalLock(0),
+  :hedgingMetrics(0),
+  :indexBulkBuilder(0),
+  :indexStats(0),
+  :latchAnalysis(0),
+  :locks(0),
+  :logicalSessionRecordCache(0),
+  :mem(0),
+  :metrics(0),
+  :mirroredReads(0),
+  :network(0),
+  :opLatencies(0),
+  :opReadConcernCounters(0),
+  :opWriteConcernCounters(0),
+  :opcounters(0),
+  :opcountersRepl(0),
+  :oplogTruncation(0),
+  :readConcernCounters(0),
+  :repl(0),
+  :scramCache(0),
+  :security(0),
+  :sharding(0),
+  :shardingStatistics(0),
+  :shardedIndexConsistency(0),
+  :storageEngine(0),
+  :tenantMigrations(0),
+  :tcmalloc(0),
+  :transactions(0),
+  :trafficRecording(0),
+  :transportSecurity(0),
+  :twoPhaseCommitCoordinator(0),
+  :watchdog(0),
+  :wiredTiger(0),
+  :writeBacksQueued(0),
 ));
 
 $doc = $db-admin.run-command($req);
+info-message($doc);
 my Version $server-version = Version.new($doc<version>);
 
 # Drop database first then create new databases
