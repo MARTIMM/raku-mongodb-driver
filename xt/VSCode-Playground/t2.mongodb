@@ -1,0 +1,4 @@
+use('test');
+db.runCommand( {
+    find: 'cl1',
+} );
