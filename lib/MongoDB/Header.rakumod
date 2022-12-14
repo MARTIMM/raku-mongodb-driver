@@ -114,7 +114,7 @@ method encode-msg (
   my BSON::Document $kind0-doc .= new;
   my BSON::Document $kind1-doc .= new;
   for $query.kv -> $k, $v {
-info-message("msg key $k value {$v.perl}, {$v.^name}");
+info-message("msg key \"$k\" value {$v.perl}, {$v.^name}");
     if $k eq 'insert' {
       $kind1-needed = 'documents';
     }
@@ -127,11 +127,12 @@ info-message("msg key $k value {$v.perl}, {$v.^name}");
       $kind1-needed = 'deletes';
     }
      
-    $kind0-doc{$k} = $v;
+    $kind0-doc{$k} = $v unless $v ~~ Array;
   }
 
   # Add a database name to the type0 section
   $kind0-doc<$db> = $database-name;
+info-message($kind0-doc);
 
   # Create a section 0
   $query-buffer ~= [~]
@@ -141,59 +142,26 @@ info-message("msg key $k value {$v.perl}, {$v.^name}");
     # With a single document
     BSON::Encode.new.encode($kind0-doc);
 
+  # Create a section 1 if needed
   if ?$kind1-needed {
+    $query-buffer ~= Buf.new.write-int8( 0, 1, LittleEndian),
+    my Buf $qb .= new;
     for $query.kv -> $k, $v {
       if $v ~~ Array {
-        $kind1-doc<identifier> = $kind1-needed;
-        $kind1-doc<documents> = $v;
+        $qb ~= encode-cstring($kind1-needed);
+        for @$v -> $vi {
+          $qb ~= BSON::Encode.new.encode($vi);
+        }
+info-message("Size buf: " ~ $qb.elems + 4);
+
+        $query-buffer ~= Buf.new.write-int32( 0, $qb.elems + 4, LittleEndian);
+        $query-buffer ~= $qb;
 
         last;
       }
     }
   }
-
-  # Create a section 1 if needed
-  if ?$kind1-needed {
-#    $kind1-doc<identifier> = $kind1-needed;
-
-    $query-buffer ~= [~]
-      # Kind 1 type section
-      Buf.new.write-int8( 0, 1, LittleEndian),
-
-      # With the array. size is at the top
-      BSON::Encode.new.encode($kind1-doc);
-  }
-
-#`{{
-    # cstring fullCollectionName
-    # "dbname.collectionname"
-    #
-    encode-cstring($full-collection-name),
-
-    # int32 numberToSkip
-    # number of documents to skip
-    #
-    Buf.new.write-int32( 0, $number-to-skip, LittleEndian),
-
-    # int32 numberToReturn
-    # number of documents to return
-    # in the first OP-REPLY batch
-    #
-    Buf.new.write-int32( 0, $number-to-return, LittleEndian),
-
-    # document query
-    # query object
-    #
-    BSON::Encode.new.encode($query);
-}}
-
-
-  # [ document  returnFieldSelector; ]
-  # Optional. Selector indicating the fields to return
-  #
-#  if ? $projection {
-#    $query-buffer ~= BSON::Encode.new.encode($projection);
-#  }
+info-message($query-buffer);
 
   # encode message header and get used request id
   ( my Buf $message-header, my Int $u-request-id) =
@@ -201,8 +169,6 @@ info-message("msg key $k value {$v.perl}, {$v.^name}");
 
   # return total encoded buffer with request id
   return ( $message-header ~ $query-buffer, $u-request-id);
-
-
 }
 
 #-------------------------------------------------------------------------------
@@ -339,8 +305,6 @@ method encode-cursor-id ( Int $cursor-id --> Buf ) {
 #-------------------------------------------------------------------------------
 method decode-reply ( Buf $b --> BSON::Document ) {
 
-info-message($b);
-
   # http://www.mongodb.org/display/DOCS/Mongo+Wire+Protocol#MongoWireProtocol-OPREPLY
 
   # MsgHeader header
@@ -349,7 +313,6 @@ info-message($b);
   my BSON::Document $message-header = self.decode-message-header(
     $b, $index
   );
-info-message($message-header);
 
   given $message-header<op-code> {
     when OP-REPLY {
@@ -357,9 +320,11 @@ info-message($message-header);
     }
 
     when OP-MSG {
+#info-message($b);
+#info-message($message-header);
       self!decode-msg-reply( $b, $index, $message-header);
     }
- }
+  }
 }
 
 #-------------------------------------------------------------------------------

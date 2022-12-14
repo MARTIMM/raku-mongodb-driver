@@ -45,7 +45,8 @@ method query (
       $full-collection-name, $qdoc, $projection,
       :$flags, :$number-to-skip, :$number-to-return
     );
-info-message($encoded-query);
+#info-message($qdoc);
+#info-message($encoded-query);
 
     # server is only provided when called from Monitor. all other objects
     # call the method without a server object.
@@ -75,7 +76,12 @@ info-message($encoded-query);
 
     # Read 4 bytes for int32 response size
     my Buf $size-bytes = self!get-bytes(4);
-
+#info-message("get-bytes: $size-bytes.elems()");
+    if $size-bytes.elems == 0 {
+      error-message("No data returned from server");
+      return ( BSON::Document, Duration.new(0));
+    }
+    
     # Convert Buf to Int and substract 4 to get remaining size of data
     my Int $response-size = $size-bytes.read-int32( 0, LittleEndian) - 4;
 
@@ -100,7 +106,7 @@ info-message($encoded-query);
     CATCH {
 #note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
 #.note;
-info-message($_.gist);
+#info-message($_.gist);
 
       $!socket.close if $!socket.defined;
 
@@ -131,6 +137,7 @@ info-message($_.gist);
       }
     }
   }
+info-message($result);
 
 #note "rtt: $round-trip-time, ", Duration.new(0);
   return ( $result, $time-query ?? $round-trip-time !! Duration.new(0));
@@ -145,8 +152,8 @@ method message (
 
   --> List
 ) {
-info-message($database-name);
-info-message($qdoc);
+#info-message($database-name);
+#info-message($qdoc);
 
   my Duration $round-trip-time .= new(0.0);
   my MongoDB::Header $header .= new;
@@ -165,8 +172,8 @@ info-message($qdoc);
     ( $encoded-query, $request-id) = $header.encode-msg(
       $qdoc, :$database-name, :$flags
     );
+#info-message($qdoc);
 info-message($encoded-query);
-#info-message($uri-obj.gist);
 
     # server is only provided when called from Monitor. all other objects
     # call the method without a server object.
@@ -215,6 +222,7 @@ info-message($response-size);
     $round-trip-time = now - $t0 if $time-query;
 
     $result = $header.decode-reply($server-reply);
+info-message($result);
 
     # Assert that the request-id and response-to are the same
     fatal-message("Id in request is not the same as in the response")
@@ -222,8 +230,8 @@ info-message($response-size);
 
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
-note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
-.note;
+#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
+#.note;
 
       $!socket.close if $!socket.defined;
 
@@ -437,14 +445,16 @@ method !get-bytes ( int $n --> Buf ) {
 
     # No data, try again
     $bytes = $!socket.receive($n);
-    fatal-message("No response from server") if $bytes.elems == 0;
+#    fatal-message("No response from server") if $bytes.elems == 0;
+    error-message("No response from server") if $bytes.elems == 0;
   }
 
   if 0 < $bytes.elems < $n {
 
     # Not 0 but too little, try to get the rest of it
     $bytes.push($!socket.receive($n - $bytes.elems));
-    fatal-message("Response corrupted") if $bytes.elems < $n;
+#    fatal-message("Response corrupted") if $bytes.elems < $n;
+    error-message("Response corrupted") if $bytes.elems < $n;
   }
 
   $bytes;
