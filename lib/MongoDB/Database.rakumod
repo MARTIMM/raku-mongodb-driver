@@ -212,10 +212,10 @@ info-message($server-reply);
 
   # check for error of the OP_QUERY command
   my BSON::Document $doc = self!try-op-query($command);
-  if $doc<ok> == 0 and $doc<code> == 352 and
+  if ?$doc and $doc<ok>:exists and $doc<ok> == 0 and $doc<code>:exists and
+     $doc<code> == 352 and $doc<codeName>:exists and
      $doc<codeName> eq 'UnsupportedOpQueryCommand' {
-
-     $doc = self!try-op-msg($command);
+    $doc = self!try-op-msg($command);
   }
 
   $doc
@@ -245,7 +245,6 @@ info-message($server-reply);
 # Run command using List of Pair.
 multi method run-command ( List:D() $pairs --> BSON::Document ) {
 
-note $?LINE;
 #`{{
   # Use Wire() encode methods directly without using find() from Collection
   my MongoDB::Wire $wire .= new;
@@ -279,11 +278,9 @@ note $?LINE;
   # check for error of the OP_QUERY command
   my BSON::Document $command .= new: $pairs;
   my BSON::Document $doc = self!try-op-query($command);
-  if $doc<ok> == 0 and
-     $doc<code> == 352 and
-     $doc<codeName> eq 'UnsupportedOpQueryCommand' {
-note "Unsupported OP_QUERY Command";
 
+  if ?$doc and $doc<ok> == 0 and $doc<code> == 352 and
+     $doc<codeName> eq 'UnsupportedOpQueryCommand' {
     $doc = self!try-op-msg($command);
   }
 
@@ -303,8 +300,8 @@ method !try-op-query ( BSON::Document $command --> BSON::Document ) {
     "$!name.\$cmd", $command, :$!uri-obj  #, :number-to-return(-1)
   );
 
+  if ?$server-reply {
 #info-message($server-reply);
-  if $server-reply.defined {
     $cursor .= new( :$!client, :server-doc($server-reply));
   }
 
@@ -327,8 +324,8 @@ method !try-op-msg ( BSON::Document $command --> BSON::Document ) {
     $!name, $command, :$!uri-obj
   );
 
-info-message($server-reply);
   if $server-reply.defined {
+#info-message($server-reply);
     $cursor .= new( :$!client, :server-doc($server-reply));
   }
 
