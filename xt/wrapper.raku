@@ -41,7 +41,6 @@ sub MAIN (
   # Set server list in environment
   my @server-ports = ();
   my @servers = $servers.split(/\s* ',' \s*/);
-#note 'servers: ', @servers.gist, ', ',  $start, ', ', $stop;
 
   for @servers -> $server {
     @server-ports.push: $ts.create-server-config(
@@ -62,7 +61,6 @@ sub MAIN (
     $ts.clean-mongod( $server, $version) if $cleanup and $stop;
   }
 
-#  $ts.display-results( $log-path, $server, $version);
   $ts.display-results($log-path);
 }
 
@@ -125,8 +123,6 @@ class Wrapper:auth<github:MARTIMM> {
 
   #-----------------------------------------------------------------------------
   method create-server-config( Str $server, Version $version --> Str ) {
-
-#  note "make config for server '$server'";
 
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
     mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
@@ -227,14 +223,18 @@ class Wrapper:auth<github:MARTIMM> {
     my MongoDB::Database $database = $client.database('admin');
 
     # force needed to shutdown replicated servers
-#    my BSON::Document $req .= new: ( shutdown => 1, force => True);
     my BSON::Document $req .= new: ( shutdown => 1, force => True);
     my BSON::Document $doc = $database.run-command($req);
 
     # older versions just break off so doc can be undefined
-    if !$doc or (?$doc and $doc<ok> ~~ 1e0) {
+    if ?$doc and $doc<ok>:exists and $doc<ok> ~~ 1e0 {
       $stopped = True;
       debug-message('Shutdown executed ok');
+    }
+
+    elsif ?$doc and $doc<ok>:!exists {
+      $stopped = True;
+      debug-message('No contact with server, assumed shutdown');
     }
 
     else {
@@ -265,19 +265,15 @@ class Wrapper:auth<github:MARTIMM> {
 
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
     for dir "$data-path/db/diagnostic.data" -> $f {
-#      note 'unlink ', $f.basename, ' in diagnostic.data';
       $f.unlink;
     }
 
-#    note 'rmdir diagnostic.data';
     "$data-path/db/diagnostic.data".IO.rmdir;
 
     for dir "$data-path/db" -> $f {
-#      note 'unlink ', $f.basename, ' in db';
       $f.unlink;
     }
 
-#    note 'unlink mdb.log';
     "$data-path/mdb.log".IO.unlink;
 
     info-message("Server environment of server '$server' cleaned");
@@ -293,9 +289,9 @@ class Wrapper:auth<github:MARTIMM> {
     my @test-files = ();
     $test-dir = 'xt/Tests' ~ (?$test-dir ?? "/$test-dir" !! '');
     for @test-specs -> $test-spec {
-      for dir $test-dir, :test(rx{^ $test-spec .*}) -> $f {
-        @test-files.push: $f.Str;
-        note $f.Str;
+      for dir $test-dir, :test(rx{^ $test-spec .*}) -> Str() $f {
+        @test-files.push: $f;
+        note $f;
       }
     }
 
@@ -304,9 +300,6 @@ class Wrapper:auth<github:MARTIMM> {
       my Str $cmd = "rakudo -Ilib '$test-file' '$log-path' $version "
                     ~ @server-ports.join(' ')
                     ~ ' || echo ""';
-
-#    $cmd ~= ' || echo "failures ignored, these tests are for developers"'
-#      if $ignore;
 
       # Add a message, then drop to flush and to let the test program log
       info-message("Run test: $cmd");
@@ -343,7 +336,6 @@ class Wrapper:auth<github:MARTIMM> {
   }
 
   #-----------------------------------------------------------------------------
-#  method display-results ( Str $log-path, Str $server, Str $version ) {
   method display-results ( Str $log-path ) {
 
     # Drop to flush and analyse the logs
@@ -355,12 +347,8 @@ class Wrapper:auth<github:MARTIMM> {
     my Array $test-count = [ 0, 0, 0, 0];
 
     for $log-path.IO.open.lines -> $line is copy {
-#note $line;
-
       $line ~~ s/^ .*? ']:' \s+ //;
       $line ~~ s:g/ \' //;
-#note $line;
-
       if $line ~~ m:s/Run test\: rakudo/ {
         note $line;
         my @l = $line.split(/\s+/);
@@ -370,7 +358,6 @@ class Wrapper:auth<github:MARTIMM> {
 
       elsif $line ~~ m:s/Test finished/ {
         my @l = $line.split(/\s+/);
-#note 'l2: ', @l.gist;
         $test-results<test-programs>{$version}{@l[6]}.push: @l[5];
       }
       
@@ -382,8 +369,6 @@ class Wrapper:auth<github:MARTIMM> {
 
       elsif $line ~~ m/TestResultOutput \:/ {
         $line ~~ s/TestResultOutput \://;
-#note $line;
-
         if $line ~~ m/\# \s+ SKIP \s*/ {
           $test-count[3]++;
         }
@@ -407,12 +392,12 @@ class Wrapper:auth<github:MARTIMM> {
       }
     }
 
-note "\n, $test-results.gist()";
-    note "\nNumber of tests run: ", [+] @$test-count;
-    note 'Sub tests: ', $test-count[2];
-    note 'Succesfull tests: ', $test-count[0];
-    note 'Failed tests: ', $test-count[1];
-    note 'Skipped tests: ', $test-count[3];
+#note "\n, $test-results.gist();";
+    note "\nSub tests:                 ", $test-count[2].fmt('%3d');
+    note 'Succesfull tests:          ', $test-count[0].fmt('%3d');
+    note 'Failed tests:              ', $test-count[1].fmt('%3d');
+    note 'Skipped tests:             ', $test-count[3].fmt('%3d');
+    note "Total number of tests run: ", ([+] @$test-count).fmt('%3d'), "\n\n ";
   }
 }
 
