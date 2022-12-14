@@ -1,0 +1,24 @@
+// MongoDB Playground
+
+// Select the database to use.
+use('mongodbVSCodePlaygroundDB');
+
+// The drop() command destroys all data from a collection.
+// Make sure you run it against the correct database and collection.
+db.runCommand( {
+  serverStatus: 1,
+  repl: 0,
+  metrics: 0,
+  locks: 0,
+  asserts: 0,
+  backgroundFlushing: 0,
+  connections: 0,
+  cursors: 0,
+  extra_info: 0,
+  globalLock: 0,
+  indexCounters: 0,
+  network: 0,
+  opcounters: 0,
+  opcountersRepl: 0,
+  recordStats: 0
+} );
