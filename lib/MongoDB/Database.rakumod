@@ -185,30 +185,8 @@ Please also note that mongodb uses query selectors such as C<$set> above and vir
 #
 # Run command using the BSON::Document.
 multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
-#`{{
-  # Use Wire() encode methods directly without using find() from Collection
-  my MongoDB::Wire $wire .= new;
-  my MongoDB::Cursor $cursor;
-  my BSON::Document $server-reply;
-  my Duration $round-trip-time;
 
-  # Try OP_MSG first, then try OP_QUERY when server is very old and OP_MSG
-  # is not available.
-  info-message("run command {$command.keys[0]} using OP_QUERY");
-  ( $server-reply, $round-trip-time) = $wire.query(
-    "$!name.\$cmd", $command, BSON::Document.new, :$!uri-obj  #, :number-to-return(-1)
-  );
-
-info-message($server-reply);
-  if $server-reply.defined {
-    $cursor .= new( :$!client, :server-doc($server-reply));
-  }
-
-  my $doc = $cursor.fetch;
-  $doc //= BSON::Document.new;
-  trace-message("uri '{$command.keys[0]}': $doc.perl()");
-  $doc
-}}
+  info-message("run command {$command.keys[0]}");
 
   # check for error of the OP_QUERY command
   my BSON::Document $doc = self!try-op-query($command);
@@ -218,71 +196,36 @@ info-message($server-reply);
     $doc = self!try-op-msg($command);
   }
 
+# Test to see if a lower versioned server can handle a OP_MSG wire protocol
+# without going down. Unfortionately this is the case by just shutting the door
+# in front of our nose
+#my BSON::Document $doc2 = self!try-op-msg($command);
+#info-message($doc2);
+
   $doc
 }
-
-#`{{
-  # And use it to do a find on it, get the doc and return it.
-  my MongoDB::Cursor $cursor = $!cmd-collection.find(
-    :criteria($command), :number-to-return(1)
-  );
-
-  # Return undefined on server problems
-  if not $cursor.defined {
-    error-message("No cursor returned");
-    return BSON::Document;
-  }
-
-  my $doc = $cursor.fetch;
-  trace-message(
-    "command '{$command.keys[0]}': {$doc.defined ?? $doc.perl !! 'BSON::Document.new'}"
-  );
-
-  return $doc.defined ?? $doc !! BSON::Document.new;
-}}
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Run command using List of Pair.
 multi method run-command ( List:D() $pairs --> BSON::Document ) {
 
-#`{{
-  # Use Wire() encode methods directly without using find() from Collection
-  my MongoDB::Wire $wire .= new;
-  my MongoDB::Cursor $cursor;
-  my BSON::Document $command .= new: $pairs;
-  my BSON::Document $server-reply;
-  my Duration $round-trip-time;
-
-#debug-message($command);
-  # Try OP_MSG first, then try OP_QUERY when server is very old.
-  info-message("run command {$command.keys[0]} using OP_QUERY");
-  ( $server-reply, $round-trip-time) = $wire.query(
-    "$!name.\$cmd", $command, :$!uri-obj  #, :number-to-return(-1)
-  );
-
-#info-message($server-reply);
-  if $server-reply.defined {
-    $cursor .= new( :$!client, :server-doc($server-reply));
-  }
-
-  my $doc = $cursor.fetch;
-  $doc //= BSON::Document.new;
-
-  # check for error for the OP_QUERY command
-
-
-  trace-message("uri '{$command.keys[0]}': $doc.perl()");
-  $doc;
-}}
-
   # check for error of the OP_QUERY command
   my BSON::Document $command .= new: $pairs;
   my BSON::Document $doc = self!try-op-query($command);
 
-  if ?$doc and $doc<ok> == 0 and $doc<code> == 352 and
+  info-message("run command {$command.keys[0]}");
+
+  if ?$doc and $doc<ok>:exists and $doc<ok> == 0 and $doc<code>:exists and
+     $doc<code> == 352 and $doc<codeName>:exists and
      $doc<codeName> eq 'UnsupportedOpQueryCommand' {
     $doc = self!try-op-msg($command);
   }
+
+# Test to see if a lower versioned server can handle a OP_MSG wire protocol
+# without going down. Unfortionately this is the case by just shutting the door
+# in front of our nose
+#my BSON::Document $doc2 = self!try-op-msg($command);
+#info-message($doc2);
 
   $doc
 }
@@ -295,13 +238,11 @@ method !try-op-query ( BSON::Document $command --> BSON::Document ) {
   my BSON::Document $server-reply;
   my Duration $round-trip-time;
 
-  info-message("run command {$command.keys[0]} using OP_QUERY");
   ( $server-reply, $round-trip-time) = $wire.query(
     "$!name.\$cmd", $command, :$!uri-obj  #, :number-to-return(-1)
   );
 
   if ?$server-reply {
-#info-message($server-reply);
     $cursor .= new( :$!client, :server-doc($server-reply));
   }
 
@@ -319,7 +260,7 @@ method !try-op-msg ( BSON::Document $command --> BSON::Document ) {
   my BSON::Document $server-reply;
   my Duration $round-trip-time;
 
-  info-message("run command {$command.keys[0]} using OP_MSG");
+#  info-message("run command {$command.keys[0]} using OP_MSG");
   ( $server-reply, $round-trip-time) = $wire.message(
     $!name, $command, :$!uri-obj
   );
@@ -334,29 +275,6 @@ method !try-op-msg ( BSON::Document $command --> BSON::Document ) {
 
   $doc
 }
-
-
-#`{{
-  # And use it to do a find on it, get the doc and return it.
-  my MongoDB::Cursor $cursor = $!cmd-collection.find(
-    :criteria($command), :number-to-return(1)
-  );
-
-  # Return undefined on server problems
-  if not $cursor.defined {
-    error-message("No cursor returned");
-    return BSON::Document;
-  }
-
-  my $doc = $cursor.fetch;
-#  debug-message("command done {$command.keys[0]}");
-#  trace-message("command result {($doc // '-').perl}");
-  trace-message(
-    "uri '{$command.keys[0]}': {$doc.defined ?? $doc.perl !! 'BSON::Document.new'}"
-  );
-  return $doc.defined ?? $doc !! BSON::Document.new;
-}}
-
 
 #-------------------------------------------------------------------------------
 method !set-name ( Str $name = '' ) {
