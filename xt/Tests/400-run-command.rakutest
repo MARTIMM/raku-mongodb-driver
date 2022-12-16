@@ -1,8 +1,6 @@
-use v6;
-use lib 't';
-
+use lib 'lib';
 use Test;
-use Test-support;
+
 use MongoDB;
 use MongoDB::Client;
 use MongoDB::Database;
@@ -10,31 +8,28 @@ use BSON::Document;
 use MongoDB::Cursor;
 
 #-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $server-version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+
+#-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
-my $handle = "t/Log/400-run-command.log".IO.open(
-  :mode<wo>, :create, :truncate
-);
+my $handle = $log-path.IO.open( :mode<wo>, :append);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter Timer Socket>);
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
 
 info-message("Test $?FILE start");
 
-my MongoDB::Test-support $ts .= new;
-
-# single server tests => one server key
-my Hash $clients = $ts.create-clients;
-
-my MongoDB::Client $client = $clients{$clients.keys[0]};
-my MongoDB::Database $database = $client.database('test');
-my MongoDB::Database $db-admin = $client.database('admin');
 my BSON::Document $req;
 my BSON::Document $doc;
 
-# get version to skip certain tests
-my Str $version = $ts.server-version($database);
-#note $version;
+# single server tests => one server key
+my Str $uri = "mongodb://localhost:@server-ports[0]";
+my MongoDB::Client $client .= new(:$uri);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
 
 # Drop database first, not checked for success.
 $database.run-command(BSON::Document.new: (dropDatabase => 1));
@@ -133,8 +128,8 @@ subtest "Diagnostic Commands", {
     documents => [(code => 15)]
   );
 
-  if $version ~~ / '2.6.' \d+ / {
-    skip "2.6.* server doesn't know about command 'listCollections'", 1;
+  if $server-version < v3.0.0 {
+    skip "server version $server-version doesn't know about command 'listCollections'", 1;
   }
 
   else {
