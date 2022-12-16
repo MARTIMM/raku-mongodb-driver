@@ -184,6 +184,7 @@ method cleanup ( Str $client-key, Str $server-name ) {
   $!rw-sem.writer( 'socketpool', {
       my Hash $info-cl-srv =
         $!socket-info{$client-key}{$server-name}:delete // %();
+trace-message("$server-name: $info-cl-srv.gist");
 
       for $info-cl-srv.keys -> $un {
         my $s = $info-cl-srv{$un};

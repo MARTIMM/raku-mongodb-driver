@@ -46,6 +46,7 @@ method query (
       :$flags, :$number-to-skip, :$number-to-return
     );
 #info-message($qdoc);
+#die if $qdoc.keys ~~ ();
 #info-message($encoded-query);
 
     # server is only provided when called from Monitor. all other objects
@@ -78,7 +79,7 @@ method query (
     my Buf $size-bytes = self!get-bytes(4);
 #info-message("get-bytes: $size-bytes.elems()");
     if $size-bytes.elems == 0 {
-#      $!socket.close;
+      $server.close-socket(:$uri-obj);
       error-message("No data returned from server");
       return ( BSON::Document, Duration.new(0));
     }

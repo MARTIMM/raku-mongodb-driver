@@ -281,9 +281,20 @@ method set-data ( *%items ) {
 #-------------------------------------------------------------------------------
 #TM:0:get-socket:
 method get-socket ( MongoDB::Uri :$uri-obj --> MongoDB::SocketPool::Socket ) {
+  trace-message("get socket $!host:$!port, $uri-obj.gist()");
 
   my MongoDB::SocketPool $socket-pool .= instance;
   $socket-pool.get-socket( self.host, self.port, :$uri-obj);
+}
+
+#-------------------------------------------------------------------------------
+#TM:0:close-socket:
+method close-socket ( MongoDB::Uri :$uri-obj ) {
+
+  trace-message("close socket $uri-obj.gist()");
+
+  my MongoDB::SocketPool $socket-pool .= instance;
+  $socket-pool.cleanup( $uri-obj.client-key, $!name);
 }
 
 #-------------------------------------------------------------------------------

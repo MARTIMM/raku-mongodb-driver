@@ -36,6 +36,9 @@ use MongoDB::Cursor;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
+#my Bool $*try-op-query = True;
+
+#-------------------------------------------------------------------------------
 =begin pod
 =head1 Methods
 =end pod
@@ -188,6 +191,14 @@ multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
 
   info-message("run command {$command.keys[0]}");
 
+  my BSON::Document $doc = self!try-op-msg($command);
+info-message($doc);
+  if $doc.elems == 0 {
+    $doc = self!try-op-query($command);
+info-message($doc);
+  }
+
+#`{{
   # check for error of the OP_QUERY command
   my BSON::Document $doc = self!try-op-query($command);
   if ?$doc and $doc<ok>:exists and $doc<ok> == 0 and $doc<code>:exists and
@@ -201,6 +212,7 @@ multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
 # in front of our nose
 #my BSON::Document $doc2 = self!try-op-msg($command);
 #info-message($doc2);
+}}
 
   $doc
 }
@@ -211,10 +223,20 @@ multi method run-command ( List:D() $pairs --> BSON::Document ) {
 
   # check for error of the OP_QUERY command
   my BSON::Document $command .= new: $pairs;
-  my BSON::Document $doc = self!try-op-query($command);
+#  my BSON::Document $doc = self!try-op-query($command);
 
   info-message("run command {$command.keys[0]}");
+#my BSON::Document $doc2 = self!try-op-msg($command);
+#info-message($doc2);
 
+  my BSON::Document $doc = self!try-op-msg($command);
+info-message($doc);
+  if $doc.elems == 0 {
+    $doc = self!try-op-query($command);
+info-message($doc);
+  }
+
+#`{{
   if ?$doc and $doc<ok>:exists and $doc<ok> == 0 and $doc<code>:exists and
      $doc<code> == 352 and $doc<codeName>:exists and
      $doc<codeName> eq 'UnsupportedOpQueryCommand' {
@@ -226,6 +248,7 @@ multi method run-command ( List:D() $pairs --> BSON::Document ) {
 # in front of our nose
 #my BSON::Document $doc2 = self!try-op-msg($command);
 #info-message($doc2);
+}}
 
   $doc
 }
