@@ -20,13 +20,12 @@ constant CONFIG_NAME = 'config.yaml';
 my $log-path = "{SERVER_PATH}/ServerData/wrapper.log";
 
 drop-send-to('mongodb');
-#drop-send-to('screen');
+drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = $log-path.IO.open( :mode<wo>, :create, :truncate);
 #add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info));
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter Timer Socket>);
-#set-filter(|<ObserverEmitter>);
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
 
 info-message("Wrapper tests started");
 
@@ -284,14 +283,13 @@ class Wrapper:auth<github:MARTIMM> {
     Str $test-dir is copy, @test-specs, Str $server, @server-ports,
     Str $version, Str $log-path
   ) {
-  
     # Get full pathnames from test directory
     my @test-files = ();
     $test-dir = 'xt/Tests' ~ (?$test-dir ?? "/$test-dir" !! '');
     for @test-specs -> $test-spec {
       for dir $test-dir, :test(rx{^ $test-spec .*}) -> Str() $f {
         @test-files.push: $f;
-        note $f;
+#note $f;
       }
     }
 
@@ -299,7 +297,7 @@ class Wrapper:auth<github:MARTIMM> {
     for @test-files -> $test-file {
       my Str $cmd = "rakudo -Ilib '$test-file' '$log-path' $version "
                     ~ @server-ports.join(' ')
-                    ~ ' || echo ""';
+                    ~ ' || echo';
 
       # Add a message, then drop to flush and to let the test program log
       info-message("Run test: $cmd");
@@ -363,8 +361,14 @@ class Wrapper:auth<github:MARTIMM> {
       
       elsif $line ~~ m:s/run command / {
         my @l = $line.split(/\s+/);
-        my $c = $test-results<db-commands>{$version}{@l[2]} // 0;
-        $test-results<db-commands>{@l[2]} = $c + 1;
+        $test-results<db-commands>{$version} = %() unless $test-results<db-commands>{$version}:exists;
+        if $test-results<db-commands>{$version}{@l[2]}:exists {
+          $test-results<db-commands>{$version}{@l[2]}++;
+        }
+
+        else {
+          $test-results<db-commands>{$version}{@l[2]} = 1;
+        }
       }
 
       elsif $line ~~ m/TestResultOutput \:/ {
@@ -392,12 +396,30 @@ class Wrapper:auth<github:MARTIMM> {
       }
     }
 
-#note "\n, $test-results.gist();";
-    note "\nSub tests:                 ", $test-count[2].fmt('%3d');
-    note 'Succesfull tests:          ', $test-count[0].fmt('%3d');
-    note 'Failed tests:              ', $test-count[1].fmt('%3d');
-    note 'Skipped tests:             ', $test-count[3].fmt('%3d');
-    note "Total number of tests run: ", ([+] @$test-count).fmt('%3d'), "\n\n ";
+    note "\nTest scripts run;";
+    for $test-results<test-programs>.keys -> $version {
+      note "Running server version $version";
+      for $test-results<test-programs>{$version}.kv -> $k, $v {
+        note "  $k:".fmt('%-68s'), ($v eq '0' ?? ' success' !! " failed ($v)");
+      }
+    }
+
+    note "\nTested database commands;";
+    for $test-results<db-commands>.keys -> $version {
+      note "Running server version $version";
+      for $test-results<db-commands>{$version}.keys.sort -> $k {
+        my $v = $test-results<db-commands>{$version}{$k};
+        note "  $k:".fmt('%-68s'), $v.fmt('%3d');
+      }
+    }
+
+    note "\nScript tests;";
+    note '  Sub tests:'.fmt('%-68s'), $test-count[2].fmt('%3d');
+    note '  Succesfull tests:'.fmt('%-68s'), $test-count[0].fmt('%3d');
+    note '  Failed tests:'.fmt('%-68s'), $test-count[1].fmt('%3d');
+    note '  Skipped tests:'.fmt('%-68s'), $test-count[3].fmt('%3d');
+    note '  Total number of tests run:'.fmt('%-68s'),
+      ([+] @$test-count).fmt('%3d'), "\n\n ";
   }
 }
 
