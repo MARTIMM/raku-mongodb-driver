@@ -78,6 +78,7 @@ method query (
     my Buf $size-bytes = self!get-bytes(4);
 #info-message("get-bytes: $size-bytes.elems()");
     if $size-bytes.elems == 0 {
+#      $!socket.close;
       error-message("No data returned from server");
       return ( BSON::Document, Duration.new(0));
     }
@@ -204,6 +205,11 @@ info-message($encoded-query);
 
     # Read 4 bytes for int32 response size
     my Buf $size-bytes = self!get-bytes(4);
+    if $size-bytes.elems == 0 {
+#      $!socket.close;
+      error-message("No data returned from server");
+      return ( BSON::Document, Duration.new(0));
+    }
 info-message($size-bytes);
 
     # Convert Buf to Int and substract 4 to get remaining size of data
