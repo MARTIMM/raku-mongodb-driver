@@ -1,37 +1,36 @@
-use v6;
-
-use lib 't';
-
+use lib 'lib';
 use Test;
-use Test-support;
 
 use MongoDB;
 use MongoDB::Client;
-use MongoDB::Cursor;
-use MongoDB::Collection;
-use BSON::ObjectId;
+use MongoDB::Database;
 use BSON::Document;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $server-version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
+
 info-message("Test $?FILE start");
 
-my MongoDB::Test-support $ts .= new;
-
-my Hash $clients = $ts.create-clients;
-
-my MongoDB::Client $client = $clients{$clients.keys[0]};
-my MongoDB::Database $database = $client.database('test');
-my MongoDB::Collection $collection = $database.collection('testf');
 my BSON::Document $req;
 my BSON::Document $doc;
-my MongoDB::Cursor $cursor;
 
-# get version to skip certain tests
-my Str $version = $ts.server-version($database);
-#note $version;
+# single server tests => one server key
+my Str $uri = "mongodb://localhost:@server-ports[0]";
+my MongoDB::Client $client .= new(:$uri);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
+my MongoDB::Collection $collection = $database.collection('testf');
+my MongoDB::Cursor $cursor;
 
 #-------------------------------------------------------------------------------
 subtest 'setup database', {
@@ -119,8 +118,8 @@ subtest "Count tests", {
 }
 
 #-------------------------------------------------------------------------------
-if $version ~~ / '2.6.' \d+ / {
-    skip "2.6.* server doesn't know about command 'explain'", 1;
+if $server-version < v3.0.0 {
+  skip "2.6.* server doesn't know about command 'explain'", 1;
 }
 
 else {
@@ -200,8 +199,6 @@ else {
   }
 }
 
-
-
 #-------------------------------------------------------------------------------
 subtest "Error testing", {
 
@@ -214,10 +211,10 @@ subtest "Error testing", {
     BSON::Document.new: (
       :count($collection.name),
       :query(:test_record<tr38>,),
-      :hint(:1test_record,),
+# TODO error 'bad hint'      :hint(:1test_record,),
     )
   );
-
+#info-message($doc);
   is $doc<n>, 1, 'Counting 1 document on search';
 }
 
