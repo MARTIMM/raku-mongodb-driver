@@ -142,7 +142,7 @@ Get the name of the current collection. It is set by C<MongoDB::Database> when a
 =begin pod
 =head2 find
 
-Note that this method will be obsoleted and removed in a later version. The search of documents can be done using the run-command. See for example L<here in the mongodb documentation|https://www.mongodb.com/docs/manual/reference/command/find>.
+Note that this method will be obsoleted and removed in a later version. The search of documents can be done using the run-command. See for example L<here in the mongodb documentation|https://www.mongodb.com/docs/manual/reference/command/find>. It is also important to know that the find function will fail after MongoDB server version 5.1.0.
 
 Find record in a collection. This method is used directly if you want some finer control over the search procedure.
 
