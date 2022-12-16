@@ -8,9 +8,8 @@ use BSON::Document;
 
 #-------------------------------------------------------------------------------
 my Str $log-path = @*ARGS[0];
-my Version $version .= new(@*ARGS[1]);
+my Version $server-version .= new(@*ARGS[1]);
 my @server-ports = @*ARGS[2..*];
-#note "args: $log-path, $version, @server-ports";
 
 #-------------------------------------------------------------------------------
 drop-send-to('mongodb');
@@ -18,7 +17,7 @@ drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = $log-path.IO.open( :mode<wo>, :append);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter Timer Socket>);
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
 
 info-message("Test $?FILE start");
 
@@ -31,6 +30,7 @@ my MongoDB::Client $client .= new(:$uri);
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 
+#`{{ Not needed but this is the way to do it
 $req .= new((
   :serverStatus(1),
   :activeIndexBuilds(0),
@@ -83,6 +83,7 @@ $req .= new((
 $doc = $db-admin.run-command($req);
 info-message($doc);
 my Version $server-version = Version.new($doc<version>);
+}}
 
 # Drop database first then create new databases
 $req .= new: ( dropDatabase => 1 );
