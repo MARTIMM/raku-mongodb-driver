@@ -55,9 +55,6 @@ subtest "Several inserts", {
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 4, "Inserted 4 documents";
-}
-done-testing;
-=finish
 
   $req .= new: ( count => $collection.name, query => (name => 'Me T',));
   $doc = $database.run-command($req);
