@@ -18,7 +18,7 @@ drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = $log-path.IO.open( :mode<wo>, :append);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter Timer Monitor>);
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
 
 info-message("Test $?FILE start");
 
@@ -34,9 +34,6 @@ my MongoDB::Collection $collection = $database.collection('names');
 
 # Drop database first, not checked for success.
 $database.run-command(BSON::Document.new: (dropDatabase => 1));
-
-done-testing;
-=finish
 
 #-------------------------------------------------------------------------------
 subtest "cursor iteration", {
@@ -79,7 +76,6 @@ subtest "cursor iteration", {
   my MongoDB::Cursor $cursor;
   if $server-version >= v5.1.0 {
     $doc = $database.run-command: (:find<names>,);
-#info-message($doc);
     $cursor := MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>));
   }
   
@@ -90,7 +86,6 @@ subtest "cursor iteration", {
 #TODO: are documents returned in same order as insert?
   my Int $c = 0;
   for $cursor -> BSON::Document $d {
-#info-message($d);
     is $d<name>, $req<documents>[$c++]<name>, $d<name>;
   }
 
@@ -100,11 +95,9 @@ subtest "cursor iteration", {
 
   else {
     $doc = $database.run-command(BSON::Document.new: (listCollections => 1));
-#info-message($doc);
     my MongoDB::Cursor $c2 .= new( :$client, :cursor-doc($doc<cursor>));
 
     my BSON::Document $d = $c2.iterator.pull-one;
-#info-message($d);
 
     # more info after version 3.6 returned
     if $server-version >= v3.6.0 {
@@ -129,7 +122,6 @@ subtest "cursor iteration", {
       skip "no system collections from listCollections in version $server-version", 1;
     }
   }
-#note "\nc2; ", '-' x 75, $d.raku, '-' x 80;
 }
 
 
