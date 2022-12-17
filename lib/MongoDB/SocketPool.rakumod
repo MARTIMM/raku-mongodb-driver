@@ -23,7 +23,7 @@ $sockets .= instance;
 my MongoDB::Socket $socket = $sockets.get-socket( 'localhost', 27017);
 $socket.send($buffer);
 $buffer = $socket.receive(20);
-$sockets.cleanup( 'localhost', 27017);
+$sockets.cleanup(  $client-key, 'localhost', 27017);
 
 =end pod
 
@@ -178,24 +178,30 @@ method get-socket (
 #-------------------------------------------------------------------------------
 #tm:1:cleanup:
 # close and remove a socket belonging to the server on the current thread
-method cleanup ( Str $client-key, Str $server-name ) {
-#note "c: $client-key, $server-name, {$!socket-info{$client-key}{$server-name}//'-'}";
+method cleanup ( Str $client-key, Str $server-name, Int $port ) {
 
   $!rw-sem.writer( 'socketpool', {
-      my Hash $info-cl-srv =
-        $!socket-info{$client-key}{$server-name}:delete // %();
-trace-message("$server-name: $info-cl-srv.gist");
+#info-message("$client-key, $server-name, $port");
+#info-message($!socket-info.gist);
 
-      for $info-cl-srv.keys -> $un {
-        my $s = $info-cl-srv{$un};
-        $s.close;
+      my Str $sname = "$server-name $port";
+      for $!socket-info{$client-key}.keys -> $server {
+        if $server ~~ $sname {
+          my Hash $info-cl-srv =
+            $!socket-info{$client-key}{$sname}:delete // %();
 
-        if ? $un {
-          trace-message("cleanup socket for server $server-name and user $un");
-        }
+          for $info-cl-srv.keys -> $un {
+            my $s = $info-cl-srv{$un};
+            $s.close;
 
-        else {
-          trace-message("cleanup socket for server $server-name");
+            if ? $un {
+              trace-message("cleanup socket for server $server-name:$port and user $un");
+            }
+
+            else {
+              trace-message("cleanup socket for server $server-name:$port");
+            }
+          }
         }
       }
     }
