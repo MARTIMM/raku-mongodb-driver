@@ -119,7 +119,7 @@ method query (
 
       # Other messages from Socket.open
       when .message ~~ m:s/Failed to resolve host name/ ||
-           .message ~~ m:s/Could not connect socket/ ||
+           .message ~~ m:s/Could not connect [to]? socket/ ||
            .message ~~ m:s/Could not receive data from socket/ ||
            .message ~~ m:s/Connection reset by peer/ {
 
@@ -139,7 +139,7 @@ method query (
       }
     }
   }
-info-message($result);
+#info-message($result);
 
 #note "rtt: $round-trip-time, ", Duration.new(0);
   return ( $result, $time-query ?? $round-trip-time !! Duration.new(0));
@@ -175,7 +175,7 @@ method message (
       $qdoc, :$database-name, :$flags
     );
 #info-message($qdoc);
-info-message($encoded-query);
+#info-message($encoded-query);
 
     # server is only provided when called from Monitor. all other objects
     # call the method without a server object.
@@ -207,15 +207,15 @@ info-message($encoded-query);
     # Read 4 bytes for int32 response size
     my Buf $size-bytes = self!get-bytes(4);
     if $size-bytes.elems == 0 {
-#      $!socket.close;
+      $server.close-socket(:$uri-obj);
       error-message("No data returned from server");
       return ( BSON::Document, Duration.new(0));
     }
-info-message($size-bytes);
+#info-message($size-bytes);
 
     # Convert Buf to Int and substract 4 to get remaining size of data
     my Int $response-size = $size-bytes.read-int32( 0, LittleEndian) - 4;
-info-message($response-size);
+#info-message($response-size);
 
     # Assert that number of bytes is still positive
     fatal-message("Wrong number of bytes to read from socket: $response-size")
@@ -229,7 +229,7 @@ info-message($response-size);
     $round-trip-time = now - $t0 if $time-query;
 
     $result = $header.decode-reply($server-reply);
-info-message($result);
+#info-message($result);
 
     # Assert that the request-id and response-to are the same
     fatal-message("Id in request is not the same as in the response")
@@ -249,7 +249,7 @@ info-message($result);
 
       # Other messages from Socket.open
       when .message ~~ m:s/Failed to resolve host name/ ||
-           .message ~~ m:s/Could not connect socket/ ||
+           .message ~~ m:s/Could not connect [to]? socket/ ||
            .message ~~ m:s/Could not receive data from socket/ ||
            .message ~~ m:s/Connection reset by peer/ {
 
