@@ -294,7 +294,7 @@ method close-socket ( MongoDB::Uri :$uri-obj ) {
   trace-message("close socket $uri-obj.gist()");
 
   my MongoDB::SocketPool $socket-pool .= instance;
-  $socket-pool.cleanup( $uri-obj.client-key, $!name);
+  $socket-pool.cleanup( $uri-obj.client-key, $!host, $!port);
 }
 
 #-------------------------------------------------------------------------------
@@ -337,6 +337,6 @@ method cleanup ( Str $client-key ) {
 
   # Clear all sockets
   my MongoDB::SocketPool $socket-pool .= instance;
-  $socket-pool.cleanup( $client-key, $!name);
+  $socket-pool.cleanup( $client-key, $!host, $!port);
   trace-message("Sockets cleared for $client-key");
 }
