@@ -36,9 +36,6 @@ use MongoDB::Cursor;
 use BSON::Document;
 
 #-------------------------------------------------------------------------------
-#my Bool $*try-op-query = True;
-
-#-------------------------------------------------------------------------------
 =begin pod
 =head1 Methods
 =end pod
@@ -47,6 +44,11 @@ use BSON::Document;
 has MongoDB::Uri $!uri-obj;
 has MongoDB::Collection $!cmd-collection;
 has ClientType $!client;
+
+# Version 3.6 already has wire protocol OP_MSG available. So try OP_MSG first
+# and when it fails, revert to OP_QUERY which means that w're talking
+# against oldies.
+has Bool $!try-op-msg = True;
 
 # doc sorted down …
 has Str $.name;
@@ -191,29 +193,14 @@ multi method run-command ( BSON::Document:D $command --> BSON::Document ) {
 
   info-message("run command {$command.keys[0]}");
 
-  my BSON::Document $doc = self!try-op-msg($command);
-info-message($doc);
-  if $doc.elems == 0 {
-    $doc = self!try-op-query($command);
-info-message($doc);
-  }
-
-#`{{
-  # check for error of the OP_QUERY command
-  my BSON::Document $doc = self!try-op-query($command);
-  if ?$doc and $doc<ok>:exists and $doc<ok> == 0 and $doc<code>:exists and
-     $doc<code> == 352 and $doc<codeName>:exists and
-     $doc<codeName> eq 'UnsupportedOpQueryCommand' {
+  # Assume a server capable of using OP_MSG. If not, turn off permanently.
+  my BSON::Document $doc;
+  if $!try-op-msg {
     $doc = self!try-op-msg($command);
+    $!try-op-msg = False if $doc.elems == 0;
   }
 
-# Test to see if a lower versioned server can handle a OP_MSG wire protocol
-# without going down. Unfortionately this is the case by just shutting the door
-# in front of our nose
-#my BSON::Document $doc2 = self!try-op-msg($command);
-#info-message($doc2);
-}}
-
+  $doc = self!try-op-query($command) unless $!try-op-msg;
   $doc
 }
 
@@ -223,32 +210,17 @@ multi method run-command ( List:D() $pairs --> BSON::Document ) {
 
   # check for error of the OP_QUERY command
   my BSON::Document $command .= new: $pairs;
-#  my BSON::Document $doc = self!try-op-query($command);
 
   info-message("run command {$command.keys[0]}");
-#my BSON::Document $doc2 = self!try-op-msg($command);
-#info-message($doc2);
 
-  my BSON::Document $doc = self!try-op-msg($command);
-info-message($doc);
-  if $doc.elems == 0 {
-    $doc = self!try-op-query($command);
-info-message($doc);
-  }
-
-#`{{
-  if ?$doc and $doc<ok>:exists and $doc<ok> == 0 and $doc<code>:exists and
-     $doc<code> == 352 and $doc<codeName>:exists and
-     $doc<codeName> eq 'UnsupportedOpQueryCommand' {
+  # Assume a server capable of using OP_MSG. If not, turn off permanently.
+  my BSON::Document $doc;
+  if $!try-op-msg {
     $doc = self!try-op-msg($command);
+    $!try-op-msg = False if $doc.elems == 0;
   }
 
-# Test to see if a lower versioned server can handle a OP_MSG wire protocol
-# without going down. Unfortionately this is the case by just shutting the door
-# in front of our nose
-#my BSON::Document $doc2 = self!try-op-msg($command);
-#info-message($doc2);
-}}
+  $doc = self!try-op-query($command) unless $!try-op-msg;
 
   $doc
 }
