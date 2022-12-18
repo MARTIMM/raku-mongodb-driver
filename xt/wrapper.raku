@@ -32,36 +32,71 @@ info-message("Wrapper tests started");
 #-------------------------------------------------------------------------------
 sub MAIN (
   *@test-specs, Str :$test-dir is copy = '', 
-  Str:D :$servers, Str :$version = '4.4.18',
+  Str:D :$servers, Str :$versions = '4.4.18',
   Bool :$start = False, Bool :$stop = False, Bool :$cleanup = False,
 ) {
   my Wrapper $ts .= new;
-
+  my @versions = $versions.split(/\s* ',' \s*/);
   # Set server list in environment
-  my @server-ports = ();
   my @servers = $servers.split(/\s* ',' \s*/);
 
-  for @servers -> $server {
-    @server-ports.push: $ts.create-server-config(
-      $server, Version.new($version)
-    );
+#`{{
 
-    $ts.start-mongod( $server, $version) if $start;
+info-message(@versions.gist);
+  for @versions -> $version {
+info-message("Version $version");
+
+    my @server-ports = ();
+    for @servers -> $server {
+info-message("Prepare config version $version, $server");
+      @server-ports.push: $ts.create-server-config(
+        $server, Version.new($version)
+      );
+
+info-message("Start server version $version, $server, @server-ports.gist()");
+      $ts.start-mongod( $server, $version) if $start;
+    }
   }
-
-  for @servers -> $server {
-    $ts.run-tests(
-      $test-dir, @test-specs, $server, @server-ports, $version, $log-path
-    );
-  }
-
-  for @servers -> $server {
-    $ts.stop-mongod( $server, $version) if $stop;
-    $ts.clean-mongod( $server, $version) if $cleanup and $stop;
-  }
-
-  $ts.display-results($log-path);
 }
+}}
+
+##`{{
+  for @versions -> $version {
+info-message("Version $version");
+
+    my @server-ports = ();
+    for @servers -> $server {
+info-message("Prepare config version $version, $server");
+      @server-ports.push: $ts.create-server-config(
+        $server, Version.new($version)
+      );
+
+info-message("Start server version $version, $server");
+      $ts.start-mongod( $server, $version) if $start;
+    }
+
+    for @servers -> $server {
+info-message("run tests version $version, $server");
+      $ts.run-tests(
+        $test-dir, @test-specs, $server, @server-ports, $version, $log-path
+      );
+    }
+
+    $ts.display-results($log-path);
+last
+  }
+
+
+  for @versions -> $version {
+    for @servers -> $server {
+      $ts.stop-mongod( $server, $version) if $stop;
+      $ts.clean-mongod( $server, $version) if $cleanup and $stop;
+    }
+last
+  }
+}
+#}}
+
 
 #-------------------------------------------------------------------------------
 sub USAGE ( ) {
@@ -126,7 +161,9 @@ class Wrapper:auth<github:MARTIMM> {
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
     mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
 
-    my Str $port = ($!cfg<server>{$server}<port> // 27012).Str;
+    my Str() $port = self!find-next-free-port(
+      $!cfg<server>{$server}<port> // 27012
+    );
 
     # Initialize with data which are always the same
     my Hash $server-config = %(
@@ -168,13 +205,15 @@ class Wrapper:auth<github:MARTIMM> {
       $component<replication><initialSync><verbosity> = 2 if $version > v4.0.18;
     }
 
-    # remove some yaml thingies and save
+    # Remove some yaml thingies and save
     my Str $scfg = save-yaml($server-config);
     $scfg ~~ s:g/ '---' \n //;
     $scfg ~~ s:g/ '...' //;
     "$data-path/server-config.conf".IO.spurt($scfg);
-    
-    info-message("Config created for server '$server' with version $version using port $port");
+
+    info-message(
+      "Config created for server '$server:$port' with version $version using port $port"
+    );
 
     $port
   }
@@ -198,7 +237,7 @@ class Wrapper:auth<github:MARTIMM> {
       $proc.out.close;
       CATCH {
         default {
-          fatal-message(.message);
+          error-message("server probably started already: $_.message()");
         }
       }
     }
@@ -361,7 +400,8 @@ class Wrapper:auth<github:MARTIMM> {
       
       elsif $line ~~ m:s/run command / {
         my @l = $line.split(/\s+/);
-        $test-results<db-commands>{$version} = %() unless $test-results<db-commands>{$version}:exists;
+        $test-results<db-commands>{$version} = %()
+          unless $test-results<db-commands>{$version}:exists;
         if $test-results<db-commands>{$version}{@l[2]}:exists {
           $test-results<db-commands>{$version}{@l[2]}++;
         }
@@ -372,6 +412,7 @@ class Wrapper:auth<github:MARTIMM> {
       }
 
       elsif $line ~~ m/TestResultOutput \:/ {
+        # Remove prefixed text
         $line ~~ s/TestResultOutput \://;
         if $line ~~ m/\# \s+ SKIP \s*/ {
           $test-count[3]++;
@@ -400,7 +441,8 @@ class Wrapper:auth<github:MARTIMM> {
     for $test-results<test-programs>.keys -> $version {
       note "Running server version $version";
       for $test-results<test-programs>{$version}.kv -> $k, $v {
-        note "  $k:".fmt('%-68s'), ($v eq '0' ?? ' success' !! " failed ($v)");
+#        note "  $k:".fmt('%-68s'), ($v eq '0' ?? ' success' !! " failed ($v)");
+        note "  $k";
       }
     }
 
@@ -421,5 +463,61 @@ class Wrapper:auth<github:MARTIMM> {
     note '  Total number of tests run:'.fmt('%-68s'),
       ([+] @$test-count).fmt('%3d'), "\n\n ";
   }
-}
 
+#-------------------------------------------------------------------------------
+=begin comment
+  Test for usable port number
+  According to https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
+
+  Dynamic, private or ephemeral (lasting for a very short time) ports
+
+  The range 49152-65535 (2**15+2**14 to 2**16-1) contains dynamic or
+  private ports that cannot be registered with IANA. This range is used
+  for private, or customized services or temporary purposes and for automatic
+  allocation of ephemeral ports.
+
+  According to  https://en.wikipedia.org/wiki/Ephemeral_port
+
+  Many Linux kernels use the port range 32768 to 61000.
+  FreeBSD has used the IANA port range since release 4.6.
+  Previous versions, including the Berkeley Software Distribution (BSD), use
+  ports 1024 to 5000 as ephemeral ports.[2]
+
+  Microsoft Windows operating systems through XP use the range 1025-5000 as
+  ephemeral ports by default.
+  Windows Vista, Windows 7, and Server 2008 use the IANA range by default.
+  Windows Server 2003 uses the range 1025-5000 by default, until Microsoft
+  security update MS08-037 from 2008 is installed, after which it uses the
+  IANA range by default.
+  Windows Server 2008 with Exchange Server 2007 installed has a default port
+  range of 1025-60000.
+  In addition to the default range, all versions of Windows since Windows 2000
+  have the option of specifying a custom range anywhere within 1025-365535.
+=end comment
+
+  method !find-next-free-port ( Int() $start-portnbr --> Int ) {
+
+    # Search from port 65000 until the last of possible port numbers for a free
+    # port. this will be configured in the mongodb config file. At least one
+    # should be found here.
+    #
+    my Int $port-number;
+    for $start-portnbr ..^ 2**16 -> $port {
+info-message("Test port $port");
+      my $s = IO::Socket::INET.new( :host('localhost'), :$port);
+      $s.close;
+
+      # On connect failure there was no service available on that port and
+      # an exception is thrown. Catch and save
+      CATCH {
+        default {
+          $port-number = $port;
+          last;
+        }
+      }
+    }
+
+info-message("Select $port-number");
+    $port-number
+  }
+}
