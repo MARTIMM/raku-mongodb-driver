@@ -26,7 +26,7 @@ Tests have a code to make the table columns smaller and therefore it is possible
 
 ### Server versions
 * Version codes used in tables
-  * A: 2.6.11
+  * **A: 2.6.11
   * B: 3.0.5
   * C: 3.6.9
   * D: 4.0.5
@@ -37,7 +37,7 @@ Tests have a code to make the table columns smaller and therefore it is possible
 ### Tests
 #### Test 2022-12-18
 
-OS: **Fedora 33**
+OS: **Fedora 33**<br/>
 Driver version: **0.43.15**.<br/>
 
 <table>
@@ -48,10 +48,10 @@ Driver version: **0.43.15**.<br/>
     <th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th>
   </tr>
   <tr>
-    <td>count</td><td>13</td><td></td><td></td><td></td><td></td><td></td><td></td>
+    <td>count</td><td>13</td><td>13</td><td></td><td></td><td></td><td></td><td></td>
   </tr>
   <tr>
-    <td>create</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td>
+    <td>create</td><td>2</td><td>2</td><td></td><td></td><td></td><td></td><td></td>
   </tr>
   <tr>
     <td>delete</td><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td>
