@@ -1,0 +1,46 @@
+use Test;
+
+use MongoDB;
+use MongoDB::Authenticate::Credential;
+use MongoDB::Authenticate::Scram;
+use MongoDB::Client;
+use MongoDB::Collection;
+use MongoDB::Cursor;
+use MongoDB::Database;
+use MongoDB::Header;
+use MongoDB::HL::Collection;
+use MongoDB::HL::Users;
+#use MongoDB::Log; # via MongoDB and exported
+use MongoDB::ObserverEmitter;
+use MongoDB::Server::Monitor;
+use MongoDB::ServerPool::Server;
+use MongoDB::ServerPool;
+use MongoDB::SocketPool::Socket;
+use MongoDB::SocketPool;
+use MongoDB::Timer;
+use MongoDB::Uri;
+use MongoDB::Wire;
+
+ok 1, 'MongoDB';
+ok 1, 'MongoDB::Client';
+ok 1, 'MongoDB::Authenticate::Credential';
+ok 1, 'MongoDB::Authenticate::Scram';
+ok 1, 'MongoDB::Client';
+ok 1, 'MongoDB::Collection';
+ok 1, 'MongoDB::Cursor';
+ok 1, 'MongoDB::Database';
+ok 1, 'MongoDB::Header';
+ok 1, 'MongoDB::HL::Collection';
+ok 1, 'MongoDB::HL::Users';
+ok 1, 'MongoDB::Log';
+ok 1, 'MongoDB::ObserverEmitter';
+ok 1, 'MongoDB::Server::Monitor';
+ok 1, 'MongoDB::ServerPool::Server';
+ok 1, 'MongoDB::ServerPool';
+ok 1, 'MongoDB::SocketPool::Socket';
+ok 1, 'MongoDB::SocketPool';
+ok 1, 'MongoDB::Timer';
+ok 1, 'MongoDB::Uri';
+ok 1, 'MongoDB::Wire';
+
+done-testing;
