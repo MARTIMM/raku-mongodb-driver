@@ -103,7 +103,7 @@ subtest "Database, create collection, drop", {
   # Second try gets an error
   $doc = $database.run-command($req);
   is $doc<ok>, 0, 'Second collection cl1 not created';
-info-message($doc);
+#info-message($doc);
 
   if $server-version < v3.0.5 {
     skip "No error code returned from server version $server-version", 1;
