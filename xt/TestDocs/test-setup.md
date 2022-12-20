@@ -27,7 +27,7 @@ The `xt` directory is used for the other tests. These are not run when installin
 * `xt/Tests` is used to store the test programs
 * `xt/TestDocs` is for the documentation and results
 * `xt/wrapper.raku` is the test control program
-  
+
 ![file system](file-system.svg)
 
 ## Wrapper steps
