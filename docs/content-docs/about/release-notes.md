@@ -9,7 +9,10 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
-#### 2022-11-22 0.43.21
+#### 2022-12-20 0.43.22
+* Important bug fixed in OP_MSG wire protocol which caused for example findAndModify to fail.
+
+#### 2022-12-18 0.43.21
 * Tests will be dramatically shortened to only the load of modules. This means that the sandbox can be removed. The tests will then only be done on servers like `Github actions` or on my machine.
 * Dropped modules and simplyfied testing. Only a `wrapper.raku` used now and prove6 is not used.
 * Server version 3.6.0 and later have introduced the OP_MSG. To cope with older versions the tests are also done with server version 2.6.11 and 3.0.5.

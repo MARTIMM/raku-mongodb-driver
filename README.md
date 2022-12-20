@@ -17,12 +17,14 @@
 
 ## Documentation
 * [ 🔗 Website](https://martimm.github.io/raku-mongodb-driver/)
-* [ 🔗 Travis-ci run on master branch][travis-run]
-* [ 🔗 Appveyor run on master branch][appveyor-run]
 * [ 🔗 License document][licence-lnk]
 * [ 🔗 Release notes](https://martimm.github.io/raku-mongodb-driver/content-docs/about/release-notes.html)
 * [ 🔗 Issues](https://github.com/MARTIMM/raku-mongodb-driver/issues)
 
+<!--
+* [ 🔗 Travis-ci run on master branch][travis-run]
+* [ 🔗 Appveyor run on master branch][appveyor-run]
+-->
 
 ## INSTALLING THE MODULES
 
@@ -33,13 +35,13 @@ zef install MongoDB
 
 ## AUTHORS
 
-Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
-Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
+* Original creator of the modules is **Paweł Pabian** (2011-2015, v0.6.0)(bbkr on github)
+* Current maintainer **Marcel Timmerman** (2015-present) (MARTIMM on github)
 
 ## Contributors
 
-Dan Zwell (lefth on github)
-
+* Dan Zwell (lefth on github)
+* David Golden, who has pointed me to important documents he has developed together with a MongoDB team. It's about guide lines for server discovery and building up a topology of the servers seeded from the url.
 
 
 
