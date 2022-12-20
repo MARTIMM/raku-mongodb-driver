@@ -105,27 +105,41 @@ method encode-msg (
   BSON::Document $query, Str :$database-name = '$cmd', Int :$flags = 0
   --> List
 ) {
+
   my Buf $query-buffer =
     # int32 flags, bit vector of message options
-    Buf.new.write-int32( 0, $flags, LittleEndian);
+    Buf.new.write-uint32( 0, $flags, LittleEndian);
 
-  my Str $kind1-needed = '';
+  my Str $kind1-needed;
+  my Str $command-name;
   my BSON::Document $kind0-doc .= new;
   my BSON::Document $kind1-doc .= new;
   for $query.kv -> $k, $v {
-    if $k eq 'insert' {
-      $kind1-needed = 'documents';
+    if !$command-name {
+
+      # $kind1-needed is set upon the first key in the document if command is
+      # one of the set below. Only set the needed value when not yet defined.
+      # Otherwise things go wrong when words pass in other command.
+      # E.g. findAndModify uses an 'update' key.
+      given ($command-name = $k;) {
+        when $k eq 'insert' {
+          $kind1-needed = 'documents';
+          $kind0-doc{$k} = $v;
+        }
+
+        when $k eq 'update' {
+          $kind1-needed = 'updates';
+          $kind0-doc{$k} = $v;
+        }
+
+        when $k eq 'delete' {
+          $kind1-needed = 'deletes';
+          $kind0-doc{$k} = $v;
+        }
+      }
     }
 
-    elsif $k eq 'update' {
-      $kind1-needed = 'updates';
-    }
-
-    elsif $k eq 'delete' {
-      $kind1-needed = 'deletes';
-    }
-
-    $kind0-doc{$k} = $v unless $v ~~ Array;
+    $kind0-doc{$k} = $v unless ($kind1-needed and $v ~~ Array);
   }
 
   # Add a database name to the type0 section
@@ -139,10 +153,11 @@ method encode-msg (
     # Encode a single document
     BSON::Encode.new.encode($kind0-doc);
 
+
   # Create a section 1 if needed. For the moment it is for
   # the 'insert', 'update' and 'delete' commands
   if ?$kind1-needed {
-    
+
     # Write the kind byte 1 section type
     $query-buffer ~= Buf.new.write-int8( 0, 1, LittleEndian),
     my Buf $qb .= new;
@@ -396,26 +411,21 @@ method !decode-msg-reply (
   # int32 responseFlags
   # bit vector
   my $flagbits = $b.read-int32( $index, LittleEndian);
-#info-message($flagbits.fmt('%032b'));
 
   my Bool $checksum-present = ?($flagbits +& C-ChecksumPresent);
   my Bool $more-to-come = ?($flagbits +& C-MoreToCome);
   my Bool $exhaust-allowed = ?($flagbits +& C-ExhaustAllowed);
-#info-message("$checksum-present, $more-to-come, $exhaust-allowed");
 
   # section kind
   my $kind = $b.read-int8( $index += BSON::C-INT32-SIZE, LittleEndian);
-#info-message($kind);
   my Buf $cursor-id .= new( 0, 0, 0, 0, 0, 0, 0, $more-to-come ?? 1 !! 0);
   my BSON::Document $reply-document .= new: (
     :$message-header, :$flagbits, :$cursor-id
-#    :$starting-from, :$number-returned,
   );
 
   given $kind {
     when 0 {
       my $doc-size = $b.read-int32( $index += 1, LittleEndian);
-#info-message($doc-size);
       my BSON::Document $document = BSON::Decode.new.decode(
         $b.subbuf( $index, $doc-size)
       );
@@ -425,7 +435,6 @@ method !decode-msg-reply (
 
     when 1 {
       my $section-size = $b.read-int32( $index += 1, LittleEndian);
-#info-message($section-size);
       my Array $documents = [];
       my Int $max-buf-size = $index + $section-size;
       while $index < $max-buf-size {
@@ -433,7 +442,6 @@ method !decode-msg-reply (
         my BSON::Document $document = BSON::Decode.new.decode(
           $b.subbuf( $index, $doc-size)
         );
-#info-message($document);
 
         $index += $doc-size;
         $documents.push($document);
