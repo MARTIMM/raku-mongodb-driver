@@ -164,7 +164,7 @@ package MongoDB:auth<github:MARTIMM> {
           {
             my $chr-code = $_;
             my $ret-char;
-            if 0 <= $chr-code <= 31 or $chr-code eq 127 {
+            if (0 <= $chr-code <= 31) or $chr-code >= 127 {
               $ret-char = $add-space
                             ?? $chr-code.fmt(' 0x%02x ')
                             !! $chr-code.fmt('0x%02x ');
