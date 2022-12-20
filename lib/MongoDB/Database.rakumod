@@ -255,13 +255,11 @@ method !try-op-msg ( BSON::Document $command --> BSON::Document ) {
   my BSON::Document $server-reply;
   my Duration $round-trip-time;
 
-#  info-message("run command {$command.keys[0]} using OP_MSG");
   ( $server-reply, $round-trip-time) = $wire.message(
     $!name, $command, :$!uri-obj
   );
 
   if $server-reply.defined {
-#info-message($server-reply);
     $cursor .= new( :$!client, :server-doc($server-reply));
   }
 
