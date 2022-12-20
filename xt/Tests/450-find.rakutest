@@ -62,13 +62,26 @@ subtest 'setup database', {
   is $doc<ok>, 1, 'insert ok';
   is $doc<n>, 200, 'inserted 200 docs';
 
-  # Request to get all documents listed to generate a get-more request
-  $cursor = $collection.find(
-    :criteria(test_record => 'tr100',),
-    :projection(_id => 0,)
-  );
+  if $server-version >= v5.1.0 {
+    $doc = $database.run-command: (
+      :find<testf>,
+      :filter(test_record => 'tr100',),
+      :projection(_id => 0,)
+    );
+
+    $cursor := MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>));
+  }
+
+  else {
+    # Request to get all documents listed to generate a get-more request
+    $cursor = $collection.find(
+      :criteria(test_record => 'tr100',),
+      :projection(_id => 0,)
+    );
+  }
 
   $doc = $cursor.fetch;
+
   is $doc.elems, 5, '5 fields in record, _id not returned';
   is $doc<test_record>, 'tr100', 'test record 100 found';
 }
@@ -232,19 +245,47 @@ sub check-document ( $criteria, $field-list, $projection = ())
 #  $cursor = $collection.find( :$criteria, :$projection);
 #  while $cursor.fetch() -> BSON::Document $document {
 
-  for $collection.find( :$criteria, :$projection) -> BSON::Document $document {
-    for @$field-list -> $pair {
-      if $pair.value == 1 {
-        is( $document{$pair.key}:exists, True, "Key '{$pair.key}' exists");
+  if $server-version >= v5.1.0 {
+    $doc = $database.run-command: (
+      :find<testf>,
+      :filter($criteria),
+      :$projection
+    );
+
+    $cursor := MongoDB::Cursor.new( :$client, :cursor-doc($doc<cursor>));
+    for $cursor.fetch -> BSON::Document $document {
+      for @$field-list -> $pair {
+        if $pair.value == 1 {
+          is( $document{$pair.key}:exists, True, "Key '{$pair.key}' exists");
+        }
+
+        else {
+          is( $document{$pair.key}:exists,
+              False, "Key '{$pair.key}' does not exist"
+          );
+        }
       }
 
-      else {
-        is( $document{$pair.key}:exists,
-            False, "Key '{$pair.key}' does not exist"
-        );
-      }
+      last;
     }
+  }
 
-    last;
+  else {
+    for $collection.find(
+        :$criteria, :$projection) -> BSON::Document $document {
+      for @$field-list -> $pair {
+        if $pair.value == 1 {
+          is( $document{$pair.key}:exists, True, "Key '{$pair.key}' exists");
+        }
+
+        else {
+          is( $document{$pair.key}:exists,
+              False, "Key '{$pair.key}' does not exist"
+          );
+        }
+      }
+
+      last;
+    }
   }
 }

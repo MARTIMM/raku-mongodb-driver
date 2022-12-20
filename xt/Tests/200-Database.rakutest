@@ -207,4 +207,4 @@ subtest 'Drop a database', {
 #diag "Time spent: {now - $t0}";
 #-------------------------------------------------------------------------------
 info-message("Test $?FILE stop");
-done-testing();
+done-testing;

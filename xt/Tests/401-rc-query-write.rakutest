@@ -110,7 +110,8 @@ subtest 'Update documents', {
   $req .= new: (
     update => 'names',
     updates => [ (
-        q => ( name => ('$regex' => BSON::Regex.new( :regex<y>, :options<i>),),),
+        q => (
+          name => ('$regex' => BSON::Regex.new( :regex<y>, :options<i>),),),
         u => ('$set' => (type => "men with 'y' in name"),),
         upsert => True,
         multi => True,
@@ -126,12 +127,16 @@ subtest 'Update documents', {
 
 #------------------------------------------------------------------------------
 subtest "Find and modify documents", {
+#$doc = $database.run-command: ( :find<famous_people> );
+#info-message($doc);
+
 
   $doc = $database.run-command: (
-    findAndModify => 'famous_people',
-    query => (surname => 'Walll'),
-    update => ('$set' => surname => 'Wall'),
+    :findAndModify<famous_people>,
+    :query(:surname<Walll>,),
+    :update('$set' => (:surname<Wall>,),),
   );
+#info-message($doc);
 
   is $doc<ok>, 1, "findAndModify request ok";
   is $doc<value><surname>, 'Walll', "old data returned";
@@ -161,30 +166,38 @@ subtest "Get last error", {
     ok $doc<errmsg>:!exists, 'No message';
   }
 }
-
 #------------------------------------------------------------------------------
 subtest "Parallel collection scan", {
 
-  $doc = $database.run-command: (
-    parallelCollectionScan => 'names',
-    numCursors => 1
-  );
+  #skip a sub test when > v4.something
+  if $server-version > v4.4.0 {
+    skip "parallelCollectionScan removed from version $server-version", 1;
+  }
 
-  is $doc<ok>, 1, 'parallelCollectionScan request ok';
-  ok $doc<cursors> ~~ Array, 'found array of cursors';
-  is $doc<cursors>.elems, 1, "returned {$doc<cursors>.elems} cursor";
+  else {
 
-  for $doc<cursors>.list -> $cdoc {
+    $doc = $database.run-command: (
+      parallelCollectionScan => 'names',
+      numCursors => 1
+    );
+  info-message($doc);
 
-    is $cdoc<ok>, True, 'returned cursor ok';
-    if $cdoc<ok> {
-      my MongoDB::Cursor $c .= new( :$client, :cursor-doc($cdoc<cursor>));
-      my BSON::Document $d = $c.fetch;
-      is $d<name>, 'Larry', "First name $d<name>";
-      is $d<surname>, 'Wall', "Last name $d<surname>";
-      is $d<type>, "men with 'y' in name", $d<type>;
+    is $doc<ok>, 1, 'parallelCollectionScan request ok';
+    ok $doc<cursors> ~~ Array, 'found array of cursors';
+    is $doc<cursors>.elems, 1, "returned {$doc<cursors>.elems} cursor";
 
-      $c.kill;
+    for $doc<cursors>.list -> $cdoc {
+
+      is $cdoc<ok>, True, 'returned cursor ok';
+      if $cdoc<ok> {
+        my MongoDB::Cursor $c .= new( :$client, :cursor-doc($cdoc<cursor>));
+        my BSON::Document $d = $c.fetch;
+        is $d<name>, 'Larry', "First name $d<name>";
+        is $d<surname>, 'Wall', "Last name $d<surname>";
+        is $d<type>, "men with 'y' in name", $d<type>;
+
+        $c.kill;
+      }
     }
   }
 }
