@@ -68,7 +68,7 @@ info-message("Version $version");
     for @servers -> $server {
 info-message("Prepare config version $version, $server");
       @server-ports.push: $ts.create-server-config(
-        $server, Version.new($version)
+        $server, Version.new($version), :$start
       );
 
 info-message("Start server version $version, $server");
@@ -156,14 +156,27 @@ class Wrapper:auth<github:MARTIMM> {
   }
 
   #-----------------------------------------------------------------------------
-  method create-server-config( Str $server, Version $version --> Str ) {
+  method create-server-config(
+    Str $server, Version $version, Bool :$start --> Str
+  ) {
 
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
     mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
+note $data-path;
 
-    my Str() $port = self!find-next-free-port(
-      $!cfg<server>{$server}<port> // 27012
-    );
+    my Str() $port;
+    if $start {
+      $port = self!find-next-free-port(
+        $!cfg<server>{$server}<port> // 27012
+      );
+    }
+
+    else {
+      # get generated port number from config and return
+      my Hash $h = load-yaml("$data-path/server-config.conf".IO.slurp);
+      $port = $h<net><port>;
+      return $port;
+    }
 
     # Initialize with data which are always the same
     my Hash $server-config = %(
@@ -207,8 +220,8 @@ class Wrapper:auth<github:MARTIMM> {
 
     # Remove some yaml thingies and save
     my Str $scfg = save-yaml($server-config);
-    $scfg ~~ s:g/ '---' \n //;
-    $scfg ~~ s:g/ '...' //;
+#    $scfg ~~ s:g/ '---' \n //;
+#    $scfg ~~ s:g/ '...' //;
     "$data-path/server-config.conf".IO.spurt($scfg);
 
     info-message(
