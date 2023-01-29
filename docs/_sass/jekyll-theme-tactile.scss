@@ -25,7 +25,6 @@ time, mark, audio, video {
 	vertical-align: baseline;
 	border: 0;
 }
-
 /* HTML5 display-role reset for older browsers */
 article, aside, details, figcaption, figure,
 footer, header, hgroup, menu, nav, section {
@@ -60,11 +59,6 @@ body {
   background: #e7e7e7 url(../images/body-bg.png) 0 0 repeat;
 }
 
-div.inner {
-  background: url(../images/top5.png)/* 0 0 no-repeat*/ 0 0 no-repeat;
-}
-
-
 a {
   color: #d5000d;
 }
@@ -72,12 +66,10 @@ a:hover {
   color: #c5000c;
 }
 
-/*
 header {
   padding-top: 35px;
   padding-bottom: 25px;
 }
-*/
 
 header h1 {
   font-family: 'Chivo', 'Helvetica Neue', Helvetica, Arial, serif;

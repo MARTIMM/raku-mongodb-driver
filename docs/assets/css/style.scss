@@ -2,6 +2,9 @@
 ---
 @import "jekyll-theme-tactile";
 
+$icon-bordercolor:          #9696bf;
+$icon-bgcolor:              #bfcfcf;
+
 $menu-bgcolor:              #9696bf;
 $menu-bgcolor-active:       #e6e6ef;
 $menu-border-color-active:  #777;
@@ -9,6 +12,8 @@ $menu-border-color:         #ddd;
 $menu-border-width:         2px;
 
 // default link color       #d5000d
+
+// reference type classes: toplevel, object, interface, boxed, standalone
 $menu-color-toplevel:       #e58080;
 $menu-color-object:         #a04500;
 $menu-color-widget:         #f54045;
@@ -16,30 +21,128 @@ $menu-color-interface:      #bf00bf;
 $menu-color-boxed:          #00afaf;
 $menu-color-standalone:     #80bf00;
 
-$title-color:               #deffff;
-$title-color-border:        #008080;
+//$title-color:               #deffff;
+//$title-color-border:        #008080;
 
 $code-color:                #46465f;
+$link-color:                #207f9f;
+$hx-link-color:             #20507f;
 
+$list-marker-color:         #8e280e;
+$list-text-color:           #8e6d6d;
+$list-text-font-size: 14px;
+
+$h1-link-color:             #20a07f;
+$h2-link-color:             #20907f;
+$h3-link-color:             #20807f;
+$h4-link-color:             #20707f;
+$h5-link-color:             #20607f;
+$h6-link-color:             #20507f;
+
+$table-border-color:        #206060;
 $border-color:              #bbb;
-$border-width:              4px;
+$pre-border-color:          #ddd;
+$border-width:              6px;
+$pre-border-width:          0px;
 
 $menu-text-font-size: 15px;
+$text-font-size: 14px;
+$code-font-size: 11px;
+//$text-strong-font-weight: lighter;
+
 $sbar-text-font-size: 13px;
 $sbarhdr-text-font-size: 15px;
-$text-font-size: 16px;
-$code-font-size: 12px;
-$text-strong-font-weight: lighter;
+
+$em-strong-color:           #8e280e;
+$em-strong-weight:          lighter;
+
+//$sbar-text-font-size: 13px;
+//$sbarhdr-text-font-size: 15px;
+//$text-font-size: 16px;
+//$code-font-size: 12px;
+//$text-strong-font-weight: lighter;
 
 body {
   line-height: 1.1;
 }
 
+
+
 header {
-  padding-top: 0px;
-  padding-bottom: 15px;
+  padding-top: 5px;
+  //padding-bottom: 15px;
+
+
+  #topleft-icon {
+    #icon-img {
+      width: 85px;
+      height:84px;
+      border-radius: 10%;
+      border: 3px solid $icon-bordercolor;
+      background-color: $icon-bgcolor;
+      float: left;
+      margin-bottom: 5px;
+    }
+
+    #XL-h1-size {
+      font-family: 'Chivo', 'Helvetica Neue', Helvetica, Arial, serif;
+      font-size: 20pt;
+      font-weight: bold;
+      letter-spacing: -1px;
+      float: left;
+      margin-left: .5em;
+
+      text-shadow: 0px 0px 15px white;
+    }
+  }
+
+
+  nav {
+    clear: both;
+    padding: 0;
+    height: 30px;
+
+    a {
+      float: left;
+      padding: 0 4px 0 4px;
+      margin-right: 2px;
+      border-radius: 5px;
+      line-height: 1.5;
+    }
+
+    a:hover:not(.active) {
+      background-color: #eee;
+  //    background-color: $menu-bgcolor-active;
+  //    border: $menu-border-width solid $menu-border-color-active;
+    }
+
+    .active {
+      background-color: $menu-bgcolor-active;
+      border: $menu-border-width solid $menu-border-color-active;
+    }
+
+    .inactive {
+      border: $menu-border-width solid $menu-border-color;
+  //    background-color: $menu-bgcolor-active;
+  //    border: $menu-border-width solid $menu-border-color-active;
+    }
+  }
+
+  .float-right {
+    float: right;
+  }
+
+
+  hr {
+    padding: 0;
+    margin: 0 0 0.5em 0;
+    border: 2px solid $menu-bgcolor;
+    border-radius: 5px;
+    width: 100%;
+  }
 }
 
+/*
 header h1 {
   font-family: 'Chivo', 'Helvetica Neue', Helvetica, Arial, serif;
   font-size: 23pt;
@@ -77,11 +180,11 @@ img.header-image {
 header nav {
   padding: 5px 0 0 0;
 
-/*  Must be improved
+/ *  Must be improved
   position: -webkit-sticky;
   position: sticky;
   top: 0;
-*/
+* /
 
   height: 30px;
 
@@ -106,16 +209,15 @@ header nav {
     border: $menu-border-width solid $menu-border-color;
   }
 
-/*
   .float-right {
     float: right;
   }
-*/
 }
 
 .float-right {
   float: right;
 }
+*/
 
 header hr {
   padding: 0;
@@ -430,7 +532,7 @@ p {
   font-size: $text-font-size;
 
   strong {
-    font-weight: $text-strong-font-weight;
+//    font-weight: $text-strong-font-weight;
   }
 }
 

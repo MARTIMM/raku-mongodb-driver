@@ -1,15 +1,32 @@
-# https://jekyllrb.com/docs/configuration/default/
-# For technical reasons, this file is *NOT* reloaded automatically when you
-# use 'bundle exec jekyll serve'. If you change this file, please restart
-# the server process.
+# This config file is meant for settings that affect your whole blog, values
+# which you are expected to set up once and rarely edit after that. If you find
+# yourself editing this file very often, consider using Jekyll's data files
+# feature for the data you need to update frequently.
+#
+# For technical reasons, this file is *NOT* reloaded automatically when you use
+# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
 
-# These are used to personalize your new site. If you look in the HTML
-# files, you can access them with {{ site.title }}, {{ site.email }}, and
-# so on. You can create any custom variable you would like, and they will
-# be accessible via {{ site.myvariable }}.
+# Github Specifics: https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll
 
-## ----- [ defaults set by jekyll ] -----
-## Where things are
+# All default settings from https://jekyllrb.com/docs/configuration/default/
+# and changed when needed
+
+# Be aware of directory paths!
+# In general, make directory path values in configuration keys like plugins_dir
+# relative to the current working directory, not the site source. The sass
+# configuration key is an exception, where values must be relative to the site
+# source.
+
+# More
+#  http://kramdown.gettalong.org/quickref.html
+#  http://kramdown.gettalong.org/options.html
+#  https://stackoverflow.com/questions/6615415/add-syntax-highlighting-to-gh-pages
+# https://github.com/jekyll/jekyll/pull/4090
+# Rouge Highlighter in Kramdown › http://kramdown.gettalong.org/syntax_highlighter/rouge.html
+
+
+# Where things are
+#-----------------
 #source              : .
 #destination         : ./_site
 #collections_dir     : .
@@ -23,91 +40,101 @@
 #  posts:
 #    output          : true
 
-## Handling Reading
-#safe                : false
+
+# Handling Reading
+#-----------------
+safe                : true # (no caching)      # false
 #include             : [".htaccess"]
 #exclude             : ["Gemfile", "Gemfile.lock", "node_modules", "vendor/bundle/", "vendor/cache/", "vendor/gems/", "vendor/ruby/"]
 #keep_files          : [".git", ".svn"]
 #encoding            : "utf-8"
 #markdown_ext        : "markdown,mkdown,mkdn,mkd,md"
-#strict_front_matter : false
+#strict_front_matter : true      # false
 
-## Filtering Content
+# Filtering Content
+#------------------
 #show_drafts         : null
 #limit_posts         : 0
 #future              : false
 #unpublished         : false
 
-## Plugins
+# Plugins
+#--------
 #whitelist           : []
-#plugins             : []
+#remote_theme: pages-themes/tactile@v0.2.0
+plugins:
+#  - jekyll-remote-theme
+  - jekyll-feed
+  - kramdown
+#  - kramdown-plantuml
 
-## Conversion
-#markdown            : kramdown
-#highlighter         : rouge
+# Conversion
+#-----------
+markdown            : kramdown
+highlighter         : rouge
 #lsi                 : false
 #excerpt_separator   : "\n\n"
 #incremental         : false
 
-## Serving
+# https://github.com/benbalter/jekyll-optional-front-matter
+optional_front_matter:
+  remove_originals: true
+  enabled: true
+
+# Serving
+#--------
 #detach              : false
 #port                : 4000
 #host                : 127.0.0.1
-#baseurl             : "" # does not include hostname
+port: 4001
+baseurl: "/question-answer"
 #show_dir_listing    : false
+#url: "https://martimm.github.io"
 
-## Outputting
+#theme: jekyll-theme-tactile
+title: Raku Invoices
+description: MongoDB Database Driver
+
+email: mt1957@gmail.com
+github_username:  MARTIMM
+github: [metadata]
+
+
+# Outputting
+#-----------
 #permalink           : date
 #paginate_path       : /page:num
 #timezone            : null
 
 #quiet               : false
-#verbose             : false
-#defaults            : []
+#verbose             : true      # false
+defaults:
+  - scope:
+      path: content-docs/reference
+      type: pages
+    values:
+      layout: sidebar
+      title: References to the MongoDB package modules
+      nav_menu: default-nav
+      sidebar_menu: reference-sidebar
 
 #liquid:
 #  error_mode        : warn
 #  strict_filters    : false
 #  strict_variables  : false
 
-## Markdown Processors
-#kramdown:
+# Markdown Processors
+#--------------------
+kramdown:
 #  auto_ids          : true
 #  entity_output     : as_char
 #  toc_levels        : [1, 2, 3, 4, 5, 6]
 #  smart_quotes      : lsquo,rsquo,ldquo,rdquo
-#  input             : GFM
+  input             : GFM
 #  hard_wrap         : false
 #  footnote_nr       : 1
 #  show_warnings     : false
-## ----- [ end of defaults ] -----
 
-## ----- [ your settings ] -----
-plugins:
-  - jekyll-feed
-  - kramdown
-  - kramdown-plantuml
-
-title: MongoDB Driver
-description: MongoDB database driver
-email: mt1957@gmail.com
-github_username: MARTIMM
-github: [metadata]
-
-#url: "https://martimm.github.io:4001"
-port: 4001
-baseurl: "/raku-mongodb-driver"
-
-markdown: kramdown
-highlighter: rouge
-
-# https://jekyllrb.com/docs/configuration/front-matter-defaults/
-defaults:
-  -
-    scope:
-      path: "content-docs/reference"
-    values:
-      layout: sidebar
-      title: References to the MongoDB package modules
-      nav_menu: default-nav
-      sidebar_menu: reference-sidebar
+#  syntax_highlighter: rouge
+#  syntax_highlighter_opts:
+#    css_class: 'highlight' # Use existing pygments syntax highlighting css
