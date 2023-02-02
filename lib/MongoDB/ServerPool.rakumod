@@ -89,7 +89,7 @@ method add-server ( Str:D $client-key, Str:D $server-name --> Bool ) {
   # set client info
   $!rw-sem.writer( 'client-info', {
       # check if client exists, if not, init
-trace-message("client $client-key does not exist") unless $!clients-of-servers{$client-key}:exists;
+#trace-message("client $client-key does not exist") unless $!clients-of-servers{$client-key}:exists;
       $!clients-of-servers{$client-key} = %()
         unless $!clients-of-servers{$client-key}:exists;
     }
@@ -173,12 +173,14 @@ method select-server ( Str $client-key --> MongoDB::ServerPool::Server ) {
   loop {
 
     # get server names belonging to this client
-    $selectable-servers =
-      $!rw-sem.reader( 'client-info', { $!clients-of-servers{$client-key} } );
+    $selectable-servers = $!rw-sem.reader( 'client-info', {
+        $!clients-of-servers{$client-key} // Hash
+      }
+    );
 
-    $servers-in-pool =
-      $!rw-sem.reader( 'server-info', { $!servers-in-pool } );
-
+#    $servers-in-pool =
+#      $!rw-sem.reader( 'server-info', { $!servers-in-pool } );
+#
 
     $servers-in-pool = $!rw-sem.reader( 'server-info', {
         $!servers-in-pool
@@ -196,7 +198,6 @@ method select-server ( Str $client-key --> MongoDB::ServerPool::Server ) {
 
       given $topology {
         when TT-Single {
-
           $selected-server = $server-name;
           last if $sdata<status> ~~ ST-Standalone;
         }
@@ -270,13 +271,17 @@ method select-server ( Str $client-key --> MongoDB::ServerPool::Server ) {
 ##`{{
     # pick first server to get uri object. options are the same for all
     # servers belonging to the client-id
-    $uri-obj = $servers-in-pool{
-      $selectable-servers.kv[0]
-    }.get-data('uri-obj') // MongoDB::Uri;
+    if ?$selectable-servers {
+      $uri-obj = $servers-in-pool{$selectable-servers.kv[0]}.get-data('uri-obj')
+      // MongoDB::Uri;
+    }
+
+    else {
+      $uri-obj = MongoDB::Uri;
+    }
 
     # object might not be set yet
     if $uri-obj.defined {
-
       # give up when serverSelectionTimeoutMS is passed
       last
         unless ((now - $t0) * 1000) < $uri-obj.options<serverSelectionTimeoutMS>;
