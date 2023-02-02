@@ -1,7 +1,8 @@
 {
-  "version": "0.43.22",
+  "version": "0.43.23",
   "description": "MongoDB driver",
   "name": "MongoDB",
+  "auth": "cpan:MARTIMM",
 
   "perl": "6.d",
   "license": "Artistic-2.0",
