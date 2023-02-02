@@ -224,6 +224,7 @@ method message (
     CATCH {
 #note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
 #.note;
+error-message(.message);
 
       $!socket.close if $!socket.defined;
 
