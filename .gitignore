@@ -17,3 +17,4 @@ Gemfile*
 **/vendor/*
 **/_site
 xt/TestServers/*
+*.desktop
