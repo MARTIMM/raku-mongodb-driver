@@ -9,7 +9,10 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
-* 2023-02-02 0.43.23
+#### 2024-02-26 0.44.0
+  * Update to cope with Atlas uri strings: 'mongodb+srv:// …'.
+
+#### 2023-02-02 0.43.23
   * Bugfix in **MongoDB::ServerPool** after looking into issue 33. Result showing timings and technique is in program `Tests/issue-33-benchmark.raku`.
 
 #### 2022-12-20 0.43.22

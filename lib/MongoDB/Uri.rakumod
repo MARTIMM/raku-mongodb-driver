@@ -212,11 +212,34 @@ has Str $.client-key is rw; # Must be writable by Monitor;
 has Str $.uri;
 
 #-------------------------------------------------------------------------------
+# Local mongodb server connection
+#   mongodb://<host>:<port>/<auth-database>
+#   mongodb://<host>/<auth-database>
+#   mongodb:///<auth-database>
+#
+# Self hosted mongodb cluster:
+#   mongodb://<host1>:<port1>,<host2>:<port2>,<host3>:<port3>/<auth-database>?
+#   replicaSet=<replicaSetName>
+#
+# Mongodb Atlas connection uri:
+#   mongodb+srv://<username>:<password>@<host>:<port>/<auth-database>
+#
+# In short:
+#   mongodb[+srv]://[<username>:<password>@][<host>[:<port>][, …]]/
+#   [<auth-database>][?<option>[& …]]
+#
+# Defaults:
+#   Port: 27017
+#   Host and port: localhost:27017
+#   auth-database: admin
+#
+# See also: https://www.mongodb.com/docs/manual/reference/connection-string/
+#
 my $uri-grammar = grammar {
 
   token URI { <protocol> <server-section>? <path-section>? }
 
-  token protocol { 'mongodb://' }
+  token protocol { 'mongodb://' | 'mongodb+srv://' }
 
   token server-section { <username-password>? <server-list>? }
 
@@ -224,7 +247,7 @@ my $uri-grammar = grammar {
   # see https://tools.ietf.org/html/rfc3986#section-2.1
   # and https://www.w3schools.com/tags/ref_urlencode.ASP
   token username-password {
-    $<username>=<-[@:/?&=,]>+ ':' $<password>=<-[@:/?&=,]>+ '@'
+    $<username> = <-[@:/?&=,\$\[\]]>+ ':' $<password> = <-[@:/?&=,\$\[\]]>+ '@'
   }
 
   token server-list { <host-port> [ ',' <host-port> ]* }
@@ -250,6 +273,7 @@ my $uri-grammar = grammar {
 
   token option { $<key>=<[\w\-\_]>+ '=' $<value>=<[\w\-\_\,\.]>+ }
 }
+
 
 #-------------------------------------------------------------------------------
 my $uri-actions = class {
