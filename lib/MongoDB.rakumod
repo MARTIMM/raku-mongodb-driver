@@ -19,7 +19,7 @@ sub EXPORT { {
     '&error-message'                    => &error-message,
     '&fatal-message'                    => &fatal-message,
 
-    'X::MongoDB'               => X::MongoDB,
+    'X::MongoDB'                        => X::MongoDB,
   }
 };
 
@@ -192,7 +192,7 @@ constant C-PW-MIN-PW-LEN is export = 6;
 # See also https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
 subset PortType of Int is export where 0 < $_ <= 65535;
 
-# Helper constraints when module cannot be loaded(use)
+# Helper constraints when module cannot be imported(use)
 subset ClientType is export where .^name eq 'MongoDB::Client';
 subset DatabaseType is export where .^name eq 'MongoDB::Database';
 subset CollectionType is export where .^name eq 'MongoDB::Collection';
