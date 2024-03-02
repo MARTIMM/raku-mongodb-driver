@@ -108,11 +108,10 @@ subtest "Uri parsing", {
   is $uri.auth-source, 'users', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> auth database = users';
   is $uri.username, 'Dondersteen', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> username = Dondersteen';
   is $uri.password, 'w@tD8jeDan', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> password = w@tD8jeDan';
-
 };
 
 #------------------------------------------------------------------------------
-subtest {
+subtest "Uri parsing errors", {
 
   my MongoDB::Uri $uri;
 
@@ -128,7 +127,30 @@ subtest {
               X::MongoDB, "Missing a '/'",
               :message("Parsing error in url 'mongodb://?a=b'");
 
-}, "Uri parsing errors";
+  throws-like {$uri .= new(
+      :uri<mongodb://?tlsInsecure=true&tlsAllowInvalidCertificates=true>
+    )},
+    X::MongoDB,
+    "tlsInsecure and tlsAllowInvalidCertificates cannot be used together",
+    :message(
+      "Parsing error in url 'mongodb://?tlsInsecure=true&tlsAllowInvalidCertificates=true'"
+    );
+
+  throws-like {$uri .= new(
+    :uri<mongodb://?tlsAllowInvalidCertificates=true&tlsDisableCertificateRevocationCheck=true>
+    )},
+    X::MongoDB,
+    "tlsAllowInvalidCertificates and tlsDisableCertificateRevocationCheck cannot be used together",
+    :message(
+      "Parsing error in url 'mongodb://?tlsAllowInvalidCertificates=true&tlsDisableCertificateRevocationCheck=true'"
+    );
+
+    throws-like {$uri .= new(
+      :uri<mongodb+srv://server.example.com?directConnection=true>)
+    }, X::MongoDB, "Cannot ask for a direct connection if you want DNS SRV record polling",
+              :message("Parsing error in url 'mongodb+srv://server.example.com?directConnection=true'");
+
+}
 
 #------------------------------------------------------------------------------
 # Cleanup
