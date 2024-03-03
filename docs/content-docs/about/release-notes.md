@@ -11,11 +11,22 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 
 #### 2024-03-02 0.44.1
   * URI spec needs more attention.
-  * [URI Options Specification](https://github.com/mongodb/specifications/blob/master/source/uri-options/uri-options.rst)
-    * Section *Conflicting TLS options* is implemented in **MongoDB::Uri**
-    * directConnection URI option with multiple seeds or SRV URI
-  * [Initial dns seedlist discovery](https://github.com/mongodb/specifications/blob/master/source/initial-dns-seedlist-discovery/initial-dns-seedlist-discovery.rst#uri-validation)
-    * Validation Before Querying DNS
+
+    * [URI Options Specification](https://github.com/mongodb/specifications/blob/master/source/uri-options/uri-options.rst)
+      * Section <u>Conflicting TLS options</u> is implemented in **MongoDB::Uri**
+      * directConnection URI option with multiple seeds or SRV URI
+
+    * [Initial dns seedlist discovery](https://github.com/mongodb/specifications/blob/master/source/initial-dns-seedlist-discovery/initial-dns-seedlist-discovery.rst#uri-validation)
+      * Validation Before Querying DNS
+
+    * [List of specified options](https://github.com/mongodb/specifications/blob/master/source/uri-options/uri-options.rst#list-of-specified-options)
+      * Deprecated options converted
+      * Implemented
+        * authSource partly
+        * heartbeatFrequencyMS
+        * localThresholdMS
+        * replicaSet
+        * serverSelectionTimeoutMS
 
 #### 2024-02-26 0.44.0
   * Update to cope with Atlas uri strings: 'mongodb+srv:// …'.
