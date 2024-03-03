@@ -147,8 +147,12 @@ subtest "Uri parsing errors", {
 
     throws-like {$uri .= new(
       :uri<mongodb+srv://server.example.com?directConnection=true>)
-    }, X::MongoDB, "Cannot ask for a direct connection if you want DNS SRV record polling",
-              :message("Parsing error in url 'mongodb+srv://server.example.com?directConnection=true'");
+    },
+    X::MongoDB,
+    "Cannot ask for a direct connection if you want DNS SRV record polling",
+    :message(
+      "Parsing error in url 'mongodb+srv://server.example.com?directConnection=true'"
+    );
 
 }
 

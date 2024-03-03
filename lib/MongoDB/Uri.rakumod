@@ -52,58 +52,53 @@ Options of a URI according to the L<MongoDB Specs|https://github.com/mongodb/spe
 
 =item journal; Default write concern "j" field for the client. Is	"true" or "false".
 
-=item loadBalanced 	"true" or "false" 	defined in Load Balancer spec 	no 	Whether the driver is connecting to a load balancer.
+=item loadBalanced; Whether the driver is connecting to a load balancer. Is "true" or "false".
 
-=item localThresholdMS 	non-negative integer; 0 means 0 ms (i.e. the fastest eligible server must be selected) 	defined in the server selection spec 	no 	The amount of time beyond the fastest round trip time that a given server’s round trip time can take and still be eligible for server selection
+=item localThresholdMS; The amount of time beyond the fastest round trip time that a given server’s round trip time can take and still be eligible for server selection. A non-negative integer; 0 means 0 ms (i.e. the fastest eligible server must be selected).
 
-=item maxIdleTimeMS 	non-negative integer; 0 means no minimum 	defined in the Connection Pooling spec 	required for drivers with connection pools 	The amount of time a connection can be idle before it's closed
+=item maxIdleTimeMS. The amount of time a connection can be idle before it's closed. A non-negative integer; 0 means no minimum.
 
-=item maxPoolSize 	non-negative integer; 0 means no maximum 	defined in the Connection Pooling spec 	required for drivers with connection pools 	The maximum number of clients or connections able to be created by a pool at a given time. This count includes connections which are currently checked out.
+=item maxPoolSize; The maximum number of clients or connections able to be created by a pool at a given time. This count includes connections which are currently checked out. A non-negative integer; 0 means no maximum.
 
-=item maxConnecting 	positive integer 	defined in the Connection Pooling spec 	required for drivers with connection pools 	The maximum number of Connections a Pool may be establishing concurrently.
+=item maxConnecting; The maximum number of Connections a Pool may be establishing concurrently.	A positive integer.
 
-=item maxStalenessSeconds 	-1 (no max staleness check) or integer >= 90 	defined in max staleness spec 	no 	The maximum replication lag, in wall clock time, that a secondary can suffer and still be eligible for server selection
+=item maxStalenessSeconds; The maximum replication lag, in wall clock time, that a secondary can suffer and still be eligible for server selection. This can be -1 (no max staleness check) or integer >= 90.
 
-=item minPoolSize 	non-negative integer 	defined in the Connection Pooling spec 	required for drivers with connection pools 	The number of connections the driver should create and maintain in the pool even when no operations are occurring. This count includes connections which are currently checked out.
+=item minPoolSize; The number of connections the driver should create and maintain in the pool even when no operations are occurring. This count includes connections which are currently checked out. A non-negative integer.
 
-=item proxyHost 	any string 	defined in the SOCKS5 support spec 	no 	The IPv4/IPv6 address or domain name of a SOCKS5 proxy server used for connecting to MongoDB services.
+=item proxyHost; The IPv4/IPv6 address or domain name of a SOCKS5 proxy server used for connecting to MongoDB services. Can be any string.
 
-=item proxyPort 	non-negative integer 	defined in the SOCKS5 support spec 	no 	The port of the SOCKS5 proxy server specified in proxyHost.
+=item proxyPort; The port of the SOCKS5 proxy server specified in proxyHost. A non-negative integer.
 
-=item proxyUsername 	any string 	defined in the SOCKS5 support spec 	no 	The username for username/password authentication to the SOCKS5 proxy server specified in proxyHost.
+=item proxyUsername; The username for username/password authentication to the SOCKS5 proxy server specified in proxyHost. This can be any string.
 
-=item proxyPassword 	any string 	defined in the SOCKS5 support spec 	no 	The password for username/password authentication to the SOCKS5 proxy server specified in proxyHost.
+=item proxyPassword; The password for username/password authentication to the SOCKS5 proxy server specified in proxyHost. Can be any string.
 
-=item readConcernLevel 	any string (to allow for forwards compatibility with the server) 	no read concern specified 	no 	Default read concern for the client
+=item readConcernLevel; Default read concern for the client. Can be any string  (to allow for forwards compatibility with the server).
 
-=item readPreference 	any string; currently supported values are defined in the server selection spec, but must be lowercase camelCase, e.g. "primaryPreferred" 	defined in server selection spec 	no 	Default read preference for the client (excluding tags)
+=item readPreference; Default read preference for the client (excluding tags). Can be any string; currently supported values are defined in the server selection spec, but must be lowercase camelCase, e.g. "primaryPreferred".
 
-=item readPreferenceTags 	
+=item readPreferenceTags; Default read preference tags for the client; only valid if the read preference mode is not primary. The order of the tag sets in the read preference is the same as the order they are specified in the URI. A comma-separated key:value pairs (e.g. "dc:ny,rack:1" and "dc:ny). Can be specified multiple times; each instance of this key is a separate tag set.
 
-comma-separated key:value pairs (e.g. "dc:ny,rack:1" and "dc:ny)
+=item replicaSet; The name of the replica set to connect to. Can be any string.
 
-can be specified multiple times; each instance of this key is a separate tag set
-	no tags specified 	no 	
+=item retryReads; Enables retryable reads on server 3.6+. Is "true" or "false".
 
-Default read preference tags for the client; only valid if the read preference mode is not primary
+=item retryWrites; Enables retryable writes on server 3.6+. Is "true" or "false".
 
-The order of the tag sets in the read preference is the same as the order they are specified in the URI
+=item serverMonitoringMode; Configures which server monitoring protocol to use. Can be "stream", "poll", or "auto".
 
-=item replicaSet 	any string 	no replica set name provided 	no 	The name of the replica set to connect to
+=item serverSelectionTimeoutMS; A timeout in milliseconds to block for server selection before raising an error. Tis is a positive integer.
 
-=item retryReads 	"true" or "false" 	defined in retryable reads spec 	no 	Enables retryable reads on server 3.6+
-
-=item retryWrites 	"true" or "false" 	defined in retryable writes spec 	no 	Enables retryable writes on server 3.6+
-
-=item serverMonitoringMode 	"stream", "poll", or "auto" 	defined in SDAM spec 	required for multi-threaded or asynchronous drivers 	Configures which server monitoring protocol to use.
-
-=item serverSelectionTimeoutMS 	positive integer; a driver may also accept 0 to be used for a special case, provided that it documents the meaning 	defined in server selection spec 	no 	A timeout in milliseconds to block for server selection before raising an error.
-
-=item serverSelectionTryOnce; Scan the topology only once after a server selection failure instead of repeatedly until the server selection times out. Can be "true" or "false". Defined in server selection spec. Required for single-threaded drivers.
+=item serverSelectionTryOnce; Scan the topology only once after a server selection failure instead of repeatedly until the server selection times out. Can be "true" or "false".
 
 =item socketTimeoutMS; This option is deprecated in favor of timeoutMS. This driver will translate it to timeoutMS.
 
-=item srvMaxHosts; non-negative integer; The maximum number of SRV results to randomly select when initially populating the seedlist or, during SRV polling, adding new hosts to the topology. 0 means no maximum. Defined in the Initial DNS Seedlist Discovery spec.
+=item srvMaxHosts; The maximum number of SRV results to randomly select when initially populating the seedlist or, during SRV polling, adding new hosts to the topology. A non-negative integer; 0 means no maximum.
+
+
+
+
 
 =item srvServiceName 	a valid SRV service name according to RFC 6335 	"mongodb" 	no 	the service name to use for SRV lookup in initial DNS seedlist discovery and SRV polling
 
@@ -340,37 +335,39 @@ has Str $.client-key is rw; # Must be writable by Monitor;
 has Str $.uri;
 
 #-------------------------------------------------------------------------------
-# Local mongodb server connection
-#   mongodb://<host>:<port>/<auth-database>/<options>
+# Local mongodb server connection. A mongod or mongos server.
+#   mongodb://[<host>][:<port>]/[<auth-database>/][?<option>[&<option>][&…]]
 #
 # Self hosted mongodb cluster:
-#   mongodb://<host1>:<port1>,<host2>:<port2>,<host3>:<port3>/<auth-database>?
-#   replicaSet=<replicaSetName><other-options>
+#   mongodb://<host1>[:<port1>],<host2>[:<port2>][, …]/[<auth-database>/]?
+#   replicaSet=<replicaSetName>[&<option>][&…]
 #
 # SRV polling connection uri: (Only one host and no port)
-#   mongodb+srv://<username>:<password>@<host>/<auth-database>/<options>
-#
-# In short:
-#   mongodb://[<username>:<password>@][<host>[:<port>][, …]]/
-#   [<auth-database>][?<option>[& …]]
-# or
-#   mongodb+srv://[<username>:<password>@]<host>/
-#   [<auth-database>][?<option>[& …]]
-#
-# Defaults:
-#   Port: 27017
-#   Host and port: localhost:27017
-#   auth-database: admin
+#   mongodb+srv://[<username>:<password>@]<host>.<domain><.TLD>/
+#  [<auth-database>/][?<option>[&<option>][&…]]
 #
 # See also: https://www.mongodb.com/docs/manual/reference/connection-string/
 #
 my $uri-grammar = grammar {
 
-  token URI { <protocol> <server-section>? <path-section>? }
+#  token URI { <protocol> <server-section>? <path-section>? }
+  token URI { [
+      | $<single-uri> = [ <simple-protocol> <single-server>? ]
+      | $<multi-uri> = [ <simple-protocol> <multiple-servers>? ]
+      | $<srv-uri> = [ <srv-protocol> <single-fqdn-server>? ]
+    ]
 
-  token protocol { 'mongodb://' | 'mongodb+srv://' }
+    '/' <database>? <options>?
+  }
 
-  token server-section { <username-password>? <server-list>? }
+#  token protocol { 'mongodb://' | 'mongodb+srv://' }
+  token simple-protocol { 'mongodb://' }
+  token srv-protocol { 'mongodb+srv://' }
+
+#  token server-section { <username-password>? <server-list>? }
+  token single-server { <username-password>? <host-port>? }
+  token multiple-servers { <username-password>? <server-list>? }
+  token single-fqdn-server { <username-password>? <fqdn-server> }
 
   # username and password can have chars '@:/?&=,' but they must be %-encoded
   # see https://tools.ietf.org/html/rfc3986#section-2.1
@@ -383,6 +380,18 @@ my $uri-grammar = grammar {
 
   token host-port { <host> [ ':' <port> ]? }
 
+  # According to rfc6335;
+  # https://datatracker.ietf.org/doc/html/rfc6335#section-5.1 with the
+  # exception that it may exceed 15 characters as long as the 63rd (62nd with
+  # prepended underscore) character DNS query limit is not surpassed.
+  token fqdn-server {
+    <server-name> '.' <domain-name> '.' <toplevel-domain-name>
+  }
+  token server-name { <sname> }
+  token domain-name { <sname> }
+  token toplevel-domain-name { <sname> }
+  token sname { <[\w\-]>+ }
+
 #todo ipv6, ipv4 and domainames
 #https://stackoverflow.com/questions/186829/how-do-ports-work-with-ipv6
 #https://en.wikipedia.org/wiki/IPv6_address#Literal_IPv6_addresses_in_network_resource_identifiers
@@ -394,7 +403,7 @@ my $uri-grammar = grammar {
 
   token port { \d+ }
 
-  token path-section { '/' <database>? <options>? }
+#  token path-section { '/' <database>? <options>? }
 
   token database { <[\w\%]>+ }
 
@@ -547,6 +556,20 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
     $!options<serverSelectionTimeoutMS> //=
        MongoDB::C-SERVERSELECTIONTIMEOUTMS.Int;
     $!options<heartbeatFrequencyMS> //= MongoDB::C-HEARTBEATFREQUENCYMS.Int;
+
+    # Change deprecated options
+    if $!options<socketTimeoutMS>:exists {
+      $!options<timeoutMS> = $!options<socketTimeoutMS>;
+      warn-message("socketTimeoutMS is deprecated in favor of timeoutMS");
+    }
+    if $!options<waitQueueTimeoutMS>:exists {
+      $!options<timeoutMS> = $!options<waitQueueTimeoutMS>;
+      warn-message("waitQueueTimeoutMS is deprecated in favor of timeoutMS");
+    }
+    if $!options<wTimeoutMS>:exists {
+      $!options<timeoutMS> = $!options<wTimeoutMS>;
+      warn-message("wTimeoutMS is deprecated in favor of timeoutMS");
+    }
 
     # Set the authentication defaults
     my Str $auth-mechanism = $!options<authMechanism> // '';
