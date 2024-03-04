@@ -108,6 +108,9 @@ subtest "Uri parsing", {
   is $uri.auth-source, 'users', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> auth database = users';
   is $uri.username, 'Dondersteen', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> username = Dondersteen';
   is $uri.password, 'w@tD8jeDan', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> password = w@tD8jeDan';
+
+  $uri .= new(:uri<mongodb+srv://Dondersteen:w%40tD8jeDan@h2.example.com/users>);
+
 };
 
 #------------------------------------------------------------------------------

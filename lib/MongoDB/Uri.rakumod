@@ -1,6 +1,7 @@
 #TL:1:MongoDB::Uri
 
 use v6;
+
 #-------------------------------------------------------------------------------
 =begin pod
 
@@ -351,13 +352,14 @@ has Str $.uri;
 my $uri-grammar = grammar {
 
 #  token URI { <protocol> <server-section>? <path-section>? }
-  token URI { [
-      | $<single-uri> = [ <simple-protocol> <single-server>? ]
-      | $<multi-uri> = [ <simple-protocol> <multiple-servers>? ]
-      | $<srv-uri> = [ <srv-protocol> <single-fqdn-server>? ]
+  # Need a regex here to be able to backtrack
+  regex URI { [
+      | [ $<single-uri> = <simple-protocol> <single-server> ]
+      | [ $<multi-uri> = <simple-protocol> <multiple-servers> ]
+      | [ $<srv-uri> = <srv-protocol> <single-fqdn-server> ]
     ]
 
-    '/' <database>? <options>?
+    [ '/' <database>? <options>? ]?
   }
 
 #  token protocol { 'mongodb://' | 'mongodb+srv://' }
@@ -365,8 +367,9 @@ my $uri-grammar = grammar {
   token srv-protocol { 'mongodb+srv://' }
 
 #  token server-section { <username-password>? <server-list>? }
-  token single-server { <username-password>? <host-port>? }
-  token multiple-servers { <username-password>? <server-list>? }
+  token single-server { <username-password>? <host-port> }
+#  token single-server { <username-password>? <server-list> }
+  token multiple-servers { <username-password>? <server-list> }
   token single-fqdn-server { <username-password>? <fqdn-server> }
 
   # username and password can have chars '@:/?&=,' but they must be %-encoded
@@ -414,7 +417,10 @@ my $uri-grammar = grammar {
 
 
 #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 my $uri-actions = class {
+
+  enum URIType is export <SINGLE MULTIPLE SRV>;
 
   has Array $.host-ports = [];
   has Str $.prtcl = '';
@@ -423,18 +429,38 @@ my $uri-actions = class {
   has Str $.uname = '';
   has Str $.pword = '';
   has Bool $.do-polling = False;
+  has URIType $.uri-type;
 
-  method protocol ( Match $m ) {
+  method URI ( Match $m ) {
+    my $u = ~$m;
+    $!uri-type = SINGLE if ?$m<single-uri>;
+    $!uri-type = MULTIPLE if ?$m<multi-uri>;
+    $!uri-type = SRV if ?$m<srv-uri>;
+note "$?LINE $!uri-type, uri match: $m.gist()";
+  }
+
+  #-----------------------------------------------------------------------------
+#  method protocol ( Match $m ) {
+  method simple-protocol ( Match $m ) {
     my $p = ~$m;
     $p ~~ s/\:\/\///;
     $!prtcl = $p;
   }
 
+  #-----------------------------------------------------------------------------
+  method srv-protocol ( Match $m ) {
+    my $p = ~$m;
+    $p ~~ s/\:\/\///;
+    $!prtcl = $p;
+  }
+
+  #-----------------------------------------------------------------------------
   method username-password ( Match $m ) {
     $!uname = self.uri-unescape(~$m<username>);
     $!pword = self.uri-unescape(~$m<password>);
   }
 
+  #-----------------------------------------------------------------------------
   method host-port ( Match $m ) {
     my $h = ? ~$m<host> ?? self.uri-unescape(~$m<host>) !! 'localhost';
 
@@ -456,10 +482,12 @@ my $uri-actions = class {
     $!host-ports.push: %( host => $h.lc, port => $p) unless $found-hp;
   }
 
+  #-----------------------------------------------------------------------------
   method database ( Match $m ) {
     $!dtbs = self.uri-unescape(~$m // 'admin');
   }
 
+  #-----------------------------------------------------------------------------
   method option ( Match $m ) {
     $!optns{~$m<key>} = ~$m<value>;
   }
@@ -476,6 +504,7 @@ my $uri-actions = class {
 }
 
 #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 submethod BUILD ( Str :$!uri, Str :$client-key ) {
 
   $!servers = [];
@@ -486,6 +515,7 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
   my $actions = $uri-actions.new;
   my $grammar = $uri-grammar.new;
 
+note "\n$?LINE $!uri";
   trace-message("parse '$!uri'");
   my Match $m = $grammar.parse( $!uri, :$actions, :rule<URI>);
 
