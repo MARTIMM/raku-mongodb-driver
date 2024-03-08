@@ -48,7 +48,8 @@ submethod BUILD ( ) {
   $!rw-sem .= new;
   #$!rw-sem.debug = True;
   $!rw-sem.add-mutex-names(
-    < server-info client-info >, :RWPatternType(C-RW-WRITERPRIO));
+    < server-info client-info >, :RWPatternType(C-RW-WRITERPRIO)
+  );
 
   trace-message("ServerPool created");
 }
