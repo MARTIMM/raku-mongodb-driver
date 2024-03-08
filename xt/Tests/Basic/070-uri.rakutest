@@ -148,7 +148,7 @@ subtest "Uri parsing errors", {
       "Parsing error in url 'mongodb://?tlsAllowInvalidCertificates=true&tlsDisableCertificateRevocationCheck=true'"
     );
 
-    throws-like {$uri .= new(
+  throws-like {$uri .= new({
       :uri<mongodb+srv://server.example.com?directConnection=true>)
     },
     X::MongoDB,
