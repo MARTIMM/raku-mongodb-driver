@@ -120,7 +120,7 @@ sub USAGE ( ) {
                         files are to be found in the 'xt/Tests' directory. When
                         a directory or path is provided, this means that it is
                         a path from 'xt/Tests'.
-      --version         Version of the mongo servers to test. The version is
+      --versions        Version of the mongo servers to test. The version is
                         '4.4.18' by default.
 
     Arguments
@@ -153,16 +153,18 @@ class Wrapper:auth<github:MARTIMM> {
   #-----------------------------------------------------------------------------
   submethod BUILD ( ) {
     $!cfg = load-yaml((SERVER_PATH ~ '/' ~ CONFIG_NAME).IO.slurp);
+  
+    note "\n$!cfg.gist()";
   }
 
   #-----------------------------------------------------------------------------
   method create-server-config(
-    Str $server, Version $version, Bool :$start --> Str
+    Str $server, Version $version, Bool :$start = False --> Str
   ) {
 
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
     mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
-note $data-path;
+#note $data-path;
 
     my Str() $port;
     if $start {
@@ -172,13 +174,13 @@ note $data-path;
     }
 
     else {
-      # get generated port number from config and return
+      # Get generated port number from config and return
       my Hash $h = load-yaml("$data-path/server-config.conf".IO.slurp);
       $port = $h<net><port>;
       return $port;
     }
 
-    # Initialize with data which are always the same
+    # Initialize with data which are almost always the same
     my Hash $server-config = %(
       systemLog => %(
         :destination<file>,
@@ -194,7 +196,7 @@ note $data-path;
       ),
 
       net => %(
-        :bindIp<localhost>,
+        :bindIp($!cfg<bindIp> // 'localhost'),
         :$port,
       ),
     );
@@ -315,11 +317,13 @@ note $data-path;
     sleep 1;
 
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
-    for dir "$data-path/db/diagnostic.data" -> $f {
-      $f.unlink;
-    }
+    if "$data-path/db/diagnostic.data".IO.e {
+      for dir "$data-path/db/diagnostic.data" -> $f {
+        $f.unlink;
+      }
 
-    "$data-path/db/diagnostic.data".IO.rmdir;
+      "$data-path/db/diagnostic.data".IO.rmdir;
+    }
 
     for dir "$data-path/db" -> $f {
       $f.unlink;
