@@ -401,7 +401,7 @@ my $uri-grammar = grammar {
 #http://[1fff:0:a88:85a3::ac1f]:8001/index.html
   token host { <ipv4-host> || <ipv6-host> || <hname> }
   token ipv4-host { \d**1..3 [ '.' \d**1..3 ]**3 }
-  token ipv6-host { '[' ~ ']' [ [ \d || ':' ]+ ] }
+  token ipv6-host { '[' [ <xdigit> || ':' ]+ ']' }
   token hname { <[\w\-\.\%]>* }
 
   token port { \d+ }
@@ -436,7 +436,7 @@ my $uri-actions = class {
     $!uri-type = SINGLE if ?$m<single-uri>;
     $!uri-type = MULTIPLE if ?$m<multi-uri>;
     $!uri-type = SRV if ?$m<srv-uri>;
-note "$?LINE $!uri-type, uri match: $m.gist()";
+#note "$?LINE $!uri-type, uri match: $m.gist()";
   }
 
   #-----------------------------------------------------------------------------
@@ -515,7 +515,7 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
   my $actions = $uri-actions.new;
   my $grammar = $uri-grammar.new;
 
-note "\n$?LINE $!uri";
+#note "\n$?LINE $!uri";
   trace-message("parse '$!uri'");
   my Match $m = $grammar.parse( $!uri, :$actions, :rule<URI>);
 
