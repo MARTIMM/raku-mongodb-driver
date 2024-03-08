@@ -44,10 +44,11 @@ has Semaphore::ReadersWriters $!rw-sem;
 #TM:1:new(:$server-name):
 multi submethod BUILD ( Str:D :$server-name! ) {
 
-  if $server-name ~~ m/ $<ip6addr> = ('[' .*? ']') / {
+  if $server-name ~~ m/ '[' $<ip6addr> = ( .*? ) ']' / {
     my $h = $!host = $/<ip6addr>.Str;
-    $!port = $server-name;
-    $!port ~~ s/$h ':'//;
+    my Str $p = $server-name;
+    $p ~~ s/'[' $h ']:'//;
+    $!port = $p.Int;
   }
 
   else {
@@ -84,7 +85,7 @@ method !init ( ) {
 
   trace-message("Server object for $!name initialized");
 
-  # set the heartbeat frequency
+  # Set the heartbeat frequency
   my MongoDB::ObserverEmitter $event-manager .= new;
 
   $event-manager.subscribe-observer(
@@ -93,7 +94,7 @@ method !init ( ) {
     :event-key($!name ~ ' monitor data')
   );
 
-  # now we can register a server
+  # Now we can register a server
   $event-manager.emit( 'register server', self);
   $!server-is-registered = True;
 }
@@ -310,7 +311,7 @@ method !set-server-name ( --> Str ) {
 
   # ipv4 and domainnames are printed the same
   else {
-    $name = [~] $!host , ':', $!port;
+    $name = [~] $!host, ':', $!port;
   }
 
   $name
