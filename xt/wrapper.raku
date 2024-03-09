@@ -62,21 +62,21 @@ info-message("Start server version $version, $server, @server-ports.gist()");
 
 ##`{{
   for @versions -> $version {
-info-message("Version $version");
+    info-message("Version $version");
 
     my @server-ports = ();
     for @servers -> $server {
-info-message("Prepare config version $version, $server");
+      info-message("Prepare config version $version, $server");
       @server-ports.push: $ts.create-server-config(
         $server, Version.new($version), :$start
       );
 
-info-message("Start server version $version, $server");
+      info-message("Start server version $version, $server");
       $ts.start-mongod( $server, $version) if $start;
     }
 
     for @servers -> $server {
-info-message("run tests version $version, $server");
+      info-message("run tests version $version, $server");
       $ts.run-tests(
         $test-dir, @test-specs, $server, @server-ports, $version, $log-path
       );
@@ -154,9 +154,89 @@ class Wrapper:auth<github:MARTIMM> {
   submethod BUILD ( ) {
     $!cfg = load-yaml((SERVER_PATH ~ '/' ~ CONFIG_NAME).IO.slurp);
   
-    note "\n$!cfg.gist()";
+note "\n$?LINE\n$!cfg.gist()";
   }
 
+  #-----------------------------------------------------------------------------
+  method create-server-config(
+    Str $server, Version $version, Bool :$start = False --> Str
+  ) {
+#note "\n$?LINE\n$!cfg.gist()";
+
+    my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
+    mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
+#note $data-path;
+#note "$?LINE $!cfg<ipv6>, ", ? $!cfg<ipv6>;
+    my Str() $port;
+    if $start {
+      $port = self!find-next-free-port(
+        $!cfg<server>{$server}<port> // 27012
+      );
+    }
+
+    else {
+      # Get generated port number from config and return
+      my Hash $h = load-yaml("$data-path/server-config.conf".IO.slurp);
+      $port = $h<net><port>;
+      return $port;
+    }
+
+    # Initialize with data which are almost always the same
+    my Hash $server-config = %(
+      systemLog => %(
+        :destination<file>,
+        :path("$data-path/mdb.log"),
+        :logAppend,
+  #      :logRotate<1>,
+        component => %(),
+      ),
+
+      storage => %(
+        :dbPath("$data-path/db"),
+        journal => %(:!enabled,),
+      ),
+
+      net => %(
+        :ipv6(? $!cfg<server>{$server}<ipv6>),
+        :bindIp($!cfg<server>{$server}<bindIp> // 'localhost'),
+        :bindIpAll(? $!cfg<server>{$server}<bindIpAll>),
+        :$port,
+      ),
+    );
+
+    $server-config<processManagement><fork> = $!cfg<fork>;
+
+    # Add log verbosity levels
+    my Hash $component = $server-config<systemLog><component>;
+    $component<accessControl><verbosity> = 2 if $version > v2.6.11;
+    $component<command><verbosity> = 2 if $version > v2.6.11;
+    $component<storage><verbosity> = 2 if $version > v2.6.11;
+    $component<storage><journal><verbosity> = 2 if $version > v2.6.11;
+    $component<storage><recovery><verbosity> = 2 if $version > v3.6.9;
+    $component<write><verbosity> = 2 if $version > v2.6.11;
+
+    if ?$!cfg<server>{$server}<replSet> {
+      $component<replication><verbosity> = 2;
+      $component<replication><heartbeats><verbosity> = 2;
+      $component<replication><rollback><verbosity> = 2;
+      $component<replication><election><verbosity> = 2 if $version > v4.0.18;
+      $component<replication><initialSync><verbosity> = 2 if $version > v4.0.18;
+    }
+
+    # Remove some yaml thingies and save
+    my Str $scfg = save-yaml($server-config);
+#    $scfg ~~ s:g/ '---' \n //;
+#    $scfg ~~ s:g/ '...' //;
+    "$data-path/server-config.conf".IO.spurt($scfg);
+
+    info-message(
+      "Config created for server '$server:$port' with version $version using port $port"
+    );
+
+    $port
+  }
+
+#`{{
   #-----------------------------------------------------------------------------
   method create-server-config(
     Str $server, Version $version, Bool :$start = False --> Str
@@ -232,6 +312,7 @@ class Wrapper:auth<github:MARTIMM> {
 
     $port
   }
+}}
 
   #-----------------------------------------------------------------------------
   method start-mongod ( Str $server, Str $version --> Bool ) {
