@@ -1,0 +1,113 @@
+use v6;
+use lib 't', 'lib';
+use Test;
+
+#use Test-support;
+
+use MongoDB;
+use MongoDB::Client;
+use MongoDB::Database;
+#use MongoDB::Server::Control;
+#use MongoDB::MDBConfig;
+
+use BSON::Document;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+note "args: $log-path, $version, @server-ports";
+
+#-------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info));
+#set-filter(|<ObserverEmitter Timer Socket>);
+
+my Str $uri = "mongodb://[::1]:@server-ports[0]/";
+my MongoDB::Client $client .= new(:$uri);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
+
+my BSON::Document $req;
+my BSON::Document $doc;
+
+# Drop database first then create new databases
+$req .= new: ( dropDatabase => 1 );
+$doc = $database.run-command($req);
+
+#-------------------------------------------------------------------------------
+subtest "Database, create collection", {
+
+  isa-ok $database, 'MongoDB::Database';
+  is $database.name, 'test', 'Check database name';
+
+  # Create a collection explicitly.
+  $req .= new: (create => 'cl1');
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, 'Created collection cl1';
+}
+
+#-------------------------------------------------------------------------------
+subtest "Several inserts", {
+
+  # Create collection
+  my MongoDB::Collection $collection = $database.collection('cl1');
+  isa-ok( $collection, 'MongoDB::Collection');
+
+  # Add records
+  $req .= new: (
+    insert => $collection.name,
+    documents => [
+      ( name => 'Jan Klaassen'),
+      ( name => 'Piet B'),
+      ( name => 'Me T'),
+      ( :name('Di D'))
+    ]
+  );
+
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, "Result is ok";
+  is $doc<n>, 4, "Inserted 4 documents";
+
+  $req .= new: ( count => $collection.name, query => (name => 'Me T',));
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, "count request ok";
+  is $doc<n>, 1, 'count 1 record of "Me T"';
+
+  $req<query> = (name => 'Di D',);
+  $doc = $database.run-command($req);
+  is $doc<n>, 1, 'count 1 record of "Di D"';
+
+  $req<query> = (name => 'Di D',);
+  $doc = $database.run-command($req);
+  is $doc<n>, 1, '1 record of "Jan Klaassen"';
+
+  # Add next few records
+  $req .= new: (
+    insert => $collection.name,
+    documents => [
+      (:name('n1'), :test(0)),  (:name('n2'), :test(0)),
+      (:name('n3'), :test(0)),  (:name('n4'), :test(0)),
+      (:name('n5'), :test(0)),  (:name('n6'), :test(0))
+    ]
+  );
+
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, "Result is ok";
+  is $doc<n>, 6, "Inserted 6 documents";
+
+  $req .= new: ( :count($collection.name), :query((:test(0),)));
+  $doc = $database.run-command($req);
+  is $doc<n>, 6, '6 records of Test(0)';
+
+  $req .= new: ( :count($collection.name), :query((:name('Di D'),)));
+  $doc = $database.run-command($req);
+  is $doc<n>, 1, "1 record of name('Di D')";
+};
+
+#-------------------------------------------------------------------------------
+info-message("Test $?FILE stop");
+done-testing();
