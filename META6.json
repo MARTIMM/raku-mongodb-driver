@@ -1,5 +1,5 @@
 {
-  "version": "0.44.2",
+  "version": "0.44.3",
   "description": "MongoDB driver",
   "name": "MongoDB",
   "auth": "cpan:MARTIMM",
@@ -53,7 +53,8 @@
     "OpenSSL",
     "Unicode::PRECIS",
     "Terminal::ANSIColor",
-    "Log::Async"
+    "Log::Async",
+    "Net::DNS"
   ],
   "test-depends": [ ],
   "build-depends": [ ],
