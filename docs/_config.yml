@@ -87,7 +87,7 @@ optional_front_matter:
 #port                : 4000
 #host                : 127.0.0.1
 port: 4001
-baseurl: "/question-answer"
+baseurl: "/mongodb"
 #show_dir_listing    : false
 #url: "https://martimm.github.io"
 
