@@ -9,8 +9,14 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
+#  * Looking at SSL/TLS.
+
+#### 2024-03-10 0.44.3
+  * Process the DNS SRV from the URI.
+  * Add tests for the `mongodb+srv://` URI.
+  * Start documenting the level of adhering the software to the designer specs of MongoDB found on Github.
+
 #### 2024-03-07 0.44.2
-  * Looking at SSL/TLS.
   * Found a way to use ipv6 while using VPN. Some setting in expressvpn. Now I also stumble upon other problems related to ipv6.
 
 #### 2024-03-02 0.44.1
