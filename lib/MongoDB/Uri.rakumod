@@ -467,9 +467,9 @@ my $uri-actions = class {
     # in case of an ipv6 address, remove the brackets around the ip spec
 #      $h ~~ s:g/ <[\[\]]> //;
 
-    my $p = $m<port> ?? (~$m<port>).Int !! 27017;
+    my $p = $m<port> ?? (~$m<port>).Int !! -1; # 27017;
     return fatal-message("Port number out of range ")
-      unless 0 <= $p <= 65535;
+      unless $p == -1 or 0 < $p <= 65535;
 
     my Bool $found-hp = False;
     for @$!host-ports -> $hp {
@@ -521,9 +521,17 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
 
   # if parse is ok
   if ? $m {
+    # Check protocol for DNS SRV record polling
+    $!srv-polling = True if $actions.prtcl ~~ m/ '+srv' $/;
+
     # get all server names and ports
     if $actions.host-ports.elems {
       for @($actions.host-ports) -> $hp {
+        return fatal-message(
+          "You may not define a port number when polling for DNS SRV records"
+        ) if $!srv-polling and $hp<port>.Int > 0;
+
+        $hp<port> = 27017 if $hp<port> == -1;
         $key-string ~= "$hp<host>:$hp<port>";
         $!servers.push: $hp;
       }
@@ -533,9 +541,6 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
       $key-string ~= 'localhost:27017';
       $!servers.push: %( :host<localhost>, :port(27017));
     }
-
-    # Check protocol for DNS SRV record polling
-    $!srv-polling = True if $actions.prtcl ~~ m/ '+srv' $/;
 
     # Get the options
     $!options = $actions.optns;
@@ -580,6 +585,11 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
       "Cannot ask for a direct connection if you have multiple hosts specified"
     ) if $!options<directConnection>:exists and ?$!options<directConnection> and
       $!servers.elems > 1;
+
+    return fatal-message(
+      "Cannot provide multiple hosts if you want DNS SRV record polling"
+    ) if $!servers.elems > 1 and $!srv-polling;
+
 
     # Set defaults for some options or convert them to the proper type
     $!options<localThresholdMS> //= MongoDB::C-LOCALTHRESHOLDMS.Int;
