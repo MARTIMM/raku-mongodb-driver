@@ -153,8 +153,8 @@ class Wrapper:auth<github:MARTIMM> {
   #-----------------------------------------------------------------------------
   submethod BUILD ( ) {
     $!cfg = load-yaml((SERVER_PATH ~ '/' ~ CONFIG_NAME).IO.slurp);
-  
-note "\n$?LINE\n$!cfg.gist()";
+
+#note "\n$?LINE\n$!cfg.gist()";
   }
 
   #-----------------------------------------------------------------------------
