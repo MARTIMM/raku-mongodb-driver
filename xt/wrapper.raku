@@ -170,7 +170,7 @@ class Wrapper:auth<github:MARTIMM> {
     my Str() $port;
     if $start {
       $port = self!find-next-free-port(
-        $!cfg<server>{$server}<port> // 27012
+        $!cfg<server>{$server}<port>.Int // 27012
       );
     }
 
