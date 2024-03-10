@@ -12,18 +12,3 @@
   bar_menu:
   - title: "Specification"
     url: "/content-docs/design/bson-spec.html"
-
-#    - title: "Projects"
-#      url: "/content-docs/projects.html"
-#    - title: "Tutorial"
-#    - title: "Examples"
-#      url: "/content-docs/examples.html"
-#    - title: "About"
-#      url: '/content-docs/about.html'
-#      right: true
-#    - title: "Design"
-#      url: "/content-docs/design.html"
-#      right: true
-#    - title: "Reference"
-#      url: "/content-docs/reference-gtk3.html"
-#      right: true
