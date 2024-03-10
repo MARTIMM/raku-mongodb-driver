@@ -1,6 +1,7 @@
 #TL:1:MongoDB::Uri
 
 use v6;
+use Net::DNS;
 
 #-------------------------------------------------------------------------------
 =begin pod
@@ -336,6 +337,8 @@ has Str $.client-key is rw; # Must be writable by Monitor;
 has Str $.uri;
 
 #-------------------------------------------------------------------------------
+#---[ URI Grammar ]-------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Local mongodb server connection. A mongod or mongos server.
 #   mongodb://[<host>][:<port>]/[<auth-database>/][?<option>[&<option>][&…]]
 #
@@ -417,6 +420,7 @@ my $uri-grammar = grammar {
 
 
 #-------------------------------------------------------------------------------
+#---[ Parsing actions ]---------------------------------------------------------
 #-------------------------------------------------------------------------------
 my $uri-actions = class {
 
@@ -504,13 +508,14 @@ my $uri-actions = class {
 }
 
 #-------------------------------------------------------------------------------
+#---[ Parse URI and process outcome ]-------------------------------------------
 #-------------------------------------------------------------------------------
 submethod BUILD ( Str :$!uri, Str :$client-key ) {
 
   $!servers = [];
   $!options = %();
 
-  my $key-string = '';
+#  my $key-string = '';
 
   my $actions = $uri-actions.new;
   my $grammar = $uri-grammar.new;
@@ -524,27 +529,87 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
     # Check protocol for DNS SRV record polling
     $!srv-polling = True if $actions.prtcl ~~ m/ '+srv' $/;
 
-    # get all server names and ports
-    if $actions.host-ports.elems {
-      for @($actions.host-ports) -> $hp {
+    # Process hosts and ports
+    given $actions.host-ports.elems {
+      when 0 {
+        return fatal-message(
+          "You must define a FQDN when polling for DNS SRV records"
+        ) if $!srv-polling;
+
+        $!servers.push: %( :host<localhost>, :port(27017));
+      }
+
+      when 1 {
+        my $hp = $actions.host-ports[0];
         return fatal-message(
           "You may not define a port number when polling for DNS SRV records"
         ) if $!srv-polling and $hp<port>.Int > 0;
 
-        $hp<port> = 27017 if $hp<port> == -1;
-        $key-string ~= "$hp<host>:$hp<port>";
-        $!servers.push: $hp;
-      }
-    }
+        if $!srv-polling {
+          # Inject SRV records
+          my Str $srv-service-name = $!options<srvServiceName> // 'mongodb';
 
-    else {
-      $key-string ~= 'localhost:27017';
-      $!servers.push: %( :host<localhost>, :port(27017));
+          # Check for nameservers
+          my Str $nameserver;
+          for < 127.0.0.54
+                8.8.8.8 8.8.4.4
+                208.67.222.222 208.67.220.220
+                1.1.1.1 1.0.0.1
+              > -> $host {
+
+            my $search = start {
+              try {
+                my IO::Socket::INET $srv .= new( :$host, :port(53));
+                $srv.close if ?$srv;
+              };
+            }
+
+            my $timeout = Promise.in(2).then({
+              say 'Timeout after 2 seconds';
+              $search.break;
+            });
+
+            await Promise.anyof( $timeout, $search);
+note "sts $timeout.status(), $search.status()";
+            if $search.status eq 'Kept' {
+              $nameserver = $host;
+              last;
+            }
+          }
+
+          my Net::DNS $resolver;
+          my @srv-hosts;
+          $resolver .= new( $nameserver, IO::Socket::INET);
+          @srv-hosts = $resolver.lookup(
+            'srv', "$srv-service-name._tcp.$hp<host>"
+          );
+
+        }
+
+        else {
+          $hp<port> = 27017 if $hp<port> == -1;
+          $!servers.push: $hp;
+        }
+#        $key-string ~= "$hp<host>:$hp<port>";
+      }
+
+      #when > 1 {
+      default {
+        return fatal-message(
+          "Cannot provide multiple FQDN if you want DNS SRV record polling"
+        ) if $!srv-polling;
+
+        for @($actions.host-ports) -> $hp {
+          $hp<port> = 27017 if $hp<port> == -1;
+#          $key-string ~= "$hp<host>:$hp<port>";
+          $!servers.push: $hp;
+        }
+      }
     }
 
     # Get the options
     $!options = $actions.optns;
-    $key-string ~= $actions.optns.kv.sort>>.fmt('%s').join;
+#    $key-string ~= $actions.optns.kv.sort>>.fmt('%s').join;
 
     # Check for faulty TLS combinations
     return fatal-message(
@@ -586,10 +651,6 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
     ) if $!options<directConnection>:exists and ?$!options<directConnection> and
       $!servers.elems > 1;
 
-    return fatal-message(
-      "Cannot provide multiple hosts if you want DNS SRV record polling"
-    ) if $!servers.elems > 1 and $!srv-polling;
-
 
     # Set defaults for some options or convert them to the proper type
     $!options<localThresholdMS> //= MongoDB::C-LOCALTHRESHOLDMS.Int;
@@ -623,7 +684,7 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
       :username($actions.uname), :password($actions.pword),
       :$auth-source, :$auth-mechanism, :$auth-mechanism-properties
     );
-    $key-string ~= $actions.uname ~ $actions.pword;
+#    $key-string ~= $actions.uname ~ $actions.pword;
 
     # Generate a key string from the uri data. when from clone call, key
     # is provided to keep same reference to client

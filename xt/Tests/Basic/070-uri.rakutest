@@ -161,7 +161,7 @@ subtest "Uri parsing errors", {
       :uri<mongodb+srv://s1.example.com,s2.example.com>)
     },
     X::MongoDB,
-    "Cannot provide multiple hosts if you want DNS SRV record polling",
+    "Cannot provide multiple FQDN if you want DNS SRV record polling",
     :message(
       "Parsing error in url 'mongodb+srv://s1.example.com,s2.example.com'"
     );
