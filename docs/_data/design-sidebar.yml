@@ -5,6 +5,8 @@
   bar_menu:
   - title: "Design"
     url: "/content-docs/design/design.html"
+  - title: "Developers Specs on Github"
+    url: "/content-docs/design/mongodb-specs.html"
 
 - bar_title: "BSON"
   bar_menu:
