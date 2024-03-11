@@ -384,19 +384,16 @@ my $uri-grammar = grammar {
 
   token server-list { <host-port> [ ',' <host-port> ]* }
 
-  token host-port { <host> [ ':' <port> ]? }
+  token host-port { <host>? [ ':' <port> ]? }
 
   # According to rfc6335;
   # https://datatracker.ietf.org/doc/html/rfc6335#section-5.1 with the
   # exception that it may exceed 15 characters as long as the 63rd (62nd with
   # prepended underscore) character DNS query limit is not surpassed.
-  token fqdn-server {
-    <server-name> '.' <domain-name> '.' <toplevel-domain-name>
-  }
-  token server-name { <sname> }
-  token domain-name { <sname> }
-  token toplevel-domain-name { <sname> }
-  token sname { <[\w\-]>+ }
+  regex fqdn-server { <server-name> '.' <domain-name> '.' <toplevel-domain> }
+  token server-name { <[\w\-]>+ }
+  regex domain-name { <[\w\-\.]>+ }
+  token toplevel-domain { <[\w\-]>+ }
 
 #todo ipv6, ipv4 and domainames
 #https://stackoverflow.com/questions/186829/how-do-ports-work-with-ipv6
@@ -405,7 +402,8 @@ my $uri-grammar = grammar {
   token host { <ipv4-host> || <ipv6-host> || <hname> }
   token ipv4-host { \d**1..3 [ '.' \d**1..3 ]**3 }
   token ipv6-host { '[' [ <xdigit> || ':' ]+ ']' }
-  token hname { <[\w\-\.\%]>* }
+#  token hname { <[\w\-\.\%]>* }
+  token hname { <[\w\-\.]>+ }
 
   token port { \d+ }
 
@@ -466,7 +464,13 @@ my $uri-actions = class {
 
   #-----------------------------------------------------------------------------
   method host-port ( Match $m ) {
-    my $h = ? ~$m<host> ?? self.uri-unescape(~$m<host>) !! 'localhost';
+    my $h;
+    if ?$m<host> {
+      $h = self.uri-unescape(~$m<host>);
+    }
+    else {
+      $h = 'localhost';
+    }
 
     # in case of an ipv6 address, remove the brackets around the ip spec
 #      $h ~~ s:g/ <[\[\]]> //;
@@ -482,6 +486,8 @@ my $uri-actions = class {
         last;
       }
     }
+
+note "$?LINE $h, $p: $!uri-type";
 
     $!host-ports.push: %( host => $h.lc, port => $p) unless $found-hp;
   }
