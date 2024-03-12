@@ -16,13 +16,24 @@ my $handle = $log-path.IO.open( :mode<wo>, :append);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
 #set-filter(|<ObserverEmitter Timer Socket>);
 
+#`{{
 #------------------------------------------------------------------------------
-  my MongoDB::Uri $uri .= new(
-    :uri<mongodb+srv://Dondersteen:w%40tD8jeDan@h2.example.com/users>
-  );
+my Str $uri;
+my MongoDB::Uri $u;
+
+$uri = 'mongodb+srv://Dondersteen:w%40tD8jeDan@h1.example.com/users';
+$u .= new(:$uri);
+
+$uri = 'mongodb+srv://h2.example.com';
+$u .= new(:$uri);
+
+$uri = 'mongodb+srv://jabber.org/?srvServiceName=xmpp-client';
+#$uri = 'mongodb+srv://icsub.domain.com?srvServiceName=informacast';
+$u .= new(:$uri);
 
 done-testing();
 =finish
+}}
 
 #------------------------------------------------------------------------------
 subtest "Uri parsing", {
@@ -116,11 +127,6 @@ subtest "Uri parsing", {
   is $uri.auth-source, 'users', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> auth database = users';
   is $uri.username, 'Dondersteen', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> username = Dondersteen';
   is $uri.password, 'w@tD8jeDan', 'mongodb://Dondersteen:w%40tD8jeDan@h2:9876/users --> password = w@tD8jeDan';
-
-  $uri .= new(
-    :uri<mongodb+srv://Dondersteen:w%40tD8jeDan@h2.example.com/users>
-  );
-
 };
 
 #------------------------------------------------------------------------------
@@ -176,14 +182,26 @@ subtest "Uri parsing errors", {
       "Parsing error in url 'mongodb+srv://s1.example.com,s2.example.com'"
     );
 
-  throws-like {$uri .= new(
-      :uri<mongodb+srv://s1.example.com:20000>)
+  throws-like {
+      $uri .= new(:uri<mongodb+srv://s1.example.com:20000>)
     },
     X::MongoDB,
     "You may not define a port number when polling for DNS SRV records",
     :message(
       "Parsing error in url 'mongodb+srv://s1.example.com:20000'"
     );
+
+  throws-like {
+      $uri .= new(
+        :uri<mongodb+srv://Dondersteen:w%40tD8jeDan@h2.example.com/users>
+      )
+    },
+    X::MongoDB,
+    "No servers found after search on domain h2.example.com",
+    :message(
+      "Parsing error in url 'mongodb+srv://Dondersteen:w%40tD8jeDan@h2.example.com/users'"
+    );
+
 
 }
 

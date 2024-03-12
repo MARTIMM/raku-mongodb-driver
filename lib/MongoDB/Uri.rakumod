@@ -390,7 +390,7 @@ my $uri-grammar = grammar {
   # https://datatracker.ietf.org/doc/html/rfc6335#section-5.1 with the
   # exception that it may exceed 15 characters as long as the 63rd (62nd with
   # prepended underscore) character DNS query limit is not surpassed.
-  regex fqdn-server { <server-name> '.' <domain-name> '.' <toplevel-domain> }
+  regex fqdn-server { [<server-name> '.']? <domain-name> '.' <toplevel-domain> }
   token server-name { <[\w\-]>+ }
   regex domain-name { <[\w\-\.]>+ }
   token toplevel-domain { <[\w\-]>+ }
@@ -425,6 +425,7 @@ my $uri-actions = class {
   enum URIType is export <SINGLE MULTIPLE SRV>;
 
   has Array $.host-ports = [];
+  has Array $.fqdn = [];
   has Str $.prtcl = '';
   has Str $.dtbs = 'admin';
   has Hash $.optns = {};
@@ -463,6 +464,14 @@ my $uri-actions = class {
   }
 
   #-----------------------------------------------------------------------------
+  method fqdn-server  ( Match $m ) {
+    $!fqdn = [
+      ~$m, ($m<server-name>//'').Str, $m<domain-name>.Str,
+      $m<toplevel-domain>.Str
+    ];
+  }
+
+  #-----------------------------------------------------------------------------
   method host-port ( Match $m ) {
     my $h;
     if ?$m<host> {
@@ -486,8 +495,6 @@ my $uri-actions = class {
         last;
       }
     }
-
-note "$?LINE $h, $p: $!uri-type";
 
     $!host-ports.push: %( host => $h.lc, port => $p) unless $found-hp;
   }
@@ -537,73 +544,40 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
 
     # Process hosts and ports
     given $actions.host-ports.elems {
+      # No host-port action called above -> no hosts detected, only an fqdn
+      # when DNS SRV polling is requested.
       when 0 {
-        return fatal-message(
-          "You must define a FQDN when polling for DNS SRV records"
-        ) if $!srv-polling;
+        if $!srv-polling {
+          self.get-srv-hosts($actions);
+        }
 
-        $!servers.push: %( :host<localhost>, :port(27017));
+        # No hosts found and no polling; take a default host and port
+        else {
+          $!servers.push: %( :host<localhost>, :port(27017));
+        }
       }
 
       when 1 {
         my $hp = $actions.host-ports[0];
-        return fatal-message(
-          "You may not define a port number when polling for DNS SRV records"
-        ) if $!srv-polling and $hp<port>.Int > 0;
+#        return fatal-message(
+#          "You may not define a port number when polling for DNS SRV records"
+#        ) if $!srv-polling and $hp<port>.Int > 0;
 
-        if $!srv-polling {
-          # Inject SRV records
-          my Str $srv-service-name = $!options<srvServiceName> // 'mongodb';
+#        if $!srv-polling {
+#        }
 
-          # Check for nameservers
-          my Str $nameserver;
-          for < 127.0.0.54
-                8.8.8.8 8.8.4.4
-                208.67.222.222 208.67.220.220
-                1.1.1.1 1.0.0.1
-              > -> $host {
-
-            my $search = start {
-              try {
-                my IO::Socket::INET $srv .= new( :$host, :port(53));
-                $srv.close if ?$srv;
-              };
-            }
-
-            my $timeout = Promise.in(2).then({
-              say 'Timeout after 2 seconds';
-              $search.break;
-            });
-
-            await Promise.anyof( $timeout, $search);
-note "sts $timeout.status(), $search.status()";
-            if $search.status eq 'Kept' {
-              $nameserver = $host;
-              last;
-            }
-          }
-
-          my Net::DNS $resolver;
-          my @srv-hosts;
-          $resolver .= new( $nameserver, IO::Socket::INET);
-          @srv-hosts = $resolver.lookup(
-            'srv', "$srv-service-name._tcp.$hp<host>"
-          );
-
-        }
-
-        else {
+#        else {
           $hp<port> = 27017 if $hp<port> == -1;
           $!servers.push: $hp;
-        }
+#        }
 #        $key-string ~= "$hp<host>:$hp<port>";
       }
 
       #when > 1 {
       default {
-        return fatal-message(
-          "Cannot provide multiple FQDN if you want DNS SRV record polling"
-        ) if $!srv-polling;
+#        return fatal-message(
+#          "Cannot provide multiple FQDN if you want DNS SRV record polling"
+#        ) if $!srv-polling;
 
         for @($actions.host-ports) -> $hp {
           $hp<port> = 27017 if $hp<port> == -1;
@@ -704,6 +678,72 @@ note "sts $timeout.status(), $search.status()";
 }
 
 #-------------------------------------------------------------------------------
+method get-srv-hosts ( $actions ) {
+  my Array $fqdn = $actions.fqdn;
+
+  return fatal-message(
+    "You must define a single FQDN when polling for DNS SRV records"
+  ) unless ?$fqdn;
+
+
+  # Inject SRV records
+  my Str $srv-service-name = $!options<srvServiceName> // 'mongodb';
+
+  # Check for nameservers
+  my Str $nameserver;
+  for < 8.8.8.8 8.8.4.4
+        127.0.0.54
+        208.67.222.222 208.67.220.220
+        1.1.1.1 1.0.0.1
+      > -> $host {
+
+    my $search = start {
+      try {
+        my IO::Socket::INET $srv .= new( :$host, :port(53));
+        $srv.close if ?$srv;
+      };
+    }
+
+    my $timeout = Promise.in(2).then({  ; });
+
+    await Promise.anyof( $timeout, $search);
+    if $search.status eq 'Kept' {
+      $nameserver = $host;
+      last;
+    }
+
+    else {
+      try { $search.break; }
+    }
+  }
+
+  my Net::DNS $resolver;
+  my @srv-hosts;
+  $resolver .= new( $nameserver, IO::Socket::INET);
+
+  try {
+    @srv-hosts = $resolver.lookup( 'srv', "_$srv-service-name._tcp.$fqdn[0]");
+  }
+
+  return fatal-message(
+    "No servers found after search on domain '$fqdn[0]'"
+  ) unless ?@srv-hosts;
+
+  for @srv-hosts -> $srv-class {
+    my Str $domain = $srv-class.owner-name[2..*].join('.');
+    my Str $host = $srv-class.name.join('.');
+    return fatal-message(
+      "Found server '$host' must be in same domain '$fqdn[0]'"
+    ) unless $host ~~ m/ $domain $/;
+
+    $!servers.push: %(
+      :$host, :port($srv-class.port),
+      :prio($srv-class.priority), :weight($srv-class.weight)
+    );
+  }
+}
+
+#-------------------------------------------------------------------------------
 method clone-without-credential ( --> MongoDB::Uri ) {
 
   # get original uri string and remove username and password. this will
@@ -717,3 +757,4 @@ method clone-without-credential ( --> MongoDB::Uri ) {
   # create new uri object using the same client key.
   MongoDB::Uri.new( :$uri, :$!client-key);
 }
+
