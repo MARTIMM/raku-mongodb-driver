@@ -3,30 +3,35 @@ use v6.d;
 
 use Net::DNS;
 
+my Net::DNS $r .= new( '127.0.0.54', IO::Socket::INET);
+$r.lookup( 'A', 'giggle.com');
+
+
 my $nameserver;
 for < 8.8.8.8 8.8.4.4
       127.0.0.54
       208.67.222.222 208.67.220.220
       1.1.1.1 1.0.0.1
     > -> $host {
-  note "Try $host:53";
 
+  note "\nTry $host:53";
 
   my $search = start {
     try my IO::Socket::INET $srv .= new( :$host, :port(53));
     $srv.close if ?$srv;
   }
 
-  my $timeout = Promise.in(2).then({
-    say 'Timeout after 2 seconds';
-    $search.break;
-  });
+  my $timeout = Promise.in(1.4).then({ ; });
 
   await Promise.anyof( $timeout, $search);
   note "sts $timeout.status(), $search.status()";
   if $search.status eq 'Kept' {
     $nameserver = $host;
     last;
+  }
+
+  else {
+    try { $search.break; }
   }
 }
 
@@ -41,3 +46,4 @@ note $?LINE;
 my @srv = $resolver.lookup( 'srv', '_xmpp-client._tcp.jabber.org');
 note "$?LINE; jabber servers: @srv.join(', ')";
 
+note "$?LINE; jabber servers: \n\n", @srv>>.gist.join("\n\n");
