@@ -10,7 +10,7 @@ sidebar_menu: design-sidebar
 This overview is meant to show what is implemented in the raku driver of the [document found at <u>mongodb specifications</u>](https://github.com/mongodb/specifications/blob/master/source/uri-options/uri-options.rst#list-of-specified-options).
 
 
-Below, the list refers to chapters from above document, sometime with notes added.
+Below, the list refers to chapters from above document, sometimes with notes added.
 
 * [x] Conflicting TLS options
 

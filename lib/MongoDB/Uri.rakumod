@@ -50,7 +50,6 @@ use MongoDB;
 use MongoDB::Authenticate::Credential;
 use OpenSSL::Digest;
 
-#TODO Add possibility of DNS Seedlist: https://docs.mongodb.com/manual/reference/connection-string/#dns-seedlist-connection-format
 #-------------------------------------------------------------------------------
 unit class MongoDB::Uri:auth<github:MARTIMM>;
 
