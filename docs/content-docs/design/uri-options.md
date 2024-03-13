@@ -12,15 +12,30 @@ This overview is meant to show what is implemented in the raku driver of the [do
 
 Below, the list refers to chapters from above document, sometimes with notes added.
 
-* [x] Conflicting TLS options
+## Conflicting TLS options
+  * [x] Both `tlsInsecure` and `tlsAllowInvalidCertificates` appear in the URI options.
 
-* [x] directConnection URI option with multiple seeds or SRV URI
+  * [x] Both `tlsInsecure` and `tlsAllowInvalidHostnames` appear in the URI options.
+
+  * [x] Both `tlsInsecure` and `tlsDisableOCSPEndpointCheck` appear in the URI options.
+
+  * [x] Both `tlsInsecure` and `tlsDisableCertificateRevocationCheck` appear in the URI options.
+
+  * [x] Both `tlsAllowInvalidCertificates` and `tlsDisableOCSPEndpointCheck` appear in the URI options.
+
+  * [x] Both `tlsAllowInvalidCertificates` and `tlsDisableCertificateRevocationCheck` appear in the URI options.
+
+  * [x] Both `tlsDisableOCSPEndpointCheck` and `tlsDisableCertificateRevocationCheck` appear in the URI options.
+
+  * [ ] All instances of tls and ssl in the URI options do not have the same value. If all instances of tls and ssl have 
+
+* [x] `directConnection` URI option with multiple seeds or SRV URI
 
 
 
 Following sections are described in other documents.
 
-* srvServiceName and srvMaxHosts URI options
+* `srvServiceName` and `srvMaxHosts` URI options
 
 * Load Balancer Mode
 

@@ -12,12 +12,15 @@ This overview is meant to show what is implemented in the raku driver of the [do
 
 Below, the list refers to chapters from above document, sometimes with notes added.
 
-* Connection String Format.
+## Connection String Format.
   * [x] The URI format to start DNS SRV records search ia `mongodb+srv://{hostname}.{domainname}/{options}`. The Raku driver has made the hostname part optional since there are declaration of records found on the internet only using domain names.
 
-* MongoClient Configuration
+## MongoClient Configuration
   * [ ] `srvMaxHosts` option.
   * [x] `srvServiceName` option.
 
-* Validation
-  * [ ] 
+## Validation
+  * [x] 'mongodb:// … ?srvMaxHosts= …'
+  * [x] 'mongodb:// … ?srvServiceName= …'
+  * [x] 'mongodb+srv:// … ?replicaSet= …'
+  * [x] 'mongodb+srv:// … ?loadBalanced= …'
