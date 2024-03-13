@@ -5,10 +5,13 @@
   bar_menu:
   - title: "Design"
     url: "/content-docs/design/design.html"
-  - title: "Developers Specs on Github"
-    url: "/content-docs/design/mongodb-specs.html"
 
 - bar_title: "BSON"
   bar_menu:
   - title: "Specification"
     url: "/content-docs/design/bson-spec.html"
+
+- bar_title: "Developers Specs"
+  bar_menu:
+  - title: "URI Options"
+    url: "/content-docs/design/uri-options.html"
