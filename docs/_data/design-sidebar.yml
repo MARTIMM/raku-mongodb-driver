@@ -13,5 +13,7 @@
 
 - bar_title: "Developers Specs"
   bar_menu:
+  - title: "DNS Seedlist"
+    url: "/content-docs/design/dns-seedlist.html"
   - title: "URI Options"
     url: "/content-docs/design/uri-options.html"
