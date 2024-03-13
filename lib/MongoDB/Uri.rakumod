@@ -367,6 +367,18 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
     ) if $!options<directConnection>:exists and ?$!options<directConnection> and
       $!servers.elems > 1;
 
+    return fatal-message(
+      "Option srvServiceName can not be used on simple mongdb:://… URI"
+    ) if $!options<srvServiceName>:exists and not $!srv-polling;
+    return fatal-message(
+      "Option srvMaxHosts can not be used on simple mongdb:://… URI"
+    ) if $!options<srvMaxHosts>:exists and not $!srv-polling;
+    return fatal-message(
+      "Option replicaSet can not be used on simple mongdb+srv:://… URI"
+    ) if $!options<replicaSet>:exists and $!srv-polling;
+    return fatal-message(
+      "Option loadBalanced can not be used on simple mongdb+srv:://… URI"
+    ) if $!options<loadBalanced>:exists and $!srv-polling;
 
     # Set defaults for some options or convert them to the proper type
     $!options<localThresholdMS> //= MongoDB::C-LOCALTHRESHOLDMS.Int;
