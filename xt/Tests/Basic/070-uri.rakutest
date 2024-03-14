@@ -199,7 +199,7 @@ subtest "Uri parsing errors", {
     X::MongoDB,
     "No servers found after search on domain h2.example.com",
     :message(
-      "Parsing error in url 'mongodb+srv://Dondersteen:w%40tD8jeDan@h2.example.com/users'"
+      "No servers found after search on domain 'h2.example.com'"
     );
 
 

@@ -27,7 +27,7 @@ Uri defines the servers and control options. The string is like a normal uri wit
   mongodb://pete:mypasswd@/mydb | same as above but login on database mydb
   mongodb:///?replicaSet=myreplset | localhost:27017 must belong to a replica set named myreplset
   mongodb://u1:pw1@nsa.us:666,my.datacenter.gov/nsa/?replicaSet=foryoureyesonly | User u1 with password pw1 logging in on database nsa on server nsa.us:666 and my.datacenter.gov:27017 which must both be member of a replica set named foryoureyesonly.
-  mongodb+srv://server.domain/auth-db?srvServiceName=mdb
+  mongodb\+srv://server.domain/auth-db?srvServiceName=mdb | Search servers using DNS SRV records
 
 =end table
 
@@ -273,6 +273,9 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
   trace-message("parse '$!uri'");
   my Match $m = $grammar.parse( $!uri, :$actions, :rule<URI>);
 
+  # Get the options
+  $!options = $actions.optns;
+
   # if parse is ok
   if ? $m {
     # Check protocol for DNS SRV record polling
@@ -323,8 +326,6 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
       }
     }
 
-    # Get the options
-    $!options = $actions.optns;
 #    $key-string ~= $actions.optns.kv.sort>>.fmt('%s').join;
 
     # Check for faulty TLS combinations
@@ -400,6 +401,11 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
       warn-message("wTimeoutMS is deprecated in favor of timeoutMS");
     }
 
+    # Implicitly turn on tls/ssl unless tls/ssl is explicitly turned off
+    if $!options<tls>:!exists or $!options<ssl>:!exists {
+      $!options<tls> = $!options<ssl> = True if $!srv-polling;
+    }
+
     # Set the authentication defaults
     my Str $auth-mechanism = $!options<authMechanism> // '';
     my Str $auth-mechanism-properties =
@@ -433,14 +439,12 @@ method get-srv-hosts ( $actions ) {
     "You must define a single FQDN when polling for DNS SRV records"
   ) unless ?$fqdn;
 
-
   # Inject SRV records
   my Str $srv-service-name = $!options<srvServiceName> // 'mongodb';
 
   # Check for nameservers
   my Str $nameserver;
-  for < 8.8.8.8 8.8.4.4
-        127.0.0.54
+  for < 127.0.0.54 8.8.8.8 8.8.4.4
         208.67.222.222 208.67.220.220
         1.1.1.1 1.0.0.1
       > -> $host {
@@ -477,17 +481,55 @@ method get-srv-hosts ( $actions ) {
     "No servers found after search on domain '$fqdn[0]'"
   ) unless ?@srv-hosts;
 
+  my $host-count = 0;
+  my $n = @srv-hosts.elems;
+  my $max-hosts = ($!options<srvMaxHosts> // 0).Int;
+  if $max-hosts > 0 and $max-hosts > $n {
+    # Fisher-Yates shuffle
+    loop ( my Int $i = 0; $i < @srv-hosts.elems - 1; $i++ ) {
+      my $j = ($n - $i).rand.Int + $i;
+      my $x = @srv-hosts[$j];
+      @srv-hosts[$j] = @srv-hosts[$i];
+      @srv-hosts[$i] = $x;
+    }
+  }
+
   for @srv-hosts -> $srv-class {
     my Str $domain = $srv-class.owner-name[2..*].join('.');
     my Str $host = $srv-class.name.join('.');
     return fatal-message(
-      "Found server '$host' must be in same domain '$fqdn[0]'"
+      "Found server '$host' must be in same domain '$domain'"
     ) unless $host ~~ m/ $domain $/;
 
-    $!servers.push: %(
-      :$host, :port($srv-class.port),
-      :prio($srv-class.priority), :weight($srv-class.weight)
-    );
+    # Priority and weigth are to be ignored
+    $!servers.push: %( :$host, :port($srv-class.port));
+    
+    last if ?$max-hosts and $host-count > $max-hosts;
+    $host-count++;
+  }
+
+  # Get additional TXT records to get a few options. Some are not accepted here.
+  my @txt-opts;
+  my $opt-str = '';
+  try {
+    @txt-opts = $resolver.lookup( 'srv', "_$srv-service-name._tcp.$fqdn[0]");
+  }
+
+  return fatal-message(
+    "Only one TXT record is accepted for this domain '$domain'"
+  ) unless @txt-opts.elems <= 1;
+  
+  # Split into indivual k=v parts
+  my @opts = "@txt-opts".split('&');
+  for @opts -> $o {
+    my ( $k, $v) = $o.split('=');
+
+    return fatal-message(
+      "Only options 'authSource', 'replicaSet' or 'loadBalanced' are supported TXT records"
+    ) unless unless $k ~~ any(<authSource replicaSet loadBalanced>);
+
+    # Connection string overrides TXT records
+    $!options{$k) = $v unless $!options{$k):exists;
   }
 }
 
