@@ -13,24 +13,27 @@ This overview is meant to show what is implemented in the raku driver of the [do
 Below, the list refers to chapters from above document, sometimes with notes added.
 
 ## Conflicting TLS options
-  * [x] Both `tlsInsecure` and `tlsAllowInvalidCertificates` appear in the URI options.
+  * [x] Both `tlsInsecure` and `tlsAllowInvalidCertificates` appear in the URI options. Fatal message; **tlsInsecure and tlsAllowInvalidCertificates cannot be used together**.
 
-  * [x] Both `tlsInsecure` and `tlsAllowInvalidHostnames` appear in the URI options.
+  * [x] Both `tlsInsecure` and `tlsAllowInvalidHostnames` appear in the URI options. Fatal message; **tlsInsecure and tlsAllowInvalidHostnames cannot be used together**.
 
-  * [x] Both `tlsInsecure` and `tlsDisableOCSPEndpointCheck` appear in the URI options.
+  * [x] Both `tlsInsecure` and `tlsDisableOCSPEndpointCheck` appear in the URI options. Fatal message; **tlsInsecure and tlsDisableOCSPEndpointCheck cannot be used together**.
 
-  * [x] Both `tlsInsecure` and `tlsDisableCertificateRevocationCheck` appear in the URI options.
+  * [x] Both `tlsInsecure` and `tlsDisableCertificateRevocationCheck` appear in the URI options. Fatal message; **tlsInsecure and tlsDisableCertificateRevocationCheck cannot be used together**.
 
-  * [x] Both `tlsAllowInvalidCertificates` and `tlsDisableOCSPEndpointCheck` appear in the URI options.
+  * [x] Both `tlsAllowInvalidCertificates` and `tlsDisableOCSPEndpointCheck` appear in the URI options. Fatal message; **tlsAllowInvalidCertificates and tlsDisableOCSPEndpointCheck cannot be used together**.
 
-  * [x] Both `tlsAllowInvalidCertificates` and `tlsDisableCertificateRevocationCheck` appear in the URI options.
+  * [x] Both `tlsAllowInvalidCertificates` and `tlsDisableCertificateRevocationCheck` appear in the URI options. Fatal message; **tlsAllowInvalidCertificates and tlsDisableCertificateRevocationCheck cannot be used together**.
 
-  * [x] Both `tlsDisableOCSPEndpointCheck` and `tlsDisableCertificateRevocationCheck` appear in the URI options.
+  * [x] Both `tlsDisableOCSPEndpointCheck` and `tlsDisableCertificateRevocationCheck` appear in the URI options. Fatal message; **tlsDisableOCSPEndpointCheck and tlsDisableCertificateRevocationCheck cannot be used together**.
 
   * [ ] All instances of tls and ssl in the URI options do not have the same value. If all instances of tls and ssl have 
 
-* [x] `directConnection` URI option with multiple seeds or SRV URI
 
+## Combinations with 'directConnection' option
+  * [x] Fatal message; **Cannot ask for a direct connection if you want DNS SRV record polling**.
+
+  * [x] Fatal message; **Cannot ask for a direct connection if you have multiple hosts specified**.
 
 
 Following sections are described in other documents.
@@ -105,7 +108,7 @@ Following sections are described in other documents.
 
 * [ ] `socketTimeoutMS`; This option is deprecated in favor of timeoutMS. This driver will translate it to timeoutMS.
 
-* [ ] `srvMaxHosts`; The maximum number of SRV results to randomly select when initially populating the seedlist or, during SRV polling, adding new hosts to the topology.
+* [x] `srvMaxHosts`; The maximum number of SRV results to randomly select when initially populating the seedlist or, during SRV polling, adding new hosts to the topology.
 
 * [x] `srvServiceName`;	a valid SRV service name according to RFC 6335 	"mongodb" 	no 	the service name to use for SRV lookup in initial DNS seedlist discovery and SRV polling
 
