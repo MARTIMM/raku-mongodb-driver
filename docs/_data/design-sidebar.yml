@@ -11,7 +11,7 @@
   - title: "Specification"
     url: "/content-docs/design/bson-spec.html"
 
-- bar_title: "Developers Specs"
+- bar_title: "Developer Specs"
   bar_menu:
   - title: "DNS Seedlist"
     url: "/content-docs/design/dns-seedlist.html"
