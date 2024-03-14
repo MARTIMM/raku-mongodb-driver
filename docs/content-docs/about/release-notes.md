@@ -12,7 +12,7 @@ See [semantic versioning](http://semver.org/). Please note point 4. on that page
 #  * Looking at SSL/TLS.
 
 #### 2024-03-10 0.44.3
-  * Process the DNS SRV from the URI.
+  * Process the DNS SRV from the URI. Needed to change the parsing process and getting the servers from the SRV records. Its wait and priority values are also gathered for later processing.
   * Add tests for the `mongodb+srv://` URI.
   * Start documenting the level of adhering the software to the designer specs of MongoDB found on Github.
 
