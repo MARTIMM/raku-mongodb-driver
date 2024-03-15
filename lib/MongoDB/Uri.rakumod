@@ -456,7 +456,7 @@ method get-srv-hosts ( $actions ) {
       };
     }
 
-    my $timeout = Promise.in(2).then({  ; });
+    my $timeout = Promise.in(2).then({ ; });
 
     await Promise.anyof( $timeout, $search);
     if $search.status eq 'Kept' {
