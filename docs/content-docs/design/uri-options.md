@@ -50,11 +50,11 @@ Following sections are described in other documents.
 
 * [ ] `appname`; Passed into the server in the client metadata as part of the connection handshake.
 
-* [ ] `authMechanism`; The authentication mechanism method to use for connection to the server
+* [x] `authMechanism`; The authentication mechanism method to use for connection to the server
 
-* [ ] `authMechanismProperties`; Additional options provided for authentication (e.g. to enable hostname canonicalization for GSSAPI).
+* [x] `authMechanismProperties`; Additional options provided for authentication (e.g. to enable hostname canonicalization for GSSAPI).
 
-* [ ] `authSource`; The database that connections should authenticate against.
+* [x] `authSource`; The database that connections should authenticate against.
 
 * [ ] `compressors`; The list of allowed compression types for wire protocol messages sent or received from the server.
 
@@ -112,11 +112,11 @@ Following sections are described in other documents.
 
 * [x] `srvServiceName`;	a valid SRV service name according to RFC 6335 	"mongodb" 	no 	the service name to use for SRV lookup in initial DNS seedlist discovery and SRV polling
 
-* [ ] `ssl`; alias of "tls"; required to ensure that Atlas connection strings continue to work
+* [x] `ssl`; alias of "tls"; required to ensure that Atlas connection strings continue to work
 
 * [ ] `timeoutMS`; Time limit for the full execution of an operation
 
-* [ ] `tls`; Whether or not to require TLS for connections to the server
+* [x] `tls`; Whether or not to require TLS for connections to the server
 
 * [ ] `tlsAllowInvalidCertificates`; Specifies whether or not the driver should error when the server’s TLS certificate is invalid
 

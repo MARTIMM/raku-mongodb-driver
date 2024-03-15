@@ -19,8 +19,10 @@ Below, the list refers to chapters from above document, sometimes with notes add
 
 ## MongoClient Configuration
   * [ ] `srvMaxHosts` option.
+
   * [x] `srvServiceName` option.
 
+  * [x] When 'mongodb+srv:// …' protocol is used, the TLS option is turned on unless tls is turned off explicitly using the `tls` option.
 
 ## Validation
   * [x] 'mongodb:// … ?srvMaxHosts= …'. Fatal message; **Option srvMaxHosts can not be used on simple mongdb:://… URI**.
@@ -38,7 +40,8 @@ Below, the list refers to chapters from above document, sometimes with notes add
 
 * [x] It is an error to specify more than one host name. Fatal message; **Parsing error in url '\<URI>'**.
 
-* [ ] A driver MUST verify that in addition to the `hostname`, the `domainname` consists of at least two parts. This driver made the `hostname` optional so the full URI does not have to be devided into at least three parts. The decision is made because the SRV records allow for a two part domain description.
+* [ ] A driver MUST verify that in addition to the `hostname`, the `domainname` consists of at least two parts. This driver made the `hostname` optional so the full URI does not have to be divided into at least three parts. The decision is made because the SRV records allow for a two part domain description. See also [here](https://support.dnsimple.com/articles/srv-record/) and [here](https://en.wikipedia.org/wiki/SRV_record).
+
 
 ## Querying DNS
 
