@@ -81,7 +81,7 @@ The `xt` directory is used for the other tests. These are not run when installin
   * Stop server
   * Cleanup database
   * Examine log file
-  * Display results of tests, the test programs run and a list of used `run-command()` calls.
+  * Display results of tests, the test programs run and show a list of used `run-command()` calls at the end.
 
 
 # Conclusion
