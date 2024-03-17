@@ -170,25 +170,27 @@ class Wrapper:auth<github:MARTIMM> {
     my Str() $port;
     if $start {
       $port = self!find-next-free-port(
-        $!cfg<server>{$server}<port>.Int // 27012
+#        $!cfg<server>{$server}<port>.Int // 27012
+        ($!cfg{$server}<port> // 27012).Int 
       );
     }
 
     else {
-      # Get generated port number from config and return
+      # Get port number from generated server config and return
       my Hash $h = load-yaml("$data-path/server-config.conf".IO.slurp);
       $port = $h<net><port>;
       return $port;
     }
 
-    # Initialize with data which are almost always the same
+#`{{
+    # Initialize with data which are almost always the same$
     my Hash $server-config = %(
       systemLog => %(
         :destination<file>,
         :path("$data-path/mdb.log"),
         :logAppend,
-  #      :logRotate<1>,
-        component => %(),
+#        :logRotate<1>,
+        :component(%()),
       ),
 
       storage => %(
@@ -199,12 +201,53 @@ class Wrapper:auth<github:MARTIMM> {
       net => %(
         :ipv6(? $!cfg<server>{$server}<ipv6>),
         :bindIp($!cfg<server>{$server}<bindIp> // 'localhost'),
-        :bindIpAll(? $!cfg<server>{$server}<bindIpAll>),
+#        :bindIpAll(? $!cfg<server>{$server}<bindIpAll>),
         :$port,
       ),
     );
+}}
+    my Hash $server-config = $!cfg<default-server>;
+#note "$?LINE $server-config.gist()";
+    sub merge-server ( Hash $to, Hash $from ) {
+      for $from.keys -> $fk {
+#note "$?LINE $fk";
+        if $to{$fk}:exists {
+          if $from{$fk} ~~ Hash {
+            merge-server( $to{$fk}, $from{$fk});
+          }
 
-    $server-config<processManagement><fork> = $!cfg<fork>;
+          elsif $from{$fk}.defined {
+            $to{$fk} = $from{$fk};
+          }
+        }
+
+        else {
+          $to{$fk} = $from{$fk};
+        }
+      }
+    }
+#note "$?LINE $!cfg{$server}.gist()";
+    my $wrapper-values = %(
+      systemLog => %(
+        :destination<file>,
+        :path("$data-path/mdb.log"),
+        :logAppend,
+#        :logRotate<1>,
+        :component(%()),
+      ),
+
+      storage => %(
+        :dbPath("$data-path/db"),
+        journal => %(:!enabled,),
+      ),
+    );
+
+    merge-server( $server-config, $wrapper-values);
+    merge-server( $server-config, $!cfg{$server});
+
+#note "$?LINE $server-config.gist()";
+
+#    $server-config<processManagement><fork> = $!cfg<fork>;
 
     # Add log verbosity levels
     my Hash $component = $server-config<systemLog><component>;
@@ -222,6 +265,8 @@ class Wrapper:auth<github:MARTIMM> {
       $component<replication><election><verbosity> = 2 if $version > v4.0.18;
       $component<replication><initialSync><verbosity> = 2 if $version > v4.0.18;
     }
+
+note "$?LINE $server-config.gist()";
 
     # Remove some yaml thingies and save
     my Str $scfg = save-yaml($server-config);
