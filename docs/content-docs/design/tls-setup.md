@@ -26,12 +26,69 @@ Take something of 2048 bits. RSA can handle that but is not its default.
 #### Passphrase
 This is optional.
 
+## Example using RSA
+
+### Generate key
+Generate an RSA key. The private key is stored in the PEM format.
 ```
 > openssl genrsa -aes128 -out mdb.key 2048
 Enter PEM pass phrase:testserver
 Verifying - Enter PEM pass phrase:testserver
 ```
 
+### Public key
+Get the public part of the key.
+```
+> openssl rsa -in mdb.key -pubout -out mdb-public.key
+Enter pass phrase for mdb.key:testserver
+writing RSA key
+```
+
+### Signing request
+Create a Certificate Signing Request (CSR)
+```
+> openssl req -new -key mdb.key -out mdb.csr
+…
+```
+
+### Config file
+
+You can also put all data into a config file, say `mdb.cfg`
+```
+[req]
+prompt = no
+distinguished_name = dn
+req_extensions = ext
+input_password = testserver
+
+[dn]
+CN = github.martimm.io
+emailAddress = mt1957@gmail.com
+O = Raku Developer Corp
+ST = Noord-Holland
+L = Haarlem
+C = NL
+
+[ext]
+subjectAltName = DNS:github.martimm.io,DNS:martimm.io
+```
+and then run
+```
+> openssl req -new -config mdb.cnf -key mdb.key -out mdb.csr
+
+### Self signing
+If you’re installing a TLS server for your own use, you probably don’t want to go to a CA for a publicly trusted certificate. It’s much easier to just use a self-signed certificate.
+Generate a certificate that lasts for 10 years.
+```
+> openssl x509 -req -days 3650 -in mdb.csr -signkey mdb.key -out mdb.crt
+```
+or with file which uses the `req_extensions` section.
+```
+> openssl x509 -req -days 3650 -in mdb.csr -signkey mdb.key -out mdb.crt -extfile mdb.cnf
+```
+```
+
+---
 ```
 openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem
 
