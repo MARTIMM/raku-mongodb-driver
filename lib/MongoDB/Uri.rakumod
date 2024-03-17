@@ -516,7 +516,7 @@ method get-srv-hosts ( $actions ) {
   }
 
   return fatal-message(
-    "Only one TXT record is accepted for this domain '$domain'"
+    "Only one TXT record is accepted for this domain '$fqdn[0]'"
   ) unless @txt-opts.elems <= 1;
   
   # Split into indivual k=v parts
@@ -526,10 +526,10 @@ method get-srv-hosts ( $actions ) {
 
     return fatal-message(
       "Only options 'authSource', 'replicaSet' or 'loadBalanced' are supported TXT records"
-    ) unless unless $k ~~ any(<authSource replicaSet loadBalanced>);
+    ) unless $k ~~ any(<authSource replicaSet loadBalanced>);
 
     # Connection string overrides TXT records
-    $!options{$k) = $v unless $!options{$k):exists;
+    $!options{$k} = $v unless $!options{$k}:exists;
   }
 }
 
