@@ -17,4 +17,5 @@ Gemfile.lock
 **/vendor/*
 **/_site
 xt/TestServers/*
+!xt/TestServers/certificates
 *.desktop
