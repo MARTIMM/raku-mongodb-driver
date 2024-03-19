@@ -75,17 +75,23 @@ subjectAltName = DNS:github.martimm.io,DNS:martimm.io
 and then run
 ```
 > openssl req -new -config mdb.cnf -key mdb.key -out mdb.csr
+```
 
 ### Self signing
 If you’re installing a TLS server for your own use, you probably don’t want to go to a CA for a publicly trusted certificate. It’s much easier to just use a self-signed certificate.
-Generate a certificate that lasts for 10 years.
+Generate a certificate that lasts for 100 years (not a wise decision!).
 ```
-> openssl x509 -req -days 3650 -in mdb.csr -signkey mdb.key -out mdb.crt
+> openssl x509 -req -days 36500 -in mdb.csr -signkey mdb.key -out mdb.crt
 ```
 or with file which uses the `req_extensions` section.
 ```
-> openssl x509 -req -days 3650 -in mdb.csr -signkey mdb.key -out mdb.crt -extfile mdb.cnf
+> openssl x509 -req -days 36500 -in mdb.csr -signkey mdb.key -out mdb.crt -extfile mdb.cnf
 ```
+
+If you are generating a self signed cert, you can do both the key and cert in one command like so:
+
+```
+> openssl req -config mdb.cnf -newkey rsa:2048 -nodes -new -x509 -days 36500 -keyout server-key.pem -out server-cert.pem
 ```
 
 ---
@@ -98,6 +104,27 @@ openssl x509 -req -sha256 -days 365 -in snakeoil.csr -signkey snakeoil.key -out 
 openssl req -new -x509 -days 999 -nodes -out apache.pem -keyout apache.pem
 ```
 
+---
+# try again
+```
+openssl genrsa -out mdb-ca.key 4096
+openssl req -new -x509 -days 36500 -key mdb-ca.key -out mdb-ca.crt -config mdb.cnf -section req-base
+
+openssl genrsa -out mdb-ia.key 4096
+openssl req -new -key mdb-ia.key -out mdb-ia.csr -config mdb.cnf
+openssl x509 -sha256 -req -days 36500 -in mdb-ia.csr -CA mdb-ca.crt -CAkey mdb-ca.key -set_serial 01 -out mdb-ia.crt -extfile mdb.cnf -extensions v3_ca
+cat mdb-ia.crt mdb-ca.crt > mdb.pem
+
+
+
+openssl genrsa -out mdb-server1.key 4096
+openssl req -new -key mdb-server1.key -out mdb-server1.csr -config mdb.cnf -section req_server
+openssl x509 -sha256 -req -days 36500 -in mdb-server1.csr -CA mdb-ia.crt -CAkey mdb-server1.key -CAcreateserial -out mdb-server1.crt -extfile mdb.cnf -extensions v3_req_server
+
+
+
+```
+---
 ## Server settings
 
 ### Set Up mongod and mongos with TLS/SSL Certificate and Key
