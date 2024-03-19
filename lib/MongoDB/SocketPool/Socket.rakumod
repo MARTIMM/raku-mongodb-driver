@@ -22,10 +22,19 @@ use BSON::Document;
 use Semaphore::ReadersWriters;
 use Auth::SCRAM;
 
+use IO::Socket::Async::SSL;
+
 #-------------------------------------------------------------------------------
 unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
 
-has IO::Socket::INET $.socket;
+# $!socket can be one of IO::Socket::INET  or IO::Socket::Async::SSL
+# Check $uri-obj.srv-polling to use one or the other
+has $.socket;
+
+# Following attributes are filled from URI options when srv-polling is True.
+has $!certificate-file;
+has $!private-key-file;
+
 has Bool $.is-open;
 has Instant $!time-last-used;
 has Semaphore::ReadersWriters $!rw-sem;
@@ -50,14 +59,23 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
     )
   );
 
-  try {
-    $!socket .= new( :$host, :$port);
-    CATCH {
-      default {
-        trace-message("open socket to $host, $port, PF-INET: " ~ .message);
+  if $uri-obj.srv-polling {
+    # Check if certificates are provided in URI
+    if $uri-obj.options<>:exists and $uri-obj.options<>:exists {
+      my %ssl = :$!certificate-file, :$!private-key-file;
+    }
+  }
 
-        # Retry for ipv6, throws when fails
-        $!socket .= new( :$host, :$port, :family(PF_INET6));
+  else {
+    try {
+      $!socket .= new( :$host, :$port);
+      CATCH {
+        default {
+          trace-message("open socket to $host, $port, PF-INET: " ~ .message);
+
+          # Retry for ipv6, throws when fails
+          $!socket .= new( :$host, :$port, :family(PF_INET6));
+        }
       }
     }
   }
