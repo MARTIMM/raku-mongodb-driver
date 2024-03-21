@@ -89,7 +89,7 @@ basicConstraints = CA:FALSE
 keyUsage = critical, digitalSignature, keyEncipherment
 nsComment = "OpenSSL Generated Certificate for TESTING only.  NOT FOR PRODUCTION USE."
 extendedKeyUsage = serverAuth, clientAuth
-subjectAltName = DNS:locahost.localdomain
+subjectAltName = DNS:localhost.localdomain,DNS:localhost,IP:127.0.0.1,IP:100.64.100.6,IP:192.168.178.129
 
 
 
