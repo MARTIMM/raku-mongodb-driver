@@ -59,22 +59,38 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
     )
   );
 
-  if $uri-obj.srv-polling {
+  if ?$uri-obj.options<tls> {
     # Check if certificates are provided in URI
-    if $uri-obj.options<>:exists and $uri-obj.options<>:exists {
-      my %ssl = :$!certificate-file, :$!private-key-file;
-    }
+#    if $uri-obj.options<tlsCAFile>:exists and
+#       $uri-obj.options<tlsCertificateKeyFile>:exists {
+
+      $!certificate-file = $uri-obj.options<tlsCAFile>;
+      $!private-key-file = $uri-obj.options<tlsCertificateKeyFile>;
+      my Bool $insecure = (
+        $uri-obj.options<tlsAllowInvalidCertificates>.Bool or
+        $uri-obj.options<tlsAllowInvalidHostnames>.Bool or
+        $uri-obj.options<tlsInsecure>.Bool
+      );
+note "$?LINE $insecure";
+      $!socket = await IO::Socket::Async::SSL.connect(
+        $host, $port,
+        :certificate-file($uri-obj.options<tlsCAFile>),
+        :private-key-file($uri-obj.options<tlsCertificateKeyFile>)
+          :$!certificate-file, :$!private-key-file, :$insecure
+          #:ca-file($uri-obj.options<tlsCAFile>)
+      );
+#    }
   }
 
   else {
     try {
-      $!socket .= new( :$host, :$port);
+      $!socket = IO::Socket::INET.new( :$host, :$port);
       CATCH {
         default {
           trace-message("open socket to $host, $port, PF-INET: " ~ .message);
 
           # Retry for ipv6, throws when fails
-          $!socket .= new( :$host, :$port, :family(PF_INET6));
+          $!socket = IO::Socket::INET.new( :$host, :$port, :family(PF_INET6));
         }
       }
     }
@@ -213,7 +229,7 @@ method !scram-authenticate (
     :name($credential.auth-source), :uri-obj($uo)
   );
 
-note "X: $host, $port, $sha-type";
+note "$?LINE: $host, $port, $sha-type";
 
   my MongoDB::Authenticate::Scram $client-object .= new(
     :$database, :$sha-type
@@ -324,7 +340,23 @@ method receive-check ( int $nbr-bytes --> Buf ) {
   my $s = $!rw-sem.reader( 'socket', {$!socket});
   fatal-message("socket $!sock-id is closed") unless $s.defined;
 
-  my Buf $bytes = $s.read($nbr-bytes);
+  my Buf $bytes;
+  if $s ~~ IO::Socket::Async::SSL {
+note "$?LINE";
+    react {
+note "$?LINE";
+      whenever $s {
+note "$?LINE";
+        $bytes = $_;
+note "$?LINE, $bytes.gist()";
+      }
+    }
+  }
+
+  else {
+    $bytes = $s.read($nbr-bytes);
+  }
+
   if $bytes.elems == 0 {
     # No data, try again
     $bytes = $s.receive($nbr-bytes);
