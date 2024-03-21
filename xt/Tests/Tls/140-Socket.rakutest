@@ -1,0 +1,80 @@
+use Test;
+
+use BSON;
+use BSON::Document;
+
+use MongoDB;
+use MongoDB::Client;
+use MongoDB::Database;
+use MongoDB::Header;
+use MongoDB::SocketPool::Socket;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+#note "args: $log-path, $version, @server-ports";
+
+#-------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+#set-filter(|<ObserverEmitter Timer Socket>);
+
+info-message("Test $?FILE start");
+
+#-------------------------------------------------------------------------------
+my Str $cdir = $*CWD ~ '/xt/TestServers/certificates';
+my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$cdir/b/test-ca.pem\&tlsCertificateKeyFile=$cdir/c/test-client.pem\&tlsInsecure=true";
+#my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$cdir/b/test-ca.pem\&tlsCertificateKeyFile=$cdir/trust-store/cacert-2024-03-11.pem";
+my MongoDB::Client $client .= new(:$uri);
+my $uri-obj = $client.uri-obj;
+note "$?LINE $uri-obj.gist()";
+my Str $host = $uri-obj.servers[0]<host>;
+my Int $port = $uri-obj.servers[0]<port>.Int;
+my MongoDB::SocketPool::Socket $socket;
+my BSON::Document $monitor-command .= new: (isMaster => 1);
+
+#-------------------------------------------------------------------------------
+subtest "Socket creation", {
+  $socket .= new( :$host, :$port, :$uri-obj);
+note "$?LINE $socket.gist()";
+  isa-ok $socket, MongoDB::SocketPool::Socket, '.new( :host, :port, :uri-obj)';
+  ok $socket.check-open, '.check-open()';
+}
+
+#-------------------------------------------------------------------------------
+subtest "Socket manipulations", {
+  my MongoDB::Header $header .= new;
+
+  ( my Buf $encoded-query, my Int $request-id) = $header.encode-query(
+    'admin.$cmd', $monitor-command, :number-to-return(1)
+  );
+
+  $socket.send($encoded-query);
+  my Buf $size-bytes = $socket.receive-check(4);
+  my Int $response-size = $size-bytes.read-int32( 0, LittleEndian) - 4;
+  my Buf $server-reply = $size-bytes ~ $socket.receive-check($response-size);
+  my BSON::Document $result = $header.decode-reply($server-reply);
+  is $result<number-returned>, 1, '.send() / .receive-check()';
+  is $result<documents>[0]<ok>, 1, 'document is ok';
+
+  $socket.close;
+  nok $socket.check-open, '.close()';
+
+#  my MongoDB::Client $client = $clients{$clients.keys[0]};
+#  my MongoDB::Database $database = $client.database('test');
+
+#note $result.perl;
+}
+
+#-------------------------------------------------------------------------------
+subtest "Authentication", {
+  ok True, 'TODO test authentication';
+}
+
+#-------------------------------------------------------------------------------
+info-message("Test $?FILE stop");
+done-testing();
