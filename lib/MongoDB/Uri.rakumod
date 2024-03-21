@@ -149,7 +149,7 @@ my $uri-grammar = grammar {
 
   token options { '?' <option> [ '&' <option> ]* }
 
-  token option { $<key>=<[\w\-\_]>+ '=' $<value>=<[\w\-\_\,\.]>+ }
+  token option { $<key>=<-[=]>+ '=' $<value>=<-[\&]>+ }
 }
 
 
@@ -381,6 +381,27 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
       "Option loadBalanced can not be used on simple mongdb+srv:://… URI"
     ) if $!options<loadBalanced>:exists and $!srv-polling;
 
+
+    # Implicitly turn on tls/ssl unless tls/ssl is explicitly turned off
+    if $!options<tls>:!exists or $!options<ssl>:!exists {
+      $!options<tls> = $!options<ssl> = True if $!srv-polling;
+    }
+    #TODO if not necessary, what certificates/keys are needed?
+    # Check some more tls options
+    if $!options<tls>:exists and $!options<tls> {
+      return fatal-message(
+        "When using tls, you must also specify tlsCAFile and tlsCertificateKeyFile"
+      ) if $!options<tlsCAFile>:!exists or $!options<tlsCertificateKeyFile>:!exists;
+
+      return fatal-message("File tlsCAFile does not exist")
+        unless $!options<tlsCAFile>.IO.r;
+
+      return fatal-message("File tlsCertificateKeyFile does not exist")
+        unless $!options<tlsCertificateKeyFile>.IO.r;
+    }
+
+
+
     # Set defaults for some options or convert them to the proper type
     $!options<localThresholdMS> //= MongoDB::C-LOCALTHRESHOLDMS.Int;
     $!options<serverSelectionTimeoutMS> //=
@@ -399,11 +420,6 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
     if $!options<wTimeoutMS>:exists {
       $!options<timeoutMS> = $!options<wTimeoutMS>;
       warn-message("wTimeoutMS is deprecated in favor of timeoutMS");
-    }
-
-    # Implicitly turn on tls/ssl unless tls/ssl is explicitly turned off
-    if $!options<tls>:!exists or $!options<ssl>:!exists {
-      $!options<tls> = $!options<ssl> = True if $!srv-polling;
     }
 
     # Set the authentication defaults
