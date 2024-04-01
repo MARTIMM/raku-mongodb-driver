@@ -24,13 +24,6 @@
 # mongod --sslMode requireSSL --sslPEMKeyFile test-server1.pem  --sslCAFile test-ca.pem
 
 #-------------------------------------------------------------------------------
-#  Fields not in a section are [req] defaults
-default_bits = 4096
-default_md = sha256
-prompt = no
-input_password = testserver
-days = 36500
-
 # For the CA policy
 [ policy_match ]
 countryName = match
@@ -40,71 +33,44 @@ organizationalUnitName = optional
 commonName = supplied
 emailAddress = optional
 
-[ req-dn ]
+[ req ]
+default_bits = 4096
+default_keyfile = myTestCertificateKey.pem    ## The default private key file name.
+default_md = sha256                           ## Use SHA-256 for Signatures
+distinguished_name = req_dn
+req_extensions = v3_req
+x509_extensions = v3_ca # The extensions to add to the self signed cert
+prompt = no
+input_password = testserver
+
+[ v3_req ]
+subjectKeyIdentifier  = hash
+basicConstraints = CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+nsComment = "OpenSSL Generated Certificate for TESTING only.  NOT FOR PRODUCTION USE."
+extendedKeyUsage  = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = localhost.localdomain
+DNS.2 = localhost
+IP.1 = 127.0.0.1
+
+[ req_dn ]
 countryName = NL
 stateOrProvinceName = Noord-Holland
 localityName = Haarlem
 organizationName = Developer Corp
 organizationalUnitName = Raku Department
-commonName = github.martimm.io
+commonName = root #github.martimm.io
 emailAddress = mt1957@gmail.com
 
-
-
-[ req-base ]
-#default_bits = 4096
-#default_keyfile = myTestCertificateKey.pem    ## The default private key file name.
-#default_keyfile = myTestServerCertificateKey.pem    ## The default private key file name.
-#default_md = sha256                           ## Use SHA-256 for Signatures
-distinguished_name = req-dn
-req_extensions = v3-req
-x509_extensions = v3-ca # The extensions to add to the self signed cert
-#prompt = no
-#input_password = testserver
-
-[ v3-req ]
-subjectKeyIdentifier  = hash
-basicConstraints = CA:FALSE
-keyUsage = critical, digitalSignature, keyEncipherment
-nsComment = "OpenSSL Generated Certificate for TESTING only.  NOT FOR PRODUCTION USE."
-extendedKeyUsage = serverAuth, clientAuth
-
-[ v3-ca ]
+[ v3_ca ]
 # Extensions for a typical CA
-subjectKeyIdentifier = hash
+subjectKeyIdentifier=hash
 basicConstraints = critical,CA:true
-authorityKeyIdentifier = keyid:always,issuer:always
+authorityKeyIdentifier=keyid:always,issuer:always
 
-
-
-# options -config mdb.cnf -section req-server
-[ req-server ]
-default_bits = 4096
-distinguished_name = req-dn
-req_extensions = v3-req-server
-
-[ v3-req-server ]
-subjectKeyIdentifier  = hash
-basicConstraints = CA:FALSE
-keyUsage = critical, digitalSignature, keyEncipherment
-nsComment = "OpenSSL Generated Certificate for TESTING only.  NOT FOR PRODUCTION USE."
-extendedKeyUsage = serverAuth, clientAuth
-subjectAltName = DNS:localhost.localdomain,DNS:localhost,IP:127.0.0.1,IP:100.64.100.6,IP:192.168.178.129
-
-
-
-# options -config mdb.cnf -section req-server
-[ req-client ]
-default_bits = 4096
-distinguished_name = req-dn
-req_extensions = v3-req-client
-
-[ v3-req-client ]
-subjectKeyIdentifier  = hash
-basicConstraints = CA:FALSE
-keyUsage = critical, digitalSignature, keyEncipherment
-nsComment = "OpenSSL Generated Certificate for TESTING only.  NOT FOR PRODUCTION USE."
-extendedKeyUsage = serverAuth, clientAuth
 
 
 
