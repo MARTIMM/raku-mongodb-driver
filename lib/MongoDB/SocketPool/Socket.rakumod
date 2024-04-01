@@ -22,7 +22,7 @@ use BSON::Document;
 use Semaphore::ReadersWriters;
 use Auth::SCRAM;
 
-use IO::Socket::Async::SSL;
+#use IO::Socket::Async::SSL;
 
 #-------------------------------------------------------------------------------
 unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
@@ -59,6 +59,7 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
     )
   );
 
+#`{{
   if ?$uri-obj.options<tls> {
     # Check if certificates are provided in URI
 #    if $uri-obj.options<tlsCAFile>:exists and
@@ -83,6 +84,7 @@ note "$?LINE $insecure";
   }
 
   else {
+}}
     try {
       $!socket = IO::Socket::INET.new( :$host, :$port);
       CATCH {
@@ -94,7 +96,7 @@ note "$?LINE $insecure";
         }
       }
     }
-  }
+#  }
 
   # we arrive here when there is no exception
   $!is-open = True;
@@ -341,6 +343,7 @@ method receive-check ( int $nbr-bytes --> Buf ) {
   fatal-message("socket $!sock-id is closed") unless $s.defined;
 
   my Buf $bytes;
+#`{{
   if $s ~~ IO::Socket::Async::SSL {
 note "$?LINE";
     react {
@@ -354,8 +357,9 @@ note "$?LINE, $bytes.gist()";
   }
 
   else {
+}}
     $bytes = $s.read($nbr-bytes);
-  }
+#  }
 
   if $bytes.elems == 0 {
     # No data, try again
