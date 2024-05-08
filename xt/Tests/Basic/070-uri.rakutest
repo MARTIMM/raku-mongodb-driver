@@ -16,25 +16,6 @@ my $handle = $log-path.IO.open( :mode<wo>, :append);
 add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
 #set-filter(|<ObserverEmitter Timer Socket>);
 
-#`{{
-#------------------------------------------------------------------------------
-my Str $uri;
-my MongoDB::Uri $u;
-
-$uri = 'mongodb+srv://Dondersteen:w%40tD8jeDan@h1.example.com/users';
-$u .= new(:$uri);
-
-$uri = 'mongodb+srv://h2.example.com';
-$u .= new(:$uri);
-
-$uri = 'mongodb+srv://jabber.org/?srvServiceName=xmpp-client';
-#$uri = 'mongodb+srv://icsub.domain.com?srvServiceName=informacast';
-$u .= new(:$uri);
-
-done-testing();
-=finish
-}}
-
 #------------------------------------------------------------------------------
 subtest "Uri parsing", {
 
