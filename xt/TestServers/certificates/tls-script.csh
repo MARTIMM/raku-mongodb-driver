@@ -3,6 +3,45 @@ set verbose
 #set echo
 
 
+#-------------------------------------------------------------------------------
+# https://stackoverflow.com/questions/35790287/self-signed-ssl-connection-using-pymongo#35967188
+
+set subj1 = "/C=NL/ST=Noord-Holland/O=DeveloperCorp/CN=root/emailAddress=mt1957@gmail.com"
+
+set subj2 = "/C=NL/ST=Noord-Holland/O=DeveloperCorp/CN=localhost/emailAddress=mt1957@gmail.com"
+
+set subj3 = "/C=NL/ST=Noord-Holland/O=DeveloperCorp/CN=client/emailAddress=mt1957@gmail.com"
+
+# mkdir ca srv cln
+
+cd certs
+cp ../mongodb-b.cnf mongodb-b.cnf
+cp ../mongodb-s.cnf mongodb-s.cnf
+cp ../mongodb-c.cnf mongodb-c.cnf
+
+openssl req -new -x509 -days 36500 -nodes -out ca.pem -subj $subj1
+echo "00" > file.srl
+#cat privkey.pem ca.pem > ca-cert.pem
+
+
+openssl genrsa -out server.key 4096
+openssl req -key server.key -new -out server.req -subj $subj2
+openssl x509 -req -days 36500 -in server.req -CA ca.pem -CAkey privkey.pem -CAserial file.srl -out server.crt
+cat server.key server.crt > server.pem
+openssl verify -CAfile ca.pem server.pem
+
+
+
+openssl genrsa -out client.key 4096
+openssl req -key client.key -new -out client.req -subj $subj3
+openssl x509 -req -in client.req -CA ca.pem -CAkey privkey.pem -CAserial file.srl -out client.crt -days 36500
+cat client.key client.crt > client.pem
+openssl verify -CAfile ca.pem client.pem
+
+exit
+
+
+
 
 #-------------------------------------------------------------------------------
 # https://www.mongodb.com/docs/manual/appendix/security/appendixA-openssl-ca/
@@ -11,6 +50,8 @@ set verbose
 
 cd certs
 cp ../mongodb-b.cnf mongodb-b.cnf
+cp ../mongodb-s.cnf mongodb-s.cnf
+cp ../mongodb-c.cnf mongodb-c.cnf
 
 # Generate a private key to generate valid certificates for the CA.
 openssl genrsa -out mongodb-test-ca.key 4096
@@ -36,7 +77,6 @@ cat mongodb-test-ia.crt mongodb-test-ca.crt > test-ca.pem
 # https://www.mongodb.com/docs/manual/appendix/security/appendixA-openssl-ca/
 # Appendix B: Generate the Test PEM File for Server
 #cd ../s
-cp ../mongodb-s.cnf mongodb-s.cnf
 
 openssl genrsa -out mongodb-test-server1.key 4096
 
@@ -52,7 +92,6 @@ cat mongodb-test-server1.crt mongodb-test-server1.key > test-server1.pem
 # https://www.mongodb.com/docs/manual/appendix/security/appendixC-openssl-client/
 # Appendix C: Generate the Test PEM File for Client
 #cd ../c
-cp ../mongodb-c.cnf mongodb-c.cnf
 
 openssl genrsa -out mongodb-test-client.key 4096
 
@@ -63,64 +102,7 @@ openssl x509 -sha256 -req -days 36500 -in mongodb-test-client.csr -CA mongodb-te
 cat mongodb-test-client.crt mongodb-test-client.key > test-client.pem
 
 
-
-
-
 exit
-
-
-
-# -config mongodb-tls.cnf -section req-base
-# -config mongodb-tls.cnf -section req-server
-# -config mongodb-tls.cnf -section req-client
-
-
-
-
-
-
-#-------------------------------------------------------------------------------
-# https://stackoverflow.com/questions/35790287/self-signed-ssl-connection-using-pymongo#35967188
-
-set subj1 = "/C=NL/ST=Noord-Holland/O=DeveloperCorp/CN=root/emailAddress=mt1957@gmail.com"
-
-set subj2 = "/C=NL/ST=Noord-Holland/O=DeveloperCorp/CN=localhost/emailAddress=mt1957@gmail.com"
-
-set subj3 = "/C=NL/ST=Noord-Holland/O=DeveloperCorp/CN=client/emailAddress=mt1957@gmail.com"
-
-# mkdir ca srv cln
-
-cd ca
-openssl req -out ca.pem -new -x509 -days 36500 -nodes -subj $subj1
-echo "00" > file.srl
-cat privkey.pem ca.pem > ca-k.pem
-
-cd ../srv
-openssl genrsa -out server.key 2048
-openssl req -key server.key -new -out server.req -subj $subj2
-openssl x509 -req -in server.req -CA ../ca/ca.pem -CAkey ../ca/privkey.pem -CAserial ../ca/file.srl -out server.crt -days 36500
-cat server.key server.crt > server.pem
-openssl verify -CAfile ../ca/ca.pem server.pem
-
-
-
-cd ../cln
-openssl genrsa -out client.key 2048
-openssl req -key client.key -new -out client.req -subj $subj3
-openssl x509 -req -in client.req -CA ../ca/ca.pem -CAkey ../ca/privkey.pem -CAserial ../ca/file.srl -out client.crt -days 36500
-cat client.key client.crt > client.pem
-openssl verify -CAfile ../ca/ca.pem client.pem
-
-cd ..
-
-exit
-
-
-
-
-
-
-
 
 
 
@@ -144,3 +126,21 @@ cat c/mongodb-client2-cert.key c/mongodb-client2-cert.crt > c/mongodb-client2.pe
 
 exit
 
+
+
+
+#-------------------------------------------------------------------------------
+cd certs
+cp ../mongodb-b.cnf mongodb-b.cnf
+cp ../mongodb-s.cnf mongodb-s.cnf
+cp ../mongodb-c.cnf mongodb-c.cnf
+
+
+openssl genpkey -algorithm RSA -out mongodb.key -pkeyopt rsa_keygen_bits:4096
+openssl req -new -key mongodb.key -nodes -out mongodb.csr -config mongodb-b.cnf
+openssl req -x509 -sha256 -days 36500 -key private.key -in mongodb.csr -out mongodb.crt
+openssl x509 -in mongodb.crt -text -noout
+
+
+
+exit

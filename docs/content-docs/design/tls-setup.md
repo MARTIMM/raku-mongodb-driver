@@ -95,6 +95,7 @@ If you are generating a self signed cert, you can do both the key and cert in on
 ```
 
 ---
+# -nodes is deprecated after 3.* use -noenc (=no encription)
 ```
 openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem
 
