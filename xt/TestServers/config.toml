@@ -1,0 +1,121 @@
+# Some notes
+# - Ports are generated, a starting point can be given.
+# - Defaults can be defined for all servers
+# - Keys are names of server
+
+#-------------------------------------------------------------------------------
+# Default server configuration as far as possible
+#[server]
+[server.net]
+  port: <int>
+  bindIp: <string>
+  bindIpAll: <boolean>
+  maxIncomingConnections: <int>
+  wireObjectCheck: <boolean>
+  ipv6: <boolean>
+
+[server.net.unixDomainSocket]
+  enabled: <boolean>
+  pathPrefix: <string>
+  filePermissions: <int>
+
+[server.net.tls]
+  certificateSelector: <string>
+  clusterCertificateSelector: <string>
+  mode: <string>
+  certificateKeyFile: <string>
+  certificateKeyFilePassword: <string>
+  clusterFile: <string>
+  clusterPassword: <string>
+  CAFile: <string>
+  clusterCAFile: <string>
+  CRLFile: <string>
+  allowConnectionsWithoutCertificates: <boolean>
+  allowInvalidCertificates: <boolean>
+  allowInvalidHostnames: <boolean>
+  disabledProtocols: <string>
+  FIPSMode: <boolean>
+  logVersions: <string>
+
+[server.net.tls].clusterAuthX509]
+  attributes: <string>
+  extensionValue: <string>
+
+[server.net.compression]
+  compressors: <string>
+
+[server.systemLog]
+  verbosity: <int>
+  quiet: <boolean>
+  traceAllExceptions: <boolean>
+  syslogFacility: <string>
+  path: <string>
+  logAppend: <boolean>
+  logRotate: <string>
+  destination: <string>
+  timeStampFormat: <string>
+
+[server.systemLog.component.accessControl]
+  verbosity: <int>
+
+[server.systemLog.component.command]
+  verbosity: <int>
+
+#  default:
+#    nojournal: true
+#    fork: true
+    # next is not for wiredtiger but for mmapv1
+    #  smallfiles: true
+    #  ipv6: true
+    #  quiet: true
+#  verbose: '=command=v:network=v'
+#    verbose: 'vv'
+    #  logappend: true
+
+  # use ss -tunl to find free port number
+  simple:
+    bindIp: 192.168.178.129
+    port: 65010
+
+  simple6:
+    # Need to do: 'expressvpn preferences set disable_ipv6 false'
+    bindIp: localhost6.localdomain6
+    ipv6: true
+    port: 65010
+
+  replica1:
+    port: 65011
+    oplogSize: 128
+    replSet: 'first_replicate'
+
+
+  replica2:
+    port: 65012
+    auth: true
+    oplogSize: 128
+    replSet: 'first_replicate'
+
+
+  replica3:
+    port: 65013
+    auth: true
+    oplogSize: 128
+    replSet: 'second_replicate'
+
+
+  tls1:
+    port: 65014
+#    auth: true
+    oplogSize: 128
+#    replSet: 'second_replicate'
+
+
+account:
+  default:
+    user: Dondersteen
+    pwd: w@tD8jeDan
+
+  replica2:
+    user: test_user
+    pwd: T3st-Us3r
+

@@ -2,15 +2,14 @@
 
 use NativeCall;
 
-use OpenSSL;
-use OpenSSL::SSL;
-
 use MongoDB::Header;
 use BSON::Document;
 
+use OpenSSL;
+use OpenSSL::SSL;
 use OpenSSL::NativeLib;
-use OpenSSL::Ctx;
-use OpenSSL::Stack;
+#use OpenSSL::Ctx;
+#use OpenSSL::Stack;
 #use OpenSSL::Bio;
 
 
@@ -23,6 +22,7 @@ sub BIO_new( OpenSSL::Bio::BIO_METHOD --> OpaquePointer )
 sub BIO_s_mem() returns OpenSSL::Bio::BIO_METHOD is native(&gen-lib) {*}
 }}
 
+#`{{
 sub SSL_get_verify_result(OpenSSL::SSL::SSL --> int32 )
   is native(&ssl-lib)
   {*}
@@ -34,6 +34,7 @@ sub SSL_CTX_set_cipher_list(OpenSSL::Ctx::SSL_CTX, Str) returns int32
 sub SSL_do_handshake ( OpenSSL::SSL::SSL --> int32 )
   is native(&ssl-lib)
   {*}
+}}
 
 sub SSL_use_PrivateKey_file( OpenSSL::SSL::SSL, Str, int32 --> int32 )
   is native(&ssl-lib)
@@ -43,6 +44,11 @@ sub SSL_use_certificate_file( OpenSSL::SSL::SSL, Str, int32 --> int32 )
   is native(&ssl-lib)
   {*}
 
+sub SSL_check_private_key( OpenSSL::SSL::SSL --> int32 )
+  is native(&ssl-lib)
+  {*}
+
+#`{{
 sub SSL_load_client_CA_file ( Str --> OpenSSL::Stack )
   is native(&ssl-lib)
   {*}
@@ -51,15 +57,12 @@ sub SSL_set_client_CA_list ( OpenSSL::SSL::SSL, OpenSSL::Stack )
   is native(&ssl-lib)
   {*}
 
-sub SSL_check_private_key( OpenSSL::SSL::SSL --> int32 )
-  is native(&ssl-lib)
-  {*}
-
 sub SSL_set1_host( OpenSSL::SSL::SSL, Str )
   is native(&ssl-lib)
   {*}
+}}
 
-
+#`{{
 #--[CTX]
 sub SSL_CTX_enable_ct( OpenSSL::Ctx::SSL_CTX, int32 )
   is native(&ssl-lib)
@@ -94,7 +97,6 @@ sub SSL_CTX_set_verify (
 ) is native(&ssl-lib)
   {*}
 
-#`{{
 sub SSL_CTX_get_client_CA_list ( OpenSSL::Ctx::SSL_CTX --> CArray[Pointer] )
   is native(&ssl-lib)
   {*}
@@ -131,6 +133,9 @@ shell "openssl x509 -noout -modulus -in '$ca-file' | openssl md5";
 shell "openssl rsa -noout -modulus -in '$privatekey-file' | openssl md5";
 note "$?LINE ", SSL_use_PrivateKey_file( $ssl.ssl, $privatekey-file, 1);
 note "$?LINE ", SSL_use_certificate_file( $ssl.ssl, $ca-file, 1);
+
+# Using .use-certificate-file() and .use-privatekey-file() only is not enough
+# We must use the the above two functions to get it right
 #note "$?LINE ", SSL_CTX_use_PrivateKey_file( $ssl.ctx, $privatekey-file, 1);
 #note "$?LINE ", SSL_CTX_use_certificate_file( $ssl.ctx, $ca-file, 1);
 

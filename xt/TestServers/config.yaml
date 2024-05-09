@@ -1,0 +1,92 @@
+# Some notes
+# - Ports are generated, a starting point can be given.
+# - Defaults can be defined for all servers
+# - Keys are names of server
+
+#verbose: 'command(2),network(2)'
+logappend: false
+fork: true
+
+default-server:
+  net: 
+    bindIp: localhost.localdomain
+    ipv6: false
+
+  processManagement: 
+    fork: true
+
+
+#server:
+#  default:
+#    nojournal: true
+#    fork: true
+    # next is not for wiredtiger but for mmapv1
+    #  smallfiles: true
+    #  ipv6: true
+    #  quiet: true
+#  verbose: '=command=v:network=v'
+#    verbose: 'vv'
+    #  logappend: true
+
+# use ss -tunl to find free port number
+simple:
+  net:
+#    bindIp: 192.168.178.129
+    port: 65010
+
+# Need to do: 'expressvpn preferences set disable_ipv6 false'
+simple6:
+  net:
+    bindIp: localhost6.localdomain6
+    bindIpAll: true
+    ipv6: true
+    port: 65011
+
+replica1:
+  net:
+    port: 65011
+#  oplogSize: 128
+#  replSet: 'first_replicate'
+
+
+replica2:
+  net:
+    port: 65012
+#  auth: true
+#  oplogSize: 128
+#  replSet: 'first_replicate'
+
+
+replica3:
+  net:
+    port: 65013
+#  auth: true
+#  oplogSize: 128
+#  replSet: 'second_replicate'
+
+
+tls:
+  net:
+    port: 65014
+    tls:
+      mode: requireTLS
+      certificateKeyFile: /home/marcel/Languages/Raku/Projects/raku-mongodb-driver/xt/TestServers/certificates/certs/server.pem
+      CAFile: /home/marcel/Languages/Raku/Projects/raku-mongodb-driver/xt/TestServers/certificates/certs/ca.pem
+#      allowInvalidCertificates: true
+#      allowInvalidHostnames: true
+
+#    auth: true
+#    replSet: 'second_replicate'
+#  oplogSize: 128
+
+
+#account:
+#  default:
+#    user: Dondersteen
+#    pwd: w@tD8jeDan
+#
+#  replica2:
+#    user: test_user
+#    pwd: T3st-Us3r
+
+
