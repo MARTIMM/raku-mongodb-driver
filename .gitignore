@@ -16,6 +16,6 @@ t/Appveyor/*
 Gemfile.lock
 **/vendor/*
 **/_site
-xt/TestServers/*
-!xt/TestServers/certificates
+xt/TestServers/ServerData/*
+xt/TestServers/ServerSoftware/*
 *.desktop
