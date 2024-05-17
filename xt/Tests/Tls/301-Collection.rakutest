@@ -1,0 +1,92 @@
+use lib 'lib';
+use Test;
+
+use MongoDB;
+use MongoDB::Client;
+use MongoDB::Database;
+use MongoDB::Collection;
+use BSON::Document;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $server-version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+
+#-------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
+
+info-message("Test $?FILE start");
+
+my BSON::Document $req;
+my BSON::Document $doc;
+
+# Get the key and certificates
+my Str $cdir = $*CWD ~ '/xt/TestServers/certificates/certs';
+my Str $ca-file = "$cdir/client.pem";
+my Str $privatekey-file = "$cdir/client.key";
+
+# Set URI using TLS
+my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$ca-file&tlsCertificateKeyFile=$$privatekey-file\&tlsInsecure=true";
+
+my MongoDB::Client $client .= new(:$uri);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
+my MongoDB::Collection $collection = $database.collection('cl1');
+
+#------------------------------------------------------------------------------
+subtest {
+  # Create collection and insert data in it!
+  $req .= new: (
+    insert => $collection.name,
+    documents => [
+      ( name => 'Jan Klaassen', code => 14),
+      ( name => 'Piet Hein',    code => 20),
+      ( name => 'Jan Hein',     code => 20)
+    ]
+  );
+  $doc = $database.run-command($req);
+
+  #----------------------------------------------------------------------------
+  $req .= new: (count => $collection.name);
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, 'Count request ok';
+  is $doc<n>, 3, 'Three documents in collection';
+
+  $req .= new: (
+    count => $collection.name,
+    query => (name => 'Piet Hein')
+  );
+  $doc = $database.run-command($req);
+  is $doc<n>, 1, 'One document found';
+
+  #----------------------------------------------------------------------------
+  $req .= new: (
+    distinct => $collection.name,
+    key => 'code'
+  );
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, 'Distinct request ok';
+
+  is-deeply $doc<values>.sort, ( 14, 20), 'Codes found are 14, 20';
+
+  $req .= new: (
+    distinct => $collection.name,
+    key => 'code',
+    query => (name => 'Piet Hein')
+  );
+  $doc = $database.run-command($req);
+  is-deeply $doc<values>, [20], 'Code found is 20';
+
+
+}, "simple collection operations";
+
+#------------------------------------------------------------------------------
+# Cleanup
+$database.run-command: (dropDatabase => 1,);
+$client.cleanup;
+done-testing();

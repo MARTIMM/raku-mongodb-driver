@@ -1,0 +1,216 @@
+use lib 'lib';
+use Test;
+
+use MongoDB;
+use MongoDB::Client;
+use MongoDB::Database;
+use BSON::Document;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $server-version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+
+#-------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
+
+info-message("Test $?FILE start");
+
+my BSON::Document $req;
+my BSON::Document $doc;
+
+# Get the key and certificates
+my Str $cdir = $*CWD ~ '/xt/TestServers/certificates/certs';
+my Str $ca-file = "$cdir/client.pem";
+my Str $privatekey-file = "$cdir/client.key";
+
+# Set URI using TLS
+my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$ca-file&tlsCertificateKeyFile=$$privatekey-file\&tlsInsecure=true";
+
+my MongoDB::Client $client .= new(:$uri);
+my MongoDB::Database $database = $client.database('test');
+my MongoDB::Database $db-admin = $client.database('admin');
+
+#`{{ Not needed but this is the way to do it
+$req .= new((
+  :serverStatus(1),
+  :activeIndexBuilds(0),
+  :asserts(0),
+  :batchedDeletes(0),
+  :bucketCatalog(0),
+  :catalogStats(0),
+  :connections(0),
+  :defaultRWConcern(0),
+  :electionMetrics(0),
+  :extra_info(0),
+  :flowControl(0),
+  :freeMonitoring(0),
+  :globalLock(0),
+  :hedgingMetrics(0),
+  :indexBulkBuilder(0),
+  :indexStats(0),
+  :latchAnalysis(0),
+  :locks(0),
+  :logicalSessionRecordCache(0),
+  :mem(0),
+  :metrics(0),
+  :mirroredReads(0),
+  :network(0),
+  :opLatencies(0),
+  :opReadConcernCounters(0),
+  :opWriteConcernCounters(0),
+  :opcounters(0),
+  :opcountersRepl(0),
+  :oplogTruncation(0),
+  :readConcernCounters(0),
+  :repl(0),
+  :scramCache(0),
+  :security(0),
+  :sharding(0),
+  :shardingStatistics(0),
+  :shardedIndexConsistency(0),
+  :storageEngine(0),
+  :tenantMigrations(0),
+  :tcmalloc(0),
+  :transactions(0),
+  :trafficRecording(0),
+  :transportSecurity(0),
+  :twoPhaseCommitCoordinator(0),
+  :watchdog(0),
+  :wiredTiger(0),
+  :writeBacksQueued(0),
+));
+
+$doc = $db-admin.run-command($req);
+info-message($doc);
+my Version $server-version = Version.new($doc<version>);
+}}
+
+# Drop database first then create new databases
+$req .= new: ( dropDatabase => 1 );
+$database.run-command($req);
+
+#-------------------------------------------------------------------------------
+subtest "Database, create collection, drop", {
+
+  isa-ok $database, 'MongoDB::Database';
+  is $database.name, 'test', 'Check database name';
+
+  # Create a collection explicitly. Try for a second time
+  $req .= new: (create => 'cl1');
+  $doc = $database.run-command($req);
+  is $doc<ok>, 1, 'Created collection cl1';
+
+  # Second try gets an error
+  $doc = $database.run-command($req);
+  is $doc<ok>, 0, 'Second collection cl1 not created';
+#info-message($doc);
+
+  if $server-version < v3.0.5 {
+    skip "No error code returned from server version $server-version", 1;
+  }
+
+  else {
+    is $doc<code>, 48, 'error code 48';
+  }
+}
+
+#-------------------------------------------------------------------------------
+subtest "Error checking", {
+  if $server-version >= v5.1.0 {
+    skip "getLastError removed from version $server-version", 1;
+  }
+
+  else {
+    $doc = $database.run-command: (getLastError => 1,);
+    is $doc<ok>, 1, 'No last errors';
+  }
+  
+  if $server-version >= v4.2.0 {
+    skip "getPrevError removed from version $server-version", 1;
+  }
+
+  else {
+    $doc = $database.run-command: (getPrevError => 1,);
+    is $doc<ok>, 1, 'No previous errors';
+  }
+
+  if $server-version >= v5.0.0 {
+    skip "resetError removed from version $server-version", 1;
+  }
+
+  else {
+    $doc = $database.run-command: (resetError => 1,);
+    is $doc<ok>, 1, 'Rest errors ok';
+  }
+}
+
+#-------------------------------------------------------------------------------
+subtest 'Database admin tests', {
+  is $db-admin.name, 'admin', 'Name admin database ok';
+  try {
+    $db-admin.collection('my-collection');
+
+    CATCH {
+      default {
+        my $m = .message;
+        $m ~~ s:g/\n+//;
+        like .message, /:s Cannot set collection name/, .message;
+      }
+    }
+  }
+}
+
+#-------------------------------------------------------------------------------
+subtest 'Database statistics server 1', {
+
+  $doc = $db-admin.run-command: (listDatabases => 1,);
+#say $doc.perl;
+  ok $doc<ok>.Bool, 'Run command ran ok';
+  ok $doc<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
+
+  my %db-names;
+  my Array $db-docs = $doc<databases>;
+  my $idx = 0;
+  for $db-docs[*] -> $d {
+    %db-names{$d<name>} = $idx++;
+  }
+
+  ok %db-names<test>:exists, 'test found';
+  ok !@($doc<databases>)[%db-names<test>]<empty>, 'Database test is not empty';
+}
+
+#-------------------------------------------------------------------------------
+subtest 'Drop a database', {
+
+  try {
+    $doc = $database.run-command: (dropDatabase => 1,);
+    is $doc<ok>, 1, 'Drop command went well';
+
+    $doc = $db-admin.run-command: (listDatabases => 1,);
+    my %db-names = %();
+    my $idx = 0;
+    my Array $db-docs = $doc<databases>;
+    for $db-docs[*] -> $d {
+      %db-names{$d<name>} = $idx++;
+    }
+
+    nok %db-names<test>:exists, 'test not found';
+
+    CATCH {
+      default {
+        .say;
+      }
+    }
+  }
+}
+
+#diag "Time spent: {now - $t0}";
+#-------------------------------------------------------------------------------
+info-message("Test $?FILE stop");
+done-testing;
