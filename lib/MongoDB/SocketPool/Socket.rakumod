@@ -13,6 +13,8 @@ Exceptions are thrown when operations on a socket fails.
 =end pod
 
 #-------------------------------------------------------------------------------
+use NativeCall;
+
 use MongoDB;
 use MongoDB::Authenticate::Credential;
 use MongoDB::Authenticate::Scram;
@@ -22,24 +24,52 @@ use BSON::Document;
 use Semaphore::ReadersWriters;
 use Auth::SCRAM;
 
-#use IO::Socket::Async::SSL;
+use OpenSSL;
+use OpenSSL::SSL;
+use OpenSSL::NativeLib;
+
+#use MongoDB::SocketPool::SocketIO;
+
+#-------------------------------------------------------------------------------
+sub SSL_use_PrivateKey_file( OpenSSL::SSL::SSL, Str, int32 --> int32 )
+  is native(&ssl-lib)
+  {*}
+
+sub SSL_use_certificate_file( OpenSSL::SSL::SSL, Str, int32 --> int32 )
+  is native(&ssl-lib)
+  {*}
+
+sub SSL_check_private_key( OpenSSL::SSL::SSL --> int32 )
+  is native(&ssl-lib)
+  {*}
 
 #-------------------------------------------------------------------------------
 unit class MongoDB::SocketPool::Socket:auth<github:MARTIMM>;
+#also does MongoDB::SocketPool::SocketIO;
 
-# $!socket can be one of IO::Socket::INET  or IO::Socket::Async::SSL
-# Check $uri-obj.srv-polling to use one or the other
-has $.socket;
+#has IO::Socket::INET $!socket;
 
-# Following attributes are filled from URI options when srv-polling is True.
-has $!certificate-file;
-has $!private-key-file;
+#has Bool $.is-open;
+#has Instant $!time-last-used;
+#has Semaphore::ReadersWriters $.rw-sem;
+
+my $sock-count = 0;
+#has Int $.sock-id;
+
+has Bool $!do-tls = False;
+
+# Following attributes are filled from URI options when tls is requested
+has $!certificate-file = '';
+has $!privatekey-file = '';
+
+has IO::Socket::INET $!socket;
+has OpenSSL $!ssl;
+
+has Hash $!options;
 
 has Bool $.is-open;
 has Instant $!time-last-used;
-has Semaphore::ReadersWriters $!rw-sem;
-
-my $sock-count = 0;
+has Semaphore::ReadersWriters $.rw-sem;
 has Int $.sock-id;
 
 #-------------------------------------------------------------------------------
@@ -59,44 +89,21 @@ submethod BUILD ( Str:D :$host, Int:D :$port, MongoDB::Uri :$uri-obj ) {
     )
   );
 
+  self.check-tls($uri-obj.options);
+  self.connect( $host, $port);
 #`{{
-  if ?$uri-obj.options<tls> {
-    # Check if certificates are provided in URI
-#    if $uri-obj.options<tlsCAFile>:exists and
-#       $uri-obj.options<tlsCertificateKeyFile>:exists {
+  try {
+    $!socket = IO::Socket::INET.new( :$host, :$port);
+    CATCH {
+      default {
+        trace-message("open socket to $host, $port, PF-INET: " ~ .message);
 
-      $!certificate-file = $uri-obj.options<tlsCAFile>;
-      $!private-key-file = $uri-obj.options<tlsCertificateKeyFile>;
-      my Bool $insecure = (
-        $uri-obj.options<tlsAllowInvalidCertificates>.Bool or
-        $uri-obj.options<tlsAllowInvalidHostnames>.Bool or
-        $uri-obj.options<tlsInsecure>.Bool
-      );
-note "$?LINE $insecure";
-      $!socket = await IO::Socket::Async::SSL.connect(
-        $host, $port,
-        :certificate-file($uri-obj.options<tlsCAFile>),
-        :private-key-file($uri-obj.options<tlsCertificateKeyFile>)
-          :$!certificate-file, :$!private-key-file, :$insecure
-          #:ca-file($uri-obj.options<tlsCAFile>)
-      );
-#    }
-  }
-
-  else {
-}}
-    try {
-      $!socket = IO::Socket::INET.new( :$host, :$port);
-      CATCH {
-        default {
-          trace-message("open socket to $host, $port, PF-INET: " ~ .message);
-
-          # Retry for ipv6, throws when fails
-          $!socket = IO::Socket::INET.new( :$host, :$port, :family(PF_INET6));
-        }
+        # Retry for ipv6, throws when fails
+        $!socket = IO::Socket::INET.new( :$host, :$port, :family(PF_INET6));
       }
     }
-#  }
+  }
+}}
 
   # we arrive here when there is no exception
   $!is-open = True;
@@ -282,6 +289,92 @@ note "$?LINE: $host, $port, $sha-type";
 }
 
 #-------------------------------------------------------------------------------
+method check-tls ( Hash $!options ) {
+  $!do-tls = True if ?$!options<tls>;
+
+  # initialize mutexes
+  $!rw-sem .= new;
+#    $!rw-sem.debug = True;
+
+  # protect $!socket and $!time-last-used. $!is-open is protected using 'socket'
+  $!rw-sem.add-mutex-names( <socket time>, :RWPatternType(C-RW-WRITERPRIO));
+
+#`{{
+    # Check if certificates are provided in URI
+#    if $!options<tlsCAFile>:exists and
+#       $!options<tlsCertificateKeyFile>:exists {
+
+      $!certificate-file = $!options<tlsCAFile>;
+      $!private-key-file = $!options<tlsCertificateKeyFile>;
+      my Bool $insecure = (
+        $!options<tlsAllowInvalidCertificates>.Bool or
+        $!options<tlsAllowInvalidHostnames>.Bool or
+        $!options<tlsInsecure>.Bool
+      );
+note "$?LINE insecure not available yet: $insecure";
+#`{{
+      $!socket = await IO::Socket::Async::SSL.connect(
+        $host, $port,
+        :certificate-file($!options<tlsCAFile>),
+        :private-key-file($!options<tlsCertificateKeyFile>)
+          :$!certificate-file, :$!private-key-file, :$insecure
+          #:ca-file($!options<tlsCAFile>)
+      );
+}}
+#    }
+  }
+}}
+}
+
+#-------------------------------------------------------------------------------
+method connect ( Str $host, Int $port ) {
+  try {
+    $!socket .= new( :$host, :$port);
+    CATCH {
+      default {
+        trace-message("open socket to $host, $port, PF-INET: " ~ .message);
+
+        # Retry for ipv6, throws when fails
+        $!socket .= new( :$host, :$port, :family(PF_INET6));
+      }
+    }
+  }
+
+  if $!do-tls {
+    $!ssl .= new(:client);
+
+    $!certificate-file = $!options<tlsCAFile>;
+    $!privatekey-file = $!options<tlsCertificateKeyFile>;
+    my Bool $insecure = (
+      $!options<tlsAllowInvalidCertificates>.Bool or
+      $!options<tlsAllowInvalidHostnames>.Bool or
+      $!options<tlsInsecure>.Bool
+    );
+
+note "$?LINE insecure not available yet: $insecure";
+    fatal-message('Fail to load private key file')
+      unless SSL_use_PrivateKey_file( $!ssl.ssl, $!privatekey-file, 1);
+    fatal-message('Fail to load certificate')
+      unless SSL_use_certificate_file( $!ssl.ssl, $!certificate-file, 1);
+
+    trace-message("key and certificate loaded");
+
+    fatal-message('Failed to check private key')
+      unless SSL_check_private_key($!ssl.ssl);
+
+    trace-message("key checked");
+
+    # Set the socket into the ssl
+    $!ssl.set-socket($!socket);
+    # Set client mode and set proper handshake routines
+    $!ssl.set-connect-state;
+    # Make a connection
+    $!ssl.connect();
+  }
+}
+
+
+#-------------------------------------------------------------------------------
 #tm:1:check-open::
 method check-open ( --> Bool ) {
 
@@ -295,6 +388,10 @@ method check-open ( --> Bool ) {
     );
 
     $!rw-sem.writer( 'socket', {
+        if $!do-tls {
+          $!ssl.close;
+          $!do-tls = False;
+        }
         $!socket.close;
         $!is-open = False;
       }
@@ -309,9 +406,16 @@ method check-open ( --> Bool ) {
 #method send ( Buf:D $b --> Nil ) {
 method send ( Buf:D $b ) {
 
-  my $s = $!rw-sem.reader( 'socket', {$!socket});
-  fatal-message("socket $!sock-id is closed") unless $s.defined;
+  my $s;
+  if $!do-tls {
+    $s = $!rw-sem.reader( 'socket', {$!ssl});
+  }
 
+  else {
+    $s = $!rw-sem.reader( 'socket', {$!socket});
+  }
+
+  fatal-message("socket $!sock-id is closed") unless $s.defined;
   trace-message("socket $!sock-id send, size: $b.elems()");
   $s.write($b);
   $!rw-sem.writer( 'time', {$!time-last-used = now;});
@@ -321,10 +425,19 @@ method send ( Buf:D $b ) {
 #tm:0:receive::
 method receive ( int $nbr-bytes --> Buf ) {
 
-  my $s = $!rw-sem.reader( 'socket', {$!socket});
+  my $s;
+  if $!do-tls {
+    $s = $!rw-sem.reader( 'socket', {$!ssl});
+  }
+
+  else {
+    $s = $!rw-sem.reader( 'socket', {$!socket});
+  }
+
   fatal-message("socket $!sock-id not opened") unless $s.defined;
 
-  my Buf $bytes = $s.read($nbr-bytes);
+  # :bin is for the ssl read() and is ignored in the socket reader
+  my Buf $bytes = $s.read( $nbr-bytes, :bin);
   $!rw-sem.writer( 'time', {$!time-last-used = now;});
   trace-message(
     "socket $!sock-id receive, requested $nbr-bytes bytes, received $bytes.elems()"
@@ -339,38 +452,28 @@ method receive ( int $nbr-bytes --> Buf ) {
 # an error is thrown.
 method receive-check ( int $nbr-bytes --> Buf ) {
 
-  my $s = $!rw-sem.reader( 'socket', {$!socket});
-  fatal-message("socket $!sock-id is closed") unless $s.defined;
-
-  my Buf $bytes;
-#`{{
-  if $s ~~ IO::Socket::Async::SSL {
-note "$?LINE";
-    react {
-note "$?LINE";
-      whenever $s {
-note "$?LINE";
-        $bytes = $_;
-note "$?LINE, $bytes.gist()";
-      }
-    }
+  my $s;
+  if $!do-tls {
+    $s = $!rw-sem.reader( 'socket', {$!ssl});
   }
 
   else {
-}}
-    $bytes = $s.read($nbr-bytes);
-#  }
+    $s = $!rw-sem.reader( 'socket', {$!socket});
+  }
 
+  fatal-message("socket $!sock-id is closed") unless $s.defined;
+
+  my Buf $bytes = $s.read( $nbr-bytes, :bin);
   if $bytes.elems == 0 {
     # No data, try again
-    $bytes = $s.receive($nbr-bytes);
+    $bytes = $s.read( $nbr-bytes, :bin);
     fatal-message("socket $!sock-id: No response from server")
       if $bytes.elems == 0;
   }
 
   if 0 < $bytes.elems < $nbr-bytes {
     # Not 0 but too little, try to get the rest of it
-    $bytes.push($s.receive($nbr-bytes - $bytes.elems));
+    $bytes.push($s.read( $nbr-bytes - $bytes.elems, :bin));
     fatal-message("socket $!sock-id: Response corrupted") if $bytes.elems < $nbr-bytes;
   }
 
@@ -385,9 +488,15 @@ note "$?LINE, $bytes.gist()";
 method close ( ) {
 
   $!rw-sem.writer( 'socket', {
-      $!socket.close if $!socket.defined and $!is-open;
-      $!socket = Nil;
-      $!is-open = False;
+      if $!socket.defined and $!is-open {
+        if $!do-tls {
+          $!ssl.close;
+          $!do-tls = False;
+        }
+        $!socket.close;
+        $!socket = Nil;
+        $!is-open = False;
+      }
     }
   );
 
@@ -410,6 +519,8 @@ method invalidate ( Bool :$used-to-authenticate = False ) {
 
 }
 
+
+=finish
 #-------------------------------------------------------------------------------
 #tm:2:cleanup:SocketPool:
 method cleanup ( ) {
