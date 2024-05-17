@@ -160,7 +160,7 @@ method get-socket (
     }
 
     else {
-      $socket .= new( :$host, :$port);
+      $socket .= new( :$host, :$port, :$uri-obj);
       trace-message("socket created: server $host:$port sock id $socket.sock-id()");
     }
 
