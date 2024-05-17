@@ -22,11 +22,11 @@ sub BIO_new( OpenSSL::Bio::BIO_METHOD --> OpaquePointer )
 sub BIO_s_mem() returns OpenSSL::Bio::BIO_METHOD is native(&gen-lib) {*}
 }}
 
-#`{{
 sub SSL_get_verify_result(OpenSSL::SSL::SSL --> int32 )
   is native(&ssl-lib)
   {*}
 
+#`{{
 sub SSL_CTX_set_cipher_list(OpenSSL::Ctx::SSL_CTX, Str) returns int32
   is native(&ssl-lib)
   {*}
@@ -102,7 +102,6 @@ sub SSL_CTX_get_client_CA_list ( OpenSSL::Ctx::SSL_CTX --> CArray[Pointer] )
   {*}
 }}
 
-
 #-------------------------------------------------------------------------------
 enum Validation <
   SSL_CT_VALIDATION_PERMISSIVE SSL_CT_VALIDATION_STRICT
@@ -113,6 +112,8 @@ constant SSL_VERIFY_PEER                 = 0x01;
 constant SSL_VERIFY_FAIL_IF_NO_PEER_CERT = 0x02;
 constant SSL_VERIFY_CLIENT_ONCE          = 0x04;
 constant SSL_VERIFY_POST_HANDSHAKE       = 0x08;
+#`{{
+}}
 
 #-------------------------------------------------------------------------------
 # Prepare connection
