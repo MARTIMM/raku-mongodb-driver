@@ -102,9 +102,8 @@ method query (
 
     # Catch all thrown exceptions and take out the server if needed
     CATCH {
-#note "$*THREAD.id() Error wire query: ", .WHAT, ', ', .message;
-#.note;
-
+#info-message([~] "Error wire query: ", .message, "\n\n");
+#.say;
       $!socket.close if $!socket.defined;
 
       # Fatal messages from the program elsewhere
