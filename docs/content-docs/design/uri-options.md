@@ -118,9 +118,9 @@ Following sections are described in other documents.
 
 * [x] `tls`; Whether or not to require TLS for connections to the server
 
-* [x] `tlsAllowInvalidCertificates`; Specifies whether or not the driver should error when the server’s TLS certificate is invalid. This driver does an 'or' on the options `tlsAllowInvalidCertificates`, `tlsAllowInvalidHostnames`, and `tlsInsecure` to set the attribute `:insecure` in the call `connect()` of **IO::Socket::Async::SSL**.
+* [ ] `tlsAllowInvalidCertificates`; Specifies whether or not the driver should error when the server’s TLS certificate is invalid. This driver does an 'or' on the options `tlsAllowInvalidCertificates`, `tlsAllowInvalidHostnames`, and `tlsInsecure` to set the attribute `:insecure` in the call `connect()`
 
-* [x] `tlsAllowInvalidHostnames`; Specifies whether or not the driver should error when there is a mismatch between the server’s hostname and the hostname specified by the TLS certificate. This driver does an 'or' on the options `tlsAllowInvalidCertificates`, `tlsAllowInvalidHostnames`, and `tlsInsecure` to set the attribute `:insecure` in the call `connect()` of **IO::Socket::Async::SSL**.
+* [ ] `tlsAllowInvalidHostnames`; Specifies whether or not the driver should error when there is a mismatch between the server’s hostname and the hostname specified by the TLS certificate. This driver does an 'or' on the options `tlsAllowInvalidCertificates`, `tlsAllowInvalidHostnames`, and `tlsInsecure` to set the attribute `:insecure` in the call `connect()`.
 
 * [x] `tlsCAFile`; Path to file with either a single or bundle of certificate authorities to be considered trusted when making a TLS connection
 
@@ -132,7 +132,7 @@ Following sections are described in other documents.
 
 * [ ] `tlsDisableOCSPEndpointCheck`; Controls whether or not the driver will reach out to OCSP endpoints if needed. See the OCSP Support Spec for additional information.
 
-* [x] `tlsInsecure`; Relax TLS constraints as much as possible (e.g. allowing invalid certificates or hostname mismatches); drivers must document the exact constraints which are relaxed by this option being true. This driver does an 'or' on the options `tlsAllowInvalidCertificates`, `tlsAllowInvalidHostnames`, and `tlsInsecure` to set the attribute `:insecure` in the call `connect()` of **IO::Socket::Async::SSL**.
+* [ ] `tlsInsecure`; Relax TLS constraints as much as possible (e.g. allowing invalid certificates or hostname mismatches); drivers must document the exact constraints which are relaxed by this option being true. This driver does an 'or' on the options `tlsAllowInvalidCertificates`, `tlsAllowInvalidHostnames`, and `tlsInsecure` to set the attribute `:insecure` in the call `connect()`
 
 * [ ] `w`; Default write concern "w" field for the client
 
