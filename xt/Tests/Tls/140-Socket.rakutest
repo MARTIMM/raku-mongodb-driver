@@ -26,9 +26,16 @@ add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 info-message("Test $?FILE start");
 
 #-------------------------------------------------------------------------------
-my Str $cdir = $*CWD ~ '/xt/TestServers/certificates';
-my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$cdir/b/test-ca.pem\&tlsCertificateKeyFile=$cdir/c/test-client.pem\&tlsInsecure=true";
+#my Str $cdir = $*CWD ~ '/xt/TestServers/certificates';
 #my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$cdir/b/test-ca.pem\&tlsCertificateKeyFile=$cdir/trust-store/cacert-2024-03-11.pem";
+
+# Get the key and certificates
+my Str $cdir = $*CWD ~ '/xt/TestServers/certificates/certs';
+my Str $ca-file = "$cdir/client.pem";
+my Str $privatekey-file = "$cdir/client.key";
+
+my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$ca-file&tlsCertificateKeyFile=$$privatekey-file\&tlsInsecure=true";
+
 my MongoDB::Client $client .= new(:$uri);
 my $uri-obj = $client.uri-obj;
 note "$?LINE $uri-obj.gist()";

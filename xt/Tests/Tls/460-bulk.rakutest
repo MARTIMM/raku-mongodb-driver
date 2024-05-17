@@ -1,0 +1,165 @@
+use lib 'lib';
+use Test;
+
+use MongoDB;
+use MongoDB::Client;
+use MongoDB::Cursor;
+use MongoDB::Database;
+use BSON::ObjectId;
+use BSON::Document;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $server-version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+
+#-------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
+set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
+
+info-message("Test $?FILE start");
+
+my BSON::Document $req;
+my BSON::Document $doc;
+
+# Get the key and certificates
+my Str $cdir = $*CWD ~ '/xt/TestServers/certificates/certs';
+my Str $ca-file = "$cdir/client.pem";
+my Str $privatekey-file = "$cdir/client.key";
+
+# Set URI using TLS
+my Str $uri = "mongodb://localhost:@server-ports[0]/?tls=true\&tlsCAFile=$ca-file&tlsCertificateKeyFile=$$privatekey-file\&tlsInsecure=true";
+
+my MongoDB::Client $client .= new(:$uri);
+my MongoDB::Database $database = $client.database('test');
+#my MongoDB::Database $db-admin = $client.database('admin');
+my MongoDB::Collection $collection = $database.collection('bulk');
+my MongoDB::Cursor $cursor;
+
+$database.run-command: (dropDatabase => 1);
+
+#-------------------------------------------------------------------------------
+subtest "bulk store insert", {
+  my $nbr-docs = $database.run-command((count => $collection.name,),)<n>;
+  is $nbr-docs, 0, 'count';
+
+  $req .= new: (
+    insert => $collection.name,
+    documents => []
+  );
+
+  my Int $count = 50;
+  for ^$count -> $c {
+    $req<documents>.push: BSON::Document.new((
+        a => $nbr-docs + $c,
+        b => $nbr-docs + $c + 2
+      )
+    );
+  }
+#info-message($req);
+
+  $doc = $database.run-command($req);
+#info-message($doc);
+  ok $doc<ok>, "Doc {$nbr-docs + $count} inserted";
+}
+
+#-------------------------------------------------------------------------------
+subtest 'find', {
+  if $server-version <= v3.2.0 {
+    $cursor = $collection.find(:number-to-return(20));
+    my $count = 0;
+    while $cursor.fetch -> $doc {
+      is $doc<a>, $count, "Doc $doc<a>, $doc<b> found";
+      $count++
+    }
+  }
+
+  else {
+    $doc = $database.run-command: ( :find<bulk>, :limit(100));
+info-message($doc);
+  }
+}
+
+#-------------------------------------------------------------------------------
+subtest 'Bulk updates', {
+
+$req .= new: ( :update<bulk>, updates => []);
+for 4..7 -> $c {
+  $req<updates>.push: BSON::Document.new((
+    q => BSON::Document.new((:a($c))),
+    u => BSON::Document.new(( :b($c + 2000), :a($c)))
+  ));
+}
+
+#info-message($req);
+
+  $doc = $database.run-command($req);
+#info-message($doc);
+  ok $doc<ok>, "modified";
+
+  if $server-version <= v3.2.0 {
+    $cursor = $collection.find(:number-to-return(20));
+    my $count = 0;
+    while $cursor.fetch -> $doc {
+
+      my $c = (4 <= $count <= 7 ?? $count + 2000 !! $count + 2);
+      is $doc<a>, $count, "Doc a: $doc<a>";
+      is $doc<b>, $c, "Doc b: $doc<b>";
+     $count++
+    }
+  }
+
+  else {
+    $doc = $database.run-command: ( :find<bulk>, :limit(100));
+#info-message($doc);
+  }
+}
+
+#-------------------------------------------------------------------------------
+subtest 'Bulk deletes', {
+
+$req .= new: ( :delete<bulk>, deletes => []);
+for ( |(2..5).list, |(11..80).list) -> $c {
+  $req<deletes>.push: BSON::Document.new((
+    q => BSON::Document.new((:a($c))),
+    :limit(1)
+  ));
+}
+
+#info-message($req);
+
+  $doc = $database.run-command($req);
+#info-message($doc);
+  ok $doc<ok>, 'delete ok';
+  is $doc<n>, 43, "removed $doc<n> records";
+
+  if $server-version <= v3.2.0 {
+    $cursor = $collection.find(:number-to-return(10));
+    my $count-list = [ 0, 1, 6, 7, 8, 9, 10];
+    while $cursor.fetch -> $doc {
+      my $count = $count-list.shift;
+      my $c = (4 <= $count <= 7 ?? $count + 2000 !! $count + 2);
+      is $doc<a>, $count, "Doc a: $doc<a>";
+      is $doc<b>, $c, "Doc b: $doc<b>";
+     $count++
+    }
+  }
+
+  else {
+    $doc = $database.run-command: ( :find<bulk>, :limit(100));
+#info-message($doc);
+  }
+}
+
+#-------------------------------------------------------------------------------
+# Cleanup and close
+#
+#$collection.database.drop;
+
+info-message("Test $?FILE stop");
+done-testing();
+exit(0);
