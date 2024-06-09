@@ -511,14 +511,18 @@ method get-srv-hosts ( $actions ) {
   }
 
   for @srv-hosts -> $srv-class {
-    my Str $domain = $srv-class.owner-name[2..*].join('.');
-    my Str $host = $srv-class.name.join('.');
+    # clipping first two elems '_xyz._tcp"
+    my Str $dom-own = $srv-class.owner-name[2..*].join('.');
+    # clipping host name
+    my Str $dom-srv = $srv-class.name[1..*].join('.');
+
+    my Str $server = $srv-class.name.join('.');
     return fatal-message(
-      "Found server '$host' must be in same domain '$domain'"
-    ) unless $host ~~ m/ $domain $/;
+      "Found server '$server' must be in same domain '$dom-own'"
+    ) unless $dom-srv ~~ m/ $dom-own $/;
 
     # Priority and weigth are to be ignored
-    $!servers.push: %( :$host, :port($srv-class.port));
+    $!servers.push: %( :host($server), :port($srv-class.port));
     
     last if ?$max-hosts and $host-count > $max-hosts;
     $host-count++;

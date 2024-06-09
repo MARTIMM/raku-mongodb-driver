@@ -9,6 +9,8 @@ layout: sidebar
 
 See [semantic versioning](http://semver.org/). Please note point 4. on that page: **_Major version zero (0.y.z) is for initial development. Anything may change at any time. The public API should not be considered stable._**
 
+* 2024-06-09 0.45.1
+  * Bug fix in **MongoDB::Uri**.
 
 * 2024-05-09 0.45.0
   * Looking at SSL/TLS.
