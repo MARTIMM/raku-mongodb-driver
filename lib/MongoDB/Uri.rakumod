@@ -512,7 +512,7 @@ method get-srv-hosts ( $actions ) {
 
   for @srv-hosts -> $srv-class {
     # clipping first two elems '_xyz._tcp"
-    my Str $dom-own = $srv-class.owner-name[2..*].join('.');
+    my Str $dom-own = $srv-class.owner-name[3..*].join('.');
     # clipping host name
     my Str $dom-srv = $srv-class.name[1..*].join('.');
 
