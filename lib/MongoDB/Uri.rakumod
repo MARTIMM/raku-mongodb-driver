@@ -532,7 +532,7 @@ method get-srv-hosts ( $actions ) {
   my @txt-opts;
   my $opt-str = '';
   try {
-    @txt-opts = $resolver.lookup( 'srv', "_$srv-service-name._tcp.$fqdn[0]");
+    @txt-opts = $resolver.lookup( 'txt', "_$srv-service-name._tcp.$fqdn[0]");
   }
 
   return fatal-message(

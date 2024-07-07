@@ -1,0 +1,59 @@
+use Test;
+use MongoDB;
+use MongoDB::Uri;
+
+#-------------------------------------------------------------------------------
+my Str $log-path = @*ARGS[0];
+my Version $version .= new(@*ARGS[1]);
+my @server-ports = @*ARGS[2..*];
+#note "args: $log-path, $version, @server-ports";
+
+#-------------------------------------------------------------------------------
+drop-send-to('mongodb');
+drop-send-to('screen');
+#modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
+my $handle = $log-path.IO.open( :mode<wo>, :append);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Debug));
+#set-filter(|<ObserverEmitter Timer Socket>);
+
+#------------------------------------------------------------------------------
+subtest "Uri parsing", {
+
+  my MongoDB::Uri $uri;
+
+  $uri .= new(
+    :uri<mongodb+srv://test-dev-cluster.o9jgs.mongodb.net/?retryWrites=true&w=majority>
+  );
+
+#`{{
+  ok $uri ~~ MongoDB::Uri , "is url type";
+  ok $uri.defined , "url initialized";
+#  is $uri.protocol, 'mongodb', 'mongodb:// --> protocol ok';
+  is $uri.auth-source, 'admin', 'mongodb:// --> auth database = admin';
+  is $uri.username, '', 'mongodb:// --> no username';
+  is $uri.password, '', 'mongodb:// --> no password';
+  is $uri.servers[0]<host>, 'localhost', 'mongodb:// --> server = localhost';
+  is $uri.servers[0]<port>, 27017, 'mongodb:// --> port = 27017';
+  ok $uri.options.elems > 1, 'mongodb:// --> there are some default options set';
+  is $uri.options<serverSelectionTimeoutMS>, MongoDB::C-SERVERSELECTIONTIMEOUTMS,
+     "e.g. serverSelectionTimeoutMS is set to {MongoDB::C-SERVERSELECTIONTIMEOUTMS}";
+}}
+}
+
+#------------------------------------------------------------------------------
+# Cleanup
+info-message("Test $?FILE stop");
+done-testing();
+
+
+
+
+=finish
+
+#------------------------------------------------------------------------------
+subtest {
+
+}, '';
+
+say "\nReq: ", $req.perl, "\n";
+say "\nDoc: ", $doc.perl, "\n";
