@@ -5,13 +5,13 @@ unit class Build;
 
 # also keep these lines the same as in t/Test-support.pm6
 #constant SERVER-VERSION1 = '3.6.9';
-constant SERVER-VERSION1 = '4.0.5';
-constant SERVER-VERSION2 = '4.0.18';
+#constant SERVER-VERSION1 = '4.0.5';
+#constant SERVER-VERSION2 = '4.0.18';
 # later builds have specific os names in the archive name
 #constant SERVER-VERSION2 = '4.2.6';
 
 has Str $!dist-path;
-has Bool $!on-travis;
+#has Bool $!on-travis;
 
 #-------------------------------------------------------------------------------
 # do build stuff to your module which is located at $!dist-path
@@ -20,12 +20,12 @@ method build( Str $!dist-path --> Int ) {
   # in the download script. normally set when on travis-ci.
   #%*ENV<TRAVIS_BUILD_DIR> = $!dist-path unless %*ENV<TRAVIS_BUILD_DIR>:exists;
 
-  $!on-travis = %*ENV<TRAVIS_BUILD_DIR>:exists;
+#  $!on-travis = %*ENV<TRAVIS_BUILD_DIR>:exists;
 
   # check if installing on Travis or for a user. in the last case only
   # one version needs to be installed to save download and install time.
-  self.download(SERVER-VERSION1);
-  self.download(SERVER-VERSION2) if $!on-travis;
+#  self.download(SERVER-VERSION1);
+#  self.download(SERVER-VERSION2) if $!on-travis;
 
   1;
 }
