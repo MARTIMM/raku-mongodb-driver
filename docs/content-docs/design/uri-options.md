@@ -106,7 +106,7 @@ Following sections are described in other documents.
 
 * [ ] `serverSelectionTryOnce`; Scan the topology only once after a server selection failure instead of repeatedly until the server selection times out.
 
-* [ ] `socketTimeoutMS`; This option is deprecated in favor of timeoutMS. This driver will translate it to timeoutMS.
+* [ ] `socketTimeoutMS`; This option is _`deprecated`_ in favor of timeoutMS. This driver will translate it to timeoutMS. This driver has not yet processed this option and therefore, because of this deprecation, never will.
 
 * [x] `srvMaxHosts`; The maximum number of SRV results to randomly select when initially populating the seedlist or, during SRV polling, adding new hosts to the topology.
 
@@ -114,7 +114,7 @@ Following sections are described in other documents.
 
 * [x] `ssl`; alias of "tls"; required to ensure that Atlas connection strings continue to work
 
-* [ ] `timeoutMS`; Time limit for the full execution of an operation
+* [ ] `timeoutMS`; Time limit for the full execution of an operation.
 
 * [x] `tls`; Whether or not to require TLS for connections to the server
 
@@ -136,8 +136,8 @@ Following sections are described in other documents.
 
 * [ ] `w`; Default write concern "w" field for the client
 
-* [ ] `waitQueueTimeoutMS`; NOTE: This option is deprecated in favor of timeoutMS. Amount of time spent attempting to check out a connection from a server's connection pool before timing out
+* [ ] `waitQueueTimeoutMS`; NOTE: This option is deprecated in favor of timeoutMS. Amount of time spent attempting to check out a connection from a server's connection pool before timing out. This driver has not yet processed this option and therefore, because of this deprecation, never will.
 
-* [ ] `wTimeoutMS`; NOTE: This option is deprecated in favor of timeoutMS. Default write concern "wtimeout" field for the client
+* [ ] `wTimeoutMS`; NOTE: This option is deprecated in favor of timeoutMS. Default write concern "wtimeout" field for the client. This driver has not yet processed this option and therefore, because of this deprecation, never will.
 
 * [ ] `zlibCompressionLevel`; Specifies the level of compression when using zlib to compress wire protocol messages; -1 signifies the default level, 0 signifies no compression, 1 signifies the fastest speed, and 9 signifies the best compression
