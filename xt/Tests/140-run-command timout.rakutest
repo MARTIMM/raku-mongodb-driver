@@ -17,8 +17,8 @@ drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = $log-path.IO.open( :mode<wo>, :append);
-add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
-set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info));
+#set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
 
 info-message("Test $?FILE start");
 
@@ -26,14 +26,18 @@ my BSON::Document $req;
 my BSON::Document $doc;
 
 # single server tests => one server key
-my Str $uri = "mongodb://localhost:@server-ports[0]";
+my Str $uri = "mongodb://localhost:27018";
 my MongoDB::Client $client .= new(:$uri);
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
 
 # Drop database first, not checked for success.
-$database.run-command(BSON::Document.new: (dropDatabase => 1));
+$doc = $database.run-command(BSON::Document.new: (dropDatabase => 1));
 diag "$?LINE $doc.gist()";
+
+
+#done-testing();
+#=finish
 
 #-------------------------------------------------------------------------------
 subtest "Query and Write Operation Commands", {
@@ -59,6 +63,7 @@ subtest "Query and Write Operation Commands", {
   $doc = $database.run-command($req);
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 1, "Inserted 1 document";
+diag "$?LINE $doc.gist()";
 
   $doc = $database.run-command: (
     findAndModify => 'famous_people',
