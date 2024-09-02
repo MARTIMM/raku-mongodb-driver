@@ -161,7 +161,8 @@ class Wrapper:auth<github:MARTIMM> {
   method create-server-config(
     Str $server, Version $version, Bool :$start = False --> Str
   ) {
-#note "\n$?LINE\n$!cfg.gist()";
+
+for $!cfg.keys -> $k {note "\n$k: $?LINE\n$!cfg{$k}.gist()";}
 
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
     mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
@@ -171,7 +172,7 @@ class Wrapper:auth<github:MARTIMM> {
     if $start {
       $port = self!find-next-free-port(
 #        $!cfg<server>{$server}<port>.Int // 27012
-        ($!cfg{$server}<port> // 27012).Int 
+        ($!cfg{$server}<net><port> // 27012).Int 
       );
     }
 
@@ -266,7 +267,7 @@ class Wrapper:auth<github:MARTIMM> {
       $component<replication><initialSync><verbosity> = 2 if $version > v4.0.18;
     }
 
-note "$?LINE $server-config.gist()";
+#note "$?LINE $server-config.gist()";
 
     # Remove some yaml thingies and save
     my Str $scfg = save-yaml($server-config);
