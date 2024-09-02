@@ -351,7 +351,7 @@ method connect ( Str $host, Int $port ) {
       $!options<tlsInsecure>.Bool
     );
 
-note "$?LINE insecure not available yet: $insecure";
+#note "$?LINE insecure not available yet: $insecure";
     fatal-message('Fail to load private key file')
       unless SSL_use_PrivateKey_file( $!ssl.ssl, $!privatekey-file, 1);
     fatal-message('Fail to load certificate')

@@ -36,7 +36,7 @@ submethod BUILD ( ) {
 #-------------------------------------------------------------------------------
 method create-server-config( Str $server, Version $version ) {
 
-note "make config for server '$server'";
+#note "make config for server '$server'";
 
   my $data-path = [~] SERVER_PATH, '/ServerData/', $server, '/', $version;
   mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;

@@ -13,8 +13,7 @@ has Hash $.cfg;
 
 #----------------------------------------------------------------------------
 submethod BUILD ( Str :$config-name ) {
-  $!cfg = load-yaml(SERVER_PATH ~ "/$config-name");
-note 'cfg: ', $!cfg.gist;
+  $!cfg = load-yaml(SERVER_PATH ~ "/$config-name");#'cfg: ', $!cfg.gist;
 }
 
 #----------------------------------------------------------------------------
