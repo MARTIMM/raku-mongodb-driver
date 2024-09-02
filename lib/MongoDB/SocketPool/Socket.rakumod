@@ -238,7 +238,7 @@ method !scram-authenticate (
     :name($credential.auth-source), :uri-obj($uo)
   );
 
-note "$?LINE: $host, $port, $sha-type";
+#note "$?LINE: $host, $port, $sha-type";
 
   my MongoDB::Authenticate::Scram $client-object .= new(
     :$database, :$sha-type
