@@ -23,12 +23,14 @@ sub EXPORT { {
   }
 };
 
+my UInt $*timeout-ms;
+
 #------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;
 
 #------------------------------------------------------------------------------
-constant SERVER-VERSION1 is export = '4.0.5';
-constant SERVER-VERSION2 is export = '4.0.18';
+#constant SERVER-VERSION1 is export = '4.0.5';
+#constant SERVER-VERSION2 is export = '4.0.18';
 
 
 #------------------------------------------------------------------------------
