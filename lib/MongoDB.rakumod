@@ -23,7 +23,8 @@ sub EXPORT { {
   }
 };
 
-my UInt $*timeout-ms;
+# Need our to use it elsewhere
+our $*timeout-ms = Nil;
 
 #------------------------------------------------------------------------------
 unit package MongoDB:auth<github:MARTIMM>;

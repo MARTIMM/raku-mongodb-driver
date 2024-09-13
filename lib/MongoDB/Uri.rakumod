@@ -400,15 +400,33 @@ submethod BUILD ( Str :$!uri, Str :$client-key ) {
         unless $!options<tlsCertificateKeyFile>.IO.r;
     }
 
-
-
     # Set defaults for some options or convert them to the proper type
     $!options<localThresholdMS> //= MongoDB::C-LOCALTHRESHOLDMS.Int;
     $!options<serverSelectionTimeoutMS> //=
        MongoDB::C-SERVERSELECTIONTIMEOUTMS.Int;
     $!options<heartbeatFrequencyMS> //= MongoDB::C-HEARTBEATFREQUENCYMS.Int;
 
+    if $!options<timeoutMS>:exists and $*timeout-ms.defined {
+      return fatal-message("Can not modify the timeoutMS value once it is set");
+    }
+
+    elsif $!options<timeoutMS>:exists and $!options<timeoutMS>.UInt >= 0 {
+      $*timeout-ms = $!options<timeoutMS>.UInt;
+    }
+
+    elsif $!options<timeoutMS>:exists and $!options<timeoutMS>.UInt < 0 {
+      return fatal-message("Illegal value for timeoutMS value");
+    }
+
     # Change deprecated options
+    if ( $*timeout-ms.defined and (
+        $!options<socketTimeoutMS>:exists or
+        $!options<waitQueueTimeoutMS>:exists or
+        $!options<wTimeoutMS>:exists
+    ) ) {
+      return fatal-message("Can not modify the timeout value once it is set");
+    }
+
     if $!options<socketTimeoutMS>:exists {
       $!options<timeoutMS> = $!options<socketTimeoutMS>;
       warn-message("socketTimeoutMS is deprecated in favor of timeoutMS");
