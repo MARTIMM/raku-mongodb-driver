@@ -224,7 +224,7 @@ sub add-accounts (
 
     my MongoDB::Database $database = $client.database('admin');
     my MongoDB::HL::Users $users .= new(:$database);
-note "len, sec: $unlen, $pwlen, $pwsec";
+#note "len, sec: $unlen, $pwlen, $pwsec";
     $users.set-pw-security(
       :min-un-length($unlen), :min-pw-length($pwlen), :pw-attribs($pwsec)
     );

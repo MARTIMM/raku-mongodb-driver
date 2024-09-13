@@ -27,7 +27,7 @@ sub MAIN ( *@servers, Str :$conf-loc is copy = '.',  ) {
   $conf-loc = $conf-loc.IO.absolute;
 #TODO use environment variable for config file
 
-note $conf-loc;
+#note $conf-loc;
 
   # check if an admin account is needed to create the replicaset
   note "\nAdmin name and password is needed when authentication is turned on";
