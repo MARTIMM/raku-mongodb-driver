@@ -202,27 +202,86 @@ subtest "encoding msg",  {
     info-message($encoded-msg);
 
     my Buf $hand-made-buf .= new(
-      0x2c, 0x00, 0x00, 0x00,             # size 44 bytes
-      0x04, 0x00, 0x00, 0x00,             # Req id = 4 (4th request)
-      0x00, 0x00, 0x00, 0x00,             # resp to 0
-      0xdd, 0x07, 0x00, 0x00,             # OP-MSG
+        # 4 + 12 + 5 + 86 = 107
+        0x6b, 0x00, 0x00, 0x00,             # size packet
 
-      0x00, 0x00, 0x00, 0x00,             # 0, msg flags
-      0x00,                               # kind is 0: single document
-      0x17, 0x00, 0x00, 0x00,             # doc size
-      0x10, 0x73, 0x65, 0x72, 0x76, 0x65, # doc
-      0x72, 0x53, 0x74, 0x61, 0x74, 0x75,
-      0x73, 0x00, 0x01, 0x00, 0x00, 0x00,
+        # 12
+        0x05, 0x00, 0x00, 0x00,             # Req id = 5 (5th request)
+        0x00, 0x00, 0x00, 0x00,             # resp to 0
+        0xdd, 0x07, 0x00, 0x00,             # OP-MSG
 
-      0x00,                               # end doc
+        # 5
+        0x00, 0x00, 0x00, 0x00,             # 0, msg flags
+        0x00,                               # kind is 0: single document
+
+        # 4 + 15 + 14 = 33
+        0x21, 0x00, 0x00, 0x00,             # Size document
+
+      # 1 + 15 = 16
+      BSON::C-STRING,                       # 0x02
+        # 15
+        0x69, 0x6e, 0x73, 0x65,             # 'insert'
+        0x72, 0x74, 0x00,
+        0x04, 0x00, 0x00, 0x00,             # size of collection string: 4
+        0x63, 0x6c, 0x6c, 0x00,             # 'cll'
+
+      # 1 + 13 = 14
+      BSON::C-STRING,
+        # 13
+        0x24, 0x64, 0x62, 0x00,             # '$db'
+        0x03, 0x00, 0x00, 0x00,             # size of database string
+        0x64, 0x62, 0x00,                   # database string 'db'
+        0x00, 0x01,
+
+      # documents array
+      # 4 + 10 + 19 + 190 = 52
+        0x34, 0x00, 0x00, 0x00,             # Size array document
+
+        # 10
+        0x64, 0x6f, 0x63, 0x75, 0x6d,       # 'documents'
+        0x65, 0x6e, 0x74, 0x73, 0x00,
+
+        # 19
+        # document
+          # 4 + 7 + 7 + 1 = 19
+          0x13, 0x00, 0x00, 0x00,           # Size sub document
+
+          # 7
+          BSON::C-INT32,                    # 0x10
+            0x61, 0x00,                     # 'a'
+            0x0A, 0x00, 0x00, 0x00,         # 10
+
+          # 7
+          BSON::C-INT32,                    # 0x10
+            0x62, 0x00,                     # 'b'
+            0x0B, 0x00, 0x00, 0x00,         # 11
+
+          # 1
+          0x00,                             # end doc
+
+        # 19
+        # document
+          # 4 + 7 + 7 + 1 = 19
+          0x13, 0x00, 0x00, 0x00,           # Size sub document
+          
+          # 6 + 1 = 7
+          BSON::C-INT32,                    # 0x10
+            0x61, 0x00,                     # 'a'
+            0x0A, 0x00, 0x00, 0x00,         # 10
+
+          # 6 + 1 = 7
+          BSON::C-INT32,                    # 0x10
+            0x62, 0x00,                     # 'b'
+            0x0B, 0x00, 0x00, 0x00,         # 11
+          
+          # 1
+          0x00,                             # end doc
     );
 
     is-deeply $encoded-msg, $hand-made-buf, 'Encoded message';
   
     # TODO; decode
   }
-  
-
 };
 
 #-------------------------------------------------------------------------------
@@ -230,3 +289,10 @@ subtest "encoding msg",  {
 #
 done-testing;
 exit(0);
+
+
+
+=finish
+      0x10, 0x73, 0x65, 0x72, 0x76, 0x65, # 
+      0x72, 0x53, 0x74, 0x61, 0x74, 0x75,
+      0x73, 0x00, 0x01, 0x00, 0x00, 0x00,
