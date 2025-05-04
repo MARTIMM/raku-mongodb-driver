@@ -115,6 +115,14 @@ subtest "Uri parsing errors", {
 
   my MongoDB::Uri $uri;
 
+  throws-like {
+      $uri .= new(:uri<mongodb:///users?timeoutMS=100>);
+      $uri .= new(:uri<mongodb:///users?timeoutMS=100>);
+    },
+    X::MongoDB,
+    "Can not modify the timeout value once it is set",
+    :message("Can not modify the timeoutMS value once it is set");
+
   throws-like {$uri .= new(:uri<http://>);},
               X::MongoDB, 'It is not a http protocol',
               :message("Parsing error in url 'http://'");
@@ -182,7 +190,6 @@ subtest "Uri parsing errors", {
     :message(
       "No servers found after search on domain 'h2.example.com'"
     );
-
 
 }
 

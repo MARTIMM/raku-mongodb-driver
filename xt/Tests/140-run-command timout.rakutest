@@ -17,7 +17,7 @@ drop-send-to('mongodb');
 drop-send-to('screen');
 #modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Trace));
 my $handle = $log-path.IO.open( :mode<wo>, :append);
-add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Info));
+add-send-to( 'mdb', :to($handle), :min-level(MongoDB::MdbLoglevels::Trace));
 #set-filter(|<ObserverEmitter Timer Monitor Socket SocketPool Server ServerPool>);
 
 info-message("Test $?FILE start");
@@ -26,7 +26,7 @@ my BSON::Document $req;
 my BSON::Document $doc;
 
 # single server tests => one server key
-my Str $uri = "mongodb://localhost:27018";
+my Str $uri = "mongodb://localhost:27018/?timeoutMS=100";
 my MongoDB::Client $client .= new(:$uri);
 my MongoDB::Database $database = $client.database('test');
 my MongoDB::Database $db-admin = $client.database('admin');
@@ -34,10 +34,10 @@ my MongoDB::Database $db-admin = $client.database('admin');
 # Drop database first, not checked for success.
 $doc = $database.run-command(BSON::Document.new: (dropDatabase => 1));
 diag "$?LINE $doc.gist()";
+diag "$?LINE $client.server-status('localhost:27018'), $client.topology()";
 
-
-#done-testing();
-#=finish
+done-testing();
+=finish
 
 #-------------------------------------------------------------------------------
 subtest "Query and Write Operation Commands", {
