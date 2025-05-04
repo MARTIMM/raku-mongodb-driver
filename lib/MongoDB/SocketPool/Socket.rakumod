@@ -328,6 +328,30 @@ note "$?LINE insecure not available yet: $insecure";
 
 #-------------------------------------------------------------------------------
 method connect ( Str $host, Int $port ) {
+#`{{
+  if $*timeout-ms.defined {
+    my Promise $try-connect = start {
+      self.try4or6( $host, $port);
+    }
+
+    my $connect-timeout = Promise.in($*timeout-ms/1000.0).then({
+#      trace-message("Timeout after $*timeout-ms ms");
+      $try-connect.break;
+    });
+
+    await Promise.anyof( $connect-timeout, $try-connect);
+#    trace-message(“sts $connect-timeout.status(), $try-connect.status()”);
+    fatal-message("Connecting to server timed out after $*timeout-ms ms")
+      if $try-connect.status ~~ Broken;
+  }
+
+  else {
+    self.try4or6( $host, $port);
+  }
+}}
+  self.try4or6( $host, $port);
+
+#`{{
   try {
     $!socket .= new( :$host, :$port);
     CATCH {
@@ -339,6 +363,7 @@ method connect ( Str $host, Int $port ) {
       }
     }
   }
+}}
 
   if $!do-tls {
     $!ssl .= new(:client);
@@ -373,6 +398,20 @@ method connect ( Str $host, Int $port ) {
   }
 }
 
+#-------------------------------------------------------------------------------
+method try4or6 ( Str $host, Int $port ) {
+  try {
+    $!socket .= new( :$host, :$port);
+    CATCH {
+      default {
+#        trace-message("open socket to $host, $port, PF-INET: " ~ .message);
+
+        # Retry for ipv6, throws when fails
+        $!socket .= new( :$host, :$port, :family(PF_INET6));
+      }
+    }
+  }
+}
 
 #-------------------------------------------------------------------------------
 #tm:1:check-open::
