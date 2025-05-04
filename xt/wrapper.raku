@@ -162,7 +162,8 @@ class Wrapper:auth<github:MARTIMM> {
     Str $server, Version $version, Bool :$start = False --> Str
   ) {
 
-for $!cfg.keys -> $k {note "\n$k: $?LINE\n$!cfg{$k}.gist()";}
+    # for $!cfg.keys -> $k {note "\n$k: $?LINE\n$!cfg{$k}.gist()";}
+    note "\nSelect server type $server\n  ", $!cfg{$server}.gist;
 
     my Str $data-path = "$*CWD/{SERVER_PATH}/ServerData/$server/$version";
     mkdir "$data-path/db", 0o700 unless "$data-path/db".IO.e;
@@ -531,7 +532,7 @@ for $!cfg.keys -> $k {note "\n$k: $?LINE\n$!cfg{$k}.gist()";}
       $line ~~ s/^ .*? ']:' \s+ //;
       $line ~~ s:g/ \' //;
       if $line ~~ m:s/Run test\: rakudo/ {
-        note $line;
+        note "\n$line";
         my @l = $line.split(/\s+/);
         $version = @l[6];
         $test-results<test-programs>{$version}{@l[4]} = [];
@@ -647,7 +648,8 @@ for $!cfg.keys -> $k {note "\n$k: $?LINE\n$!cfg{$k}.gist()";}
     #
     my Int $port-number;
     for $start-portnbr ..^ 2**16 -> $port {
-info-message("Test port $port");
+      info-message("Test port $port");
+
       my $s = IO::Socket::INET.new( :host('localhost'), :$port);
       $s.close;
 
@@ -661,7 +663,7 @@ info-message("Test port $port");
       }
     }
 
-info-message("Select $port-number");
+    info-message("$port-number selected");
     $port-number
   }
 }
