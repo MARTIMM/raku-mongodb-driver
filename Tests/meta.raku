@@ -182,7 +182,7 @@ say self.^name;
     }
 }}
 
-say "0: $A.^parents(:all).perl()";
+say "0: $A.^parents(:all).raku()";
 say "1: ", $A.^attributes.Str();
 say "2: ", $A.^methods();
 

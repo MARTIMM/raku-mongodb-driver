@@ -240,18 +240,17 @@ method !process-status ( BSON::Document $mdata --> List ) {
 # if more items, return items and values in a Hash
 method get-data ( *@items --> Any ) {
 
-#note "its: @items.perl()";
   my Any $data;
 
   if @items.elems == 0 {
     $data = $!rw-sem.reader( 'server-data', {$!server-data});
-    trace-message("$!host:$!port return all data: $data.perl()");
+    trace-message("$!host:$!port return all data: $data.raku()");
   }
 
   elsif @items.elems == 1 {
     $data = $!rw-sem.reader( 'server-data', {$!server-data{@items[0]}});
     trace-message(
-      "$!host:$!port return data item: @items[0], $data.perl()"
+      "$!host:$!port return data item: @items[0], $data.raku()"
     );
   }
 
@@ -260,7 +259,7 @@ method get-data ( *@items --> Any ) {
 
     $data = %(%(@items Z=> @$sd).grep({.value.defined}));
     trace-message(
-      "$!host:$!port return data items: @items.perl(), $data.perl()"
+      "$!host:$!port return data items: @items.raku(), $data.raku()"
     );
   }
 
@@ -276,7 +275,7 @@ method set-data ( *%items ) {
     }
   );
 
-  trace-message("$!host:$!port data modified: $sd.perl()");
+  trace-message("$!host:$!port data modified: $sd.raku()");
 }
 
 #-------------------------------------------------------------------------------
