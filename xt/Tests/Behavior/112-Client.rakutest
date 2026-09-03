@@ -95,7 +95,7 @@ subtest "mongodb url with username and password SCRAM-SHA-1", {
     ]
   );
 
-  diag $doc.perl;
+  diag $doc.raku;
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 1, "Inserted 1 document";
 

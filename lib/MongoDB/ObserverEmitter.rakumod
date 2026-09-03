@@ -50,7 +50,7 @@ submethod BUILD {
 
     # provide the data from $msg to the selected observer
     -> $msg {
-#trace-message("process '$msg<event>.perl()'");
+#trace-message("process '$msg<event>.raku()'");
 
       my @local-events = $rw-sem.reader( 'event', { (@$events); }).flat;
 
@@ -59,7 +59,7 @@ submethod BUILD {
 
         # test sub to see which observer must be called
         -> $e {
-#trace-message("  ~~ $e<event>.perl()");
+#trace-message("  ~~ $e<event>.raku()");
 
           my Bool $select = False;
           given $e<event> {

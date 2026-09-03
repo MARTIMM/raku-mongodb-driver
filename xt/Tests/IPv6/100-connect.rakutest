@@ -47,7 +47,7 @@ subtest "ipv6 connect", {
   $req .= new: ( dropDatabase => 1 );
   $doc = $database.run-command($req);
 
-  note $doc.perl;
+  note $doc.raku;
 }
 
 #-------------------------------------------------------------------------------

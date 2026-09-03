@@ -100,7 +100,7 @@ subtest 'drop collection two times', {
   $doc = $database.run-command($req);
 
   ok $doc<ok>.Bool == True, 'Dropping cl1 ok';
-  #say $doc.perl;
+  #say $doc.raku;
   is $doc<ns>, 'test.cl1', 'Dropped collection';
   is $doc<nIndexesWas>, 1, 'Number of dropped indexes';
 
@@ -170,7 +170,7 @@ is $cursor.count, 10, 'Only 10 records in collection';
 # Cleanup
 $req .= new: ( dropDatabase => 1 );
 $doc = $database.run-command($req);
-say $doc.perl;
+say $doc.raku;
 
 info-message("Test $?FILE stop");
 sleep .2;

@@ -77,7 +77,7 @@ sub add-accounts (
       default {
         note "Server $server returned an unknown error:\n";
         note "  Code: $doc<code>\n  Error: $doc<errmsg>";
-        note "Returned document info: ", $doc.perl;
+        note "Returned document info: ", $doc.raku();
       }
     }
 
@@ -87,7 +87,7 @@ sub add-accounts (
 
   note "\nThere are {$doc<users>.elems} users defined";
   for $doc<users> -> $u {
-    note "Account:\n  ", $u.perl;
+    note "Account:\n  ", $u.raku();
   }
 }}
 
@@ -262,7 +262,7 @@ sub del-accounts ( MongoDB::Client $client ) {
     my Str $uname = prompt "User account to remove: ";
     my MongoDB::Database $database = $client.database('admin');
     my BSON::Document $doc = $database.run-command: (dropUser => $uname,);
-    note "A: ", $doc.perl;
+    note "A: ", $doc.raku();
     if $doc<ok> == 1e0 {
       note "Account '$uname' is deleted";
     }
@@ -285,7 +285,7 @@ sub list-accounts ( MongoDB::Client $client ) {
   my MongoDB::Database $database = $client.database('admin');
   my BSON::Document $doc = $database.run-command: (usersInfo => 1,);
 =begin comment
-note "R: ", $doc.perl;
+note "R: ", $doc.raku();
 R: BSON::Document.new((
   users => [
         BSON::Document.new((
@@ -346,6 +346,6 @@ sub ismaster ( MongoDB::Client $client ) {
 
   my MongoDB::Database $database = $client.database('admin');
   my BSON::Document $doc = $database.run-command: (ismaster => 1,);
-  note "\nServer status: ", $doc.perl;
+  note "\nServer status: ", $doc.raku();
   print "\n";
 }

@@ -33,11 +33,11 @@ sub MAIN( ) {
   my MongoDB::Client $client .= new(:$uri);
   my MongoDB::Database $database = $client.database('SomeDB');
   my $doc = $database.run-command(BSON::Document.new: (ping => 1));
-#  $doc.perl.say;
+#  $doc.raku.say;
   say '1st run:   ', now - $t0;
 
   $doc = $database.run-command(BSON::Document.new: (ping => 1));
-#  $doc.perl.say;
+#  $doc.raku.say;
   say '1st rerun: ', now - $t0;
 
 
@@ -47,6 +47,6 @@ sub MAIN( ) {
   $client .= new(:$uri);
   $database = $client.database('SomeDB');
   $doc = $database.run-command(BSON::Document.new: (ping => 1));
-#  $doc.perl.say;
+#  $doc.raku.say;
   say '2nd run:   ', now - $t0;
 }

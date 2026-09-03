@@ -343,7 +343,7 @@ method monitor-work ( ) {
    'm-servers',
     sub () { %registered-servers; }
   );
-#note "Ass: %registered-servers.perl()";
+#note "Ass: %registered-servers.raku()";
 
   # check if there are any servers. if not, return
   $no-servers-available = ! %rservers.elems;
@@ -353,7 +353,7 @@ method monitor-work ( ) {
   trace-message("Servers to monitor: " ~ %rservers.keys.join(', '));
   for %rservers.keys -> $server-name {
 
-trace-message("monitor-work server $server-name, %registered-servers.perl()");
+trace-message("monitor-work server $server-name, %registered-servers.raku()");
 
     # last check if server is still registered in original structure
     next unless $rw-sem.reader(
@@ -368,16 +368,16 @@ trace-message("monitor-work server $server-name, %registered-servers.perl()");
     ( $doc, $rtt) = self.raw-query($server);
 
 
-#    my Str $doc-text = ($doc // '-').perl;
+#    my Str $doc-text = ($doc // '-').raku;
     trace-message(
-      "is-master request result for $server-name: {($doc // '-').perl}"
+      "is-master request result for $server-name: {($doc // '-').raku}"
     );
 
     # when doc is defined, the request ended properly. the ok field
     # in the doc will tell if the operation is succsessful or not
     if $doc.defined {
 
-#note "Use: %registered-servers.perl()";
+#note "Use: %registered-servers.raku()";
 #note 'emit to ',%rservers{$server-name}[ServerObj].name ~ ' monitor data';
 
       # Calculation of mean Return Trip Time. See also
@@ -460,7 +460,7 @@ multi method raw-query ( $server --> List ) {
     :$server, :time-query, :$uri-obj, :monitor
   );
 
-#trace-message("result raw query to server $server.name(): $doc.perl()");
+#trace-message("result raw query to server $server.name(): $doc.raku()");
 
   ( $doc, $rtt);
 }

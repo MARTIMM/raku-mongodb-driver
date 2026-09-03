@@ -159,7 +159,7 @@ method create-user (
   $req<customData> = $custom-data if ?$custom-data;
 #      $req<writeConcern> = ( :j, :$wtimeout) if ?$wtimeout;
 
-#note "request: ", $req.perl;
+#note "request: ", $req.raku;
   return $!database.run-command($req);
 }
 
@@ -272,7 +272,7 @@ method update-user (
     if $doc<ok>.Bool == False {
       warn-message(
         $doc<errmsg>,
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => $!database.name
       );
     }
@@ -293,7 +293,7 @@ method update-user (
     if $doc<ok>.Bool == False {
       warn-message(
         $doc<errmsg>,
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => $!database.name
       );
     }
@@ -318,7 +318,7 @@ method update-user (
     if $doc<ok>.Bool == False {
       warn-message(
         $doc<errmsg>,
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => $!database.name
       );
     }
@@ -343,7 +343,7 @@ method update-user (
     if $doc<ok>.Bool == False {
       warn-message(
         $doc<errmsg>,
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => $!database.name
       );
     }
@@ -371,7 +371,7 @@ method update-user (
     if $doc<ok>.Bool == False {
       warn-message(
         $doc<errmsg>,
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => $database // $!database.name
       );
     }
@@ -391,7 +391,7 @@ method update-user (
     if $doc<ok>.Bool == False {
       warn-message(
         $doc<errmsg>,
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => $!database.name
       );
     }

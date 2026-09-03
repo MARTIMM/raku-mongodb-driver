@@ -417,7 +417,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'group',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }
@@ -468,7 +468,7 @@ method !set-full-collection-name ( $!database ) {
       @req.push: (:out(:replace($!name ~ '_MapReduce')));
     }
 
-#say "MPR P: {@req.perl}";
+#say "MPR P: {@req.raku}";
     my Hash $doc = $!database.run-command(@req);
 
     # Check error and throw X::MongoDB if there is one
@@ -476,7 +476,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'map-reduce',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }
@@ -539,7 +539,7 @@ method !set-full-collection-name ( $!database ) {
           error-text => $error-doc<err>,
           error-code => $error-doc<code>,
           oper-name => 'ensure-index',
-          oper-data => %doc.perl,
+          oper-data => %doc.raku,
           collection-ns => [~] $!database.name, '.', $!name
         );
       }
@@ -561,7 +561,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'drop-index',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }
@@ -606,7 +606,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'stats',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }
@@ -644,7 +644,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'find-and-modify',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }
@@ -664,7 +664,7 @@ method !set-full-collection-name ( $!database ) {
           Document is not a hash.
           EODIE
         oper-name => 'insert',
-        oper-data => @docs.perl,
+        oper-data => @docs.raku,
         collection-ns => [~] $!database.name, '.', $!name
       ) unless $d ~~ Hash;
 
@@ -677,7 +677,7 @@ method !set-full-collection-name ( $!database ) {
               point 1; Data storage
               EODIE
             oper-name => 'insert',
-            oper-data => @docs.perl,
+            oper-data => @docs.raku,
             collection-ns => [~] $!database.name, '.', $!name
           );
         }
@@ -692,7 +692,7 @@ method !set-full-collection-name ( $!database ) {
             die X::MongoDB.new(
               error-text => "$k => $d{$k} value for id is not unique",
               oper-name => 'insert',
-              oper-data => @docs.perl,
+              oper-data => @docs.raku,
               collection-ns => [~] $!database.name, '.', $!name
             );
           }
@@ -718,7 +718,7 @@ method !set-full-collection-name ( $!database ) {
             point 1; Data storage
             EODIE
           oper-name => 'insert',
-          oper-data => $sub-doc.perl,
+          oper-data => $sub-doc.raku,
           collection-ns => [~] $!database.name, '.', $!name
         );
       }
@@ -747,7 +747,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'drop',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }
@@ -768,7 +768,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'count',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }
@@ -793,7 +793,7 @@ method !set-full-collection-name ( $!database ) {
       die X::MongoDB.new(
         error-text => $doc<errmsg>,
         oper-name => 'distinct',
-        oper-data => @req.perl,
+        oper-data => @req.raku,
         collection-ns => [~] $!database.name, '.', $!name
       );
     }

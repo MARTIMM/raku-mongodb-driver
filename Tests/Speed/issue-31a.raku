@@ -34,7 +34,7 @@ sub MAIN( ) {
   trace-message("start 1st rerun");
   $t0 = now;
   $doc = $database.run-command(BSON::Document.new: (ping => 1));
-#  $doc.perl.say;
+#  $doc.raku.say;
   say '1st rerun: ', now - $t0, ' command repeat only, no client init';
   trace-message("end 1st rerun");
 
@@ -50,7 +50,7 @@ sub MAIN( ) {
 
   $database = $client.database('Library');
   $doc = $database.run-command(BSON::Document.new: (ping => 1));
-#  $doc.perl.say;
+#  $doc.raku.say;
   say '2nd run:   ', now - $t0, ', client init but servers are still there';
   trace-message("end 2nd run");
 
@@ -67,7 +67,7 @@ sub MAIN( ) {
 
   $database = $client.database('Library');
   $doc = $database.run-command(BSON::Document.new: (ping => 1));
-#  $doc.perl.say;
+#  $doc.raku.say;
   say '3rd run:   ', now - $t0, ' client reinit with complete rebuild';
   trace-message("end 3rd run");
 }

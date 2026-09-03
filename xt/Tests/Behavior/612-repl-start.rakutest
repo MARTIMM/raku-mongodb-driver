@@ -58,7 +58,7 @@ subtest {
   is $server.get-status<status>, ST-RSPrimary, "Server $host:$p2 is primary";
 
   #my BSON::Document $doc = $server.raw-query( 'test.$cmd', BSON::Document.new((isMaster => 1,)));
-  #diag $doc.perl;
+  #diag $doc.raku;
 
   diag "Get server info. Get the repl version and update version";
   my BSON::Document $doc = $server.raw-query(
@@ -97,7 +97,7 @@ subtest {
   ok ?$doc<ok>, 'Servers are added';
 
   $doc = $server.raw-query( 'test.$cmd', BSON::Document.new((isMaster => 1,)));
-  diag $doc.perl;
+  diag $doc.raku;
 
   if @serverkeys[0] ~~ any <s4 s5 s6> {
     skip 'difficulties comparing hostlist on 2.6.* servers caused by duplicates', 1;

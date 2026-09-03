@@ -208,5 +208,5 @@ subtest {
 
 }, '';
 
-say "\nReq: ", $req.perl, "\n";
-say "\nDoc: ", $doc.perl, "\n";
+say "\nReq: ", $req.raku, "\n";
+say "\nDoc: ", $doc.raku, "\n";

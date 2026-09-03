@@ -140,7 +140,7 @@ $!report.run
         ),
       ]
     );
-say "Doc:", $doc.perl;
+say "Doc:", $doc.raku;
 
   !][
     $!test.add t='is $doc<ok>, 1' [insert request ok]

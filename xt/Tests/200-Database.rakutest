@@ -163,7 +163,7 @@ subtest 'Database admin tests', {
 subtest 'Database statistics server 1', {
 
   $doc = $db-admin.run-command: (listDatabases => 1,);
-#say $doc.perl;
+#say $doc.raku;
   ok $doc<ok>.Bool, 'Run command ran ok';
   ok $doc<totalSize> > 1, 'Total size at least bigger than one byte ;-)';
 

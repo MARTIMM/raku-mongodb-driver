@@ -88,7 +88,7 @@ subtest {
   );
 
   is $doc<nModified>, 2, '2 records modified';
-say $doc.perl;
+say $doc.raku;
   
   $doc = $table.count( :criteria(%( number => 4307,)));
   is $doc<n>, 0, '0 records with original number';
@@ -119,7 +119,7 @@ say $doc;
   $doc = $table.count( :criteria(%( number => 8000,)));
   is $doc<n>, 1, '1 record with new number';
 
-say $doc.perl;
+say $doc.raku;
 }, 'update test';
 
 #-------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ my BSON::Document $doc = $table.delete(
   ),
   :!ordered
 );
-#say $doc.perl;
+#say $doc.raku;
 
 info-message("Test $?FILE end");
 done-testing;

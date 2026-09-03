@@ -24,7 +24,7 @@ my BSON::Document $doc = $db.run-command: (
   ]
 );
 
-note "Insert result: ", $doc.perl;
+note "Insert result: ", $doc.raku;
 
 modify-send-to( 'screen', :level(MongoDB::MdbLoglevels::Info));
 for $db.collection('users').find(

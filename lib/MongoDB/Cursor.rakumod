@@ -32,7 +32,7 @@ First example using find().
 
   # Get all documents from this collection
   my MongoDB::Cursor $cursor = $collection.find;
-  while $cursor.fetch -> BSON::Document $document { $document.perl.say; }
+  while $cursor.fetch -> BSON::Document $document { $document.raku.say; }
 
 
 Second example using run-command to get information about collections
@@ -177,7 +177,7 @@ multi submethod BUILD (
   MongoDB::ClientType:D :$client!, BSON::Document:D :$cursor-doc!,
   Int :$number-to-return = 0
 ) {
-#note 'Server-reply: ', $cursor-doc.perl;
+#note 'Server-reply: ', $cursor-doc.raku;
 #info-message($cursor-doc);
 
 #    $!client = $client;

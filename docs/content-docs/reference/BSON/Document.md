@@ -48,7 +48,7 @@ Some examples are;
 
 The Pair used in the last example, is automatically converted to a List of Pair having one Pair.
 
-To see what the document became so far, call `.raku()` or `.perl()`.
+To see what the document became so far, call `.raku()`.
 
 For the above examples it will show;
 

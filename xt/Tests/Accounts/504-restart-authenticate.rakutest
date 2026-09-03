@@ -35,7 +35,7 @@ note "U: $uri, ";
 
   my BSON::Document $doc = $ts.server-control.stop-mongod( 's1', $uri);
   if $doc.defined {
-    note $doc.perl;
+    note $doc.raku;
     is $doc<ok>, 1, 'server stopped';
   }
 

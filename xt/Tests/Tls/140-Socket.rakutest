@@ -72,7 +72,7 @@ subtest "Socket manipulations", {
 #  my MongoDB::Client $client = $clients{$clients.keys[0]};
 #  my MongoDB::Database $database = $client.database('test');
 
-#note $result.perl;
+#note $result.raku;
 }
 
 #-------------------------------------------------------------------------------

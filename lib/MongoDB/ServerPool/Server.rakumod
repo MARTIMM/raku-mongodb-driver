@@ -132,11 +132,11 @@ method !process-monitor-data ( Hash $monitor-data ) {
 
     else {
       if ?$mdata and $mdata<ok>:!exists {
-        warn-message("Missing field in doc {$mdata.perl}");
+        warn-message("Missing field in doc {$mdata.raku}");
       }
 
       else {
-        warn-message("Unknown error: {($mdata // '-').perl}");
+        warn-message("Unknown error: {($mdata // '-').raku}");
       }
 
       ( $server-status, $is-master) = ( ST-Unknown, False);

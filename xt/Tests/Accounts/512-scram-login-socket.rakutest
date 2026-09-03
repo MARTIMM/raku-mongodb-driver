@@ -66,7 +66,7 @@ subtest "insert by $username in db test",  {
   );
 
   $doc = $d.run-command($req);
-  #note $doc.perl;
+  #note $doc.raku;
   is $doc<ok>, 1, "Result is ok";
   is $doc<n>, 4, "Inserted 4 documents";
 }
@@ -85,7 +85,7 @@ subtest "insert by $username in db test2",  {
   );
 
   $doc = $d.run-command($req);
-#  note $doc.perl;
+#  note $doc.raku;
   is $doc<ok>, 0, "Result is not ok";
   like $doc<errmsg>, /:s not authorized on test2 to execute command/;
 }
@@ -185,7 +185,7 @@ subtest "insert by some unknown user on test2",  {
 
   $doc = $d.run-command($req);
   nok $doc.defined, 'failed to insert data';
-#  note $doc.perl;
+#  note $doc.raku;
 #  is $doc<ok>, 1, "Result is ok";
 #  is $doc<n>, 4, "Inserted 4 documents";
 }

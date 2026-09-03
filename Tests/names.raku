@@ -77,7 +77,7 @@ for $fh.lines -> $line {
   my BSON::Document $doc = $names-tbl.count(
     :criteria(%(firstname => @entries[C-NAME]))
   );
-say $doc.perl;
+say $doc.raku;
 
   if $doc<ok> == 1 and $doc<n> > 0 {
     warn-message("Entry for @entries[C-NAME] already stored");

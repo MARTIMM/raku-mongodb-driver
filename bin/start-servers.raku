@@ -34,7 +34,7 @@ sub MAIN (
     :config-name<server-configuration.toml>, :locations[$conf-loc]
   );
 
-#note MongoDB::MDBConfig.instance.cfg.perl;
+#note MongoDB::MDBConfig.instance.cfg.raku();
 
   for @servers -> $server {
     try {
@@ -69,7 +69,7 @@ my MongoDB::Server::Control $server-control .= new(
   :config-name<server-config.toml>
 );
 
-note MongoDB::MDBConfig.instance.cfg.perl;
+note MongoDB::MDBConfig.instance.cfg.raku();
 #-------------------------------------------------------------------------------
 # start servers
 try {
@@ -202,7 +202,7 @@ sub check-convert-replicaset (
   info-message("192.168.0.253:$port1 hosts are $doc<hosts>");
   #  info-message("192.168.0.253:$port1 ");
 
-  #note "IM 1: ", $doc.perl;
+  #note "IM 1: ", $doc.raku();
   $c1
 }
 
@@ -220,7 +220,7 @@ sub add-accounts ( MongoDB::Client $server ) {
     :custom-data((user-type => 'site-admin'),),
     :roles([(role => 'userAdminAnyDatabase', db => 'admin'),])
   );
-  note "Admin user creation result: ", $doc.perl;
+  note "Admin user creation result: ", $doc.raku();
 
   # Check for other accounts
   while True {
@@ -243,13 +243,13 @@ sub add-accounts ( MongoDB::Client $server ) {
       :roles([( role => 'readWrite', db => $dbname),])
     );
 
-    note "User $uname creation result: ", $doc.perl;
+    note "User $uname creation result: ", $doc.raku();
   }
 
   $doc = $database.run-command: (usersInfo => 1,);
-note "R: ", $doc.perl;
+note "R: ", $doc.raku();
   note "There are {$doc<users>.elems} users defined";
   for $doc<users> -> $u {
-    note "Account:\n  ", $u.perl;
+    note "Account:\n  ", $u.raku();
   }
 }

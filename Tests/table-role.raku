@@ -44,7 +44,7 @@ $table.set(
 );
 
 my BSON::Document $doc = $table.insert;
-say $doc.perl;
+say $doc.raku;
 ok !$doc<ok>, 'Document has problems';
 is $doc<fields><number>, 'missing', 'field number is missing';
 is $doc<fields><zip>, 'type failure, is Num but must be Str', $doc<fields><zip>;
@@ -66,6 +66,6 @@ $table.set(
 
 $doc = $table.insert;
 ok $doc<ok>, 'Document written';
-say $doc.perl;
+say $doc.raku;
 
 done-testing;

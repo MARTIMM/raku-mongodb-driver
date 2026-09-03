@@ -413,7 +413,7 @@ method select-server ( --> MongoDB::ServerPool::Server ) {
 #  my Array $topology-description = $!rw-sem.reader(
 #    'topology', { $!topology-description }
 #  );
-#note "topo: ", $topology-description.perl;
+#note "topo: ", $topology-description.raku;
 
   my MongoDB::ServerPool $server-pool .= instance;
   $server-pool.select-server($!uri-obj.client-key);

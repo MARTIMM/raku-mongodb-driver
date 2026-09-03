@@ -93,7 +93,7 @@ subtest "Add accounts", {
     $doc = $database.run-command: (usersInfo => 1,);
     is $doc<users>[0]<user>, $username,
        "info of $doc<users>[0]<user> retrieved";
-#note $doc.perl;
+#note $doc.raku;
   }
 }
 

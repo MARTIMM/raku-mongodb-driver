@@ -68,7 +68,7 @@ subtest 'field failure test', {
     )
   );
 
-  diag $doc.perl;
+  diag $doc.raku;
   ok !$doc<ok>, 'Document has problems';
   is $doc<fields><number>, 'missing', 'field number is missing';
   is $doc<fields><city>, 'missing', 'field city is missing';
@@ -167,7 +167,7 @@ subtest 'multiple records test', {
       ]
     )
   );
-  diag $doc.perl;
+  diag $doc.raku;
   ok $doc<ok>, 'write ok';
   is $doc<n>, 2, 'two records written';
 };

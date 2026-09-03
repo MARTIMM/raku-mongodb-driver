@@ -78,7 +78,7 @@ class Database {
       $c = Collection.new( :database(self), :$name);
     }
 
-say "C: ", $c.perl;
+say "C: ", $c.raku;
 
     $c;
 LEAVE {
@@ -102,7 +102,7 @@ class Fake-Collection {
   #-----------------------------------------------------------------------------
   #
   submethod BUILD ( Str :$helper-name, Code :$code ) {
-say "Create $helper-name, {$code.perl}";
+say "Create $helper-name, {$code.raku}";
 
     $!helper-name = $helper-name;
     $!code = $code;
@@ -188,10 +188,10 @@ db.person.insert( {
 );
 
 my $p = db.person;
-say "P: ", $p.perl;
+say "P: ", $p.raku;
 
 $p = db.drop-database;
-say "DD: ", $p.perl;
+say "DD: ", $p.raku;
 
 try {
   db.drop-database.insert( { a => 1});

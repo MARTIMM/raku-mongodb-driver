@@ -186,8 +186,8 @@ say "Check $field-name: ", $schema{$field-name}:exists;
 
         elsif $field-spec[1] ~~ C-TYPE {
           $error-doc<fields>{$field-spec[0]} = 
-            [~] 'type failure, is ', $field-spec[2].WHAT.perl, " but must be ",
-            $field-spec[3].WHAT.perl;
+            [~] 'type failure, is ', $field-spec[2].WHAT.raku, " but must be ",
+            $field-spec[3].WHAT.raku;
         }
 
         elsif $field-spec[1] ~~ C-NOTINSCHEMA {

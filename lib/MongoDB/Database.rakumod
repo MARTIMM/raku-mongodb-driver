@@ -125,8 +125,8 @@ The name of the database.
 
 Run a command against the database. For proper handling of this command it is necessary to study the documentation on the MongoDB site. A good starting point is L<at this page|https://docs.mongodb.org/manual/reference/command/>.
 
-See also L<Perl6 docs here|http://doc.perl6.org/routine/%2C> and
-L<here|http://doc.perl6.org/language/list> and L<BSON::Document|../BSON/Document.html>
+See also L<Perl6 docs here|http://docs.raku.org/routine/%2C> and
+L<here|http://docs.raku.org/language/list> and L<BSON::Document|../BSON/Document.html>
 
   method run-command ( BSON::Document:D $command --> BSON::Document )
 

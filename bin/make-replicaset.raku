@@ -42,7 +42,7 @@ sub MAIN ( *@servers, Str :$conf-loc is copy = '.',  ) {
     :config-name<server-configuration.toml>, :locations[$conf-loc]
   );
 
-#note MongoDB::MDBConfig.instance.cfg.perl;
+#note MongoDB::MDBConfig.instance.cfg.raku;
   my Hash $server-states = {};
 
   for @servers -> $server-key {
@@ -100,7 +100,7 @@ sub get-server-state (
     $doc = $server.raw-query(
       'admin.$cmd', BSON::Document.new((ismaster => 1,)), :!authenticate,
     );
-    note "Master data:\n", $doc.perl;
+    note "Master data:\n", $doc.raku;
 
     %(
       :$connection, :$replSet,
@@ -132,7 +132,7 @@ sub make-replicaset (
     my Int $id-count = 0;
     note "Master found as $master-server-state<connection>, adjust replicaset";
     my Int $new-version = $master-server-state<ismaster><setVersion> + 1;
-#note "Master server data:\n", $master-server-state.perl;
+#note "Master server data:\n", $master-server-state.raku();
 
     # create the member array using the data from the master
     for @($master-server-state<ismaster><hosts>) -> $host {
@@ -162,7 +162,7 @@ sub make-replicaset (
         )
       )
     );
-    note "Result of replSetReconfig:", $doc.perl;
+    note "Result of replSetReconfig:", $doc.raku();
   }
 
   # if there isn't a master, check other servers if they are a secondary
@@ -175,7 +175,7 @@ sub make-replicaset (
     my Str $top-server-key = ($server-states.keys.sort)[0] unless $master-key;
     $master-server-state = $server-states{$top-server-key};
     note "No master found, set $master-server-state<connection> as master";
-#note "Master server data:\n", $master-server-state.perl;
+#note "Master server data:\n", $master-server-state.raku();
 
     # create the member array using the data from the $server-states
     for @($server-states.keys.sort) -> $skey {
@@ -199,7 +199,7 @@ sub make-replicaset (
         )
       )
     );
-    note "Result of replSetInitiate:", $doc.perl;
+    note "Result of replSetInitiate:", $doc.raku();
   }
 
   sleep 10;
@@ -209,7 +209,7 @@ sub make-replicaset (
     BSON::Document.new((isMaster => 1,))
   );
 
-  note "Result master data:\n", $doc.perl;
+  note "Result master data:\n", $doc.raku();
 
 
 #`{{
@@ -252,7 +252,7 @@ sub make-replicaset (
 
         else {
           note "Server $sval<hostname>:$sval<port> not able to become master",
-               $doc.perl;
+               $doc.raku();
           exit(1);
         }
       }
@@ -290,7 +290,7 @@ sub make-replicaset (
 
         else {
           note "Server $sval<hostname>:$sval<port> not able to become master",
-               $doc.perl;
+               $doc.raku();
           exit(1);
         }
       }

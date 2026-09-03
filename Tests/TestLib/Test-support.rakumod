@@ -218,7 +218,7 @@ method show-documents (
 
   my MongoDB::Cursor $cursor = $collection.find( $criteria, $projection);
   while $cursor.fetch -> BSON::Document $document {
-    say $document.perl;
+    say $document.raku;
   }
 }
 
@@ -560,7 +560,7 @@ method server-version ( DatabaseType $db --> Str ) {
     opcounters => 0, opcountersRepl => 0, recordStats => 0
   );
 
-#note "V: ", $doc.perl;
+#note "V: ", $doc.raku;
   $doc<version>
 }
 

@@ -294,7 +294,7 @@ my $client = MongoDB::Client.new(:uri('mongodb://')); # localhost:27017
 my $collection = $client.collection('mydb.mycol');    # get collection
 
 for $collection.find -> BSON::Document $doc {         # iterate over Cursor
-  say $doc.perl;                                      # do something ...
+  say $doc.raku;                                      # do something ...
 }
 ```
 

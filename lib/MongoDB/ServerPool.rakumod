@@ -151,7 +151,7 @@ method get-server-names ( Str:D $client-key --> Array ) {
     )
   ];
 
-  trace-message("client '$client-key', $cos.perl()");
+  trace-message("client '$client-key', $cos.raku()");
 
   $cos;
 }
@@ -355,7 +355,7 @@ method cleanup ( Str:D $client-key ) {
     trace-message("cleaned up server $server-name");
   }
 
-#trace-message("leftover: " ~ $!servers-in-pool.perl);
+#trace-message("leftover: " ~ $!servers-in-pool.raku);
 }
 
 =finish

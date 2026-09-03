@@ -48,7 +48,7 @@ sub record-time() {
 	);
 
 	my $response = $db.run-command($req);
-	diag "Update " ~ $response.perl;
+	diag "Update " ~ $response.raku;
 
   diag "Insert " ~ $db.run-command( (
 			insert => 'timetest',
@@ -58,7 +58,7 @@ sub record-time() {
 				),
 			],
 		),
-	).perl;
+	).raku;
 }
 
 #-------------------------------------------------------------------------------

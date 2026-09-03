@@ -55,7 +55,7 @@ subtest "Test user management", {
 #`{{
 if $doc<ok> == 0 {
   $doc = $database.run-command: (getLastError => 1,);
-  note $doc.perl;
+  note $doc.raku;
 }
 }}
   is $doc<ok>, 1, "User $username created";
@@ -207,12 +207,12 @@ subtest 'account info and drop all users', {
 
   $doc = $database.run-command: (usersInfo => 1,);
   is $doc<users>.elems, 1, 'Only one user defined';
-#say "Doc: ", $doc.perl;
+#say "Doc: ", $doc.raku;
 
 
   $doc = $database.run-command: (dropAllUsersFromDatabase => 1,);
   ok $doc<ok>, 'All users dropped';
-#say "Doc: ", $doc.perl;
+#say "Doc: ", $doc.raku;
 
   $doc = $database.run-command: (usersInfo => 1,);
   is $doc<users>.elems, 0, 'No users in database';

@@ -34,7 +34,7 @@ my BSON::Document $doc = $database.run-command( (
 );
 
 if $doc.defined {
-  info-message($doc.perl);
+  info-message($doc.raku);
 }
 
 else {
@@ -54,7 +54,7 @@ $doc = $database.run-command( (
 );
 
 if $doc.defined {
-  info-message($doc.perl);
+  info-message($doc.raku);
 }
 
 else {

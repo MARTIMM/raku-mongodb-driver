@@ -10,4 +10,4 @@ $sock .= new( :host<localhost>, :port<65010>);
 #$sock .= new( :host<localhost6>, :port<65010>);
 #$sock .= new( :host<localhost:65010>);
 #$sock .= new( :host<localhost.localdomain>, :port(65010));
-say $sock.perl;
+say $sock.raku;

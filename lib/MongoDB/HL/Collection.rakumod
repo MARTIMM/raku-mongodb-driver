@@ -321,7 +321,7 @@ role HL::CollectionRole {
     my Array $mod-deletes = [];
     for @$deletes {
       my Hash $ds = %$_;
-#say $ds.perl;
+#say $ds.raku;
       my BSON::Document $query-spec .= new;
       my BSON::Document $query .= new;
 
@@ -352,7 +352,7 @@ role HL::CollectionRole {
       ordered => $ordered,
 #TODO writeconcern
     );
-#say $req.perl;
+#say $req.raku;
 
     my BSON::Document $doc = $!db.run-command($req);
 
@@ -496,7 +496,7 @@ role HL::CollectionRole {
       #}
 
       else {
-        fatal-message("Field $k in schema has problems: " ~ $v.perl);
+        fatal-message("Field $k in schema has problems: " ~ $v.raku);
       }
     }
 #check on field usage
@@ -522,8 +522,8 @@ role HL::CollectionRole {
 
       elsif $field-spec[1] ~~ C-TYPE {
         $error-doc<fields>{$field-spec[0]} =
-          [~] 'type failure, is ', $field-spec[2].WHAT.perl, " but must be ",
-          $field-spec[3].WHAT.perl;
+          [~] 'type failure, is ', $field-spec[2].WHAT.raku, " but must be ",
+          $field-spec[3].WHAT.raku;
       }
 
       elsif $field-spec[1] ~~ C-NOTINSCHEMA {
