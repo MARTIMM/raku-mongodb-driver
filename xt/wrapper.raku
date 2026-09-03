@@ -131,7 +131,7 @@ sub USAGE ( ) {
     Examples
       Testing accounting on a single server. The server key is 'simple'.
 
-        wrapper.raku --version=3.6.9 --servers=simple --test-dir=Accounts 5
+        wrapper.raku --versions=3.6.9 --servers=simple --test-dir=Accounts 5
 
       Testing replica servers. Before tests are run, the servers are started.
 
