@@ -2,15 +2,20 @@
 
 <!--
 [![Build Status](https://travis-ci.com/MARTIMM/raku-mongodb-driver.svg?branch=master)](https://travis-ci.com/MARTIMM/raku-mongodb-driver) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/jhp0p39sydufxmw7?svg=true&branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending)](https://ci.appveyor.com/project/MARTIMM/raku-mongodb-driver/branch/master) [![License](http://martimm.github.io/label/License-label.svg)](http://www.perlfoundation.org/artistic_license_2_0)
--->
 
-![T][travis-svg] ![A][appveyor-svg] ![L][license-svg]
+![T][travis-svg] ![A][appveyor-svg]
 
 [travis-svg]: https://travis-ci.com/MARTIMM/raku-mongodb-driver.svg?branch=master
 [travis-run]: https://travis-ci.com/MARTIMM/raku-mongodb-driver
 
 [appveyor-svg]: https://ci.appveyor.com/api/projects/status/github/MARTIMM/raku-mongodb-driver?branch=master&passingText=Windows%20-%20OK&failingText=Windows%20-%20FAIL&pendingText=Windows%20-%20pending&svg=true
 [appveyor-run]: https://ci.appveyor.com/project/MARTIMM/raku-mongodb-driver/branch/master
+
+* [ 🔗 Travis-ci run on master branch][travis-run]
+* [ 🔗 Appveyor run on master branch][appveyor-run]
+-->
+
+ ![L][license-svg]
 
 [license-svg]: https://martimm.github.io/label/License-label.svg
 [licence-lnk]: https://www.perlfoundation.org/artistic_license_2_0
@@ -20,11 +25,6 @@
 * [ 🔗 License document][licence-lnk]
 * [ 🔗 Release notes](https://martimm.github.io/raku-mongodb-driver/content-docs/about/release-notes.html)
 * [ 🔗 Issues](https://github.com/MARTIMM/raku-mongodb-driver/issues)
-
-<!--
-* [ 🔗 Travis-ci run on master branch][travis-run]
-* [ 🔗 Appveyor run on master branch][appveyor-run]
--->
 
 ## INSTALLING THE MODULES
 
